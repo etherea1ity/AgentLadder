@@ -25,3 +25,6 @@ data/app/*.jsonl
 data/traces/*.jsonl
 *.egg-info/
 *.tsbuildinfo
+
+# Vite cache
+apps/web/.vite/
