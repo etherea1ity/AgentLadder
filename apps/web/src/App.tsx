@@ -1,0 +1,936 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, ApiError, type RunEventSubscription } from "./api/client";
+import { ChatWorkspace } from "./components/ChatWorkspace";
+import { RunMargin } from "./components/RunMargin";
+import { Sidebar } from "./components/Sidebar";
+import type {
+  Message,
+  ModelOption,
+  Run,
+  RunEvent,
+  Session,
+} from "./types/domain";
+import "./styles/app.css";
+import "./styles/klara.css";
+
+type TraceMap = Record<string, Record<string, unknown> | null>;
+type Toast = { id: string; message: string };
+type PersistedUi = {
+  activeSessionId: string | null;
+  selectedRunId: string | null;
+  runMarginOpen: boolean;
+  sidebarCollapsed: boolean;
+};
+
+const UI_STORAGE_KEY = "agent_ladder_v01_ui_state";
+const MODEL_STORAGE_KEY = "agent_ladder_v01_selected_model";
+const THEME_STORAGE_KEY = "agent_ladder_v01_theme";
+const RUN_POLL_MS = 12_000;
+
+export default function App() {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [messages, setMessages] = useState<Record<string, Message>>({});
+  const [runs, setRuns] = useState<Record<string, Run>>({});
+  const [traces, setTraces] = useState<TraceMap>({});
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [runMarginOpen, setRunMarginOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [input, setInput] = useState("");
+  const [activeSseRunId, setActiveSseRunId] = useState<string | null>(null);
+  const [isSubmittingRun, setIsSubmittingRun] = useState(false);
+  const [cancellingRunId, setCancellingRunId] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [deletingSessionIds, setDeletingSessionIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [renamingSessionIds, setRenamingSessionIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
+  const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
+    null,
+  );
+
+  const subscriptionsRef = useRef<Record<string, RunEventSubscription>>({});
+  const pollTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {},
+  );
+  const runsRef = useRef(runs);
+  const messagesRef = useRef(messages);
+  const processedEventsRef = useRef<Set<string>>(new Set());
+  const cancelRequestedRunIdsRef = useRef<Set<string>>(new Set());
+  const submitLockRef = useRef(false);
+
+  useEffect(() => {
+    runsRef.current = runs;
+  }, [runs]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const saved = readPersistedUi();
+    setSidebarCollapsed(saved.sidebarCollapsed || isMobileViewport());
+    api
+      .listSessions()
+      .then(async (res) => {
+        if (cancelled) return;
+        setSessions(sortSessions(res.sessions));
+        setActiveSessionId(null);
+        setSelectedRunId(null);
+        setRunMarginOpen(false);
+      })
+      .catch((error) =>
+        notify(`Could not load conversations. ${friendlyError(error)}`),
+      );
+    api
+      .listModels()
+      .then((res) => {
+        if (cancelled) return;
+        setModelOptions(res.models);
+        const savedModel = window.localStorage.getItem(MODEL_STORAGE_KEY);
+        const usableSavedModel =
+          savedModel && res.models.some((option) => option.model === savedModel)
+            ? savedModel
+            : null;
+        setSelectedModel(
+          usableSavedModel ?? res.default_model ?? res.models[0]?.model ?? "",
+        );
+      })
+      .catch(() => {
+        const fallback = "qwen3.6-flash";
+        setModelOptions([
+          { id: "flash", model: fallback, label: "Qwen 3.6 Flash" },
+        ]);
+        setSelectedModel(fallback);
+      });
+    return () => {
+      cancelled = true;
+      closeAllRunSubscriptions();
+    };
+  }, []);
+
+  useEffect(() => {
+    persistUi({
+      activeSessionId,
+      selectedRunId,
+      runMarginOpen,
+      sidebarCollapsed,
+    });
+  }, [activeSessionId, selectedRunId, runMarginOpen, sidebarCollapsed]);
+
+  useEffect(() => {
+    if (selectedModel)
+      window.localStorage.setItem(MODEL_STORAGE_KEY, selectedModel);
+  }, [selectedModel]);
+
+  useEffect(() => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
+  const activeMessages = useMemo(
+    () =>
+      Object.values(messages)
+        .filter((message) => message.session_id === activeSessionId)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    [messages, activeSessionId],
+  );
+  const empty = !activeSessionId || activeMessages.length === 0;
+  const running = Boolean(
+    activeSseRunId &&
+    runs[activeSseRunId] &&
+    !isTerminal(runs[activeSseRunId].status),
+  );
+  const busy = isSubmittingRun || running;
+  const selectedRun = selectedRunId ? runs[selectedRunId] : null;
+
+  async function loadSession(
+    sessionId: string,
+    options: { restoreRunId?: string | null } = {},
+  ) {
+    try {
+      setHandoffTriggerRunId(null);
+      const detail = await api.getSession(sessionId);
+      setActiveSessionId(sessionId);
+      setSelectedRunId(null);
+      setRunMarginOpen(false);
+      setMessages((prev) => ({
+        ...prev,
+        ...Object.fromEntries(
+          detail.messages.map((message) => [message.message_id, message]),
+        ),
+      }));
+      setRuns((prev) => {
+        const next = { ...prev };
+        detail.runs.forEach((run) => {
+          const merged = { ...run, events: prev[run.run_id]?.events ?? [] };
+          next[run.run_id] = normalizeReconciledRun(run.run_id, merged);
+        });
+        return next;
+      });
+      const restoreRun =
+        options.restoreRunId &&
+        detail.runs.some((run) => run.run_id === options.restoreRunId)
+          ? options.restoreRunId
+          : null;
+      if (restoreRun) {
+        setSelectedRunId(restoreRun);
+        setRunMarginOpen(true);
+        void reconcileRun(restoreRun, { subscribeIfActive: true });
+      }
+      detail.runs
+        .filter((run) => !isTerminal(run.status))
+        .forEach((run) => {
+          setActiveSseRunId(run.run_id);
+          void reconcileRun(run.run_id, { subscribeIfActive: true });
+        });
+    } catch (error) {
+      notify(`Could not open this conversation. ${friendlyError(error)}`);
+    }
+  }
+
+  function newChat() {
+    setHandoffTriggerRunId(null);
+    setActiveSessionId(null);
+    setSelectedRunId(null);
+    setRunMarginOpen(false);
+    setInput("");
+  }
+
+  async function send() {
+    const question = input.trim();
+    if (!question || busy || submitLockRef.current) return;
+    submitLockRef.current = true;
+
+    const hadActiveSession = Boolean(activeSessionId);
+    const draftSessionId = activeSessionId ?? createClientId("draft_sess");
+    const draftUserId = createClientId("draft_user");
+    const draftAssistantId = createClientId("draft_assistant");
+    const draftRunId = createClientId("draft_run");
+    const createdAt = new Date().toISOString();
+    const draftUser: Message = {
+      message_id: draftUserId,
+      session_id: draftSessionId,
+      role: "user",
+      content: question,
+      status: "completed",
+      created_at: createdAt,
+    };
+    const draftAssistant: Message = {
+      message_id: draftAssistantId,
+      session_id: draftSessionId,
+      role: "assistant",
+      content: "",
+      run_id: draftRunId,
+      status: "running",
+      created_at: createdAt,
+    };
+    const draftRun: Run = {
+      run_id: draftRunId,
+      session_id: draftSessionId,
+      user_message_id: draftUserId,
+      assistant_message_id: draftAssistantId,
+      status: "queued",
+      model: selectedModel || null,
+      events: [],
+      live: { streamed_chars: 0, current_label: "Preparing the run..." },
+    };
+
+    setInput("");
+    setIsSubmittingRun(true);
+    if (!activeSessionId) setActiveSessionId(draftSessionId);
+    setMessages((prev) => ({
+      ...prev,
+      [draftUserId]: draftUser,
+      [draftAssistantId]: draftAssistant,
+    }));
+    setRuns((prev) => ({ ...prev, [draftRunId]: draftRun }));
+    setHandoffTriggerRunId(draftRunId);
+
+    try {
+      let sessionId = activeSessionId;
+      if (!sessionId) {
+        const session = await api.createSession();
+        const createdSessionId = session.session_id;
+        sessionId = createdSessionId;
+        setActiveSessionId(createdSessionId);
+        setSessions((prev) => sortSessions([session, ...prev]));
+        setMessages((prev) =>
+          remapDraftSession(prev, draftSessionId, createdSessionId),
+        );
+        setRuns((prev) => {
+          const current = prev[draftRunId];
+          if (!current) return prev;
+          return {
+            ...prev,
+            [draftRunId]: { ...current, session_id: createdSessionId },
+          };
+        });
+      }
+
+      if (!sessionId) throw new Error("Session was not created.");
+      const runSessionId = sessionId;
+      const created = await api.createRun(
+        runSessionId,
+        question,
+        selectedModel || undefined,
+      );
+      const realUser: Message = {
+        message_id: created.user_message_id,
+        session_id: runSessionId,
+        role: "user",
+        content: question,
+        status: "completed",
+        created_at: createdAt,
+      };
+      const realAssistant: Message = {
+        message_id: created.assistant_message_id,
+        session_id: runSessionId,
+        role: "assistant",
+        content: "",
+        run_id: created.run_id,
+        status: "running",
+        created_at: createdAt,
+      };
+      const realRun: Run = {
+        run_id: created.run_id,
+        session_id: runSessionId,
+        user_message_id: created.user_message_id,
+        assistant_message_id: created.assistant_message_id,
+        status: created.status,
+        model: selectedModel || null,
+        events: [],
+        live: { streamed_chars: 0, current_label: "Preparing the run..." },
+      };
+
+      setMessages((prev) => {
+        const next = { ...prev };
+        delete next[draftUserId];
+        delete next[draftAssistantId];
+        next[realUser.message_id] = realUser;
+        next[realAssistant.message_id] = realAssistant;
+        return next;
+      });
+      setRuns((prev) => {
+        const next = { ...prev };
+        delete next[draftRunId];
+        next[realRun.run_id] = realRun;
+        return next;
+      });
+      setHandoffTriggerRunId(realRun.run_id);
+      setActiveSseRunId(realRun.run_id);
+      subscribeRun(realRun.run_id);
+      api
+        .listSessions()
+        .then((res) => setSessions(sortSessions(res.sessions)))
+        .catch(() => undefined);
+    } catch (error) {
+      setInput(question);
+      setMessages((prev) => {
+        const next = { ...prev };
+        delete next[draftUserId];
+        delete next[draftAssistantId];
+        return next;
+      });
+      setRuns((prev) => {
+        const next = { ...prev };
+        delete next[draftRunId];
+        return next;
+      });
+      setHandoffTriggerRunId((current) =>
+        current === draftRunId ? null : current,
+      );
+      if (!hadActiveSession) {
+        setActiveSessionId(null);
+        setSelectedRunId(null);
+        setRunMarginOpen(false);
+      }
+      notify(`Could not start the run. ${friendlyError(error)}`);
+    } finally {
+      setIsSubmittingRun(false);
+      submitLockRef.current = false;
+    }
+  }
+
+  function subscribeRun(runId: string) {
+    if (subscriptionsRef.current[runId]) return subscriptionsRef.current[runId];
+    const subscription = api.subscribeRunEvents(runId, applyRunEvent, () => {
+      closeRunSubscription(runId, { keepPoll: true });
+      void reconcileRun(runId, { subscribeIfActive: true });
+    });
+    subscriptionsRef.current[runId] = subscription;
+    schedulePoll(runId);
+    return subscription;
+  }
+
+  function closeRunSubscription(
+    runId: string,
+    options: { keepPoll?: boolean } = {},
+  ) {
+    subscriptionsRef.current[runId]?.close();
+    delete subscriptionsRef.current[runId];
+    if (!options.keepPoll) clearPoll(runId);
+  }
+
+  function closeAllRunSubscriptions() {
+    Object.keys(subscriptionsRef.current).forEach((runId) =>
+      closeRunSubscription(runId),
+    );
+    Object.keys(pollTimersRef.current).forEach((runId) => clearPoll(runId));
+  }
+
+  function schedulePoll(runId: string) {
+    clearPoll(runId);
+    pollTimersRef.current[runId] = setTimeout(() => {
+      void reconcileRun(runId, { subscribeIfActive: true, silent: true });
+    }, RUN_POLL_MS);
+  }
+
+  function clearPoll(runId: string) {
+    if (pollTimersRef.current[runId])
+      clearTimeout(pollTimersRef.current[runId]);
+    delete pollTimersRef.current[runId];
+  }
+
+  async function reconcileRun(
+    runId: string,
+    options: { subscribeIfActive?: boolean; silent?: boolean } = {},
+  ) {
+    try {
+      const detail = await api.getRun(runId);
+      const nextRun = normalizeReconciledRun(runId, {
+        ...detail.run,
+        events: detail.events,
+      });
+      setRuns((prev) => ({ ...prev, [runId]: nextRun }));
+      setTraces((prev) => ({ ...prev, [runId]: detail.trace }));
+      if (isTerminal(nextRun.status)) {
+        closeRunSubscription(runId);
+        setActiveSseRunId((current) => (current === runId ? null : current));
+        if (cancelRequestedRunIdsRef.current.has(runId)) {
+          setMessages((messagesPrev) =>
+            markAssistant(
+              messagesPrev,
+              nextRun.assistant_message_id,
+              "cancelled",
+            ),
+          );
+          return nextRun;
+        }
+        await refreshSessionMessages(nextRun.session_id);
+        return nextRun;
+      }
+      if (options.subscribeIfActive) {
+        setActiveSseRunId(runId);
+        subscribeRun(runId);
+      } else {
+        schedulePoll(runId);
+      }
+      return nextRun;
+    } catch (error) {
+      if (!options.silent)
+        notify(`Could not refresh run status. ${friendlyError(error)}`);
+      const current = runsRef.current[runId];
+      if (current && !isTerminal(current.status)) schedulePoll(runId);
+      return null;
+    }
+  }
+
+  async function refreshSessionMessages(sessionId: string) {
+    try {
+      const detail = await api.getSession(sessionId);
+      setSessions((prev) => sortSessions(upsertSession(prev, detail.session)));
+      setMessages((prev) => ({
+        ...prev,
+        ...Object.fromEntries(
+          detail.messages.map((message) => [message.message_id, message]),
+        ),
+      }));
+      setRuns((prev) => {
+        const next = { ...prev };
+        detail.runs.forEach((run) => {
+          const merged = { ...run, events: prev[run.run_id]?.events ?? [] };
+          next[run.run_id] = normalizeReconciledRun(run.run_id, merged);
+        });
+        return next;
+      });
+    } catch {
+      // A deleted session can no longer be refreshed; keep current UI stable.
+    }
+  }
+
+  function applyRunEvent(event: RunEvent) {
+    const currentSnapshot = runsRef.current[event.run_id];
+    if (!currentSnapshot) return;
+    if (
+      currentSnapshot.events.some((item) => item.event_id === event.event_id) ||
+      processedEventsRef.current.has(event.event_id)
+    )
+      return;
+    processedEventsRef.current.add(event.event_id);
+
+    const cancelRequested = cancelRequestedRunIdsRef.current.has(event.run_id);
+    if (
+      event.event_type === "answer_delta" &&
+      (cancelRequested || isTerminal(currentSnapshot.status))
+    )
+      return;
+    if (event.event_type === "run_completed" && cancelRequested) {
+      closeRunSubscription(event.run_id);
+      setActiveSseRunId((value) => (value === event.run_id ? null : value));
+      return;
+    }
+
+    if (event.event_type === "answer_delta") {
+      const delta = String(event.payload?.delta ?? "");
+      setMessages((messagesPrev) => {
+        const message = messagesPrev[currentSnapshot.assistant_message_id];
+        if (!message) return messagesPrev;
+        return {
+          ...messagesPrev,
+          [message.message_id]: {
+            ...message,
+            content: message.content + delta,
+            status: "running",
+          },
+        };
+      });
+    }
+
+    if (event.event_type === "run_completed") {
+      closeRunSubscription(event.run_id);
+      setActiveSseRunId((value) => (value === event.run_id ? null : value));
+      setMessages((messagesPrev) =>
+        markAssistant(
+          messagesPrev,
+          currentSnapshot.assistant_message_id,
+          "completed",
+        ),
+      );
+      api
+        .getRun(event.run_id)
+        .then((detail) =>
+          setTraces((prevTrace) => ({
+            ...prevTrace,
+            [event.run_id]: detail.trace,
+          })),
+        )
+        .catch(() => undefined);
+    }
+
+    if (event.event_type === "run_failed") {
+      closeRunSubscription(event.run_id);
+      setActiveSseRunId((value) => (value === event.run_id ? null : value));
+      setMessages((messagesPrev) =>
+        markAssistant(
+          messagesPrev,
+          currentSnapshot.assistant_message_id,
+          "failed",
+        ),
+      );
+    }
+
+    if (event.event_type === "run_cancelled") {
+      cancelRequestedRunIdsRef.current.delete(event.run_id);
+      closeRunSubscription(event.run_id);
+      setActiveSseRunId((value) => (value === event.run_id ? null : value));
+      setMessages((messagesPrev) =>
+        markAssistant(
+          messagesPrev,
+          currentSnapshot.assistant_message_id,
+          "cancelled",
+        ),
+      );
+    }
+
+    setRuns((prev) => {
+      const current = prev[event.run_id];
+      if (!current) return prev;
+      if (current.events.some((item) => item.event_id === event.event_id))
+        return prev;
+      const events = [...current.events, event];
+      const next: Run = { ...current, events };
+      if (event.event_type === "thinking_started") next.status = "thinking";
+      if (event.event_type === "answer_streaming_started")
+        next.status = "streaming";
+      if (
+        event.event_type === "llm_call_started" &&
+        typeof event.payload?.model === "string"
+      )
+        next.model = event.payload.model;
+      if (event.event_type === "answer_delta") {
+        if (cancelRequested || isTerminal(current.status)) return prev;
+        next.status = "streaming";
+        const delta = String(event.payload?.delta ?? "");
+        next.live = {
+          streamed_chars: Number(
+            event.payload?.streamed_chars ??
+              (current.live?.streamed_chars ?? 0) + delta.length,
+          ),
+          current_label: "Answer is streaming...",
+        };
+      }
+      if (event.event_type === "run_completed") {
+        next.status = "completed";
+        next.latency_ms = nullableNumber(event.payload?.latency_ms);
+        next.prompt_tokens = nullableNumber(event.payload?.prompt_tokens);
+        next.completion_tokens = nullableNumber(
+          event.payload?.completion_tokens,
+        );
+        next.total_tokens = nullableNumber(event.payload?.total_tokens);
+        next.token_source =
+          event.payload?.token_source === "reported" ? "reported" : "estimated";
+        next.trace_saved = Boolean(event.payload?.trace_saved);
+        next.completed_at = event.created_at;
+      }
+      if (event.event_type === "run_failed") {
+        next.status = "failed";
+        next.error = event.payload?.error as Run["error"];
+        next.completed_at = event.created_at;
+      }
+      if (event.event_type === "run_cancelled") {
+        next.status = "cancelled";
+        next.completed_at = event.created_at;
+      }
+      return { ...prev, [event.run_id]: next };
+    });
+  }
+
+  function normalizeReconciledRun(runId: string, run: Run): Run {
+    if (
+      cancelRequestedRunIdsRef.current.has(runId) &&
+      run.status === "completed"
+    ) {
+      const existing = runsRef.current[runId];
+      return {
+        ...run,
+        status: "cancelled",
+        completed_at: run.completed_at ?? new Date().toISOString(),
+        events: [
+          ...(run.events ?? []),
+          {
+            event_id: `${runId}_local_cancelled`,
+            run_id: runId,
+            event_type: "run_cancelled",
+            message: "Run stopped locally; late completion ignored.",
+            payload: {},
+            created_at: new Date().toISOString(),
+          },
+        ],
+        live: existing?.live ?? run.live,
+      };
+    }
+    return run;
+  }
+
+  async function stop() {
+    if (!activeSseRunId || cancellingRunId) return;
+    const runId = activeSseRunId;
+    cancelRequestedRunIdsRef.current.add(runId);
+    setCancellingRunId(runId);
+    try {
+      await api.cancelRun(runId);
+      setMessages((messagesPrev) => {
+        const current = runsRef.current[runId];
+        return current
+          ? markAssistant(
+              messagesPrev,
+              current.assistant_message_id,
+              "cancelled",
+            )
+          : messagesPrev;
+      });
+      setRuns((prev) => {
+        const current = prev[runId];
+        if (!current) return prev;
+        return {
+          ...prev,
+          [runId]: {
+            ...current,
+            status: "cancelled",
+            completed_at: new Date().toISOString(),
+          },
+        };
+      });
+      await reconcileRun(runId);
+    } catch (error) {
+      cancelRequestedRunIdsRef.current.delete(runId);
+      notify(`Could not stop the run. ${friendlyError(error)}`);
+    } finally {
+      setCancellingRunId((value) => (value === runId ? null : value));
+    }
+  }
+
+  async function renameSession(id: string, title: string) {
+    setRenamingSessionIds((prev) => ({ ...prev, [id]: true }));
+    try {
+      const session = await api.renameSession(id, title);
+      setSessions((prev) =>
+        sortSessions(
+          prev.map((item) => (item.session_id === id ? session : item)),
+        ),
+      );
+    } catch (error) {
+      notify(`Could not rename this conversation. ${friendlyError(error)}`);
+    } finally {
+      setRenamingSessionIds((prev) => ({ ...prev, [id]: false }));
+    }
+  }
+
+  async function deleteSession(id: string) {
+    setDeletingSessionIds((prev) => ({ ...prev, [id]: true }));
+    try {
+      const sessionRunIds = Object.values(runsRef.current)
+        .filter((run) => run.session_id === id)
+        .map((run) => run.run_id);
+      const sessionMessageIds = Object.values(messagesRef.current)
+        .filter((message) => message.session_id === id)
+        .map((message) => message.message_id);
+      sessionRunIds.forEach((runId) => closeRunSubscription(runId));
+      await api.deleteSession(id);
+      clearStoredFeedback(sessionMessageIds);
+      setSessions((prev) => prev.filter((item) => item.session_id !== id));
+      setMessages((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).filter(
+            ([, message]) => message.session_id !== id,
+          ),
+        ),
+      );
+      setRuns((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).filter(([, run]) => run.session_id !== id),
+        ),
+      );
+      setTraces((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).filter(
+            ([runId]) => !sessionRunIds.includes(runId),
+          ),
+        ),
+      );
+      if (activeSessionId === id) newChat();
+    } catch (error) {
+      notify(`Could not delete this conversation. ${friendlyError(error)}`);
+    } finally {
+      setDeletingSessionIds((prev) => ({ ...prev, [id]: false }));
+    }
+  }
+
+  function openRun(runId: string) {
+    setSelectedRunId(runId);
+    setRunMarginOpen(true);
+    if (!traces[runId] && runs[runId]?.status === "completed")
+      void reconcileRun(runId, { silent: true });
+  }
+
+  function notify(message: string) {
+    const toast = {
+      id: `toast_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      message,
+    };
+    setToasts((prev) => [...prev, toast]);
+    setTimeout(
+      () => setToasts((prev) => prev.filter((item) => item.id !== toast.id)),
+      4200,
+    );
+  }
+
+  const shellClass = [
+    "app-shell",
+    empty ? "is-empty" : "has-chat",
+    sidebarCollapsed ? "sidebar-collapsed" : "",
+    runMarginOpen && selectedRunId ? "with-margin" : "",
+    theme === "dark" ? "theme-dark" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className={shellClass}>
+      <button
+        className="mobile-sidebar-button"
+        onClick={() => setSidebarCollapsed((value) => !value)}
+        aria-label="Toggle mobile sidebar"
+      >
+        ☰
+      </button>
+      <Sidebar
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        collapsed={sidebarCollapsed}
+        deletingSessionIds={deletingSessionIds}
+        renamingSessionIds={renamingSessionIds}
+        onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+        onNewChat={newChat}
+        onSelect={(id) => void loadSession(id)}
+        onRename={renameSession}
+        onDelete={deleteSession}
+      />
+      <ChatWorkspace
+        activeSessionId={activeSessionId}
+        messages={activeMessages}
+        runs={runs}
+        selectedRunId={selectedRunId}
+        input={input}
+        running={running}
+        submitting={isSubmittingRun}
+        cancelling={Boolean(cancellingRunId)}
+        onInput={setInput}
+        onSend={send}
+        onStop={stop}
+        onOpenRun={openRun}
+        modelOptions={modelOptions}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        theme={theme}
+        onToggleTheme={() =>
+          setTheme((value) => (value === "dark" ? "light" : "dark"))
+        }
+        handoffTriggerRunId={handoffTriggerRunId}
+      />
+      {runMarginOpen && selectedRunId ? (
+        <RunMargin
+          run={selectedRun}
+          trace={selectedRunId ? traces[selectedRunId] : null}
+          onClose={() => {
+            setSelectedRunId(null);
+            setRunMarginOpen(false);
+          }}
+        />
+      ) : null}
+      <ToastRegion toasts={toasts} />
+    </div>
+  );
+}
+
+function ToastRegion({ toasts }: { toasts: Toast[] }) {
+  return (
+    <div className="toast-region" aria-live="assertive">
+      {toasts.map((toast) => (
+        <div className="toast" key={toast.id}>
+          {toast.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function nullableNumber(value: unknown) {
+  return typeof value === "number" ? value : null;
+}
+function isTerminal(status: Run["status"]) {
+  return (
+    status === "completed" || status === "failed" || status === "cancelled"
+  );
+}
+function markAssistant(
+  messages: Record<string, Message>,
+  id: string,
+  status: Message["status"],
+) {
+  const message = messages[id];
+  if (!message) return messages;
+  return { ...messages, [id]: { ...message, status } };
+}
+function sortSessions(items: Session[]) {
+  return [...items].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+}
+function clearStoredFeedback(messageIds: string[]) {
+  try {
+    messageIds.forEach((messageId) =>
+      window.localStorage.removeItem(`agent_ladder_v01_feedback_${messageId}`),
+    );
+  } catch {
+    // Ignore storage cleanup failures; backend deletion is authoritative.
+  }
+}
+function upsertSession(items: Session[], session: Session) {
+  return items.some((item) => item.session_id === session.session_id)
+    ? items.map((item) =>
+        item.session_id === session.session_id ? session : item,
+      )
+    : [session, ...items];
+}
+function remapDraftSession(
+  messages: Record<string, Message>,
+  draftSessionId: string,
+  sessionId: string,
+) {
+  return Object.fromEntries(
+    Object.entries(messages).map(([id, message]) => [
+      id,
+      message.session_id === draftSessionId
+        ? { ...message, session_id: sessionId }
+        : message,
+    ]),
+  );
+}
+function createClientId(prefix: string) {
+  const random =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  return `${prefix}_${String(random).replace(/[^a-zA-Z0-9_-]/g, "")}`;
+}
+
+function isMobileViewport() {
+  try {
+    return window.matchMedia("(max-width: 900px)").matches;
+  } catch {
+    return false;
+  }
+}
+
+function readPersistedUi(): PersistedUi {
+  try {
+    const raw = window.localStorage.getItem(UI_STORAGE_KEY);
+    if (!raw)
+      return {
+        activeSessionId: null,
+        selectedRunId: null,
+        runMarginOpen: false,
+        sidebarCollapsed: false,
+      };
+    const value = JSON.parse(raw) as Partial<PersistedUi>;
+    return {
+      activeSessionId: value.activeSessionId ?? null,
+      selectedRunId: value.selectedRunId ?? null,
+      runMarginOpen: Boolean(value.runMarginOpen),
+      sidebarCollapsed: Boolean(value.sidebarCollapsed),
+    };
+  } catch {
+    return {
+      activeSessionId: null,
+      selectedRunId: null,
+      runMarginOpen: false,
+      sidebarCollapsed: false,
+    };
+  }
+}
+function persistUi(value: PersistedUi) {
+  try {
+    window.localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    /* ignore local storage failures */
+  }
+}
+function readTheme(): "light" | "dark" {
+  try {
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark"
+      ? "dark"
+      : "light";
+  } catch {
+    return "light";
+  }
+}
+function friendlyError(error: unknown) {
+  if (error instanceof ApiError)
+    return error.code ? `${error.code}` : `HTTP ${error.status}`;
+  if (error instanceof Error) return error.message;
+  return "Please try again.";
+}

@@ -1,0 +1,26 @@
+# DashScope model catalog for Agent Ladder local learning mode.
+# Runtime default is configs/default.yaml -> llm.model.
+# Quick switch options:
+#   PowerShell: $env:AGENT_LADDER_MODEL="qwen3.6-plus"; .\start.ps1
+#   Bash/WSL:    AGENT_LADDER_MODEL=qwen3.6-plus ./start.sh
+models:
+  flash:
+    model: qwen3.6-flash
+    label: Qwen 3.6 Flash
+    use_when: Fastest default for interactive UI demos.
+    enable_thinking: false
+  plus:
+    model: qwen3.6-plus
+    label: Qwen 3.6 Plus
+    use_when: Higher quality answers when latency is acceptable.
+    enable_thinking: true
+  legacy_flash:
+    model: qwen-flash
+    label: Qwen Flash
+    use_when: Fallback fast model if qwen3.6-flash is unavailable in the account/region.
+    enable_thinking: false
+  turbo:
+    model: qwen-turbo
+    label: Qwen Turbo
+    use_when: Older fast fallback for simple prompts.
+    enable_thinking: false

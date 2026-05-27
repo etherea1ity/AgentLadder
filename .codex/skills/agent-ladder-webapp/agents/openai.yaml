@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Ladder Webapp"
+  short_description: "Build Agent Ladder v0.1 webapp"
+  default_prompt: "Use the Agent Ladder Webapp skill to plan, implement, test, audit, and document the v0.1 Minimal Agent full-stack UI with SSE, Run Margin, JSONL persistence, and end-to-end validation."

@@ -1,0 +1,27 @@
+# Local planning drafts
+agent-ladder-roadmap.md
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Node
+node_modules/
+dist/
+apps/web/node_modules/
+apps/web/dist/
+apps/web/playwright-report/
+apps/web/test-results/
+
+# Local runtime data
+data/app/*.jsonl
+data/traces/*.jsonl
+*.egg-info/
+*.tsbuildinfo

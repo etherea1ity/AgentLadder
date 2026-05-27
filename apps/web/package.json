@@ -1,0 +1,35 @@
+{
+  "name": "agent-ladder-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "test": "vitest run --pool=threads --maxWorkers=1 --no-file-parallelism",
+    "test:e2e": "vitest run --pool=threads --maxWorkers=1 --no-file-parallelism src/App.e2e.test.tsx"
+  },
+  "dependencies": {
+    "@rive-app/canvas-advanced": "^2.37.8",
+    "@vitejs/plugin-react": "latest",
+    "katex": "^0.17.0",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "typescript": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "jsdom": "latest",
+    "vitest": "latest"
+  }
+}

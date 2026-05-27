@@ -1,0 +1,13 @@
+llm:
+  provider: dashscope
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  # Default for local v0.1 demos: fast + low-cost. Other choices live in configs/models.yaml.
+  model: qwen3.6-flash
+  temperature: 0.2
+  stream: true
+  # Keep off by default for faster visible answers. The UI never exposes raw reasoning.
+  enable_thinking: false
+
+tracing:
+  enabled: true
+  path: data/traces/runs.jsonl
