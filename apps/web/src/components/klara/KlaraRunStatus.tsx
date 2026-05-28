@@ -43,8 +43,7 @@ export function KlaraRunStatus({
       : run.status === "cancelled"
         ? "Stopped"
         : "Failed";
-  const accessibleText = `${statusText} · View run`;
-  const showViewRunText = active || expanded;
+  const accessibleText = statusText;
   return (
     <button
       data-klara-run-anchor={run.run_id}
@@ -79,12 +78,6 @@ export function KlaraRunStatus({
       <span className="klara-status-name">Klara</span>
       <span className="klara-status-dot">·</span>
       <span className="klara-status-copy">{statusText}</span>
-      {showViewRunText ? (
-        <>
-          <span className="klara-status-dot">·</span>
-          <span className="klara-view-run">View run</span>
-        </>
-      ) : null}
       <span className="klara-status-plain">{accessibleText}</span>
       {duration ? <span className="klara-status-time">{duration}</span> : null}
     </button>

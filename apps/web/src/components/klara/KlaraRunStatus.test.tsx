@@ -38,7 +38,7 @@ describe("KlaraRunStatus", () => {
     expect(container.querySelector(".klara-stamp")).not.toBeNull();
   });
 
-  it("keeps completed runs as a static stamp and exposes View run", () => {
+  it("keeps completed runs as a static stamp and keeps run details accessible", () => {
     const { container } = render(
       <KlaraRunStatus
         run={{ ...baseRun, status: "completed", latency_ms: 900 }}
@@ -48,6 +48,7 @@ describe("KlaraRunStatus", () => {
     );
     expect(container.querySelectorAll(".klara-presence.is-active")).toHaveLength(0);
     expect(container.querySelector(".klara-stamp")).not.toBeNull();
+    expect(screen.queryByText(/view run/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open run trace/i })).toBeInTheDocument();
   });
 });

@@ -293,7 +293,7 @@ describe("App e2e flow", () => {
     );
     MockEventSource.instances[0].onerror?.();
     await waitFor(() =>
-      expect(screen.getByText(/Completed · View run/)).toBeInTheDocument(),
+      expect(screen.getByText(/^Completed$/)).toBeInTheDocument(),
     );
     await userEvent.click(
       screen.getByRole("button", { name: /open run trace/i }),

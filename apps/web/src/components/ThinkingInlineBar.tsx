@@ -27,7 +27,7 @@ export function ThinkingInlineBar({ run, expanded, onOpen }: Props) {
 export function getRunLabel(run: Run): { label: string; meta?: string } {
   if (run.status === 'failed') return { label: 'Failed · Open details' };
   if (run.status === 'cancelled') return { label: 'Stopped · Partial answer saved' };
-  if (run.status === 'completed') return { label: 'Completed · View run', meta: formatLatency(run.latency_ms) };
+  if (run.status === 'completed') return { label: 'Completed', meta: formatLatency(run.latency_ms) };
   if (run.status === 'streaming') return { label: 'Writing · Streaming answer...' };
   if (run.status === 'queued') return { label: 'Queued · Preparing LLM call...' };
   return { label: 'Thinking · Calling the language model...' };

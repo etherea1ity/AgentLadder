@@ -569,8 +569,8 @@ button:disabled {
   left: auto;
   bottom: auto;
   transform: none;
-  width: min(740px, calc(100vw - 560px));
-  min-width: 520px;
+  width: min(740px, calc(100% - 56px));
+  min-width: 0;
   border-radius: 18px;
   padding: 0;
   overflow: hidden;
@@ -1827,7 +1827,7 @@ body,
   width: min(510px, 62vw);
 }
 .input-wrap.home-input {
-  width: min(760px, calc(100vw - 560px));
+  width: min(760px, calc(100% - 56px));
 }
 .chat-workspace.has-messages .message-list {
   gap: 8px;

@@ -7,7 +7,6 @@ import {
   type SetStateAction,
 } from "react";
 import type { KlaraVisualPhase, Run } from "../../types/domain";
-import { KlaraPresence } from "./KlaraPresence";
 
 type HandoffStage = "collecting" | "charging" | "linking" | "settling";
 
@@ -150,25 +149,6 @@ export function KlaraHandoffOverlay({ handoff }: { handoff: KlaraHandoff }) {
           ))}
         </div>
       ) : null}
-      <div
-        className={`klara-handoff-ghost is-${handoff.stage}`}
-        style={
-          {
-            "--from-x": `${handoff.fromX}px`,
-            "--from-y": `${handoff.fromY}px`,
-          } as CSSProperties
-        }
-        aria-hidden="true"
-      >
-        <KlaraPresence
-          active
-          phase={handoff.phase}
-          size="status"
-          capabilities={[]}
-          elevated
-          pulseKey={handoff.pulseKey}
-        />
-      </div>
     </>
   );
 }

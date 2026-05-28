@@ -26,7 +26,8 @@ describe('ThinkingInlineBar', () => {
 
   it('renders completed state without raw chain of thought', () => {
     render(<ThinkingInlineBar run={{ ...baseRun, status: 'completed', latency_ms: 2400 }} expanded={true} onOpen={() => {}} />);
-    expect(screen.getByRole('button', { name: /close run trace/i })).toHaveTextContent('Completed · View run');
+    expect(screen.getByRole('button', { name: /close run trace/i })).toHaveTextContent('Completed');
+    expect(screen.queryByText(/view run/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/chain-of-thought|reasoning_content/i)).not.toBeInTheDocument();
   });
 });

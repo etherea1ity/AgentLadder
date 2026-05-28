@@ -10,7 +10,7 @@ export function KlaraHero({ inputActive, pulseKey }: { inputActive: boolean; pul
         pulseKey={pulseKey}
         variant="hero"
       />
-      <img src="/brand/klara/klara-vertical-lockup-clean.png" alt="Klara Agent System" />
+      <img src="/brand/klara/klara-poster-lockup-reference.png" alt="Klara Agent System" />
     </div>
   );
 }

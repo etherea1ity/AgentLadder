@@ -131,15 +131,21 @@ function drawDot(
 }
 
 function phaseStrength(phase: KlaraVisualPhase, active: boolean, elevated: boolean, variant: Props["variant"]) {
+  if (variant === "hero") {
+    if (phase === "listening") return elevated || active ? 0.42 : 0.34;
+    if (phase === "completed") return 0.36;
+    if (phase === "error") return 0.34;
+    return active || elevated ? 0.34 : 0.18;
+  }
   if (phase === "error") return elevated ? 0.78 : 0.58;
   if (phase === "completed") return 0.74;
   if (phase === "writing") return elevated ? 0.9 : 0.78;
   if (phase === "thinking" || phase === "acting" || phase === "saving") {
     return elevated ? 0.9 : 0.78;
   }
-  if (phase === "listening") return variant === "hero" ? 0.82 : 0.66;
+  if (phase === "listening") return 0.66;
   if (active) return elevated ? 0.7 : 0.58;
-  return variant === "hero" ? 0.44 : 0.2;
+  return 0.2;
 }
 
 function seedParticles(count: number, variant: Props["variant"]): ParticleSeed[] {
@@ -182,13 +188,13 @@ function drawAmbientOrbitDots(
 ) {
   const dots = variant === "hero"
     ? [
-        { radius: 1.52, angle: 0.08, size: 0.024, alpha: 0.28 },
-        { radius: 1.78, angle: 0.92, size: 0.014, alpha: 0.16 },
-        { radius: 2.02, angle: 1.74, size: 0.017, alpha: 0.18 },
-        { radius: 2.28, angle: 2.9, size: 0.018, alpha: 0.19 },
-        { radius: 1.42, angle: 3.62, size: 0.012, alpha: 0.15 },
-        { radius: 1.62, angle: 4.38, size: 0.014, alpha: 0.16 },
-        { radius: 2.12, angle: 5.52, size: 0.016, alpha: 0.18 },
+        { radius: 1.52, angle: 0.08, size: 0.02, alpha: 0.11 },
+        { radius: 1.78, angle: 0.92, size: 0.012, alpha: 0.07 },
+        { radius: 2.02, angle: 1.74, size: 0.014, alpha: 0.08 },
+        { radius: 2.28, angle: 2.9, size: 0.014, alpha: 0.08 },
+        { radius: 1.42, angle: 3.62, size: 0.01, alpha: 0.06 },
+        { radius: 1.62, angle: 4.38, size: 0.012, alpha: 0.07 },
+        { radius: 2.12, angle: 5.52, size: 0.013, alpha: 0.08 },
       ]
     : [
         { radius: 1.42, angle: 0.3, size: 0.028, alpha: 0.18 },
@@ -199,7 +205,7 @@ function drawAmbientOrbitDots(
     const angle = reduceMotion ? dot.angle : cycleAngle(seconds, dot.angle + index * 0.18, index % 2 === 1);
     const x = cx + Math.cos(angle) * base * dot.radius;
     const y = cy + Math.sin(angle) * base * dot.radius;
-    drawDot(runtime, renderer, x, y, Math.max(1.1, base * dot.size), dot.alpha + strength * 0.08);
+    drawDot(runtime, renderer, x, y, Math.max(1.1, base * dot.size), dot.alpha + strength * (variant === "hero" ? 0.035 : 0.08));
   });
 }
 
@@ -259,7 +265,7 @@ export function KlaraRiveField({
       // field around the poster's actual sun-K body.
       const cx = p.variant === "hero" ? w * 0.515 : w / 2;
       const cy = p.variant === "hero" ? h * 0.44 : h / 2;
-      const base = Math.min(w, h) * (p.variant === "hero" ? 0.31 : 0.35);
+      const base = Math.min(w, h) * (p.variant === "hero" ? 0.29 : 0.35);
       const strength = phaseStrength(p.phase, p.active, p.elevated, p.variant);
       const pulse = Math.max(0, 1 - (time - pulseStartedAt) / 860);
       const breathe = reduceMotion ? 0.52 : (Math.sin(seconds * 1.02) + 1) / 2;
@@ -269,24 +275,47 @@ export function KlaraRiveField({
       const warm = p.phase !== "error";
 
       renderer.clear();
-      drawRadialHalo(
-        runtime,
-        renderer,
-        cx,
-        cy,
-        base * (1.42 + breathe * 0.16 + pulse * 0.12),
-        strength * (0.3 + breathe * 0.14) + pulse * (p.variant === "hero" ? 0.24 : 0.18),
-        warm,
-      );
       if (p.variant === "hero") {
-        drawRadialHalo(runtime, renderer, cx, cy, base * (2.06 + breathe * 0.2), 0.1 + strength * 0.14 + pulse * 0.1, warm);
+        drawRadialHalo(
+          runtime,
+          renderer,
+          cx,
+          cy,
+          base * (1.66 + breathe * 0.12 + pulse * 0.08),
+          strength * (0.12 + breathe * 0.05) + pulse * 0.08,
+          warm,
+        );
+        drawRadialHalo(
+          runtime,
+          renderer,
+          cx,
+          cy,
+          base * (2.22 + breathe * 0.16),
+          0.025 + strength * 0.045 + pulse * 0.04,
+          warm,
+        );
+      } else {
+        drawRadialHalo(
+          runtime,
+          renderer,
+          cx,
+          cy,
+          base * (1.42 + breathe * 0.16 + pulse * 0.12),
+          strength * (0.3 + breathe * 0.14) + pulse * 0.18,
+          warm,
+        );
       }
 
       const drift = reduceMotion ? 0 : cycleAngle(seconds, 0, false, orbitPeriod);
-      drawArc(runtime, renderer, cx, cy, base * 1.18, drift + 0.25, Math.PI * 0.52, 0.2 + strength * 0.2, Math.max(1, base * 0.014));
-      drawArc(runtime, renderer, cx, cy, base * 1.56, cycleAngle(seconds, 2.9, true, orbitPeriod), Math.PI * 0.38, 0.12 + strength * 0.12, Math.max(0.8, base * 0.009));
       if (p.variant === "hero") {
-        drawArc(runtime, renderer, cx, cy, base * 2.28, cycleAngle(seconds, 4.3, false, orbitPeriod), Math.PI * 0.34, 0.1 + strength * 0.12, Math.max(0.8, base * 0.007));
+        // The poster already contains the structural rings and stars. Keep the
+        // live layer extremely light so motion reads as optical presence rather
+        // than as a second diagram covering the illustration.
+        drawArc(runtime, renderer, cx, cy, base * 1.74, drift + 0.35, Math.PI * 0.34, 0.035 + strength * 0.055, Math.max(0.6, base * 0.0045));
+        drawArc(runtime, renderer, cx, cy, base * 2.1, cycleAngle(seconds, 4.3, false, orbitPeriod), Math.PI * 0.26, 0.02 + strength * 0.045, Math.max(0.5, base * 0.0036));
+      } else {
+        drawArc(runtime, renderer, cx, cy, base * 1.18, drift + 0.25, Math.PI * 0.52, 0.2 + strength * 0.2, Math.max(1, base * 0.014));
+        drawArc(runtime, renderer, cx, cy, base * 1.56, cycleAngle(seconds, 2.9, true, orbitPeriod), Math.PI * 0.38, 0.12 + strength * 0.12, Math.max(0.8, base * 0.009));
       }
       if (activeRunGlow) {
         drawArc(runtime, renderer, cx, cy, base * 0.9, cycleAngle(seconds, 1.4, false, orbitPeriod), Math.PI * 1.58, 0.1 + strength * 0.12, Math.max(0.8, base * 0.008));
