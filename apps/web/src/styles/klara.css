@@ -38,10 +38,13 @@
 }
 
 .klara-rive-hero {
-  inset: 0;
+  /* The hero orbit extends beyond the poster image. Give the canvas its own
+     safety area so arcs and orbit dust do not clip at the poster's top edge. */
+  top: -34%;
+  left: -14%;
   z-index: 4;
-  width: 100%;
-  height: 100%;
+  width: 128%;
+  height: 148%;
   mix-blend-mode: multiply;
   opacity: 0.58;
 }
@@ -129,8 +132,11 @@
   filter: drop-shadow(0 18px 34px rgba(184, 129, 47, 0.07));
   mix-blend-mode: normal;
   animation: klara-poster-breathe 7.2s ease-in-out infinite;
-  -webkit-mask-image: none;
-  mask-image: none;
+  /* The poster reference itself is cropped very close to the top edge.
+     A soft optical mask removes the visible rectangular edge without
+     redrawing or replacing the Klara art. */
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.18) 0%, #000 5.5%, #000 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.18) 0%, #000 5.5%, #000 100%);
 }
 .klara-hero::after {
   content: "";
@@ -355,6 +361,7 @@
   mix-blend-mode: screen;
 }
 .theme-dark .klara-hero::after {
+  display: block;
   background:
     radial-gradient(
       ellipse 74% 72% at 50% 45%,
@@ -715,4 +722,46 @@
 /* Keep the original poster lockup as the homepage body; motion stays in the Rive light field. */
 .klara-orb-layer.is-listening .klara-presence {
   transform: none;
+}
+
+
+/* Viewport-height responsive hero: browser zoom and short screens keep the
+   input usable while preserving the poster's proportions. */
+@media (max-height: 760px) {
+  .klara-hero {
+    width: min(720px, calc(100% - 72px), 62vh);
+    margin-bottom: clamp(8px, 1.6vh, 16px);
+  }
+}
+
+@media (max-height: 640px) {
+  .klara-hero {
+    width: min(620px, calc(100% - 84px), 54vh);
+  }
+}
+
+/* Home hero vertical budget. Keep at least one usable composer row visible;
+   the poster and optical field are the first elements to shrink. */
+.chat-workspace.is-empty .klara-hero {
+  width: min(820px, calc(100% - 48px), calc((100dvh - var(--topbar-h) - 210px) * 1.1));
+  min-width: min(280px, calc(100% - 48px));
+}
+
+@media (max-height: 760px) {
+  .chat-workspace.is-empty .klara-hero {
+    width: min(680px, calc(100% - 64px), calc((100dvh - var(--topbar-h) - 176px) * 1.08));
+  }
+}
+
+@media (max-height: 660px) {
+  .chat-workspace.is-empty .klara-hero {
+    width: min(560px, calc(100% - 76px), calc((100dvh - var(--topbar-h) - 132px) * 1.02));
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-height: 560px) {
+  .chat-workspace.is-empty .klara-hero {
+    width: min(420px, calc(100% - 92px), calc((100dvh - var(--topbar-h) - 96px) * 0.96));
+  }
 }

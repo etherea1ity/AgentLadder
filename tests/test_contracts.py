@@ -38,3 +38,18 @@ def test_minimal_prompt_builder_keeps_system_and_user_messages():
     assert "sunlight" in messages[0]["content"]
     assert "raw chain-of-thought" in messages[0]["content"]
     assert messages[1]["content"] == "What is an AI Agent?"
+
+
+def test_public_package_exports_and_unknown_usage_source():
+    from agent_ladder.core.contracts import AnswerState as ExportedAnswerState
+    from agent_ladder.core.contracts import AskState as ExportedAskState
+    from agent_ladder.core.contracts import RunLog as ExportedRunLog
+    from agent_ladder.core.runtime import MinimalAgent as ExportedMinimalAgent
+
+    ask = ExportedAskState(question="Hello")
+    run = ExportedRunLog(ask_id=ask.ask_id, model="unknown")
+
+    assert ExportedAnswerState.__name__ == "AnswerState"
+    assert ExportedMinimalAgent.__name__ == "MinimalAgent"
+    assert run.token_source == "unknown"
+    assert run.usage.source == "unknown"

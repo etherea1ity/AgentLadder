@@ -140,11 +140,14 @@ export default function App() {
     [messages, activeSessionId],
   );
   const empty = !activeSessionId || activeMessages.length === 0;
-  const running = Boolean(
-    activeSseRunId &&
-    runs[activeSseRunId] &&
-    !isTerminal(runs[activeSseRunId].status),
+  const activeSseRun = activeSseRunId ? runs[activeSseRunId] : null;
+  const runningInActiveSession = Boolean(
+    activeSseRun &&
+    activeSessionId &&
+    activeSseRun.session_id === activeSessionId &&
+    !isTerminal(activeSseRun.status),
   );
+  const running = runningInActiveSession;
   const busy = isSubmittingRun || running;
   const selectedRun = selectedRunId ? runs[selectedRunId] : null;
 
@@ -595,8 +598,7 @@ export default function App() {
           event.payload?.completion_tokens,
         );
         next.total_tokens = nullableNumber(event.payload?.total_tokens);
-        next.token_source =
-          event.payload?.token_source === "reported" ? "reported" : "estimated";
+        next.token_source = parseTokenSource(event.payload?.token_source);
         next.trace_saved = Boolean(event.payload?.trace_saved);
         next.completed_at = event.created_at;
       }
@@ -831,6 +833,12 @@ function ToastRegion({ toasts }: { toasts: Toast[] }) {
       ))}
     </div>
   );
+}
+
+
+function parseTokenSource(value: unknown): Run["token_source"] {
+  if (value === "reported" || value === "estimated" || value === "unknown") return value;
+  return null;
 }
 
 function nullableNumber(value: unknown) {

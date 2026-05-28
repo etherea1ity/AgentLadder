@@ -6,10 +6,11 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
+from agent_ladder.core.contracts.usage import TokenSource
+
 
 RunStatus = Literal["queued", "thinking", "streaming", "completed", "failed", "cancelled"]
 MessageStatus = Literal["idle", "running", "completed", "failed", "cancelled"]
-TokenSource = Literal["reported", "estimated"]
 RunEventType = Literal[
     "run_created",
     "thinking_started",

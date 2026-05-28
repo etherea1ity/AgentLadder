@@ -2359,3 +2359,164 @@ body,
     padding-left: 0;
   }
 }
+
+/* Klara composer state: focus wakes the mark even before text is sendable;
+   generation keeps it bright and faster through the Rive writing phase. */
+.send-button.is-klara-awake,
+.stop-button.is-klara-awake {
+  border-color: rgba(184, 129, 47, 0.44);
+  box-shadow:
+    0 12px 28px rgba(32, 39, 37, 0.08),
+    0 0 24px rgba(184, 129, 47, 0.16);
+}
+.input-wrap.is-focused .send-button.is-klara-awake:disabled {
+  opacity: 0.92;
+  filter: saturate(1.04);
+  cursor: default;
+  border-color: rgba(184, 129, 47, 0.36);
+  box-shadow:
+    0 12px 28px rgba(32, 39, 37, 0.07),
+    0 0 22px rgba(184, 129, 47, 0.14);
+}
+.input-wrap.is-running .stop-button.is-klara-awake,
+.input-wrap.is-running .send-button.is-klara-awake {
+  border-color: rgba(184, 129, 47, 0.62);
+  box-shadow:
+    0 14px 34px rgba(184, 129, 47, 0.18),
+    0 0 34px rgba(184, 129, 47, 0.28);
+}
+.theme-dark .input-wrap.is-focused .send-button.is-klara-awake:disabled {
+  opacity: 0.95;
+  filter: saturate(1.08) brightness(1.08);
+}
+
+@media (max-height: 760px) {
+  .home-stack {
+    padding-top: clamp(16px, 3.8vh, 34px);
+    padding-bottom: 28px;
+  }
+  .klara-hero {
+    width: min(720px, calc(100% - 72px), 62vh);
+    margin-bottom: clamp(8px, 1.6vh, 16px);
+  }
+  .input-wrap.home-input textarea {
+    min-height: 104px;
+    padding-top: 22px;
+  }
+  .home-hint {
+    margin-top: 18px;
+  }
+}
+
+@media (max-height: 640px) {
+  .klara-hero {
+    width: min(620px, calc(100% - 84px), 54vh);
+  }
+  .input-wrap.home-input textarea {
+    min-height: 88px;
+  }
+}
+
+/* Responsive correction pass: empty home may scroll on browser zoom, composer
+   controls wrap rather than squeezing the center rail, and selected Run Margin
+   remains reachable as an overlay below desktop-large width. */
+.chat-workspace.is-empty {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.input-footer,
+.input-tools {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.input-tools > span:last-child {
+  min-width: 0;
+}
+@media (max-width: 680px), (max-height: 640px) {
+  .input-tools > span:last-child,
+  .run-state-hint {
+    display: none;
+  }
+}
+@media (max-width: 1400px) {
+  .app-shell.with-margin .run-margin {
+    display: block;
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: min(360px, 92vw);
+    z-index: 42;
+    box-shadow: -18px 0 40px rgba(32, 39, 37, 0.1);
+  }
+}
+@media (max-width: 900px) {
+  .app-shell.with-margin .run-margin {
+    width: 100vw;
+  }
+}
+
+/* Home vertical budget: the composer is the non-negotiable element. The hero
+   shrinks first, then the home composer compacts, and only then the page scrolls. */
+.chat-workspace.is-empty .home-stack {
+  min-height: calc(100dvh - var(--topbar-h));
+  justify-content: flex-start;
+  gap: clamp(8px, 1.7vh, 18px);
+  padding-top: clamp(10px, 3.8vh, 54px);
+  padding-bottom: clamp(12px, 3vh, 34px);
+}
+.chat-workspace.is-empty .input-wrap.home-input {
+  flex: 0 0 auto;
+}
+.chat-workspace.is-empty .home-hint {
+  flex: 0 0 auto;
+  margin-top: clamp(8px, 1.8vh, 20px);
+}
+
+@media (max-height: 760px) {
+  .chat-workspace.is-empty .input-wrap.home-input textarea {
+    min-height: 86px;
+    padding: 20px 24px 12px;
+  }
+  .chat-workspace.is-empty .input-wrap.home-input .input-footer {
+    padding: 11px 16px;
+  }
+  .chat-workspace.is-empty .home-hint {
+    margin-top: 8px;
+  }
+}
+
+@media (max-height: 660px) {
+  .chat-workspace.is-empty .home-stack {
+    gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 10px;
+  }
+  .chat-workspace.is-empty .input-wrap.home-input textarea {
+    min-height: 64px;
+    padding: 16px 20px 8px;
+  }
+  .chat-workspace.is-empty .input-wrap.home-input .input-footer {
+    min-height: 42px;
+    padding: 8px 14px;
+  }
+  .chat-workspace.is-empty .home-hint {
+    display: none;
+  }
+}
+
+@media (max-height: 560px) {
+  .chat-workspace.is-empty .home-stack {
+    padding-top: 4px;
+    gap: 6px;
+  }
+  .chat-workspace.is-empty .input-wrap.home-input textarea {
+    min-height: 46px;
+    padding: 12px 18px 6px;
+    line-height: 1.35;
+  }
+  .chat-workspace.is-empty .input-wrap.home-input .input-footer {
+    min-height: 38px;
+    padding: 6px 12px;
+  }
+}

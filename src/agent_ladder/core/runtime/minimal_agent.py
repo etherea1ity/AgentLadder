@@ -6,11 +6,15 @@ from time import perf_counter
 from agent_ladder.core.contracts.answer import AnswerState
 from agent_ladder.core.contracts.ask import AskState
 from agent_ladder.core.contracts.run import RunLog
-from agent_ladder.core.contracts.usage import TokenUsage
+from agent_ladder.core.runtime.lifecycle import (
+    FAILED_ANSWER_TEXT,
+    build_answer_state,
+    build_run_log,
+    usage_or_estimate,
+)
 from agent_ladder.core.tracing.jsonl_tracer import JsonlTracer
 from agent_ladder.llm.base import BaseLLMClient
 from agent_ladder.llm.prompts.minimal import build_minimal_agent_messages
-from agent_ladder.llm.token_count import estimate_messages_tokens, estimate_text_tokens
 
 
 @dataclass(frozen=True)
@@ -36,34 +40,32 @@ class MinimalAgent:
         try:
             llm_response = self.llm_client.chat(messages=messages)
             latency_ms = int((perf_counter() - started_at) * 1000)
-            answer = AnswerState(
+            answer_text = llm_response.content
+            answer = build_answer_state(
                 ask_id=ask.ask_id,
-                answer=llm_response.content,
+                answer_text=answer_text,
                 model=llm_response.model,
             )
-            usage = _usage_or_estimate(
+            usage = usage_or_estimate(
                 prompt_tokens=llm_response.prompt_tokens,
                 completion_tokens=llm_response.completion_tokens,
                 messages=messages,
-                answer_text=llm_response.content,
+                answer_text=answer.answer,
             )
-            run = RunLog(
+            run = build_run_log(
                 ask_id=ask.ask_id,
                 model=llm_response.model,
                 latency_ms=latency_ms,
-                prompt_tokens=usage.input_tokens,
-                completion_tokens=usage.output_tokens,
-                total_tokens=usage.total_tokens,
-                token_source=usage.source,
+                usage=usage,
             )
         except Exception as error:
             latency_ms = int((perf_counter() - started_at) * 1000)
             answer = AnswerState(
                 ask_id=ask.ask_id,
-                answer="No answer was produced because the run failed.",
+                answer=FAILED_ANSWER_TEXT,
                 model="unknown",
             )
-            run = RunLog(
+            run = build_run_log(
                 ask_id=ask.ask_id,
                 model="unknown",
                 latency_ms=latency_ms,
@@ -77,18 +79,3 @@ class MinimalAgent:
             self.tracer.save(ask=ask, answer=answer, run=run, prompt_messages=messages, usage=run.usage)
 
         return MinimalAgentResult(ask=ask, answer=answer, run=run)
-
-
-def _usage_or_estimate(
-    *,
-    prompt_tokens: int | None,
-    completion_tokens: int | None,
-    messages: list[dict[str, str]],
-    answer_text: str,
-) -> TokenUsage:
-    reported = prompt_tokens is not None and completion_tokens is not None
-    return TokenUsage.from_provider_counts(
-        prompt_tokens=prompt_tokens if prompt_tokens is not None else estimate_messages_tokens(messages),
-        completion_tokens=completion_tokens if completion_tokens is not None else estimate_text_tokens(answer_text),
-        source="reported" if reported else "estimated",
-    )

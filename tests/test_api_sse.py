@@ -116,3 +116,34 @@ def test_api_estimates_tokens_when_provider_omits_usage(tmp_path):
     assert detail["run"]["completion_tokens"] > 0
     assert detail["run"]["total_tokens"] == detail["run"]["prompt_tokens"] + detail["run"]["completion_tokens"]
     assert detail["trace"]["usage"]["source"] == "estimated"
+
+
+def test_api_empty_stream_uses_consistent_fallback_answer_and_cleans_runtime(tmp_path):
+    class EmptyStreamingLLMClient(BaseLLMClient):
+        def chat(self, messages: list[Message]) -> LLMResponse:
+            return LLMResponse(content="", model="empty-llm")
+
+        def stream_chat(self, messages: list[Message]) -> Iterator[LLMStreamChunk]:
+            yield LLMStreamChunk(model="empty-llm", done=True)
+
+    store = JsonlAppStore(tmp_path / "app")
+    bus = SSEBus()
+    service = RunService(store=store, bus=bus, llm_client=EmptyStreamingLLMClient(), trace_path=str(tmp_path / "traces" / "runs.jsonl"))
+    app.dependency_overrides[get_store] = lambda: store
+    app.dependency_overrides[get_bus] = lambda: bus
+    app.dependency_overrides[get_run_service] = lambda: service
+    client = TestClient(app)
+
+    session = client.post("/api/sessions").json()
+    created = client.post("/api/runs", json={"session_id": session["session_id"], "question": "Return nothing"}).json()
+    detail = wait_for_terminal(client, created["run_id"])
+
+    messages = client.get(f"/api/sessions/{session['session_id']}").json()["messages"]
+    assistant = next(message for message in messages if message["role"] == "assistant")
+    assert assistant["content"] == "No answer was produced."
+    assert detail["trace"]["answer"]["answer"] == assistant["content"]
+    assert detail["run"]["token_source"] == "estimated"
+    assert detail["run"]["prompt_tokens"] > 0
+    assert detail["run"]["completion_tokens"] > 0
+    assert created["run_id"] not in service._threads
+    assert created["run_id"] not in service._cancel_requested

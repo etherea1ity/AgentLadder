@@ -118,7 +118,7 @@ function phaseForRun(run: Run, kind?: KlaraRunEventKind): KlaraVisualPhase {
   if (kind === 'web.search.started' || kind === 'web.page.read') return 'searching_web';
   if (kind === 'verification.started') return 'checking';
   if (run.status === 'streaming' || kind === 'answer.started' || kind === 'answer.token') return 'writing';
-  if (run.status === 'thinking' || kind === 'model.call.started') return 'thinking';
+  if (run.status === 'queued' || run.status === 'thinking' || kind === 'run.started' || kind === 'model.call.started') return 'thinking';
   return 'idle';
 }
 

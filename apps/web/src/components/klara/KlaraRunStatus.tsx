@@ -69,7 +69,7 @@ export function KlaraRunStatus({
             size="status"
             capabilities={active ? view.capabilities : ["trace"]}
             elevated={expanded || active || arrivalActive}
-            pulseKey={active ? run.events.length : arrivalActive ? 1 : 0}
+            pulseKey={active ? semanticPulseKey(run) : arrivalActive ? 1 : 0}
           />
         ) : (
           <KlaraStamp label="" />
@@ -82,4 +82,11 @@ export function KlaraRunStatus({
       {duration ? <span className="klara-status-time">{duration}</span> : null}
     </button>
   );
+}
+function semanticPulseKey(run: Run) {
+  const semanticEvents = run.events.filter(
+    (event) => event.event_type !== "answer_delta",
+  ).length;
+  const streamedBucket = Math.floor((run.live?.streamed_chars ?? 0) / 180);
+  return semanticEvents + streamedBucket;
 }

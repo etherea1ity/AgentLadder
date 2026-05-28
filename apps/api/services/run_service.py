@@ -5,14 +5,17 @@ from collections.abc import Callable
 from pathlib import Path
 from time import perf_counter
 
-from agent_ladder.core.contracts.answer import AnswerState
 from agent_ladder.core.contracts.ask import AskState
-from agent_ladder.core.contracts.run import RunLog
-from agent_ladder.core.contracts.usage import TokenUsage
+from agent_ladder.core.runtime.lifecycle import (
+    build_answer_state,
+    build_run_log,
+    final_answer_text,
+    usage_or_estimate,
+)
 from agent_ladder.core.tracing.jsonl_tracer import JsonlTracer
 from agent_ladder.llm.base import BaseLLMClient
 from agent_ladder.llm.prompts.minimal import build_minimal_agent_messages
-from agent_ladder.llm.token_count import estimate_messages_tokens, estimate_text_tokens
+from agent_ladder.llm.token_count import estimate_messages_tokens
 
 from apps.api.schemas import (
     CreateRunResponse,
@@ -116,10 +119,12 @@ class RunService:
         started = perf_counter()
         run = self.store.get_run(run_id)
         if run is None:
+            self._cleanup_run_runtime(run_id)
             return
         user_message = self.store.get_message(run.user_message_id)
         assistant_message = self.store.get_message(run.assistant_message_id)
         if user_message is None or assistant_message is None:
+            self._cleanup_run_runtime(run_id)
             return
 
         llm_client = self._llm_for_model(run.model)
@@ -163,25 +168,23 @@ class RunService:
                     self._emit(run_id, "answer_delta", "", {"delta": chunk.delta, "streamed_chars": len(answer_text)})
 
             latency_ms = int((perf_counter() - started) * 1000)
-            answer = AnswerState(ask_id=ask.ask_id, answer=answer_text or "No answer was produced.", model=model)
-            usage = _tokens_or_estimate(
+            final_text = final_answer_text(answer_text)
+            answer = build_answer_state(ask_id=ask.ask_id, answer_text=final_text, model=model)
+            usage = usage_or_estimate(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 estimated_prompt_tokens=estimated_prompt_tokens,
-                answer_text=answer_text,
+                answer_text=final_text,
             )
-            prompt_tokens = usage.input_tokens or 0
-            completion_tokens = usage.output_tokens or 0
-            total_tokens = usage.total_tokens or prompt_tokens + completion_tokens
-            run_log = RunLog(
+            prompt_count = usage.input_tokens or 0
+            completion_count = usage.output_tokens or 0
+            total_count = usage.total_tokens or prompt_count + completion_count
+            run_log = build_run_log(
                 run_id=run_id,
                 ask_id=ask.ask_id,
                 model=model,
                 latency_ms=latency_ms,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=total_tokens,
-                token_source=usage.source,
+                usage=usage,
             )
             JsonlTracer(Path(self.trace_path)).save(ask=ask, answer=answer, run=run_log, prompt_messages=messages, usage=usage)
             completed = current.model_copy(
@@ -190,25 +193,35 @@ class RunService:
                     "model": model,
                     "completed_at": now_iso(),
                     "latency_ms": latency_ms,
-                    "prompt_tokens": prompt_tokens,
-                    "completion_tokens": completion_tokens,
-                    "total_tokens": total_tokens,
+                    "prompt_tokens": prompt_count,
+                    "completion_tokens": completion_count,
+                    "total_tokens": total_count,
                     "token_source": usage.source,
                     "trace_saved": True,
                 }
             )
             self.store.save_run(completed)
-            self.store.update_message(assistant_message.model_copy(update={"status": "completed", "content": answer_text}))
-            self._emit(run_id, "llm_call_completed", "LLM call completed.", {"completion_tokens": completion_tokens})
+            self.store.update_message(assistant_message.model_copy(update={"status": "completed", "content": final_text}))
+            self._emit(
+                run_id,
+                "llm_call_completed",
+                "LLM call completed.",
+                {
+                    "prompt_tokens": prompt_count,
+                    "completion_tokens": completion_count,
+                    "total_tokens": total_count,
+                    "token_source": usage.source,
+                },
+            )
             self._emit(
                 run_id,
                 "run_completed",
                 "Run completed.",
                 {
                     "latency_ms": latency_ms,
-                    "prompt_tokens": prompt_tokens,
-                    "completion_tokens": completion_tokens,
-                    "total_tokens": total_tokens,
+                    "prompt_tokens": prompt_count,
+                    "completion_tokens": completion_count,
+                    "total_tokens": total_count,
                     "token_source": usage.source,
                     "trace_saved": True,
                 },
@@ -220,11 +233,17 @@ class RunService:
             self.store.save_run(failed)
             self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
             self._emit(run_id, "run_failed", "Run failed.", {"error": error.model_dump(mode="json")})
+        finally:
+            self._cleanup_run_runtime(run_id)
 
     def _emit(self, run_id: str, event_type, message: str, payload: dict) -> None:
         event = RunEventRecord(run_id=run_id, event_type=event_type, message=message, payload=payload)
         self.store.append_event(event)
         self.bus.publish(event)
+
+    def _cleanup_run_runtime(self, run_id: str) -> None:
+        self._cancel_requested.discard(run_id)
+        self._threads.pop(run_id, None)
 
     def _select_model(self, requested_model: str | None) -> str | None:
         model = requested_model or self.default_model
@@ -251,18 +270,3 @@ def _error_code(exc: Exception) -> str:
     if "api_key" in text or "api key" in text or "dashscope_api_key" in text:
         return "missing_api_key"
     return "run_failed"
-
-
-def _tokens_or_estimate(
-    *,
-    prompt_tokens: int | None,
-    completion_tokens: int | None,
-    estimated_prompt_tokens: int,
-    answer_text: str,
-) -> TokenUsage:
-    reported = prompt_tokens is not None and completion_tokens is not None
-    return TokenUsage.from_provider_counts(
-        prompt_tokens=prompt_tokens if prompt_tokens is not None else estimated_prompt_tokens,
-        completion_tokens=completion_tokens if completion_tokens is not None else estimate_text_tokens(answer_text),
-        source="reported" if reported else "estimated",
-    )

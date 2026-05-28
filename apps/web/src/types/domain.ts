@@ -55,7 +55,7 @@ export type Run = {
   prompt_tokens?: number | null;
   completion_tokens?: number | null;
   total_tokens?: number | null;
-  token_source?: 'reported' | 'estimated' | null;
+  token_source?: 'reported' | 'estimated' | 'unknown' | null;
   trace_saved?: boolean;
   error?: { code?: string | null; message: string; stage?: string | null } | null;
   events: RunEvent[];

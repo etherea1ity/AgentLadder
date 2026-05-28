@@ -259,18 +259,17 @@ export function KlaraRiveField({
       const seconds = time / 1000;
       const w = canvas.width;
       const h = canvas.height;
-      // The homepage poster is not visually centered on its sun mark: the
-      // KLARA wordmark sits lower, so a geometric center would put the optical
-      // field too low. Keep presence/handoff centered, but anchor the hero
-      // field around the poster's actual sun-K body.
-      const cx = p.variant === "hero" ? w * 0.515 : w / 2;
-      const cy = p.variant === "hero" ? h * 0.44 : h / 2;
-      const base = Math.min(w, h) * (p.variant === "hero" ? 0.29 : 0.35);
+      // The hero canvas is deliberately larger than the poster box to prevent
+      // upper orbit clipping. Its center therefore has to be mapped from the
+      // poster's sun-K position into the expanded canvas coordinate system.
+      const cx = p.variant === "hero" ? w * 0.512 : w / 2;
+      const cy = p.variant === "hero" ? h * 0.527 : h / 2;
+      const base = Math.min(w, h) * (p.variant === "hero" ? 0.225 : 0.35);
       const strength = phaseStrength(p.phase, p.active, p.elevated, p.variant);
       const pulse = Math.max(0, 1 - (time - pulseStartedAt) / 860);
       const breathe = reduceMotion ? 0.52 : (Math.sin(seconds * 1.02) + 1) / 2;
       const activeRunGlow = p.phase === "thinking" || p.phase === "writing" || p.phase === "acting" || p.phase === "saving";
-      const orbitPeriod = activeRunGlow ? 7.8 : 12;
+      const orbitPeriod = activeRunGlow ? 6.2 : 12;
       const orbitSeconds = activeRunGlow ? seconds * (12 / orbitPeriod) : seconds;
       const warm = p.phase !== "error";
 

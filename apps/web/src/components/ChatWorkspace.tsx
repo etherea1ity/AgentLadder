@@ -502,11 +502,13 @@ function ChatInput({
   onTypingPulse?: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [focused, setFocused] = useState(false);
   const selectedOption = modelOptions.find(
     (option) => option.model === selectedModel,
   );
   const busy = running || submitting || cancelling;
   const canSend = Boolean(input.trim()) && !submitting && !cancelling;
+  const klaraEngaged = running || submitting || canSend || focused;
   const buttonLabel = running
     ? cancelling
       ? "Stopping run"
@@ -522,14 +524,23 @@ function ChatInput({
   }, [input, home]);
 
   return (
-    <div className={`input-wrap ${home ? "home-input" : ""}`} data-klara-input-anchor>
+    <div
+      className={`input-wrap ${home ? "home-input" : ""} ${focused ? "is-focused" : ""} ${running || submitting ? "is-running" : ""}`}
+      data-klara-input-anchor
+    >
       <textarea
         ref={textareaRef}
         value={input}
         placeholder={placeholder}
         rows={home ? 3 : 1}
-        onFocus={() => onFocusChange?.(true)}
-        onBlur={() => onFocusChange?.(false)}
+        onFocus={() => {
+          setFocused(true);
+          onFocusChange?.(true);
+        }}
+        onBlur={() => {
+          setFocused(false);
+          onFocusChange?.(false);
+        }}
         onChange={(event) => {
           onInput(event.target.value);
           onTypingPulse?.();
@@ -560,7 +571,7 @@ function ChatInput({
           </span>
         ) : null}
         <button
-          className={running ? "stop-button" : "send-button"}
+          className={`${running ? "stop-button" : "send-button"} ${klaraEngaged ? "is-klara-awake" : ""}`}
           data-klara-composer-anchor
           onClick={running ? onStop : onSend}
           disabled={running ? cancelling : !canSend}
@@ -569,11 +580,11 @@ function ChatInput({
         >
           <span className="send-klara-mark" aria-hidden="true">
             <KlaraPresence
-              active={running || submitting || canSend}
-              phase={running || submitting ? "writing" : canSend ? "listening" : "idle"}
+              active={klaraEngaged}
+              phase={running || submitting ? "writing" : klaraEngaged ? "listening" : "idle"}
               size="status"
-              elevated={running || submitting}
-              pulseKey={running || submitting ? 1 : 0}
+              elevated={running || submitting || focused || canSend}
+              pulseKey={running || submitting ? 1 : focused ? 1 : input.length}
             />
           </span>
         </button>
