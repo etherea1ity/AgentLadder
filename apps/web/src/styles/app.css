@@ -1040,6 +1040,18 @@ hr {
     box-shadow: -18px 0 40px rgba(32, 39, 37, 0.08);
   }
 }
+@media (max-width: 1400px) {
+  .app-shell.with-margin,
+  .app-shell.sidebar-collapsed.with-margin {
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  }
+  .app-shell.sidebar-collapsed.with-margin {
+    grid-template-columns: var(--sidebar-collapsed-w) minmax(0, 1fr);
+  }
+  .run-margin {
+    display: none;
+  }
+}
 @media (max-width: 900px) {
   .app-shell,
   .app-shell.with-margin,
@@ -2285,5 +2297,65 @@ body,
   }
   .app-shell.sidebar-collapsed .mobile-sidebar-button {
     display: none;
+  }
+}
+
+/* Center-first responsive behavior: when space is tight, preserve the
+   composer/chat rail and let side panels become hidden/off-canvas surfaces. */
+@media (max-width: 1160px) {
+  .app-shell.is-empty,
+  .app-shell.is-empty.with-margin,
+  .app-shell.is-empty.sidebar-collapsed,
+  .app-shell.is-empty.sidebar-collapsed.with-margin {
+    grid-template-columns: 1fr;
+  }
+  .app-shell.is-empty .mobile-sidebar-button {
+    display: grid;
+    place-items: center;
+  }
+  .app-shell.is-empty.sidebar-collapsed .sidebar {
+    display: none;
+  }
+  .app-shell.is-empty:not(.sidebar-collapsed) .sidebar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(var(--sidebar-w), 86vw);
+    box-shadow: 18px 0 40px rgba(32, 39, 37, 0.12);
+  }
+  .app-shell.is-empty.sidebar-collapsed .chat-workspace {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 1060px) {
+  .app-shell.has-chat,
+  .app-shell.has-chat.with-margin,
+  .app-shell.has-chat.sidebar-collapsed,
+  .app-shell.has-chat.sidebar-collapsed.with-margin {
+    grid-template-columns: 1fr;
+  }
+  .app-shell.has-chat .mobile-sidebar-button {
+    display: grid;
+    place-items: center;
+  }
+  .app-shell.has-chat.sidebar-collapsed .sidebar {
+    display: none;
+  }
+  .app-shell.has-chat:not(.sidebar-collapsed) .sidebar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(var(--sidebar-w), 86vw);
+    box-shadow: 18px 0 40px rgba(32, 39, 37, 0.12);
+  }
+  .app-shell.has-chat.sidebar-collapsed .chat-workspace {
+    padding-left: 0;
   }
 }

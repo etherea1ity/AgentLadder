@@ -132,10 +132,10 @@ function drawDot(
 
 function phaseStrength(phase: KlaraVisualPhase, active: boolean, elevated: boolean, variant: Props["variant"]) {
   if (variant === "hero") {
-    if (phase === "listening") return elevated || active ? 0.42 : 0.34;
-    if (phase === "completed") return 0.36;
-    if (phase === "error") return 0.34;
-    return active || elevated ? 0.34 : 0.18;
+    if (phase === "listening") return elevated || active ? 0.72 : 0.5;
+    if (phase === "completed") return 0.52;
+    if (phase === "error") return 0.46;
+    return active || elevated ? 0.56 : 0.36;
   }
   if (phase === "error") return elevated ? 0.78 : 0.58;
   if (phase === "completed") return 0.74;
@@ -188,13 +188,13 @@ function drawAmbientOrbitDots(
 ) {
   const dots = variant === "hero"
     ? [
-        { radius: 1.52, angle: 0.08, size: 0.02, alpha: 0.11 },
-        { radius: 1.78, angle: 0.92, size: 0.012, alpha: 0.07 },
-        { radius: 2.02, angle: 1.74, size: 0.014, alpha: 0.08 },
-        { radius: 2.28, angle: 2.9, size: 0.014, alpha: 0.08 },
-        { radius: 1.42, angle: 3.62, size: 0.01, alpha: 0.06 },
-        { radius: 1.62, angle: 4.38, size: 0.012, alpha: 0.07 },
-        { radius: 2.12, angle: 5.52, size: 0.013, alpha: 0.08 },
+        { radius: 1.52, angle: 0.08, size: 0.022, alpha: 0.18 },
+        { radius: 1.78, angle: 0.92, size: 0.013, alpha: 0.12 },
+        { radius: 2.02, angle: 1.74, size: 0.015, alpha: 0.13 },
+        { radius: 2.28, angle: 2.9, size: 0.015, alpha: 0.13 },
+        { radius: 1.42, angle: 3.62, size: 0.011, alpha: 0.1 },
+        { radius: 1.62, angle: 4.38, size: 0.013, alpha: 0.11 },
+        { radius: 2.12, angle: 5.52, size: 0.014, alpha: 0.13 },
       ]
     : [
         { radius: 1.42, angle: 0.3, size: 0.028, alpha: 0.18 },
@@ -205,7 +205,7 @@ function drawAmbientOrbitDots(
     const angle = reduceMotion ? dot.angle : cycleAngle(seconds, dot.angle + index * 0.18, index % 2 === 1);
     const x = cx + Math.cos(angle) * base * dot.radius;
     const y = cy + Math.sin(angle) * base * dot.radius;
-    drawDot(runtime, renderer, x, y, Math.max(1.1, base * dot.size), dot.alpha + strength * (variant === "hero" ? 0.035 : 0.08));
+    drawDot(runtime, renderer, x, y, Math.max(1.1, base * dot.size), dot.alpha + strength * (variant === "hero" ? 0.07 : 0.08));
   });
 }
 
@@ -282,7 +282,7 @@ export function KlaraRiveField({
           cx,
           cy,
           base * (1.66 + breathe * 0.12 + pulse * 0.08),
-          strength * (0.12 + breathe * 0.05) + pulse * 0.08,
+          strength * (0.2 + breathe * 0.08) + pulse * 0.12,
           warm,
         );
         drawRadialHalo(
@@ -291,7 +291,7 @@ export function KlaraRiveField({
           cx,
           cy,
           base * (2.22 + breathe * 0.16),
-          0.025 + strength * 0.045 + pulse * 0.04,
+          0.045 + strength * 0.075 + pulse * 0.06,
           warm,
         );
       } else {
@@ -311,8 +311,8 @@ export function KlaraRiveField({
         // The poster already contains the structural rings and stars. Keep the
         // live layer extremely light so motion reads as optical presence rather
         // than as a second diagram covering the illustration.
-        drawArc(runtime, renderer, cx, cy, base * 1.74, drift + 0.35, Math.PI * 0.34, 0.035 + strength * 0.055, Math.max(0.6, base * 0.0045));
-        drawArc(runtime, renderer, cx, cy, base * 2.1, cycleAngle(seconds, 4.3, false, orbitPeriod), Math.PI * 0.26, 0.02 + strength * 0.045, Math.max(0.5, base * 0.0036));
+        drawArc(runtime, renderer, cx, cy, base * 1.74, drift + 0.35, Math.PI * 0.34, 0.06 + strength * 0.09, Math.max(0.6, base * 0.0048));
+        drawArc(runtime, renderer, cx, cy, base * 2.1, cycleAngle(seconds, 4.3, false, orbitPeriod), Math.PI * 0.26, 0.04 + strength * 0.07, Math.max(0.5, base * 0.0038));
       } else {
         drawArc(runtime, renderer, cx, cy, base * 1.18, drift + 0.25, Math.PI * 0.52, 0.2 + strength * 0.2, Math.max(1, base * 0.014));
         drawArc(runtime, renderer, cx, cy, base * 1.56, cycleAngle(seconds, 2.9, true, orbitPeriod), Math.PI * 0.38, 0.12 + strength * 0.12, Math.max(0.8, base * 0.009));

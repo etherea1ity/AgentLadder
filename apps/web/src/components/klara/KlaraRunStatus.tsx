@@ -31,7 +31,7 @@ export function KlaraRunStatus({
     );
   const view = useKlaraRunMotion(run);
   const active = isKlaraRunActive(run);
-  const showActivePresence = !handoffActive && ((active && visuallyActive) || arrivalActive);
+  const showActivePresence = (active && visuallyActive) || arrivalActive;
   const visualPhase = active ? view.phase : arrivalActive ? "completed" : view.phase;
   const duration =
     formatLatency(run.latency_ms) ||

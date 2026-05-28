@@ -43,7 +43,7 @@
   width: 100%;
   height: 100%;
   mix-blend-mode: multiply;
-  opacity: 0.28;
+  opacity: 0.58;
 }
 
 .klara-mark {
@@ -103,6 +103,20 @@
   isolation: isolate;
   overflow: visible;
 }
+.klara-hero::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 11% 8% 22%;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 51% 42%, rgba(236, 201, 130, 0.18), rgba(184, 129, 47, 0.07) 35%, rgba(184, 129, 47, 0) 70%);
+  filter: blur(18px);
+  opacity: 0.58;
+  transform: scale(0.98);
+  animation: klara-hero-breathe 6.8s ease-in-out infinite;
+}
 .klara-hero img {
   position: relative;
   z-index: 3;
@@ -114,6 +128,7 @@
   transform: none;
   filter: drop-shadow(0 18px 34px rgba(184, 129, 47, 0.07));
   mix-blend-mode: normal;
+  animation: klara-poster-breathe 7.2s ease-in-out infinite;
   -webkit-mask-image: none;
   mask-image: none;
 }
@@ -200,10 +215,6 @@
 }
 .conversation-turn .assistant-label .klara-status-row {
   margin-left: -3px;
-}
-.klara-status-row.is-receiving-handoff .klara-presence {
-  opacity: 0;
-  transform: scale(0.88);
 }
 .klara-status-row.is-receiving-handoff .klara-status-copy {
   opacity: 0.78;
@@ -400,16 +411,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .klara-rive-field {
+  .klara-rive-field:not(.klara-rive-hero) {
     display: none !important;
+  }
+  .klara-hero::before,
+  .klara-hero img {
+    animation: none !important;
   }
   .klara-orb-layer,
   .klara-presence {
     transition: none !important;
-  }
-  .klara-status-row.is-receiving-handoff .klara-presence {
-    opacity: 1;
-    transform: none;
   }
 }
 
@@ -618,6 +629,26 @@
   background: radial-gradient(circle, rgba(247, 221, 164, 0.9) 0%, rgba(212, 170, 102, 0.54) 46%, rgba(212, 170, 102, 0) 74%);
   filter: blur(0.12px) drop-shadow(0 0 9px rgba(212, 170, 102, 0.25));
 }
+@keyframes klara-hero-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.985);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.025);
+  }
+}
+@keyframes klara-poster-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 18px 34px rgba(184, 129, 47, 0.065)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 22px 42px rgba(184, 129, 47, 0.1)) brightness(1.025);
+  }
+}
 @keyframes klara-particle-collect {
   0% {
     opacity: 0;
@@ -674,11 +705,6 @@
 .klara-status-row.is-active .klara-status,
 .klara-status-row.is-receiving-handoff .klara-status {
   --klara-size: 34px;
-}
-.klara-status-row.is-receiving-handoff .klara-status-presence-slot {
-  opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 .klara-status-row:not(.is-receiving-handoff) .klara-status-presence-slot {
   opacity: 1;

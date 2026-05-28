@@ -148,6 +148,19 @@ export default function App() {
   const busy = isSubmittingRun || running;
   const selectedRun = selectedRunId ? runs[selectedRunId] : null;
 
+  useEffect(() => {
+    const protectCenterRail = () => {
+      const width = window.innerWidth;
+      const shouldCollapseSidebar = empty ? width <= 1160 : width <= 1060;
+      setSidebarCollapsed((current) =>
+        current === shouldCollapseSidebar ? current : shouldCollapseSidebar,
+      );
+    };
+    protectCenterRail();
+    window.addEventListener("resize", protectCenterRail);
+    return () => window.removeEventListener("resize", protectCenterRail);
+  }, [empty]);
+
   async function loadSession(
     sessionId: string,
     options: { restoreRunId?: string | null } = {},
