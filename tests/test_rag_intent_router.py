@@ -88,7 +88,7 @@ def test_klara_agent_uses_llm_router_json_and_structured_rag_modules(tmp_path):
                 record_id="idx_answerframe",
                 chunk_id="chunk_answerframe",
                 document_id="doc_ch02",
-                text="AnswerFrameV1 is Klara's structured RAG answer object with answer, sources, citations, used chunks, and run log.",
+                text="AnswerFrameV1 is Klara's structured RAG answer object with question, answer, and selected evidence.",
                 metadata=DocumentMetadata(
                     source_path="data/knowledge/ch02-rag-agent.md",
                     title="Chapter 2 Capability: RAG Agent",
@@ -170,5 +170,12 @@ def test_klara_agent_uses_llm_router_json_and_structured_rag_modules(tmp_path):
     assert completed[-1].output_payload["token_budget"] > 0
     assert completed[-1].output_payload["source_blocks"] == 1
     assert completed[-1].output_payload["sources"][0]["chunk_id"] == "chunk_answerframe"
+    assert completed[-1].output_payload["writer_input"]["question"] == "What is AnswerFrameV1?"
+    assert completed[-1].output_payload["writer_input"]["evidence"][0]["title"] == "Chapter 2 Capability: RAG Agent"
+    assert "selected evidence" in completed[-1].output_payload["writer_input"]["evidence"][0]["text"]
     assert "source_path" not in preparation.built_context.context_text
     assert "chunk_id" not in preparation.built_context.context_text
+    frame = agent.answer_frame(answer="It is question + answer + evidence.", question="What is AnswerFrameV1?", preparation=preparation)
+    assert frame.question == "What is AnswerFrameV1?"
+    assert frame.answer == "It is question + answer + evidence."
+    assert frame.evidence[0].title == "Chapter 2 Capability: RAG Agent"

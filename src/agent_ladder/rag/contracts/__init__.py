@@ -1,6 +1,6 @@
 """RAG contracts exported for the teaching pipeline."""
 
-from agent_ladder.rag.contracts.answer_frame import AnswerFrameV1
+from agent_ladder.rag.contracts.answer_frame import AnswerFrameV1, EvidenceItem, WriterInputFrame
 from agent_ladder.rag.contracts.chunk import TextChunk
 from agent_ladder.rag.contracts.context import BuiltContext
 from agent_ladder.rag.contracts.document import Document, DocumentMetadata
@@ -15,6 +15,7 @@ __all__ = [
     "Citation",
     "Document",
     "DocumentMetadata",
+    "EvidenceItem",
     "HybridSearchResult",
     "ModuleResult",
     "ModuleStatus",
@@ -27,4 +28,5 @@ __all__ = [
     "RouterInput",
     "SourceCard",
     "TextChunk",
+    "WriterInputFrame",
 ]

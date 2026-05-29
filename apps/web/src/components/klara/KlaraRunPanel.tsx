@@ -179,33 +179,53 @@ function buildRetrievalLayerCard(run: Run, modules: Map<string, ModuleResult>): 
   const rerankOut = rerank?.output_payload ?? {};
   const contextOut = context?.output_payload ?? {};
   const lanes: Lane[] = [];
+  const retrievalLatency = sumLatency(retrievalModules);
 
-  if (dense) lanes.push(moduleLane("Dense Retrieval", dense, [
-    { label: "algorithm", value: denseOut.algorithm ?? "cosine_similarity" },
-    { label: "index", value: denseOut.index ?? "local JSONL" },
-    { label: "top k", value: dense.input_payload?.top_k ?? denseOut.top_k },
-    { label: "candidates", value: denseOut.candidate_count },
-  ]));
-  if (bm25) lanes.push(moduleLane("Sparse Retrieval", bm25, [
-    { label: "algorithm", value: bm25Out.algorithm ?? "BM25" },
-    { label: "k1", value: bm25Out.k1 },
-    { label: "b", value: bm25Out.b },
-    { label: "candidates", value: bm25Out.candidate_count },
-  ]));
-  if (hybrid || rerank || context) {
+  if (dense || bm25) {
     lanes.push({
-      title: "Aggregate",
+      title: "Coarse Recall",
+      facts: [
+        { label: "dense", value: dense ? `${formatNumber(numberValue(denseOut.candidate_count))} candidates` : undefined },
+        { label: "dense latency", value: dense?.latency_ms != null ? formatLatency(dense.latency_ms) : undefined },
+        { label: "dense method", value: denseOut.algorithm ?? "cosine_similarity" },
+        { label: "sparse", value: bm25 ? `${formatNumber(numberValue(bm25Out.candidate_count))} candidates` : undefined },
+        { label: "sparse latency", value: bm25?.latency_ms != null ? formatLatency(bm25.latency_ms) : undefined },
+        { label: "sparse method", value: bm25Out.algorithm ?? "BM25" },
+      ],
+      payload: {
+        dense: { input: dense?.input_payload, output: dense?.output_payload },
+        sparse: { input: bm25?.input_payload, output: bm25?.output_payload },
+      },
+    });
+  }
+  if (hybrid) {
+    lanes.push({
+      title: "Fusion",
       facts: [
         { label: "fusion", value: hybridOut.algorithm ?? "weighted_score_fusion" },
         { label: "fused", value: hybridOut.candidate_count },
-        { label: "reranker", value: rerankOut.algorithm ?? "SimpleReranker" },
-        { label: "selected", value: rerankOut.selected_chunks },
-        { label: "context tokens", value: contextOut.token_estimate },
+        { label: "dense weight", value: hybridOut.dense_weight },
+        { label: "sparse weight", value: hybridOut.sparse_weight },
+        { label: "latency", value: hybrid.latency_ms != null ? formatLatency(hybrid.latency_ms) : undefined },
       ],
       payload: {
-        hybrid: { input: hybrid?.input_payload, output: hybrid?.output_payload },
+        input: hybrid.input_payload,
+        output: hybrid.output_payload,
+      },
+    });
+  }
+  if (rerank || context) {
+    lanes.push({
+      title: "Fine Reranking",
+      facts: [
+        { label: "reranker", value: rerankOut.algorithm ?? "SimpleReranker" },
+        { label: "rerank latency", value: rerank?.latency_ms != null ? formatLatency(rerank.latency_ms) : undefined },
+        { label: "selected", value: rerankOut.selected_chunks },
+        { label: "evidence tokens", value: contextOut.token_estimate },
+      ],
+      payload: {
         reranking: { input: rerank?.input_payload, output: rerank?.output_payload },
-        context: { input: context?.input_payload, output: context?.output_payload },
+        selected_evidence: contextOut.writer_input ?? { evidence: contextOut.sources },
       },
     });
   }
@@ -214,12 +234,13 @@ function buildRetrievalLayerCard(run: Run, modules: Map<string, ModuleResult>): 
     id: `${run.run_id}-retrieval-layer`,
     title: "RAG Retrieval",
     status: combinedStatus(retrievalModules, run),
-    description: "Dense and sparse recall, then aggregate evidence for the writer.",
+    description: "Coarse recall finds candidates; fusion and fine reranking select evidence for the writer.",
     facts: [
+      { label: "latency", value: retrievalLatency != null ? formatLatency(retrievalLatency) : undefined },
       { label: "dense", value: numberValue(denseOut.candidate_count) },
       { label: "sparse", value: numberValue(bm25Out.candidate_count) },
       { label: "selected", value: numberValue(rerankOut.selected_chunks) },
-      { label: "context tokens", value: numberValue(contextOut.token_estimate) },
+      { label: "evidence tokens", value: numberValue(contextOut.token_estimate) },
     ],
     events: [],
     lanes,
@@ -227,13 +248,13 @@ function buildRetrievalLayerCard(run: Run, modules: Map<string, ModuleResult>): 
       {
         title: "Structured JSON",
         value: {
-          dense: { input: dense?.input_payload, output: dense?.output_payload },
-          sparse: { input: bm25?.input_payload, output: bm25?.output_payload },
-          aggregate: {
-            hybrid: { input: hybrid?.input_payload, output: hybrid?.output_payload },
-            reranking: { input: rerank?.input_payload, output: rerank?.output_payload },
-            context: { input: context?.input_payload, output: context?.output_payload },
+          coarse_recall: {
+            dense: { input: dense?.input_payload, output: dense?.output_payload },
+            sparse: { input: bm25?.input_payload, output: bm25?.output_payload },
           },
+          fusion: { input: hybrid?.input_payload, output: hybrid?.output_payload },
+          fine_reranking: { input: rerank?.input_payload, output: rerank?.output_payload },
+          selected_evidence: contextOut.writer_input ?? { evidence: contextOut.sources },
         },
       },
     ],
@@ -243,15 +264,15 @@ function buildRetrievalLayerCard(run: Run, modules: Map<string, ModuleResult>): 
 function buildWriterCard(run: Run, module?: ModuleResult): RunActionCard | null {
   if (!module) return null;
   const output = module.output_payload ?? {};
-  const promptMessages = Array.isArray(output.prompt_messages) ? output.prompt_messages : [];
-  const systemPrompt = stringValue(objectValue(promptMessages.find((message) => objectValue(message)?.role === "system"))?.content);
+  const systemPrompt = stringValue(module.input_payload?.system_prompt);
+  const structuredInput = module.input_payload?.structured_input;
   return {
     id: `${run.run_id}-writer-layer`,
     title: "Writer",
     status: statusFromModule(module, run),
     description: "Writes the final answer from the selected context.",
     facts: [
-      { label: "model", value: run.model },
+      { label: "model", value: stringValue(output.model) ?? run.model },
       { label: "latency", value: module.latency_ms != null ? formatLatency(module.latency_ms) : undefined },
       { label: "input tokens", value: firstNumber(run.prompt_tokens, numberValue(output.prompt_tokens)) },
       { label: "output tokens", value: firstNumber(run.completion_tokens, numberValue(output.completion_tokens)) },
@@ -260,21 +281,17 @@ function buildWriterCard(run: Run, module?: ModuleResult): RunActionCard | null 
     events: [],
     details: [
       { title: "System prompt", value: systemPrompt },
-      { title: "Writer prompt", value: promptMessages },
+      { title: "Structured input", value: structuredInput },
       { title: "Answer frame", value: output.answer_frame },
     ],
   };
 }
 
-function moduleLane(title: string, module: ModuleResult, facts: Fact[]): Lane {
-  return {
-    title,
-    facts,
-    payload: {
-      input: module.input_payload,
-      output: module.output_payload,
-    },
-  };
+function sumLatency(modules: ModuleResult[]) {
+  const values = modules
+    .map((module) => module.latency_ms)
+    .filter((value): value is number => typeof value === "number");
+  return values.length ? values.reduce((total, value) => total + value, 0) : null;
 }
 
 function latestModuleMap(run: Run): Map<string, ModuleResult> {

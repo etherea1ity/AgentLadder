@@ -159,6 +159,12 @@ class RunService:
                     "route": preparation.route.route,
                     "context_token_estimate": preparation.built_context.token_estimate if preparation.built_context else 0,
                     "source_count": len(preparation.sources),
+                    "system_prompt": _system_prompt(preparation.messages),
+                    "structured_input": (
+                        preparation.writer_input.model_dump(mode="json")
+                        if preparation.writer_input
+                        else {"question": ask.question, "evidence": []}
+                    ),
                 },
             ).started()
             self._emit_module(run_id, writer_module)
@@ -209,30 +215,22 @@ class RunService:
                 usage=usage,
             )
             answer_frame = self.klara_agent.answer_frame(
+                question=ask.question,
                 answer=final_text,
                 preparation=preparation,
-                run_log={
-                    "run_id": run_id,
-                    "model": model,
-                    "latency_ms": latency_ms,
-                    "prompt_tokens": prompt_count,
-                    "completion_tokens": completion_count,
-                    "total_tokens": total_count,
-                    "token_source": usage.source,
-                },
             ) if preparation is not None else None
             if writer_module is not None:
                 writer_done = writer_module.completed(
                     output_summary=f"Generated answer with {completion_count} output tokens.",
                     output_payload={
                         "route": preparation.route.route if preparation else "direct",
+                        "model": model,
                         "prompt_tokens": prompt_count,
                         "completion_tokens": completion_count,
                         "total_tokens": total_count,
                         "token_source": usage.source,
                         "used_chunks": preparation.used_chunks if preparation else [],
                         "source_count": len(preparation.sources) if preparation else 0,
-                        "prompt_messages": messages,
                         "answer_frame": answer_frame.model_dump(mode="json") if answer_frame else None,
                     },
                 )
@@ -335,6 +333,13 @@ def _title_from_question(question: str) -> str:
         return "Untitled"
     title = " ".join(text.split()[:8])
     return title[:40]
+
+
+def _system_prompt(messages: list[dict[str, str]]) -> str:
+    for message in messages:
+        if message.get("role") == "system":
+            return message.get("content", "")
+    return ""
 
 
 def _error_code(exc: Exception) -> str:

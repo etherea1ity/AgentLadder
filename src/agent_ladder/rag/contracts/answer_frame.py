@@ -1,17 +1,36 @@
-"""Structured v0.2 RAG answer frame."""
+"""Structured v0.2 RAG writer and answer frames."""
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from agent_ladder.rag.contracts.route import RouteName
-from agent_ladder.rag.contracts.source import Citation, SourceCard
+
+class EvidenceItem(BaseModel):
+    """One selected evidence block that can safely be shown to the writer/UI."""
+
+    rank: int
+    title: str | None = None
+    text: str
+    score: float | None = None
+    concept: str | None = None
+
+
+class WriterInputFrame(BaseModel):
+    """The minimal RAG input contract for the writer LLM."""
+
+    question: str
+    evidence: list[EvidenceItem] = Field(default_factory=list)
 
 
 class AnswerFrameV1(BaseModel):
+    """The final answer plus the evidence it was grounded in.
+
+    Runtime metadata such as route, token usage, and run ids belongs in RunLog
+    or module traces, not in the answer frame itself.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: str
     answer: str
-    route: RouteName
-    sources: list[SourceCard] = Field(default_factory=list)
-    citations: list[Citation] = Field(default_factory=list)
-    used_chunks: list[str] = Field(default_factory=list)
-    run_log: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
+    evidence: list[EvidenceItem] = Field(default_factory=list)

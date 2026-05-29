@@ -91,11 +91,14 @@ def test_api_run_lifecycle_events_trace_and_delete(tmp_path):
     ]
     assert writer_modules
     writer_output = writer_modules[-1]["output_payload"]
-    assert writer_output["prompt_messages"][0]["role"] == "system"
-    assert "source_path" not in writer_output["prompt_messages"][-1]["content"]
-    assert "chunk_id:" not in writer_output["prompt_messages"][-1]["content"]
+    writer_input = writer_modules[-1]["input_payload"]
+    assert "Klara" in writer_input["system_prompt"]
+    assert writer_input["structured_input"]["question"] == "What is an AI Agent?"
+    assert writer_input["structured_input"]["evidence"] == []
+    assert "prompt_messages" not in writer_output
     assert writer_output["answer_frame"]["answer"] == detail["trace"]["answer"]["answer"]
-    assert writer_output["answer_frame"]["run_log"]["token_source"] == "reported"
+    assert writer_output["answer_frame"]["question"] == "What is an AI Agent?"
+    assert writer_output["answer_frame"]["evidence"] == []
 
     stream_text = client.get(f"/api/runs/{run_id}/events/stream").text
     assert "event: run_created" in stream_text

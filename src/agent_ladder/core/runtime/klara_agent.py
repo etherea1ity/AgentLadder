@@ -11,7 +11,17 @@ from pydantic import BaseModel, Field
 from agent_ladder.llm.base import BaseLLMClient, Message
 from agent_ladder.rag.citations import build_citations, build_source_cards
 from agent_ladder.rag.context import ContextBuilder
-from agent_ladder.rag.contracts import AnswerFrameV1, BuiltContext, Citation, ModuleResult, RouteDecision, RouterInput, SourceCard
+from agent_ladder.rag.contracts import (
+    AnswerFrameV1,
+    BuiltContext,
+    Citation,
+    EvidenceItem,
+    ModuleResult,
+    RouteDecision,
+    RouterInput,
+    SourceCard,
+    WriterInputFrame,
+)
 from agent_ladder.rag.embeddings.base import BaseEmbedder
 from agent_ladder.rag.indexing.build_local_index import build_local_index_records
 from agent_ladder.rag.indexing.local_index_store import LocalIndexStore
@@ -30,6 +40,7 @@ class KlaraRunPreparation(BaseModel):
     sources: list[SourceCard] = Field(default_factory=list)
     citations: list[Citation] = Field(default_factory=list)
     used_chunks: list[str] = Field(default_factory=list)
+    writer_input: WriterInputFrame | None = None
     modules: list[ModuleResult] = Field(default_factory=list)
 
 
@@ -198,6 +209,7 @@ class KlaraAgent:
         ).started()
         emit(context_module)
         built_context = self.context_builder.build(retrieval_query, reranked)
+        writer_input = build_writer_input_frame(question, built_context)
         context_done = context_module.completed(
             output_summary=f"Built context with about {built_context.token_estimate} tokens.",
             output_payload={
@@ -206,6 +218,7 @@ class KlaraAgent:
                 "source_blocks": len(built_context.source_summaries),
                 "deduped_chunks": max(0, len(reranked) - len(built_context.selected_chunks)),
                 "sources": built_context.source_summaries,
+                "writer_input": writer_input.model_dump(mode="json"),
             },
         )
         emit(context_done)
@@ -219,17 +232,15 @@ class KlaraAgent:
             sources=sources,
             citations=citations,
             used_chunks=[item.record.chunk_id for item in reranked],
+            writer_input=writer_input,
             modules=modules,
         )
 
-    def answer_frame(self, *, answer: str, preparation: KlaraRunPreparation, run_log: dict[str, Any]) -> AnswerFrameV1:
+    def answer_frame(self, *, question: str, answer: str, preparation: KlaraRunPreparation) -> AnswerFrameV1:
         return AnswerFrameV1(
+            question=question,
             answer=answer,
-            route=preparation.route.route,
-            sources=preparation.sources,
-            citations=preparation.citations,
-            used_chunks=preparation.used_chunks,
-            run_log=run_log,
+            evidence=preparation.writer_input.evidence if preparation.writer_input else [],
         )
 
     def _load_or_build_records(self):
@@ -281,3 +292,19 @@ def _hybrid_payload(item) -> dict[str, Any]:
 
 def _rerank_payload(item) -> dict[str, Any]:
     return {**_record_payload(item.record), "rank": item.rank, "score": round(item.score, 4), "hybrid_score": round(item.hybrid_score, 4), "bonuses": item.bonuses}
+
+
+def build_writer_input_frame(question: str, context: BuiltContext) -> WriterInputFrame:
+    return WriterInputFrame(
+        question=question,
+        evidence=[
+            EvidenceItem(
+                rank=item.rank,
+                title=item.record.metadata.title or item.record.document_id,
+                text=item.record.text.strip(),
+                score=round(item.score, 4),
+                concept=item.record.metadata.chapter,
+            )
+            for item in context.selected_chunks
+        ],
+    )
