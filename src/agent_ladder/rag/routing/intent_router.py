@@ -1,46 +1,85 @@
-"""Rule-based v0.2 intent router."""
+"""LLM-backed JSON intent router with deterministic fallback."""
 
 from __future__ import annotations
 
-from agent_ladder.rag.contracts.route import RouteDecision
-from agent_ladder.rag.retrieval.tokenizer import tokenize
+import json
+import re
+from typing import Any
 
-_RAG_TERMS = {
-    "klara",
-    "ladder",
-    "agentladder",
-    "chapter",
-    "v0.1",
-    "v0.2",
-    "minimal",
-    "rag",
-    "askstate",
-    "answerstate",
-    "runlog",
-    "answerframev1",
-    "sourcecard",
-    "citation",
-    "retrieval",
-    "chunk",
-    "embedding",
-    "bm25",
-    "hybrid",
-    "metadata",
+from agent_ladder.llm.base import BaseLLMClient, Message
+from agent_ladder.rag.contracts.route import RouteDecision, RouterInput
+from agent_ladder.rag.routing.rule_intent_router import RuleIntentRouter
+
+_ROUTER_SYSTEM = """You are Klara's v0.2 RAG intent router.
+Decide whether the user's question needs the local Agent Ladder/Klara knowledge base.
+Return ONLY valid JSON. Do not include markdown, explanations, or chain-of-thought.
+
+Schema:
+{
+  "route": "direct" | "rag",
+  "reason": "short public reason",
+  "confidence": number between 0 and 1,
+  "needs_local_knowledge": boolean,
+  "query_type": "general_chat" | "project_knowledge" | "chapter_question" | "technical_question" | "ambiguous",
+  "rewritten_query": string or null,
+  "matched_terms": string[]
 }
-_DIRECT_TERMS = {"hi", "hello", "hey", "你好", "谢谢", "thanks"}
+
+Choose "rag" when the question asks about Klara, Agent Ladder, this repository, a chapter, local docs, RAG concepts in this course, or named project states such as AskState, RunLog, SourceCard, Citation, or AnswerFrameV1.
+Choose "direct" for greetings, general conversation, or questions that do not need local project knowledge.
+"""
 
 
 class IntentRouter:
-    def route(self, question: str) -> RouteDecision:
-        tokens = set(tokenize(question))
-        normalized = question.strip().lower()
-        matched = sorted(tokens & _RAG_TERMS)
-        if "agent" in tokens and "ladder" in tokens and "agent" not in matched:
-            matched.append("agent")
-        if matched:
-            return RouteDecision(route="rag", reason="The question mentions Klara, the course, or RAG-specific project terms.", confidence=0.86, matched_terms=matched)
-        if normalized in _DIRECT_TERMS or len(tokens) <= 2:
-            return RouteDecision(route="direct", reason="The question looks like a short greeting or general chat.", confidence=0.72, matched_terms=[])
-        if any(term in normalized for term in ["this project", "this repo", "knowledge", "source", "资料", "章节", "克拉拉"]):
-            return RouteDecision(route="rag", reason="The question appears to ask about local project knowledge.", confidence=0.78, matched_terms=[])
-        return RouteDecision(route="direct", reason="No local-knowledge signal was detected, so Klara can answer directly.", confidence=0.62, matched_terms=[])
+    """Route through an LLM JSON call when available, then fall back safely."""
+
+    def __init__(self, llm_client: BaseLLMClient | None = None, fallback: RuleIntentRouter | None = None) -> None:
+        self.llm_client = llm_client
+        self.fallback = fallback or RuleIntentRouter()
+        self.last_raw_output: str | None = None
+        self.last_error: str | None = None
+
+    def route(self, question: str | RouterInput, llm_client: BaseLLMClient | None = None) -> RouteDecision:
+        router_input = question if isinstance(question, RouterInput) else RouterInput(question=question)
+        client = llm_client or self.llm_client
+        self.last_raw_output = None
+        self.last_error = None
+        if client is None:
+            return self.fallback.route(router_input)
+
+        try:
+            response = client.chat(_router_messages(router_input))
+            self.last_raw_output = response.content
+            payload = _extract_json_object(response.content)
+            decision = RouteDecision.model_validate(payload)
+            if decision.route == "rag" and not decision.rewritten_query:
+                decision = decision.model_copy(update={"rewritten_query": router_input.question})
+            return decision.model_copy(update={"router_model": response.model, "fallback_used": False})
+        except Exception as exc:
+            self.last_error = str(exc)
+            fallback_decision = self.fallback.route(router_input)
+            return fallback_decision.model_copy(update={"fallback_used": True})
+
+
+def _router_messages(router_input: RouterInput) -> list[Message]:
+    return [
+        {"role": "system", "content": _ROUTER_SYSTEM},
+        {"role": "user", "content": json.dumps(router_input.model_dump(mode="json"), ensure_ascii=False)},
+    ]
+
+
+def _extract_json_object(content: str) -> dict[str, Any]:
+    text = content.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+        if not match:
+            raise
+        value = json.loads(match.group(0))
+    if not isinstance(value, dict):
+        raise ValueError("router response must be a JSON object")
+    return value

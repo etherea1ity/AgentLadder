@@ -5,22 +5,22 @@ type Step = [KlaraRunEventKind, string, KlaraCapabilityChip[]?, number?];
 
 const scenarios: Record<Scenario, Step[]> = {
   minimal: [
-    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['answer.completed', 'AnswerState completed'], ['runlog.created', 'RunLog created', ['trace']], ['trace.saved', 'Trace saved', ['trace']], ['run.completed', 'Completed', ['trace']]
+    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['answer.completed', 'AnswerState completed'], ['run.completed', 'Completed', ['model']]
   ],
   calculator: [
-    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['tool.call.started', 'Calling calculator...', ['tool']], ['tool.call.completed', 'Calculator returned observation', ['tool']], ['observation.created', 'Observation created', ['tool']], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['trace.saved', 'Trace saved', ['trace']], ['run.completed', 'Completed', ['trace']]
+    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['tool.call.started', 'Calling calculator...', ['tool']], ['tool.call.completed', 'Calculator returned observation', ['tool']], ['observation.created', 'Observation created', ['tool']], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['run.completed', 'Completed', ['model']]
   ],
   rag: [
-    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['retrieval.started', 'Searching local knowledge...', ['rag']], ['chunk.retrieved', 'Reading retrieved chunks...', ['rag']], ['source.selected', 'Selecting useful source...', ['rag']], ['sourcecard.created', 'Source card created', ['rag']], ['answer.started', 'Grounding answer in sources...', ['model', 'rag']], ['citation.created', 'Adding citations...', ['rag']], ['trace.saved', 'Trace saved', ['trace']], ['run.completed', 'Completed', ['trace']]
+    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['retrieval.started', 'Searching local knowledge...', ['rag']], ['chunk.retrieved', 'Reading retrieved chunks...', ['rag']], ['source.selected', 'Selecting useful source...', ['rag']], ['sourcecard.created', 'Source card created', ['rag']], ['answer.started', 'Grounding answer in sources...', ['model', 'rag']], ['citation.created', 'Adding citations...', ['rag']], ['run.completed', 'Completed', ['model']]
   ],
   web: [
-    ['run.started', 'Received question'], ['web.search.started', 'Searching the web...', ['web']], ['web.page.read', 'Reading pages...', ['web']], ['verification.started', 'Cross-checking sources...', ['verify', 'web']], ['answer.started', 'Writing answer...', ['model', 'web']], ['run.completed', 'Completed', ['trace']]
+    ['run.started', 'Received question'], ['web.search.started', 'Searching the web...', ['web']], ['web.page.read', 'Reading pages...', ['web']], ['verification.started', 'Cross-checking sources...', ['verify', 'web']], ['answer.started', 'Writing answer...', ['model', 'web']], ['run.completed', 'Completed', ['model']]
   ],
   error: [
     ['run.started', 'Received question'], ['model.call.started', 'Calling model...', ['model']], ['run.error', 'Run failed', ['model']]
   ],
   loop: [
-    ['run.started', 'Received question'], ['loop.started', 'Loop 1 · deciding next step...', ['rag'], 1], ['retrieval.started', 'Searching local knowledge...', ['rag'], 1], ['loop.started', 'Loop 2 · checking evidence...', ['rag', 'verify'], 2], ['verification.started', 'Checking evidence...', ['verify'], 2], ['answer.started', 'Writing answer...', ['model'], 2], ['trace.saved', 'Trace saved', ['trace']], ['run.completed', 'Completed', ['trace']]
+    ['run.started', 'Received question'], ['loop.started', 'Loop 1 · deciding next step...', ['rag'], 1], ['retrieval.started', 'Searching local knowledge...', ['rag'], 1], ['loop.started', 'Loop 2 · checking evidence...', ['rag', 'verify'], 2], ['verification.started', 'Checking evidence...', ['verify'], 2], ['answer.started', 'Writing answer...', ['model'], 2], ['run.completed', 'Completed', ['model']]
   ]
 };
 
@@ -49,8 +49,7 @@ function conceptForKind(kind: KlaraRunEventKind) {
   if (kind.startsWith('retrieval') || kind.startsWith('chunk') || kind.startsWith('source')) return 'Retriever';
   if (kind.startsWith('tool') || kind.startsWith('observation')) return 'Tool';
   if (kind.startsWith('web')) return 'WebSearch';
-  if (kind.includes('trace')) return 'Trace';
-  if (kind.includes('runlog')) return 'RunLog';
+    if (kind.includes('runlog')) return 'RunLog';
   if (kind.includes('ask')) return 'AskState';
   return 'Run';
 }

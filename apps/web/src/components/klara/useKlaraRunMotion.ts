@@ -76,7 +76,7 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
     case 'llm_call_completed':
       return { ...base, kind: 'model.call.completed', status: 'completed', publicLabel: 'Model call completed', publicDetail: 'The selected model finished returning the answer.', concept: 'LLMClient', capabilities: ['model'] };
     case 'run_completed':
-      return { ...base, kind: 'run.completed', status: 'completed', publicLabel: 'Completed', publicDetail: 'Klara saved the run log and trace.', concept: 'RunLog', capabilities: ['trace'] };
+      return { ...base, kind: 'run.completed', status: 'completed', publicLabel: 'Completed', publicDetail: 'Klara completed the public answer.', concept: 'AnswerState', capabilities: ['model'] };
     case 'run_failed':
       return { ...base, kind: 'run.error', status: 'failed', publicLabel: 'Run failed', publicDetail: String(run.error?.message ?? 'The run failed.'), capabilities: ['model'] };
     case 'run_cancelled':
@@ -96,8 +96,6 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
         capabilities: capabilitiesForModule(moduleResult?.module_id),
       };
     }
-    case 'trace_saved':
-      return { ...base, kind: 'trace.saved', status: 'completed', publicLabel: 'Trace saved', publicDetail: 'Klara saved the public run trace.', concept: 'RunLog', capabilities: ['trace'] };
     default:
       return null;
   }
@@ -109,7 +107,6 @@ function kindForModule(moduleId?: string, eventType?: string): KlaraRunEventKind
   if (moduleId === 'reranking') return 'verification.started';
   if (moduleId === 'context_builder') return 'source.selected';
   if (moduleId === 'klara_writer') return eventType === 'module_completed' ? 'answer.completed' : 'answer.started';
-  if (moduleId === 'trace_saved') return 'trace.saved';
   return 'run.started';
 }
 
@@ -117,9 +114,8 @@ function capabilitiesForModule(moduleId?: string): KlaraCapabilityChip[] {
   if (moduleId === 'intent_router') return ['model'];
   if (moduleId === 'dense_retrieval' || moduleId === 'bm25_retrieval' || moduleId === 'hybrid_retrieval') return ['rag'];
   if (moduleId === 'reranking') return ['verify'];
-  if (moduleId === 'context_builder') return ['rag', 'trace'];
+  if (moduleId === 'context_builder') return ['rag'];
   if (moduleId === 'klara_writer') return ['model'];
-  if (moduleId === 'trace_saved') return ['trace'];
   return ['model'];
 }
 
@@ -141,15 +137,15 @@ function synthesizeCurrentEvent(run: Run): KlaraRunEvent {
     status: run.status === 'failed' || run.status === 'cancelled' ? 'failed' : run.status === 'completed' ? 'completed' : 'progress',
     publicLabel: labelForStatus(run.status),
     publicDetail: detailForRun(run),
-    concept: run.status === 'completed' ? 'RunLog' : 'LLMClient',
-    capabilities: run.status === 'completed' ? ['trace'] : ['model']
+    concept: run.status === 'completed' ? 'AnswerState' : 'LLMClient',
+    capabilities: ['model']
   };
 }
 
 function phaseForRun(run: Run, kind?: KlaraRunEventKind): KlaraVisualPhase {
   if (run.status === 'completed') return 'completed';
   if (run.status === 'failed' || run.status === 'cancelled') return 'error';
-  if (kind === 'trace.saved' || kind === 'run.completed') return 'saving';
+  if (kind === 'trace.saved') return 'saving';
   if (kind === 'tool.call.started') return 'acting';
   if (kind === 'retrieval.started' || kind === 'chunk.retrieved') return 'searching';
   if (kind === 'web.search.started' || kind === 'web.page.read') return 'searching_web';

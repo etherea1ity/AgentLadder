@@ -141,7 +141,6 @@ function buildModuleCards(run: Run, events: KlaraRunEvent[]): RunActionCard[] {
     "reranking",
     "context_builder",
     "klara_writer",
-    "trace_saved",
   ];
   return modules
     .sort((a, b) => {
@@ -167,9 +166,9 @@ function buildModuleCards(run: Run, events: KlaraRunEvent[]): RunActionCard[] {
 function latestModuleResults(run: Run): ModuleResult[] {
   const byId = new Map<string, ModuleResult>();
   for (const event of run.events ?? []) {
-    if (!["module_started", "module_completed", "module_failed", "trace_saved"].includes(event.event_type)) continue;
+    if (!["module_started", "module_completed", "module_failed"].includes(event.event_type)) continue;
     const raw = event.payload?.module_result;
-    if (!isModuleResult(raw)) continue;
+    if (!isModuleResult(raw) || raw.module_id === "trace_saved") continue;
     byId.set(raw.module_id, raw);
   }
   return Array.from(byId.values());

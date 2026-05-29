@@ -74,6 +74,15 @@ def test_api_run_lifecycle_events_trace_and_delete(tmp_path):
     assert "run_created" in event_types
     assert "answer_delta" in event_types
     assert "run_completed" in event_types
+    assert "trace_saved" not in event_types
+    module_ids = [
+        event["payload"].get("module_result", {}).get("module_id")
+        for event in detail["events"]
+        if event["event_type"].startswith("module_")
+    ]
+    assert "intent_router" in module_ids
+    assert "klara_writer" in module_ids
+    assert "trace_saved" not in module_ids
 
     stream_text = client.get(f"/api/runs/{run_id}/events/stream").text
     assert "event: run_created" in stream_text

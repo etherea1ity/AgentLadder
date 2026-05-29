@@ -6,7 +6,7 @@ from agent_ladder.rag.contracts.context import BuiltContext
 from agent_ladder.rag.contracts.document import Document, DocumentMetadata
 from agent_ladder.rag.contracts.module import ModuleResult, ModuleStatus
 from agent_ladder.rag.contracts.retrieval import HybridSearchResult, RerankedChunk, RetrievalQuery, RetrievalResult
-from agent_ladder.rag.contracts.route import RouteDecision, RouteName
+from agent_ladder.rag.contracts.route import QueryType, RouteDecision, RouteName, RouterInput
 from agent_ladder.rag.contracts.source import Citation, SourceCard
 
 __all__ = [
@@ -21,8 +21,10 @@ __all__ = [
     "RerankedChunk",
     "RetrievalQuery",
     "RetrievalResult",
+    "QueryType",
     "RouteDecision",
     "RouteName",
+    "RouterInput",
     "SourceCard",
     "TextChunk",
 ]

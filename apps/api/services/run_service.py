@@ -143,11 +143,14 @@ class RunService:
         model = current.model or "unknown"
         preparation: KlaraRunPreparation | None = None
         writer_module: ModuleResult | None = None
-        trace_module: ModuleResult | None = None
         writer_done: ModuleResult | None = None
 
         try:
-            preparation = self.klara_agent.prepare(ask.question, emit_module=lambda module: self._emit_module(run_id, module))
+            preparation = self.klara_agent.prepare(
+                ask.question,
+                emit_module=lambda module: self._emit_module(run_id, module),
+                router_client=llm_client,
+            )
             writer_module = ModuleResult(
                 module_id="klara_writer",
                 module_name="KlaraAgent Writer",
@@ -231,13 +234,6 @@ class RunService:
                     },
                 )
                 self._emit_module(run_id, writer_done)
-            trace_module = ModuleResult(
-                module_id="trace_saved",
-                module_name="Trace Saved",
-                input_summary="Persist run, usage, modules, and AnswerFrame to JSONL.",
-                input_payload={"trace_path": self.trace_path},
-            ).started()
-            self._emit_module(run_id, trace_module)
             trace_modules = [*(preparation.modules if preparation else [])]
             if writer_done is not None:
                 trace_modules.append(writer_done)
@@ -256,12 +252,6 @@ class RunService:
                 usage=usage,
                 extra=trace_extra,
             )
-            trace_done = trace_module.completed(
-                output_summary="Saved JSONL trace for this run.",
-                output_payload={"trace_saved": True, "trace_path": self.trace_path},
-            )
-            self._emit_module(run_id, trace_done)
-            self._emit(run_id, "trace_saved", "Trace saved.", {"module_result": trace_done.model_dump(mode="json")})
             completed = current.model_copy(
                 update={
                     "status": "completed",
