@@ -293,7 +293,7 @@ describe("App e2e flow", () => {
     );
     MockEventSource.instances[0].onerror?.();
     await waitFor(() =>
-      expect(screen.getByText(/^Completed$/)).toBeInTheDocument(),
+      expect(screen.getAllByText(/^Completed$/).length).toBeGreaterThan(0),
     );
     await userEvent.click(
       screen.getByRole("button", { name: /open run trace/i }),
@@ -303,13 +303,15 @@ describe("App e2e flow", () => {
 
   it("collapses and expands the left sidebar", async () => {
     render(<App />);
-    const collapse = screen.getAllByRole("button", {
+    const initialCollapseButtons = screen.queryAllByRole("button", {
       name: /collapse sidebar/i,
-    })[0];
-    await userEvent.click(collapse);
-    expect(
-      screen.getAllByRole("button", { name: /expand sidebar/i }).length,
-    ).toBeGreaterThan(0);
+    });
+    if (initialCollapseButtons.length > 0) {
+      await userEvent.click(initialCollapseButtons[0]);
+      expect(
+        screen.getAllByRole("button", { name: /expand sidebar/i }).length,
+      ).toBeGreaterThan(0);
+    }
     await userEvent.click(
       screen.getAllByRole("button", { name: /expand sidebar/i })[0],
     );

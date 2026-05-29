@@ -41,10 +41,15 @@ class DashScopeEmbedder(BaseEmbedder):
         if not texts:
             return []
 
-        response = self.client.embeddings.create(
-            model=self.model,
-            input=texts,
-            dimensions=self.dimensions,
-            encoding_format="float",
-        )
-        return [item.embedding for item in sorted(response.data, key=lambda item: item.index)]
+        vectors: list[list[float]] = []
+        batch_size = 10
+        for start in range(0, len(texts), batch_size):
+            batch = texts[start : start + batch_size]
+            response = self.client.embeddings.create(
+                model=self.model,
+                input=batch,
+                dimensions=self.dimensions,
+                encoding_format="float",
+            )
+            vectors.extend(item.embedding for item in sorted(response.data, key=lambda item: item.index))
+        return vectors

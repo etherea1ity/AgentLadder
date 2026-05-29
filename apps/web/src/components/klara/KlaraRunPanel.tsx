@@ -1,4 +1,4 @@
-import type { KlaraRunEvent, Run } from "../../types/domain";
+import type { KlaraRunEvent, ModuleResult, Run } from "../../types/domain";
 import { KlaraPresence } from "./KlaraPresence";
 import { formatLatency, isKlaraRunActive, useKlaraRunMotion } from "./useKlaraRunMotion";
 
@@ -12,6 +12,8 @@ type RunActionCard = {
   inputTokens?: number | null;
   outputTokens?: number | null;
   events: KlaraRunEvent[];
+  inputPayload?: Record<string, unknown>;
+  outputPayload?: Record<string, unknown>;
 };
 
 export function KlaraRunPanel({
@@ -87,6 +89,23 @@ export function KlaraRunPanel({
                   ))}
                 </ol>
               ) : null}
+              {card.inputPayload || card.outputPayload ? (
+                <details className="klara-action-details">
+                  <summary>View module data</summary>
+                  {card.inputPayload ? (
+                    <>
+                      <b>Input</b>
+                      <pre>{JSON.stringify(card.inputPayload, null, 2)}</pre>
+                    </>
+                  ) : null}
+                  {card.outputPayload ? (
+                    <>
+                      <b>Output</b>
+                      <pre>{JSON.stringify(card.outputPayload, null, 2)}</pre>
+                    </>
+                  ) : null}
+                </details>
+              ) : null}
             </div>
           </article>
         ))}
@@ -108,7 +127,64 @@ export function KlaraRunPanel({
 }
 
 function buildRunActionCards(run: Run, events: KlaraRunEvent[]): RunActionCard[] {
-  return [buildLlmCallCard(run, events)];
+  const moduleCards = buildModuleCards(run, events);
+  return moduleCards.length ? moduleCards : [buildLlmCallCard(run, events)];
+}
+
+function buildModuleCards(run: Run, events: KlaraRunEvent[]): RunActionCard[] {
+  const modules = latestModuleResults(run);
+  const order = [
+    "intent_router",
+    "dense_retrieval",
+    "bm25_retrieval",
+    "hybrid_retrieval",
+    "reranking",
+    "context_builder",
+    "klara_writer",
+    "trace_saved",
+  ];
+  return modules
+    .sort((a, b) => {
+      const ai = order.indexOf(a.module_id);
+      const bi = order.indexOf(b.module_id);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    })
+    .map((module) => ({
+      id: `${run.run_id}-${module.module_id}`,
+      title: module.module_name,
+      status: statusFromModule(module, run),
+      description: module.output_summary || module.input_summary || module.module_name,
+      model: module.module_id === "klara_writer" ? run.model : null,
+      duration: module.latency_ms != null ? formatLatency(module.latency_ms) : undefined,
+      inputTokens: module.module_id === "klara_writer" ? firstNumber(run.prompt_tokens, payloadNumber(run, "prompt_tokens")) : null,
+      outputTokens: module.module_id === "klara_writer" ? firstNumber(run.completion_tokens, payloadNumber(run, "completion_tokens")) : null,
+      events: events.filter((event) => event.safePayload && (event.safePayload as { module_result?: { module_id?: string } }).module_result?.module_id === module.module_id),
+      inputPayload: module.input_payload,
+      outputPayload: module.output_payload,
+    }));
+}
+
+function latestModuleResults(run: Run): ModuleResult[] {
+  const byId = new Map<string, ModuleResult>();
+  for (const event of run.events ?? []) {
+    if (!["module_started", "module_completed", "module_failed", "trace_saved"].includes(event.event_type)) continue;
+    const raw = event.payload?.module_result;
+    if (!isModuleResult(raw)) continue;
+    byId.set(raw.module_id, raw);
+  }
+  return Array.from(byId.values());
+}
+
+function isModuleResult(value: unknown): value is ModuleResult {
+  return Boolean(value && typeof value === "object" && typeof (value as ModuleResult).module_id === "string" && typeof (value as ModuleResult).module_name === "string");
+}
+
+function statusFromModule(module: ModuleResult, run: Run): RunActionCard["status"] {
+  if (module.status === "completed" || module.status === "skipped") return "completed";
+  if (module.status === "failed") return "failed";
+  if (run.status === "cancelled") return "cancelled";
+  if (module.status === "running") return "active";
+  return "queued";
 }
 
 function buildLlmCallCard(run: Run, events: KlaraRunEvent[]): RunActionCard {
@@ -188,6 +264,9 @@ function payloadNumber(run: Run, key: "prompt_tokens" | "completion_tokens") {
   for (const event of [...(run.events ?? [])].reverse()) {
     const value = event.payload?.[key];
     if (typeof value === "number") return value;
+    const moduleResult = event.payload?.module_result as ModuleResult | undefined;
+    const moduleValue = moduleResult?.output_payload?.[key];
+    if (typeof moduleValue === "number") return moduleValue;
   }
   return null;
 }

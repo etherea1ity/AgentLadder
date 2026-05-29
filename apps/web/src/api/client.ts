@@ -43,7 +43,7 @@ export const api = {
   cancelRun: (id: string, signal?: AbortSignal) => request<{ run_id: string; status: Run['status'] }>(`/api/runs/${id}/cancel`, { method: 'POST', body: '{}', signal }),
   subscribeRunEvents(runId: string, onEvent: (event: RunEvent) => void, onClose?: () => void) {
     const source = new EventSource(`${API_BASE}/api/runs/${runId}/events/stream`);
-    const eventTypes: RunEvent['event_type'][] = ['run_created', 'thinking_started', 'llm_call_started', 'answer_streaming_started', 'answer_delta', 'llm_call_completed', 'run_completed', 'run_failed', 'run_cancelled'];
+    const eventTypes: RunEvent['event_type'][] = ['run_created', 'thinking_started', 'llm_call_started', 'answer_streaming_started', 'answer_delta', 'llm_call_completed', 'run_completed', 'run_failed', 'run_cancelled', 'module_started', 'module_completed', 'module_failed', 'trace_saved'];
     eventTypes.forEach((type) => {
       source.addEventListener(type, (message) => onEvent(JSON.parse((message as MessageEvent).data) as RunEvent));
     });

@@ -6,6 +6,7 @@ from pathlib import Path
 from time import perf_counter
 
 from agent_ladder.core.contracts.ask import AskState
+from agent_ladder.core.runtime.klara_agent import KlaraAgent, KlaraRunPreparation
 from agent_ladder.core.runtime.lifecycle import (
     build_answer_state,
     build_run_log,
@@ -14,7 +15,6 @@ from agent_ladder.core.runtime.lifecycle import (
 )
 from agent_ladder.core.tracing.jsonl_tracer import JsonlTracer
 from agent_ladder.llm.base import BaseLLMClient
-from agent_ladder.llm.prompts.minimal import build_minimal_agent_messages
 from agent_ladder.llm.token_count import estimate_messages_tokens
 
 from apps.api.schemas import (
@@ -25,6 +25,7 @@ from apps.api.schemas import (
     RunRecord,
     now_iso,
 )
+from agent_ladder.rag.contracts.module import ModuleResult
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.sse_bus import SSEBus
 
@@ -39,6 +40,7 @@ class RunService:
         llm_client_factory: Callable[[str | None], BaseLLMClient] | None = None,
         allowed_models: set[str] | None = None,
         default_model: str | None = None,
+        klara_agent: KlaraAgent | None = None,
     ) -> None:
         self.store = store
         self.bus = bus
@@ -46,6 +48,7 @@ class RunService:
         self.llm_client_factory = llm_client_factory
         self.allowed_models = allowed_models or set()
         self.default_model = default_model
+        self.klara_agent = klara_agent or KlaraAgent()
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -133,16 +136,32 @@ class RunService:
         current = run.model_copy(update={"status": "thinking", "started_at": now_iso(), "model": run.model or configured_model or self.default_model})
         self.store.save_run(current)
         self._emit(run_id, "thinking_started", "Understanding your question...", {})
-        self._emit(run_id, "llm_call_started", "Calling the language model...", {"model": current.model})
 
         answer_text = ""
         prompt_tokens = None
         completion_tokens = None
         model = current.model or "unknown"
+        preparation: KlaraRunPreparation | None = None
+        writer_module: ModuleResult | None = None
+        trace_module: ModuleResult | None = None
+        writer_done: ModuleResult | None = None
 
         try:
+            preparation = self.klara_agent.prepare(ask.question, emit_module=lambda module: self._emit_module(run_id, module))
+            writer_module = ModuleResult(
+                module_id="klara_writer",
+                module_name="KlaraAgent Writer",
+                input_summary="Write the final answer from the route/context decision.",
+                input_payload={
+                    "route": preparation.route.route,
+                    "context_token_estimate": preparation.built_context.token_estimate if preparation.built_context else 0,
+                    "source_count": len(preparation.sources),
+                },
+            ).started()
+            self._emit_module(run_id, writer_module)
+            self._emit(run_id, "llm_call_started", "Calling the language model...", {"model": current.model})
             streaming_started = False
-            messages = build_minimal_agent_messages(ask.question)
+            messages = preparation.messages
             estimated_prompt_tokens = estimate_messages_tokens(messages)
             for chunk in llm_client.stream_chat(messages):
                 if run_id in self._cancel_requested:
@@ -186,7 +205,63 @@ class RunService:
                 latency_ms=latency_ms,
                 usage=usage,
             )
-            JsonlTracer(Path(self.trace_path)).save(ask=ask, answer=answer, run=run_log, prompt_messages=messages, usage=usage)
+            answer_frame = self.klara_agent.answer_frame(
+                answer=final_text,
+                preparation=preparation,
+                run_log={
+                    "run_id": run_id,
+                    "model": model,
+                    "latency_ms": latency_ms,
+                    "prompt_tokens": prompt_count,
+                    "completion_tokens": completion_count,
+                    "total_tokens": total_count,
+                    "token_source": usage.source,
+                },
+            ) if preparation is not None else None
+            if writer_module is not None:
+                writer_done = writer_module.completed(
+                    output_summary=f"Generated answer with {completion_count} output tokens.",
+                    output_payload={
+                        "route": preparation.route.route if preparation else "direct",
+                        "prompt_tokens": prompt_count,
+                        "completion_tokens": completion_count,
+                        "total_tokens": total_count,
+                        "token_source": usage.source,
+                        "used_chunks": preparation.used_chunks if preparation else [],
+                    },
+                )
+                self._emit_module(run_id, writer_done)
+            trace_module = ModuleResult(
+                module_id="trace_saved",
+                module_name="Trace Saved",
+                input_summary="Persist run, usage, modules, and AnswerFrame to JSONL.",
+                input_payload={"trace_path": self.trace_path},
+            ).started()
+            self._emit_module(run_id, trace_module)
+            trace_modules = [*(preparation.modules if preparation else [])]
+            if writer_done is not None:
+                trace_modules.append(writer_done)
+            trace_extra = {
+                "route": preparation.route.model_dump(mode="json") if preparation else None,
+                "modules": [module.model_dump(mode="json") for module in trace_modules],
+                "answer_frame": answer_frame.model_dump(mode="json") if answer_frame else None,
+            }
+            if preparation is not None and preparation.route.route == "rag":
+                trace_extra["schema_version"] = "v0.2"
+            JsonlTracer(Path(self.trace_path)).save(
+                ask=ask,
+                answer=answer,
+                run=run_log,
+                prompt_messages=messages,
+                usage=usage,
+                extra=trace_extra,
+            )
+            trace_done = trace_module.completed(
+                output_summary="Saved JSONL trace for this run.",
+                output_payload={"trace_saved": True, "trace_path": self.trace_path},
+            )
+            self._emit_module(run_id, trace_done)
+            self._emit(run_id, "trace_saved", "Trace saved.", {"module_result": trace_done.model_dump(mode="json")})
             completed = current.model_copy(
                 update={
                     "status": "completed",
@@ -240,6 +315,10 @@ class RunService:
         event = RunEventRecord(run_id=run_id, event_type=event_type, message=message, payload=payload)
         self.store.append_event(event)
         self.bus.publish(event)
+
+    def _emit_module(self, run_id: str, module: ModuleResult) -> None:
+        event_type = "module_failed" if module.status == "failed" else "module_completed" if module.status in {"completed", "skipped"} else "module_started"
+        self._emit(run_id, event_type, module.output_summary or module.input_summary or module.module_name, {"module_result": module.model_dump(mode="json")})
 
     def _cleanup_run_runtime(self, run_id: str) -> None:
         self._cancel_requested.discard(run_id)

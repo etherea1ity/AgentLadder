@@ -8,6 +8,8 @@ import yaml
 
 from agent_ladder.infra.config.loader import load_config
 from agent_ladder.llm.providers.dashscope import DashScopeClient
+from agent_ladder.rag.embeddings.dashscope import DashScopeEmbedder
+from agent_ladder.core.runtime.klara_agent import KlaraAgent
 
 from apps.api.schemas import ModelOption
 from apps.api.services.app_store import JsonlAppStore
@@ -72,6 +74,8 @@ def _create_llm_client(model: str | None = None):
 
 
 _llm = _create_llm_client()
+_embedder = DashScopeEmbedder(api_key=_config.llm.api_key.get_secret_value()) if _config.llm.api_key is not None else None
+_klara_agent = KlaraAgent(embedder=_embedder)
 _run_service = RunService(
     store=_store,
     bus=_bus,
@@ -80,6 +84,7 @@ _run_service = RunService(
     llm_client_factory=_create_llm_client,
     allowed_models={item.model for item in _model_options},
     default_model=_config.llm.model,
+    klara_agent=_klara_agent,
 )
 
 

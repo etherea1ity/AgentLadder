@@ -765,3 +765,29 @@
     width: min(420px, calc(100% - 92px), calc((100dvh - var(--topbar-h) - 96px) * 0.96));
   }
 }
+
+.klara-action-details {
+  margin-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 72%, transparent);
+  padding-top: 8px;
+}
+
+.klara-action-details summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.klara-action-details pre {
+  max-height: 220px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-input) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 76%, transparent);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -590,6 +590,16 @@ export default function App() {
           current_label: "Answer is streaming...",
         };
       }
+      if (event.event_type === "module_started") {
+        const moduleResult = event.payload?.module_result as { module_name?: string } | undefined;
+        next.live = {
+          streamed_chars: current.live?.streamed_chars ?? 0,
+          current_label: moduleResult?.module_name ? `${moduleResult.module_name}...` : "Running module...",
+        };
+      }
+      if (event.event_type === "trace_saved") {
+        next.trace_saved = true;
+      }
       if (event.event_type === "run_completed") {
         next.status = "completed";
         next.latency_ms = nullableNumber(event.payload?.latency_ms);

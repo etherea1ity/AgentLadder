@@ -81,9 +81,46 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
       return { ...base, kind: 'run.error', status: 'failed', publicLabel: 'Run failed', publicDetail: String(run.error?.message ?? 'The run failed.'), capabilities: ['model'] };
     case 'run_cancelled':
       return { ...base, kind: 'run.error', status: 'failed', publicLabel: 'Stopped', publicDetail: 'The run was stopped and partial output was preserved.', capabilities: ['model'] };
+    case 'module_started':
+    case 'module_completed':
+    case 'module_failed': {
+      const moduleResult = event.payload?.module_result as { module_id?: string; module_name?: string; input_summary?: string; output_summary?: string } | undefined;
+      const kind = kindForModule(moduleResult?.module_id, event.event_type);
+      return {
+        ...base,
+        kind,
+        status: event.event_type === 'module_failed' ? 'failed' : event.event_type === 'module_completed' ? 'completed' : 'progress',
+        publicLabel: moduleResult?.module_name ?? 'Running module',
+        publicDetail: moduleResult?.output_summary || moduleResult?.input_summary || event.message,
+        concept: moduleResult?.module_name,
+        capabilities: capabilitiesForModule(moduleResult?.module_id),
+      };
+    }
+    case 'trace_saved':
+      return { ...base, kind: 'trace.saved', status: 'completed', publicLabel: 'Trace saved', publicDetail: 'Klara saved the public run trace.', concept: 'RunLog', capabilities: ['trace'] };
     default:
       return null;
   }
+}
+
+function kindForModule(moduleId?: string, eventType?: string): KlaraRunEventKind {
+  if (moduleId === 'intent_router') return 'route.decided';
+  if (moduleId?.includes('retrieval')) return 'retrieval.started';
+  if (moduleId === 'reranking') return 'verification.started';
+  if (moduleId === 'context_builder') return 'source.selected';
+  if (moduleId === 'klara_writer') return eventType === 'module_completed' ? 'answer.completed' : 'answer.started';
+  if (moduleId === 'trace_saved') return 'trace.saved';
+  return 'run.started';
+}
+
+function capabilitiesForModule(moduleId?: string): KlaraCapabilityChip[] {
+  if (moduleId === 'intent_router') return ['model'];
+  if (moduleId === 'dense_retrieval' || moduleId === 'bm25_retrieval' || moduleId === 'hybrid_retrieval') return ['rag'];
+  if (moduleId === 'reranking') return ['verify'];
+  if (moduleId === 'context_builder') return ['rag', 'trace'];
+  if (moduleId === 'klara_writer') return ['model'];
+  if (moduleId === 'trace_saved') return ['trace'];
+  return ['model'];
 }
 
 function synthesizeCurrentEvent(run: Run): KlaraRunEvent {

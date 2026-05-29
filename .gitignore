@@ -28,3 +28,5 @@ data/traces/*.jsonl
 
 # Vite cache
 apps/web/.vite/
+# Local generated RAG indexes
+data/rag/index/*.jsonl

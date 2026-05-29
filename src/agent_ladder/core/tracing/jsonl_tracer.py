@@ -27,6 +27,7 @@ class JsonlTracer:
         *,
         prompt_messages: list[Message] | None = None,
         usage: TokenUsage | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         record = {
@@ -37,6 +38,8 @@ class JsonlTracer:
             "run": _to_jsonable_dict(run),
             "usage": _to_jsonable_dict(usage or run.usage),
         }
+        if extra:
+            record.update(extra)
         with self.path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
 

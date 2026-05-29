@@ -31,7 +31,28 @@ export type RunEventType =
   | 'llm_call_completed'
   | 'run_completed'
   | 'run_failed'
-  | 'run_cancelled';
+  | 'run_cancelled'
+  | 'module_started'
+  | 'module_completed'
+  | 'module_failed'
+  | 'trace_saved';
+
+
+export type ModuleStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+
+export type ModuleResult = {
+  module_id: string;
+  module_name: string;
+  status: ModuleStatus;
+  started_at?: string | null;
+  completed_at?: string | null;
+  latency_ms?: number | null;
+  input_summary: string;
+  output_summary: string;
+  input_payload?: Record<string, unknown>;
+  output_payload?: Record<string, unknown>;
+  error?: string | null;
+};
 
 export type RunEvent = {
   event_id: string;
@@ -80,7 +101,7 @@ export type ModelOption = {
 };
 
 // Klara Presence public event model. This is intentionally separate from the
-// current backend RunEvent DTO above so the UI can grow without breaking v0.1 SSE.
+// current backend RunEvent DTO above so the UI can grow without breaking v0.2 SSE.
 export type KlaraVisualPhase =
   | 'idle'
   | 'listening'

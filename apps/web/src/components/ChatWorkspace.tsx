@@ -96,7 +96,7 @@ export function ChatWorkspace(props: Props) {
             onTypingPulse={pulseTyping}
           />
           <small className="home-hint">
-            v0.1 Minimal Agent <span>·</span> Ask → Answer → Trace
+            v0.2 RAG Agent <span>·</span> Route → Retrieve → Rerank → Write
           </small>
         </section>
       ) : (
@@ -146,7 +146,7 @@ function TopPath({
   return (
     <div className={`top-path ${compact ? "is-compact" : ""}`}>
       <GitBranch size={compact ? 17 : 0} className="path-branch" />
-      <span>learn/v0.1-minimal-agent</span>
+      <span>learn/v0.2-rag-agent</span>
       {compact ? (
         <div className="top-actions">
           <button

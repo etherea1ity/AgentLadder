@@ -21,6 +21,10 @@ RunEventType = Literal[
     "run_completed",
     "run_failed",
     "run_cancelled",
+    "module_started",
+    "module_completed",
+    "module_failed",
+    "trace_saved",
 ]
 
 
