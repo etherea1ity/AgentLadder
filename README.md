@@ -593,6 +593,167 @@ IndexRecord.text
 </details>
 
 ### 7. Dense Vector Index：最小世界算法
+
+这一节解决的问题是：Klara 已经能把文本变成 `dense_vector`，但还需要把带向量的记录保存下来，并能根据用户问题的向量找出最相似的资料片段。
+
+```text
+IndexRecord[] with dense_vector
+→ LocalIndexStore
+→ SimpleVectorIndex
+→ DenseSearchResult[]
+```
+
+输入是带 `dense_vector` 的 `IndexRecord[]` 和用户问题的 `query_vector`，输出是按相似度排序的 `DenseSearchResult[]`。Klara 在这里学会：用本地 JSONL 保存索引记录，并用最小世界算法完成一次可解释的语义搜索。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/indexing/local_index_store.py
+src/agent_ladder/rag/indexing/similarity.py
+src/agent_ladder/rag/indexing/simple_vector_index.py
+```
+
+<details>
+<summary>展开：JSONL 存储、cosine similarity、最小世界算法与 FAISS</summary>
+
+#### 为什么要保存 embedding
+
+如果每次运行都重新做：
+
+```text
+读取 markdown
+→ 切 chunk
+→ 转 IndexRecord
+→ 调 embedding API
+→ 搜索
+```
+
+系统会变慢，也会重复消耗 API 调用。所以 embedding 生成后需要保存。
+
+本章使用最透明的本地 JSONL：
+
+```text
+data/rag/index/index_records.jsonl
+```
+
+每一行是一条 `IndexRecord`：
+
+```json
+{
+  "record_id": "idx_doc_ch02_rag_agent_chunk_0003",
+  "chunk_id": "doc_ch02_rag_agent_chunk_0003",
+  "document_id": "doc_ch02_rag_agent",
+  "text": "RAG lets Klara search local knowledge before answering...",
+  "metadata": {
+    "source_path": "data/knowledge/chapters/ch02-rag-agent.md",
+    "source_type": "markdown",
+    "category": "chapters",
+    "title": "Chapter 2 Capability: RAG Agent",
+    "chapter": "ch02",
+    "version": "v0.2-rag-agent",
+    "language": "en",
+    "tags": ["rag", "local-knowledge"],
+    "summary": "..."
+  },
+  "dense_vector": [0.031, -0.482, 0.105],
+  "sparse_tokens": [],
+  "token_count": 0,
+  "created_at": "..."
+}
+```
+
+JSONL 的优点是：一行一条记录，人可以直接打开看，不需要数据库，也方便后面迁移到真正的向量库。
+
+#### Dot Product
+
+两个向量的 dot product 是对应位置相乘再相加。
+
+例如：
+
+```text
+a = [1, 2, 3]
+b = [2, 1, 3]
+
+dot(a, b)
+= 1×2 + 2×1 + 3×3
+= 13
+```
+
+它衡量两个向量在方向上的一致程度，但会受到向量长度影响。
+
+#### Vector Norm
+
+向量长度，也叫 Euclidean norm：
+
+```text
+||a|| = sqrt(1² + 2² + 3²) = sqrt(14)
+||b|| = sqrt(2² + 1² + 3²) = sqrt(14)
+```
+
+#### Cosine Similarity
+
+cosine similarity 会把 dot product 除以两个向量长度：
+
+```text
+cosine_similarity(a, b)
+= dot(a, b) / (||a|| × ||b||)
+```
+
+代入上面的例子：
+
+```text
+cos(a, b)
+= 13 / (sqrt(14) × sqrt(14))
+= 13 / 14
+≈ 0.928
+```
+
+它比较的是方向，而不是绝对长度。对 embedding 来说，这很适合，因为我们关心的是文本语义方向是否接近。
+
+#### 最小世界算法
+
+本章知识库很小，所以先使用最直观的 brute-force search：
+
+```text
+scores = []
+
+for record in records:
+    score = cosine_similarity(query_vector, record.dense_vector)
+    scores.append((record, score))
+
+sort scores by score desc
+return top_k
+```
+
+这就是这里说的“最小世界算法”：遍历所有 record，一个一个算相似度，再排序取前几个。
+
+它不是最快的，但它最透明。学习者可以看到每一步：
+
+```text
+query_vector 和每个 chunk_vector 比较
+→ 得到 score
+→ 排序
+→ top_k
+```
+
+#### FAISS 是什么
+
+FAISS 是 Meta 开源的相似向量搜索库。它解决的问题是：当向量数量从几十条变成几十万、几百万时，不能每次都全量遍历。
+
+FAISS 会使用向量索引结构来加速 nearest neighbor search。常见思路包括：
+
+```text
+把向量组织成索引
+减少需要比较的候选数量
+用近似最近邻搜索换取速度
+```
+
+所以 FAISS 的价值不是改变“向量相似度检索”的本质，而是在规模变大时更快地找到相似向量。
+
+本章不用 FAISS，是因为 Klara 的小书房只有少量资料，手写最小算法更适合教学。
+
+</details>
+
 ### 8. Sparse / BM25 Index：关键词检索
 ### 9. Hybrid Retrieval + Reranking
 
