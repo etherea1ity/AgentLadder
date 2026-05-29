@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@rive-app/canvas-advanced": "^2.37.8",
-    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-react": "^4.7.0",
     "katex": "^0.17.0",
     "lucide-react": "latest",
     "react": "latest",
@@ -21,7 +21,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "typescript": "latest",
-    "vite": "latest"
+    "vite": "^6.3.5"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "latest",
@@ -29,7 +29,7 @@
     "@testing-library/user-event": "latest",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "jsdom": "latest",
-    "vitest": "latest"
+    "jsdom": "^26.1.0",
+    "vitest": "^3.2.4"
   }
 }
