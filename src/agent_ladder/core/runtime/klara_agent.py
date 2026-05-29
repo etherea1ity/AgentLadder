@@ -75,11 +75,23 @@ class KlaraAgent:
             module_id="intent_router",
             module_name="Intent Router",
             input_summary="Classify whether the question needs local knowledge.",
-            input_payload=router_input.model_dump(mode="json"),
+            input_payload={
+                "question": question,
+                "system_prompt": self.router.system_prompt,
+                "input_json": router_input.model_dump(mode="json"),
+            },
         ).started()
         emit(route_module)
         route = self.router.route(router_input, llm_client=router_client)
-        route_payload = route.model_dump(mode="json")
+        route_payload = {
+            **route.model_dump(mode="json"),
+            "decision": route.model_dump(mode="json"),
+            "model": self.router.last_model or route.router_model,
+            "prompt_tokens": self.router.last_prompt_tokens,
+            "completion_tokens": self.router.last_completion_tokens,
+            "total_tokens": self.router.last_total_tokens,
+            "token_source": self.router.last_token_source,
+        }
         if self.router.last_error:
             route_payload["fallback_error"] = self.router.last_error
         route_done = route_module.completed(
@@ -105,7 +117,13 @@ class KlaraAgent:
         dense_results = DenseRetriever(records).search(query_vector, top_k=self.top_k_dense)
         dense_done = dense_module.completed(
             output_summary=f"Found {len(dense_results)} semantic candidates.",
-            output_payload={"results": [_dense_payload(item) for item in dense_results]},
+            output_payload={
+                "algorithm": "cosine_similarity",
+                "index": "local_jsonl_dense_vector",
+                "top_k": self.top_k_dense,
+                "candidate_count": len(dense_results),
+                "results": [_dense_payload(item) for item in dense_results],
+            },
         )
         emit(dense_done)
 
@@ -119,7 +137,14 @@ class KlaraAgent:
         sparse_results = BM25Retriever(records).search(retrieval_query, top_k=self.top_k_sparse)
         bm25_done = bm25_module.completed(
             output_summary=f"Found {len(sparse_results)} keyword candidates.",
-            output_payload={"results": [_bm25_payload(item) for item in sparse_results]},
+            output_payload={
+                "algorithm": "BM25",
+                "k1": 1.5,
+                "b": 0.75,
+                "top_k": self.top_k_sparse,
+                "candidate_count": len(sparse_results),
+                "results": [_bm25_payload(item) for item in sparse_results],
+            },
         )
         emit(bm25_done)
 
@@ -130,10 +155,18 @@ class KlaraAgent:
             input_payload={"dense_count": len(dense_results), "bm25_count": len(sparse_results), "top_k": self.top_k_hybrid},
         ).started()
         emit(hybrid_module)
-        hybrid_results = HybridRetriever().fuse(dense_results=dense_results, sparse_results=sparse_results, top_k=self.top_k_hybrid)
+        hybrid_retriever = HybridRetriever()
+        hybrid_results = hybrid_retriever.fuse(dense_results=dense_results, sparse_results=sparse_results, top_k=self.top_k_hybrid)
         hybrid_done = hybrid_module.completed(
             output_summary=f"Merged into {len(hybrid_results)} hybrid candidates.",
-            output_payload={"results": [_hybrid_payload(item) for item in hybrid_results]},
+            output_payload={
+                "algorithm": "weighted_score_fusion",
+                "dense_weight": hybrid_retriever.dense_weight,
+                "sparse_weight": hybrid_retriever.sparse_weight,
+                "top_k": self.top_k_hybrid,
+                "candidate_count": len(hybrid_results),
+                "results": [_hybrid_payload(item) for item in hybrid_results],
+            },
         )
         emit(hybrid_done)
 
@@ -147,7 +180,13 @@ class KlaraAgent:
         reranked = SimpleReranker().rerank(retrieval_query, hybrid_results, top_k=self.top_k_context)
         rerank_done = rerank_module.completed(
             output_summary=f"Selected {len(reranked)} chunks for context.",
-            output_payload={"results": [_rerank_payload(item) for item in reranked]},
+            output_payload={
+                "algorithm": "SimpleReranker",
+                "input_candidates": len(hybrid_results),
+                "selected_chunks": len(reranked),
+                "signals": ["hybrid_score", "exact_keyword_bonus", "metadata_match_bonus", "chapter_alias_bonus"],
+                "results": [_rerank_payload(item) for item in reranked],
+            },
         )
         emit(rerank_done)
 
@@ -161,7 +200,13 @@ class KlaraAgent:
         built_context = self.context_builder.build(retrieval_query, reranked)
         context_done = context_module.completed(
             output_summary=f"Built context with about {built_context.token_estimate} tokens.",
-            output_payload={"token_estimate": built_context.token_estimate, "sources": built_context.source_summaries},
+            output_payload={
+                "token_budget": self.context_builder.token_budget,
+                "token_estimate": built_context.token_estimate,
+                "source_blocks": len(built_context.source_summaries),
+                "deduped_chunks": max(0, len(reranked) - len(built_context.selected_chunks)),
+                "sources": built_context.source_summaries,
+            },
         )
         emit(context_done)
 

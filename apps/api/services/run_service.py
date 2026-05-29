@@ -231,6 +231,9 @@ class RunService:
                         "total_tokens": total_count,
                         "token_source": usage.source,
                         "used_chunks": preparation.used_chunks if preparation else [],
+                        "source_count": len(preparation.sources) if preparation else 0,
+                        "prompt_messages": messages,
+                        "answer_frame": answer_frame.model_dump(mode="json") if answer_frame else None,
                     },
                 )
                 self._emit_module(run_id, writer_done)

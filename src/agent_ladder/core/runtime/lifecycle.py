@@ -14,7 +14,7 @@ def final_answer_text(answer_text: str | None, *, failed: bool = False) -> str:
     """Return the canonical user-visible answer text for empty/failed runs."""
     text = (answer_text or "").strip()
     if text:
-        return answer_text or text
+        return text
     return FAILED_ANSWER_TEXT if failed else NO_ANSWER_TEXT
 
 

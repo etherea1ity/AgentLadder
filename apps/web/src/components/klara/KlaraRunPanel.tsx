@@ -2,18 +2,22 @@ import type { KlaraRunEvent, ModuleResult, Run } from "../../types/domain";
 import { KlaraPresence } from "./KlaraPresence";
 import { formatLatency, isKlaraRunActive, useKlaraRunMotion } from "./useKlaraRunMotion";
 
+type CardStatus = "active" | "completed" | "failed" | "cancelled" | "queued";
+type Fact = { label: string; value?: unknown };
+type DetailSection = { title: string; value: unknown };
+type Lane = { title: string; facts: Fact[]; payload?: Record<string, unknown> };
+
 type RunActionCard = {
   id: string;
   title: string;
-  status: "active" | "completed" | "failed" | "cancelled" | "queued";
+  status: CardStatus;
   description: string;
-  model?: string | null;
-  duration?: string;
-  inputTokens?: number | null;
-  outputTokens?: number | null;
+  facts: Fact[];
   events: KlaraRunEvent[];
   inputPayload?: Record<string, unknown>;
   outputPayload?: Record<string, unknown>;
+  details?: DetailSection[];
+  lanes?: Lane[];
 };
 
 export function KlaraRunPanel({
@@ -41,7 +45,7 @@ export function KlaraRunPanel({
         <div>
           <p className="run-margin-eyebrow">Public Activity</p>
           <h3>{live ? "Live Run" : "Run Complete"}</h3>
-          <small>{run.model ?? "selected model"}</small>
+          <small>v0.2 RAG Agent</small>
         </div>
       </header>
 
@@ -55,55 +59,36 @@ export function KlaraRunPanel({
             <div className="klara-action-body">
               <header className="klara-action-header">
                 <div>
-                  <p className="klara-action-eyebrow">Action</p>
+                  <p className="klara-action-eyebrow">Layer</p>
                   <h5>{card.title}</h5>
                 </div>
                 <span className="klara-action-status">{labelForCardStatus(card.status)}</span>
               </header>
               <p className="klara-action-description">{card.description}</p>
-              <dl className="klara-action-metrics">
-                <div>
-                  <dt>latency</dt>
-                  <dd>{card.duration ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt>input tokens</dt>
-                  <dd>{formatNumber(card.inputTokens)}</dd>
-                </div>
-                <div>
-                  <dt>output tokens</dt>
-                  <dd>{formatNumber(card.outputTokens)}</dd>
-                </div>
-                <div>
-                  <dt>model</dt>
-                  <dd>{card.model ?? "—"}</dd>
-                </div>
-              </dl>
-              {card.events.length ? (
-                <ol className="klara-action-events" aria-label={`${card.title} events`}>
-                  {card.events.map((event) => (
-                    <li key={event.eventId} className={`event-${event.status}`}>
-                      <span aria-hidden="true">{event.status === "completed" ? "✓" : event.status === "failed" ? "!" : "●"}</span>
-                      <b>{event.publicLabel}</b>
-                    </li>
+              {card.facts.length ? <FactGrid facts={card.facts} /> : null}
+              {card.lanes?.length ? (
+                <div className="klara-action-events" aria-label={`${card.title} lanes`}>
+                  {card.lanes.map((lane) => (
+                    <details className="klara-action-details" key={lane.title}>
+                      <summary>{lane.title}</summary>
+                      <FactGrid facts={lane.facts} />
+                      {lane.payload ? <pre>{JSON.stringify(lane.payload, null, 2)}</pre> : null}
+                    </details>
                   ))}
-                </ol>
+                </div>
               ) : null}
-              {card.inputPayload || card.outputPayload ? (
+              {card.details?.length
+                ? card.details.map((detail) => (
+                    <details className="klara-action-details" key={detail.title}>
+                      <summary>{detail.title}</summary>
+                      <pre>{formatDetailValue(detail.value)}</pre>
+                    </details>
+                  ))
+                : null}
+              {!card.details?.length && (card.inputPayload || card.outputPayload) ? (
                 <details className="klara-action-details">
-                  <summary>View module data</summary>
-                  {card.inputPayload ? (
-                    <>
-                      <b>Input</b>
-                      <pre>{JSON.stringify(card.inputPayload, null, 2)}</pre>
-                    </>
-                  ) : null}
-                  {card.outputPayload ? (
-                    <>
-                      <b>Output</b>
-                      <pre>{JSON.stringify(card.outputPayload, null, 2)}</pre>
-                    </>
-                  ) : null}
+                  <summary>Structured JSON</summary>
+                  <pre>{formatDetailValue({ input: card.inputPayload, output: card.outputPayload })}</pre>
                 </details>
               ) : null}
             </div>
@@ -126,44 +111,173 @@ export function KlaraRunPanel({
   );
 }
 
+function FactGrid({ facts }: { facts: Fact[] }) {
+  const visible = facts.filter((fact) => fact.value !== undefined && fact.value !== null && fact.value !== "");
+  if (!visible.length) return null;
+  return (
+    <dl className="klara-action-metrics">
+      {visible.map((fact) => (
+        <div key={fact.label}>
+          <dt>{fact.label}</dt>
+          <dd>{formatValue(fact.value)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function buildRunActionCards(run: Run, events: KlaraRunEvent[]): RunActionCard[] {
-  const moduleCards = buildModuleCards(run, events);
-  return moduleCards.length ? moduleCards : [buildLlmCallCard(run, events)];
+  const modules = latestModuleMap(run);
+  const cards = [
+    buildRouterCard(run, modules.get("intent_router")),
+    buildRetrievalLayerCard(run, modules),
+    buildWriterCard(run, modules.get("klara_writer")),
+  ].filter((card): card is RunActionCard => Boolean(card));
+  return cards.length ? cards : [buildLlmCallCard(run, events)];
 }
 
-function buildModuleCards(run: Run, events: KlaraRunEvent[]): RunActionCard[] {
-  const modules = latestModuleResults(run);
-  const order = [
-    "intent_router",
-    "dense_retrieval",
-    "bm25_retrieval",
-    "hybrid_retrieval",
-    "reranking",
-    "context_builder",
-    "klara_writer",
-  ];
-  return modules
-    .sort((a, b) => {
-      const ai = order.indexOf(a.module_id);
-      const bi = order.indexOf(b.module_id);
-      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-    })
-    .map((module) => ({
-      id: `${run.run_id}-${module.module_id}`,
-      title: module.module_name,
-      status: statusFromModule(module, run),
-      description: module.output_summary || module.input_summary || module.module_name,
-      model: module.module_id === "klara_writer" ? run.model : null,
-      duration: module.latency_ms != null ? formatLatency(module.latency_ms) : undefined,
-      inputTokens: module.module_id === "klara_writer" ? firstNumber(run.prompt_tokens, payloadNumber(run, "prompt_tokens")) : null,
-      outputTokens: module.module_id === "klara_writer" ? firstNumber(run.completion_tokens, payloadNumber(run, "completion_tokens")) : null,
-      events: events.filter((event) => event.safePayload && (event.safePayload as { module_result?: { module_id?: string } }).module_result?.module_id === module.module_id),
-      inputPayload: module.input_payload,
-      outputPayload: module.output_payload,
-    }));
+function buildRouterCard(run: Run, module?: ModuleResult): RunActionCard | null {
+  if (!module) return null;
+  const output = module.output_payload ?? {};
+  const decision = objectValue(output.decision) ?? output;
+  const route = stringValue(decision.route ?? output.route);
+  const confidence = numberValue(decision.confidence ?? output.confidence);
+  return {
+    id: `${run.run_id}-router-layer`,
+    title: "Intent Router",
+    status: statusFromModule(module, run),
+    description: "Decides whether this question needs local knowledge.",
+    facts: [
+      { label: "route", value: route?.toUpperCase() },
+      { label: "confidence", value: confidence != null ? confidence.toFixed(2) : undefined },
+      { label: "query type", value: stringValue(decision.query_type ?? output.query_type) },
+      { label: "model", value: stringValue(output.model ?? decision.router_model) },
+      { label: "latency", value: module.latency_ms != null ? formatLatency(module.latency_ms) : undefined },
+      { label: "input tokens", value: numberValue(output.prompt_tokens) },
+      { label: "output tokens", value: numberValue(output.completion_tokens) },
+    ],
+    events: [],
+    details: [
+      { title: "System prompt", value: module.input_payload?.system_prompt },
+      { title: "Structured JSON", value: { input: omitKeys(module.input_payload, ["system_prompt"]), output: module.output_payload } },
+    ],
+  };
 }
 
-function latestModuleResults(run: Run): ModuleResult[] {
+function buildRetrievalLayerCard(run: Run, modules: Map<string, ModuleResult>): RunActionCard | null {
+  const dense = modules.get("dense_retrieval");
+  const bm25 = modules.get("bm25_retrieval");
+  const hybrid = modules.get("hybrid_retrieval");
+  const rerank = modules.get("reranking");
+  const context = modules.get("context_builder");
+  const retrievalModules = [dense, bm25, hybrid, rerank, context].filter((item): item is ModuleResult => Boolean(item));
+  if (!retrievalModules.length) return null;
+
+  const denseOut = dense?.output_payload ?? {};
+  const bm25Out = bm25?.output_payload ?? {};
+  const hybridOut = hybrid?.output_payload ?? {};
+  const rerankOut = rerank?.output_payload ?? {};
+  const contextOut = context?.output_payload ?? {};
+  const lanes: Lane[] = [];
+
+  if (dense) lanes.push(moduleLane("Dense Retrieval", dense, [
+    { label: "algorithm", value: denseOut.algorithm ?? "cosine_similarity" },
+    { label: "index", value: denseOut.index ?? "local JSONL" },
+    { label: "top k", value: dense.input_payload?.top_k ?? denseOut.top_k },
+    { label: "candidates", value: denseOut.candidate_count },
+  ]));
+  if (bm25) lanes.push(moduleLane("Sparse Retrieval", bm25, [
+    { label: "algorithm", value: bm25Out.algorithm ?? "BM25" },
+    { label: "k1", value: bm25Out.k1 },
+    { label: "b", value: bm25Out.b },
+    { label: "candidates", value: bm25Out.candidate_count },
+  ]));
+  if (hybrid || rerank || context) {
+    lanes.push({
+      title: "Aggregate",
+      facts: [
+        { label: "fusion", value: hybridOut.algorithm ?? "weighted_score_fusion" },
+        { label: "fused", value: hybridOut.candidate_count },
+        { label: "reranker", value: rerankOut.algorithm ?? "SimpleReranker" },
+        { label: "selected", value: rerankOut.selected_chunks },
+        { label: "context tokens", value: contextOut.token_estimate },
+      ],
+      payload: {
+        hybrid: { input: hybrid?.input_payload, output: hybrid?.output_payload },
+        reranking: { input: rerank?.input_payload, output: rerank?.output_payload },
+        context: { input: context?.input_payload, output: context?.output_payload },
+      },
+    });
+  }
+
+  return {
+    id: `${run.run_id}-retrieval-layer`,
+    title: "RAG Retrieval",
+    status: combinedStatus(retrievalModules, run),
+    description: "Dense and sparse recall, then aggregate evidence for the writer.",
+    facts: [
+      { label: "dense", value: numberValue(denseOut.candidate_count) },
+      { label: "sparse", value: numberValue(bm25Out.candidate_count) },
+      { label: "selected", value: numberValue(rerankOut.selected_chunks) },
+      { label: "context tokens", value: numberValue(contextOut.token_estimate) },
+    ],
+    events: [],
+    lanes,
+    details: [
+      {
+        title: "Structured JSON",
+        value: {
+          dense: { input: dense?.input_payload, output: dense?.output_payload },
+          sparse: { input: bm25?.input_payload, output: bm25?.output_payload },
+          aggregate: {
+            hybrid: { input: hybrid?.input_payload, output: hybrid?.output_payload },
+            reranking: { input: rerank?.input_payload, output: rerank?.output_payload },
+            context: { input: context?.input_payload, output: context?.output_payload },
+          },
+        },
+      },
+    ],
+  };
+}
+
+function buildWriterCard(run: Run, module?: ModuleResult): RunActionCard | null {
+  if (!module) return null;
+  const output = module.output_payload ?? {};
+  const promptMessages = Array.isArray(output.prompt_messages) ? output.prompt_messages : [];
+  const systemPrompt = stringValue(objectValue(promptMessages.find((message) => objectValue(message)?.role === "system"))?.content);
+  return {
+    id: `${run.run_id}-writer-layer`,
+    title: "Writer",
+    status: statusFromModule(module, run),
+    description: "Writes the final answer from the selected context.",
+    facts: [
+      { label: "model", value: run.model },
+      { label: "latency", value: module.latency_ms != null ? formatLatency(module.latency_ms) : undefined },
+      { label: "input tokens", value: firstNumber(run.prompt_tokens, numberValue(output.prompt_tokens)) },
+      { label: "output tokens", value: firstNumber(run.completion_tokens, numberValue(output.completion_tokens)) },
+      { label: "route", value: stringValue(output.route)?.toUpperCase() },
+    ],
+    events: [],
+    details: [
+      { title: "System prompt", value: systemPrompt },
+      { title: "Writer prompt", value: promptMessages },
+      { title: "Answer frame", value: output.answer_frame },
+    ],
+  };
+}
+
+function moduleLane(title: string, module: ModuleResult, facts: Fact[]): Lane {
+  return {
+    title,
+    facts,
+    payload: {
+      input: module.input_payload,
+      output: module.output_payload,
+    },
+  };
+}
+
+function latestModuleMap(run: Run): Map<string, ModuleResult> {
   const byId = new Map<string, ModuleResult>();
   for (const event of run.events ?? []) {
     if (!["module_started", "module_completed", "module_failed"].includes(event.event_type)) continue;
@@ -171,18 +285,26 @@ function latestModuleResults(run: Run): ModuleResult[] {
     if (!isModuleResult(raw) || raw.module_id === "trace_saved") continue;
     byId.set(raw.module_id, raw);
   }
-  return Array.from(byId.values());
+  return byId;
 }
 
 function isModuleResult(value: unknown): value is ModuleResult {
   return Boolean(value && typeof value === "object" && typeof (value as ModuleResult).module_id === "string" && typeof (value as ModuleResult).module_name === "string");
 }
 
-function statusFromModule(module: ModuleResult, run: Run): RunActionCard["status"] {
+function statusFromModule(module: ModuleResult, run: Run): CardStatus {
   if (module.status === "completed" || module.status === "skipped") return "completed";
   if (module.status === "failed") return "failed";
   if (run.status === "cancelled") return "cancelled";
   if (module.status === "running") return "active";
+  return "queued";
+}
+
+function combinedStatus(modules: ModuleResult[], run: Run): CardStatus {
+  if (modules.some((module) => module.status === "failed")) return "failed";
+  if (run.status === "cancelled") return "cancelled";
+  if (modules.some((module) => module.status === "running")) return "active";
+  if (modules.every((module) => module.status === "completed" || module.status === "skipped")) return "completed";
   return "queued";
 }
 
@@ -196,7 +318,7 @@ function buildLlmCallCard(run: Run, events: KlaraRunEvent[]): RunActionCard {
       "run.error",
     ].includes(event.kind),
   );
-  const status: RunActionCard["status"] =
+  const status: CardStatus =
     run.status === "failed"
       ? "failed"
       : run.status === "cancelled"
@@ -211,10 +333,12 @@ function buildLlmCallCard(run: Run, events: KlaraRunEvent[]): RunActionCard {
     title: "LLM Call",
     status,
     description: descriptionForLlmCard(run),
-    model: run.model,
-    duration: cardDuration(run, llmEvents),
-    inputTokens: firstNumber(run.prompt_tokens, payloadNumber(run, "prompt_tokens")),
-    outputTokens: firstNumber(run.completion_tokens, payloadNumber(run, "completion_tokens")),
+    facts: [
+      { label: "latency", value: cardDuration(run, llmEvents) },
+      { label: "input tokens", value: firstNumber(run.prompt_tokens, payloadNumber(run, "prompt_tokens")) },
+      { label: "output tokens", value: firstNumber(run.completion_tokens, payloadNumber(run, "completion_tokens")) },
+      { label: "model", value: run.model },
+    ],
     events: compactCardEvents(llmEvents),
   };
 }
@@ -252,10 +376,24 @@ function cardDuration(run: Run, events: KlaraRunEvent[]) {
 }
 
 function buildSummary(run: Run) {
+  const modules = latestModuleMap(run);
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let hasModuleUsage = false;
+  for (const moduleId of ["intent_router", "klara_writer"]) {
+    const output = modules.get(moduleId)?.output_payload;
+    const prompt = numberValue(output?.prompt_tokens);
+    const completion = numberValue(output?.completion_tokens);
+    if (prompt != null || completion != null) {
+      hasModuleUsage = true;
+      inputTokens += prompt ?? 0;
+      outputTokens += completion ?? 0;
+    }
+  }
   return {
     duration: run.latency_ms != null ? formatLatency(run.latency_ms) : run.live?.elapsed_ms != null ? formatLatency(run.live.elapsed_ms) : undefined,
-    inputTokens: firstNumber(run.prompt_tokens, payloadNumber(run, "prompt_tokens")),
-    outputTokens: firstNumber(run.completion_tokens, payloadNumber(run, "completion_tokens")),
+    inputTokens: hasModuleUsage ? inputTokens : firstNumber(run.prompt_tokens, payloadNumber(run, "prompt_tokens")),
+    outputTokens: hasModuleUsage ? outputTokens : firstNumber(run.completion_tokens, payloadNumber(run, "completion_tokens")),
   };
 }
 
@@ -274,11 +412,41 @@ function firstNumber(...values: Array<number | null | undefined>) {
   return values.find((value): value is number => typeof value === "number") ?? null;
 }
 
+function numberValue(value: unknown) {
+  return typeof value === "number" ? value : null;
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : undefined;
+}
+
+function objectValue(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
+
 function formatNumber(value?: number | null) {
   return typeof value === "number" ? value.toLocaleString("en-US") : "—";
 }
 
-function labelForCardStatus(status: RunActionCard["status"]) {
+function formatValue(value: unknown) {
+  if (typeof value === "number") return formatNumber(value);
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (Array.isArray(value)) return value.join(", ");
+  return String(value ?? "—");
+}
+
+function formatDetailValue(value: unknown) {
+  if (typeof value === "string") return value;
+  return JSON.stringify(value ?? null, null, 2);
+}
+
+function omitKeys(source: Record<string, unknown> | undefined, keys: string[]) {
+  if (!source) return undefined;
+  const blocked = new Set(keys);
+  return Object.fromEntries(Object.entries(source).filter(([key]) => !blocked.has(key)));
+}
+
+function labelForCardStatus(status: CardStatus) {
   if (status === "active") return "Running";
   if (status === "completed") return "Completed";
   if (status === "failed") return "Failed";

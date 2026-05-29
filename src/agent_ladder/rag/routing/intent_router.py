@@ -7,6 +7,7 @@ import re
 from typing import Any
 
 from agent_ladder.llm.base import BaseLLMClient, Message
+from agent_ladder.llm.token_count import estimate_messages_tokens, estimate_text_tokens
 from agent_ladder.rag.contracts.route import RouteDecision, RouterInput
 from agent_ladder.rag.routing.rule_intent_router import RuleIntentRouter
 
@@ -25,31 +26,57 @@ Schema:
   "matched_terms": string[]
 }
 
+Current branch context:
+- The current branch is v0.2-rag-agent.
+- "this chapter", "current chapter", "这一章", "这章", or "本章" means Chapter 2: RAG Agent unless the user explicitly names another chapter.
+- Chapter 2 teaches why RAG is needed, local markdown knowledge, metadata, chunking, embeddings, dense retrieval, BM25, hybrid retrieval, reranking, context building, SourceCard/Citation, and AnswerFrameV1.
+
 Choose "rag" when the question asks about Klara, Agent Ladder, this repository, a chapter, local docs, RAG concepts in this course, or named project states such as AskState, RunLog, SourceCard, Citation, or AnswerFrameV1.
-Choose "direct" for greetings, general conversation, or questions that do not need local project knowledge.
+Choose "rag" when a greeting is combined with a question about this/current chapter or Klara's current ability.
+Choose "direct" only for greetings, general conversation, or questions that clearly do not need local project knowledge.
 """
 
 
 class IntentRouter:
     """Route through an LLM JSON call when available, then fall back safely."""
 
+    @property
+    def system_prompt(self) -> str:
+        return _ROUTER_SYSTEM
+
     def __init__(self, llm_client: BaseLLMClient | None = None, fallback: RuleIntentRouter | None = None) -> None:
         self.llm_client = llm_client
         self.fallback = fallback or RuleIntentRouter()
         self.last_raw_output: str | None = None
         self.last_error: str | None = None
+        self.last_model: str | None = None
+        self.last_prompt_tokens: int | None = None
+        self.last_completion_tokens: int | None = None
+        self.last_total_tokens: int | None = None
+        self.last_token_source: str = "unknown"
 
     def route(self, question: str | RouterInput, llm_client: BaseLLMClient | None = None) -> RouteDecision:
         router_input = question if isinstance(question, RouterInput) else RouterInput(question=question)
         client = llm_client or self.llm_client
         self.last_raw_output = None
         self.last_error = None
+        self.last_model = None
+        self.last_prompt_tokens = None
+        self.last_completion_tokens = None
+        self.last_total_tokens = None
+        self.last_token_source = "unknown"
         if client is None:
             return self.fallback.route(router_input)
 
         try:
-            response = client.chat(_router_messages(router_input))
+            messages = _router_messages(router_input)
+            response = client.chat(messages)
             self.last_raw_output = response.content
+            self.last_model = response.model
+            self.last_prompt_tokens = response.prompt_tokens if response.prompt_tokens is not None else estimate_messages_tokens(messages)
+            self.last_completion_tokens = response.completion_tokens if response.completion_tokens is not None else estimate_text_tokens(response.content)
+            self.last_total_tokens = (self.last_prompt_tokens or 0) + (self.last_completion_tokens or 0)
+            self.last_token_source = "reported" if response.prompt_tokens is not None and response.completion_tokens is not None else "estimated"
             payload = _extract_json_object(response.content)
             decision = RouteDecision.model_validate(payload)
             if decision.route == "rag" and not decision.rewritten_query:

@@ -9,6 +9,7 @@ from agent_ladder.rag.embeddings.base import BaseEmbedder
 from agent_ladder.rag.indexing.index_record import IndexRecord
 from agent_ladder.rag.indexing.local_index_store import LocalIndexStore
 from agent_ladder.rag.routing import IntentRouter
+from agent_ladder.rag.routing.rule_intent_router import RuleIntentRouter
 
 
 class JsonRouterLLM(BaseLLMClient):
@@ -53,6 +54,11 @@ def test_llm_intent_router_validates_json_decision():
     assert decision.rewritten_query == "Explain AnswerFrameV1 in Agent Ladder chapter 2."
     assert decision.router_model == "router-json-llm"
     assert decision.fallback_used is False
+    assert router.last_model == "router-json-llm"
+    assert router.last_prompt_tokens == 9
+    assert router.last_completion_tokens == 7
+    assert router.last_total_tokens == 16
+    assert router.last_token_source == "reported"
 
 
 def test_llm_intent_router_falls_back_on_invalid_json():
@@ -63,6 +69,15 @@ def test_llm_intent_router_falls_back_on_invalid_json():
     assert decision.route == "rag"
     assert decision.fallback_used is True
     assert router.last_error
+
+
+def test_rule_router_treats_current_chapter_as_v02_rag():
+    decision = RuleIntentRouter().route("hi，能告诉我我们这一章讲什么吗？")
+
+    assert decision.route == "rag"
+    assert decision.query_type == "chapter_question"
+    assert "v0.2-rag-agent" in (decision.rewritten_query or "")
+
 
 
 def test_klara_agent_uses_llm_router_json_and_structured_rag_modules(tmp_path):
@@ -136,8 +151,24 @@ def test_klara_agent_uses_llm_router_json_and_structured_rag_modules(tmp_path):
         "context_builder",
     ]
     router_module = completed[0]
-    assert router_module.input_payload == {"question": "What is AnswerFrameV1?"}
+    assert router_module.input_payload["question"] == "What is AnswerFrameV1?"
+    assert "v0.2 RAG intent router" in router_module.input_payload["system_prompt"]
+    assert router_module.input_payload["input_json"] == {"question": "What is AnswerFrameV1?"}
     assert router_module.output_payload["route"] == "rag"
+    assert router_module.output_payload["decision"]["route"] == "rag"
+    assert router_module.output_payload["model"] == "router-json-llm"
+    assert router_module.output_payload["prompt_tokens"] == 9
+    assert router_module.output_payload["completion_tokens"] == 7
+    assert router_module.output_payload["total_tokens"] == 16
     assert router_module.output_payload["rewritten_query"] == "AnswerFrameV1 structured RAG answer object sources citations"
     assert completed[1].input_payload["query"] == "AnswerFrameV1 structured RAG answer object sources citations"
+    assert completed[1].output_payload["algorithm"] == "cosine_similarity"
+    assert completed[1].output_payload["index"] == "local_jsonl_dense_vector"
+    assert completed[2].output_payload["algorithm"] == "BM25"
+    assert completed[3].output_payload["algorithm"] == "weighted_score_fusion"
+    assert completed[4].output_payload["algorithm"] == "SimpleReranker"
+    assert completed[-1].output_payload["token_budget"] > 0
+    assert completed[-1].output_payload["source_blocks"] == 1
     assert completed[-1].output_payload["sources"][0]["chunk_id"] == "chunk_answerframe"
+    assert "source_path" not in preparation.built_context.context_text
+    assert "chunk_id" not in preparation.built_context.context_text

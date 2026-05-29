@@ -26,6 +26,10 @@ _RAG_TERMS = {
     "bm25",
     "hybrid",
     "metadata",
+    "本章",
+    "这一章",
+    "这章",
+    "当前章节",
 }
 _DIRECT_TERMS = {"hi", "hello", "hey", "你好", "谢谢", "thanks"}
 
@@ -49,6 +53,18 @@ class RuleIntentRouter:
                 query_type="project_knowledge",
                 rewritten_query=router_input.question,
                 matched_terms=matched,
+                fallback_used=True,
+            )
+        current_chapter_terms = ["this chapter", "current chapter", "本章", "这一章", "这章", "当前章节"]
+        if any(term in normalized for term in current_chapter_terms):
+            return RouteDecision(
+                route="rag",
+                reason="The question asks about the current v0.2 RAG chapter.",
+                confidence=0.84,
+                needs_local_knowledge=True,
+                query_type="chapter_question",
+                rewritten_query="v0.2-rag-agent Chapter 2 RAG Agent current chapter goals capabilities RAG pipeline",
+                matched_terms=["v0.2", "rag", "chapter"],
                 fallback_used=True,
             )
         if normalized in _DIRECT_TERMS or len(tokens) <= 2:

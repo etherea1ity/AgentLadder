@@ -41,11 +41,8 @@ def _format_source_block(chunk: RerankedChunk) -> str:
     record = chunk.record
     metadata = record.metadata
     title = metadata.title or record.document_id
-    return f"""[Source {chunk.rank}]
-chunk_id: {record.chunk_id}
+    return f"""[Context Block {chunk.rank}]
 title: {title}
-source_path: {metadata.source_path}
-score: {chunk.score:.4f}
 text:
 {record.text.strip()}"""
 
