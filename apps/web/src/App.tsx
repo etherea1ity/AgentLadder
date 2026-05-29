@@ -73,22 +73,21 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const saved = readPersistedUi();
     setSidebarCollapsed(saved.sidebarCollapsed || isMobileViewport());
+    setActiveSessionId(null);
+    setSelectedRunId(null);
+    setRunMarginOpen(false);
+    void refreshSessionsWithRetry(controller.signal, () => cancelled);
+    const warmupRefreshes = [700, 1800].map((delayMs) =>
+      window.setTimeout(() => {
+        if (!cancelled)
+          void refreshSessions({ signal: controller.signal, silent: true });
+      }, delayMs),
+    );
     api
-      .listSessions()
-      .then(async (res) => {
-        if (cancelled) return;
-        setSessions(sortSessions(res.sessions));
-        setActiveSessionId(null);
-        setSelectedRunId(null);
-        setRunMarginOpen(false);
-      })
-      .catch((error) =>
-        notify(`Could not load conversations. ${friendlyError(error)}`),
-      );
-    api
-      .listModels()
+      .listModels(controller.signal)
       .then((res) => {
         if (cancelled) return;
         setModelOptions(res.models);
@@ -110,7 +109,22 @@ export default function App() {
       });
     return () => {
       cancelled = true;
+      controller.abort();
+      warmupRefreshes.forEach((timer) => window.clearTimeout(timer));
       closeAllRunSubscriptions();
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshVisibleSessions = () => {
+      if (document.visibilityState === "hidden") return;
+      void refreshSessions({ silent: true });
+    };
+    window.addEventListener("focus", refreshVisibleSessions);
+    document.addEventListener("visibilitychange", refreshVisibleSessions);
+    return () => {
+      window.removeEventListener("focus", refreshVisibleSessions);
+      document.removeEventListener("visibilitychange", refreshVisibleSessions);
     };
   }, []);
 
@@ -340,10 +354,7 @@ export default function App() {
       setHandoffTriggerRunId(realRun.run_id);
       setActiveSseRunId(realRun.run_id);
       subscribeRun(realRun.run_id);
-      api
-        .listSessions()
-        .then((res) => setSessions(sortSessions(res.sessions)))
-        .catch(() => undefined);
+      void refreshSessions({ silent: true });
     } catch (error) {
       setInput(question);
       setMessages((prev) => {
@@ -476,6 +487,40 @@ export default function App() {
       });
     } catch {
       // A deleted session can no longer be refreshed; keep current UI stable.
+    }
+  }
+
+  async function refreshSessions(
+    options: { signal?: AbortSignal; silent?: boolean } = {},
+  ) {
+    try {
+      const res = await api.listSessions(options.signal);
+      setSessions(sortSessions(res.sessions));
+      return res.sessions;
+    } catch (error) {
+      if (isAbortError(error)) return null;
+      if (!options.silent)
+        notify(`Could not load conversations. ${friendlyError(error)}`);
+      return null;
+    }
+  }
+
+  async function refreshSessionsWithRetry(
+    signal: AbortSignal,
+    isCancelled: () => boolean,
+  ) {
+    const attempts = [0, 350, 850, 1500];
+    for (let index = 0; index < attempts.length; index += 1) {
+      if (isCancelled() || signal.aborted) return;
+      if (attempts[index] > 0) {
+        await delay(attempts[index], signal);
+        if (isCancelled() || signal.aborted) return;
+      }
+      const sessionsResult = await refreshSessions({
+        signal,
+        silent: index < attempts.length - 1,
+      });
+      if (sessionsResult) return;
     }
   }
 
@@ -853,6 +898,26 @@ function parseTokenSource(value: unknown): Run["token_source"] {
 
 function nullableNumber(value: unknown) {
   return typeof value === "number" ? value : null;
+}
+function delay(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
+    const timer = window.setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
+  });
+}
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }
 function isTerminal(status: Run["status"]) {
   return (

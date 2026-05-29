@@ -72,11 +72,15 @@ const completedMessages = [
 
 describe("App e2e flow", () => {
   let sessionsVisible = false;
+  let failFirstSessionsList = false;
+  let sessionsListCalls = 0;
   let runCancelled = false;
 
   beforeEach(() => {
     localStorage.clear();
     sessionsVisible = false;
+    failFirstSessionsList = false;
+    sessionsListCalls = 0;
     runCancelled = false;
     MockEventSource.instances = [];
     vi.stubGlobal("EventSource", MockEventSource);
@@ -94,8 +98,12 @@ describe("App e2e flow", () => {
               { id: "plus", model: "qwen3.6-plus", label: "Qwen 3.6 Plus" },
             ],
           });
-        if (url === "/api/sessions" && (!init || init.method === undefined))
+        if (url === "/api/sessions" && (!init || init.method === undefined)) {
+          sessionsListCalls += 1;
+          if (failFirstSessionsList && sessionsListCalls === 1)
+            throw new TypeError("Backend is warming up");
           return json({ sessions: sessionsVisible ? [session] : [] });
+        }
         if (url === "/api/sessions" && init?.method === "POST") {
           sessionsVisible = true;
           return json(session);
@@ -161,6 +169,19 @@ describe("App e2e flow", () => {
       expect.anything(),
     );
     expect(screen.queryByText("Run Margin")).not.toBeInTheDocument();
+  });
+
+  it("retries the initial conversation list while the backend warms up", async () => {
+    sessionsVisible = true;
+    failFirstSessionsList = true;
+    render(<App />);
+    await waitFor(() =>
+      expect(screen.getByTitle("What is an AI Agent?")).toBeInTheDocument(),
+    );
+    expect(
+      screen.getByPlaceholderText("Ask your first question..."),
+    ).toBeInTheDocument();
+    expect(sessionsListCalls).toBeGreaterThanOrEqual(2);
   });
 
   it("asks, streams, opens Run Margin, completes, and closes details", async () => {
@@ -327,7 +348,9 @@ describe("App e2e flow", () => {
     );
     await userEvent.click(screen.getByLabelText(/choose model/i));
     await userEvent.click(
-      screen.getByRole("button", { name: /Qwen 3\.6 Plusqwen3\.6-plus/i }),
+      screen.getByRole("button", {
+        name: /Qwen 3\.6 Plus\s+qwen3\.6-plus/i,
+      }),
     );
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
