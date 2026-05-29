@@ -755,18 +755,937 @@ FAISS 会使用向量索引结构来加速 nearest neighbor search。常见思�
 </details>
 
 ### 8. Sparse / BM25 Index：关键词检索
-### 9. Hybrid Retrieval + Reranking
+
+这一节解决的问题是：dense vector 能找语义相近的内容，但对代码名、字段名、版本号、章节名这类精确词不一定稳定。
+
+```text
+IndexRecord[]
+→ Tokenizer
+→ BM25Retriever
+→ BM25SearchResult[]
+```
+
+输入是 `IndexRecord[]` 和原始 query 文本，输出是按关键词相关性排序的 `BM25SearchResult[]`。Klara 在这里学会：除了理解语义，也要能抓住 `AskState`、`RunLog`、`AnswerFrameV1`、`v0.2-rag-agent` 这样的精确项目术语。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/retrieval/tokenizer.py
+src/agent_ladder/rag/retrieval/bm25.py
+```
+
+<details>
+<summary>展开：Sparse Retrieval、Inverted Index 与 BM25</summary>
+
+#### 为什么 dense retrieval 不够
+
+如果用户问：
+
+```text
+What is AnswerFrameV1?
+```
+
+或者：
+
+```text
+Where is RunLog created?
+```
+
+这些问题里有很强的项目术语。Dense embedding 可以理解语义，但未必总能稳定抓住这些精确符号。BM25 这类 sparse retrieval 更擅长关键词、字段名、版本号和代码名。
+
+#### Sparse Retrieval 是什么
+
+Sparse retrieval 的核心是：把文本拆成 token，然后用词项出现情况检索。
+
+```text
+query = "AskState RunLog"
+record text = "Chapter 1 introduced AskState, AnswerState, and RunLog."
+```
+
+如果 query 里的词在 record 中出现，record 就应该得分更高。
+
+#### Inverted Index
+
+关键词检索常用 inverted index。它不是从文档找词，而是从词找文档：
+
+```text
+askstate → [record_001, record_004]
+runlog   → [record_001, record_009]
+rag      → [record_010, record_011, record_012]
+```
+
+这样查询 `AskState` 时，不需要遍历所有文本，就能直接找到包含这个词的记录。本章为了教学会先手写最小 BM25，数据量小的时候也可以直接扫描 records。
+
+#### TF：Term Frequency
+
+TF 表示一个词在当前 record 里出现多少次。
+
+```text
+AskState appears 2 times in record A
+AskState appears 0 times in record B
+```
+
+出现次数越多，通常越相关。但次数增长不能无限放大，所以 BM25 会用 `k1` 控制词频收益。
+
+#### DF / IDF
+
+DF 是 document frequency：一个词出现在多少个文档或记录里。
+
+IDF 是 inverse document frequency：越稀有的词越重要。
+
+例如：
+
+```text
+"the" appears in almost every record → low IDF
+"AnswerFrameV1" appears in very few records → high IDF
+```
+
+常见 BM25 IDF 形式：
+
+```text
+IDF(q) = log(1 + (N - df(q) + 0.5) / (df(q) + 0.5))
+```
+
+其中：
+
+```text
+N     = 总记录数
+df(q) = 包含词 q 的记录数
+```
+
+#### Length Normalization
+
+长文本天然包含更多词，如果不做归一化，长 chunk 可能更容易命中 query。BM25 用 `b` 和平均文档长度 `avgdl` 做长度归一化。
+
+BM25 常见公式：
+
+```text
+score(D, Q) = Σ IDF(qᵢ) ×
+  f(qᵢ, D) × (k1 + 1)
+  /
+  (f(qᵢ, D) + k1 × (1 - b + b × |D| / avgdl))
+```
+
+其中：
+
+```text
+f(qᵢ, D) = 词 qᵢ 在文档 D 中出现次数
+|D|      = 当前文档长度
+avgdl    = 平均文档长度
+k1       = 控制词频增长
+b        = 控制长度归一化
+```
+
+本章先使用默认教学参数：
+
+```text
+k1 = 1.5
+b = 0.75
+```
+
+</details>
+
+### 9. Hybrid Retrieval：Dense + Sparse 融合
+
+这一节解决的问题是：dense retrieval 擅长语义，BM25 擅长关键词；Klara 需要把两种检索结果合并成一个更稳的候选列表。
+
+```text
+query_text + query_vector
+→ Dense Retriever + BM25 Retriever
+→ HybridRetriever
+→ HybridSearchResult[]
+```
+
+输入是用户 query 文本、query vector、dense results 和 BM25 results，输出是融合后的 `HybridSearchResult[]`。Klara 在这里学会：同时使用语义相似和关键词匹配，而不是只相信一种检索方式。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/retrieval/dense.py
+src/agent_ladder/rag/retrieval/hybrid.py
+src/agent_ladder/rag/retrieval/result.py
+```
+
+<details>
+<summary>展开：Score Fusion、RRF 与混合检索取舍</summary>
+
+#### 为什么要 hybrid
+
+只用 dense，可能漏掉精确术语；只用 BM25，可能漏掉语义改写。
+
+例如：
+
+```text
+query: "What did Klara gain in the first chapter?"
+```
+
+这句话可能没有直接出现 `MinimalAgent`、`AskState`，但语义和第一章 chunk 很接近，dense retrieval 很有用。
+
+另一个问题：
+
+```text
+query: "Explain AnswerFrameV1"
+```
+
+这里 `AnswerFrameV1` 是精确符号，BM25 很有用。
+
+所以 hybrid retrieval 需要把两者结合。
+
+#### 加权分数融合
+
+最直观的方式是加权：
+
+```text
+hybrid_score =
+  dense_weight × normalized_dense_score
+  + sparse_weight × normalized_bm25_score
+```
+
+例如：
+
+```text
+dense_weight = 0.7
+sparse_weight = 0.3
+```
+
+这样语义检索是主力，但关键词也能补充。
+
+#### 为什么要 normalize
+
+dense score 和 BM25 score 的范围不一定一样。Cosine similarity 通常在 `-1 ~ 1` 或 `0 ~ 1` 附近；BM25 分数可能大于 1，也可能随语料变化。因此融合前要归一化，否则某一边可能因为尺度更大而压过另一边。
+
+#### RRF：Reciprocal Rank Fusion
+
+RRF 不直接比较分数，而是比较排名：
+
+```text
+RRF(d) = Σ 1 / (k + rankᵢ(d))
+```
+
+如果一个 chunk 在 dense 和 BM25 两边排名都靠前，它的融合分数就高。RRF 的优点是对不同检索器的分数尺度不敏感。
+
+本章第一版可以先用加权分数融合，因为它最容易理解；README 中保留 RRF，是为了让学习者知道真实系统常用 rank fusion。
+
+#### 输出不是最终答案
+
+Hybrid retrieval 只是召回候选资料。它的输出仍然是 candidates，不是最终 evidence。最终还需要 reranking。
+
+</details>
+
+### 10. Reranking：从候选 chunk 里选证据
+
+这一节解决的问题是：Hybrid retrieval 会召回一批候选 chunks，但 Writer 不应该吃太多上下文；Klara 需要从候选中选出最值得进入 prompt 的证据片段。
+
+```text
+HybridSearchResult[]
+→ SimpleReranker
+→ RerankedChunk[]
+```
+
+输入是融合检索后的候选结果，输出是精排后的少量 `RerankedChunk[]`。Klara 在这里学会：粗排负责“找一批可能相关的”，精排负责“选出最适合回答当前问题的”。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/reranking/simple_reranker.py
+```
+
+<details>
+<summary>展开：粗排、精排、规则 rerank 与模型 rerank</summary>
+
+#### Coarse Retrieval vs Reranking
+
+粗排的目标是召回：
+
+```text
+尽量不要漏掉可能相关的 chunk
+```
+
+精排的目标是选择：
+
+```text
+从候选里挑最适合进入上下文的 chunk
+```
+
+如果直接把 top 20 都塞给 Writer，会导致：
+
+```text
+prompt 太长
+token 成本变高
+无关信息干扰回答
+引用来源不清楚
+```
+
+所以需要 reranking。
+
+#### 本章的规则 reranker
+
+本章不先接 cross-encoder，也不让 LLM 做 judge。先用可解释的规则：
+
+```text
+final_score =
+  hybrid_score
+  + exact_keyword_bonus
+  + title_match_bonus
+  + tag_match_bonus
+```
+
+比如用户问 `RunLog`，包含 `RunLog` 的 chunk 可以加分；用户问 `chapter one`，metadata 里 `chapter: ch01` 的 chunk 可以加分。
+
+#### Cross-Encoder Reranker
+
+Cross-encoder 会把 query 和 chunk 一起输入模型：
+
+```text
+(query, chunk) → relevance score
+```
+
+它通常比简单向量相似度更准，但速度更慢，成本更高。
+
+#### LLM Reranker
+
+LLM reranker 可以让模型判断哪些 chunks 能回答问题，但需要控制成本，也要避免模型“凭感觉”解释过度。本章先不用它，等后续 Agentic RAG 再引入 evidence grader / verifier。
+
+</details>
 
 ## Part D：问题进入 RAG 链路
-### 10. Direct vs RAG Decision
-### 11. Context Builder
+
+Part D 的目标是：让用户问题不再直接进入 Writer，而是先经过路由判断和上下文构建。
+
+```text
+User Question
+→ Intent Router
+→ Direct or RAG
+→ Context Builder
+```
+
+### 11. Intent Router：判断是否需要 RAG
+
+这一节解决的问题是：不是所有问题都需要查资料。Klara 需要先判断用户是在普通聊天，还是在问需要本地知识库支撑的问题。
+
+```text
+UserQuestion
+→ IntentRouter
+→ RouteDecision
+```
+
+输入是用户问题，输出是结构化 `RouteDecision`。Klara 在这里学会：先判断是否需要进入 RAG，再决定是直接交给 Writer，还是启动检索链路。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/contracts/route.py
+src/agent_ladder/rag/routing/intent_router.py
+```
+
+<details>
+<summary>展开：Direct Answer、RAG Answer 与 RouteDecision</summary>
+
+#### 为什么需要路由
+
+如果用户问：
+
+```text
+你好
+```
+
+不需要查本地知识库。
+
+如果用户问：
+
+```text
+What did Klara learn in chapter one?
+```
+
+就应该进入 RAG，因为答案依赖项目资料。
+
+Intent Router 的输出应该是结构化的：
+
+```text
+RouteDecision:
+  route: "direct" | "rag"
+  reason: string
+  confidence: float
+```
+
+#### 简单规则
+
+v0.2 可以先用规则：
+
+```text
+如果问题包含 chapter、Klara、Agent Ladder、AskState、RunLog、RAG 等项目词 → rag
+如果是普通寒暄或通用常识 → direct
+```
+
+后续可以升级成 LLM router 或小分类模型。
+
+#### 前端卡片
+
+右侧 Run Chain 可以显示一张卡片：
+
+```text
+Intent Router
+✓ Completed
+Decision: RAG
+Reason: The question asks about Klara's chapter knowledge.
+```
+
+这张卡片只展示 public decision，不展示模型 chain-of-thought。
+
+</details>
+
+### 12. Context Builder：把证据组织给 Writer
+
+这一节解决的问题是：检索和精排得到的是多个 chunks，但 Writer 不应该直接吃原始 chunk 列表；Klara 需要把证据组织成稳定的上下文结构。
+
+```text
+RerankedChunk[]
+→ ContextBuilder
+→ BuiltContext
+```
+
+输入是精排后的 chunks，输出是 `BuiltContext`。Klara 在这里学会：控制 token budget、保留来源信息、用稳定格式把证据交给 Writer。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/contracts/context.py
+src/agent_ladder/rag/context/context_builder.py
+```
+
+<details>
+<summary>展开：为什么 Writer 不直接吃 chunks</summary>
+
+#### 直接塞 chunks 的问题
+
+如果直接把 chunks 原样塞给 Writer，会有几个问题：
+
+```text
+顺序不稳定
+来源信息混乱
+token 不受控
+重复 chunk 可能进入 prompt
+Writer 不知道哪些字段是正文，哪些字段是 source
+```
+
+所以需要 Context Builder。
+
+#### BuiltContext
+
+`BuiltContext` 可以包含：
+
+```text
+query
+selected_chunks
+context_text
+token_estimate
+source_summaries
+```
+
+其中 `context_text` 是真正给 Writer 的内容，`selected_chunks` 则保留结构化来源，方便后面生成 citation。
+
+#### Token Budget
+
+v0.2 可以先用简单估算：
+
+```text
+token_estimate ≈ len(text) / 4
+```
+
+如果超过预算，就减少 chunk 数量或截断较低分 chunk。后续 production 章节再接更准确 tokenizer。
+
+#### Prompt 格式
+
+上下文可以组织成：
+
+```text
+[Source 1]
+chunk_id: ...
+title: ...
+text: ...
+
+[Source 2]
+...
+```
+
+这样 Writer 能明确知道每段资料来自哪里。
+
+</details>
 
 ## Part E：从资料到答案
-### 12. SourceCard / Citation
-### 13. AnswerFrameV1 / Trace
 
-## Part F：章节冻结
-### 14. How to Run
-### 15. Tests
-### 16. Known Limitations
-### 17. Next Chapter: Agentic RAG
+Part E 的目标是：让 Klara 不只是找到资料，还能基于资料生成结构化答案，并说明来源。
+
+```text
+BuiltContext
+→ KlaraAgent Writer
+→ AnswerFrameV1
+→ SourceCard / Citation
+```
+
+### 13. KlaraAgent Writer：基于证据回答
+
+这一节解决的问题是：RAG 检索出的上下文需要一个 Writer 来生成最终回答。第二章开始，第一章的 Minimal Agent 概念会演化成 `KlaraAgent`。
+
+```text
+UserQuestion + BuiltContext
+→ KlaraAgent Writer
+→ Draft Answer
+```
+
+输入是用户问题和 `BuiltContext`，输出是基于证据生成的回答草稿。Klara 在这里学会：不是只靠模型记忆回答，而是先阅读检索上下文，再用 Writer 生成答案。
+
+对应代码：
+
+```text
+src/agent_ladder/core/runtime/klara_agent.py
+src/agent_ladder/rag/writer/klara_writer.py
+```
+
+<details>
+<summary>展开：MinimalAgent 如何演化成 KlaraAgent</summary>
+
+第一章里的核心是 Minimal Agent：
+
+```text
+AskState
+→ LLM Call
+→ AnswerState
+→ RunLog
+```
+
+第二章不应该推翻它，而是让它升级：
+
+```text
+MinimalAgent = Chapter 1 的最小形态
+KlaraAgent   = 从 Chapter 2 开始的主 Agent
+```
+
+在 RAG 链路中，KlaraAgent 扮演 Writer：
+
+```text
+BuiltContext
+→ Writer Prompt
+→ LLM Call
+→ Answer Draft
+```
+
+Writer 不直接吃原始 chunks，而是吃 `BuiltContext`。这样后面可以替换成更复杂的 EvidencePack，也能让前端展示 Context Builder 和 Writer 两张不同卡片。
+
+#### 前端卡片
+
+右侧 Run Chain 可以显示：
+
+```text
+KlaraAgent Writer
+✓ Completed · 2.1s
+Input tokens: 1200
+Output tokens: 340
+```
+
+展开后可以看到：
+
+```text
+Input: BuiltContext summary
+Output: answer draft
+Model: qwen3.6-flash
+```
+
+</details>
+
+### 14. SourceCard / Citation：答案从哪里来
+
+这一节解决的问题是：RAG 答案必须能说明资料来源，而不是只给一段看似正确的回答。
+
+```text
+Selected chunks + Answer Draft
+→ SourceCard[] + Citation[]
+```
+
+输入是被选中的 chunks 和回答草稿，输出是 `SourceCard[]` 与 `Citation[]`。Klara 在这里学会：回答不仅要有内容，还要能追溯到资料。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/contracts/source.py
+src/agent_ladder/rag/citations/source_card.py
+src/agent_ladder/rag/citations/citation_builder.py
+```
+
+<details>
+<summary>展开：SourceCard、Citation 粒度与 Chapter 3 边界</summary>
+
+#### SourceCard
+
+`SourceCard` 是给用户看的来源卡片。它可以包含：
+
+```text
+source_id
+title
+source_path
+chapter
+version
+summary
+used_chunk_ids
+```
+
+它回答：
+
+```text
+这次回答参考了哪些资料？
+```
+
+#### Citation
+
+`Citation` 更细，它绑定到具体 chunk：
+
+```text
+citation_id
+chunk_id
+source_id
+quote_or_summary
+```
+
+它回答：
+
+```text
+这句话或这段回答参考了哪个 chunk？
+```
+
+#### v0.2 的边界
+
+v0.2 可以先做简单 citation：把答案末尾列出 sources，或者在段落后放 `[source: ...]`。
+
+更细粒度的 claim-source mapping、citation verifier、证据一致性检查，放到 Chapter 3 Agentic RAG。
+
+</details>
+
+### 15. AnswerFrameV1：结构化答案
+
+这一节解决的问题是：RAG 的输出不应该只是一个字符串，而应该是一个结构化答案对象，方便前端、trace、eval 和后续章节复用。
+
+```text
+Answer Draft + Sources + Citations + Run Summary
+→ AnswerFrameV1
+```
+
+输入是 Writer 草稿、sources、citations 和运行摘要，输出是 `AnswerFrameV1`。Klara 在这里学会：把答案、来源和运行信息一起返回。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/contracts/answer_frame.py
+```
+
+<details>
+<summary>展开：为什么答案不只是字符串</summary>
+
+如果答案只是：
+
+```text
+"Klara learned AskState and RunLog."
+```
+
+前端就很难知道：
+
+```text
+引用了哪些资料
+哪些 chunks 被使用
+是否走了 RAG
+token 花了多少
+trace 保存在哪里
+```
+
+所以需要 `AnswerFrameV1`：
+
+```text
+answer: string
+route: direct | rag
+sources: SourceCard[]
+citations: Citation[]
+used_chunks: chunk_id[]
+run_log: summary
+```
+
+这样前端可以渲染答案，右侧 Run Chain 可以展示模块卡片，trace 可以保存结构化过程。
+
+#### V1 的边界
+
+V1 不做复杂评估，不做 evidence verifier，不做 claim-level citation。它只保证：答案和 sources/citations 可以放在同一个结构里。
+
+</details>
+
+## Part F：前端 Run Chain 与章节冻结
+
+Part F 的目标是：把 RAG 的每一步以简单卡片显示在右侧，让用户看到 Klara 是如何从问题走到答案的。
+
+```text
+Structured module outputs
+→ Run Chain Cards
+→ Trace Summary
+```
+
+### 16. Run Chain Cards：前端如何展示 RAG 流程
+
+这一节解决的问题是：RAG 流程不能在前端变成一个黑盒。每个模块都应该像之前的 LLM Call 一样，成为右侧可展开的卡片。
+
+```text
+ModuleResult[]
+→ Run Chain Cards
+→ Expandable Details
+```
+
+输入是每个模块的结构化输入输出，输出是右侧 Run Chain 卡片。Klara 在这里学会：把自己的运行过程用 public trace 展示出来，但不展示 chain-of-thought。
+
+对应代码：
+
+```text
+apps/web/src/components/RunMargin.tsx
+apps/web/src/types/domain.ts
+src/agent_ladder/api/runs.py
+src/agent_ladder/api/schemas.py
+```
+
+<details>
+<summary>展开：卡片结构、模块事件与 public trace</summary>
+
+右侧卡片保持简单，和前面的 LLM Call 卡片一致：
+
+```text
+Card Title
+Status
+Summary
+Latency
+Input Summary
+Output Summary
+Expandable Details
+```
+
+v0.2 可以有这些卡片：
+
+```text
+Intent Router
+Dense Retrieval
+BM25 Retrieval
+Hybrid Retrieval
+Reranking
+Context Builder
+KlaraAgent Writer
+Trace Saved
+```
+
+每张卡片可展开看结构化输入输出。
+
+例如 Coarse Retrieval：
+
+```text
+Input:
+query = "What did Klara learn in chapter one?"
+
+Output:
+1. doc_ch01_minimal_agent_chunk_0002 score=0.82
+2. doc_global_klara_overview_chunk_0004 score=0.74
+```
+
+Reranking 卡片可以显示：
+
+```text
+Input: 10 candidate chunks
+Output: 3 selected chunks
+```
+
+Summary 最后显示：
+
+```text
+Total latency
+Input tokens
+Output tokens
+Retrieved chunks
+Selected chunks
+Trace saved
+```
+
+重要边界：前端只展示 public trace，不展示模型原始 chain-of-thought。
+
+</details>
+
+### 17. How to Run：本章最终运行方式
+
+这一节解决的问题是：读者完成 v0.2 后，应该能从本地知识库构建索引，启动 Klara，然后问一个会触发 RAG 的问题。
+
+```text
+Knowledge markdown
+→ Build local RAG index
+→ Start backend/frontend
+→ Ask RAG question
+→ Inspect Run Chain cards
+```
+
+输入是 `data/knowledge/` 下的 Markdown + metadata，输出是可检索的本地索引和一次可观察的 RAG run。Klara 在这里学会：把资料准备、检索、写作和前端 trace 串成一个完整体验。
+
+对应入口会固定为：
+
+```text
+scripts/rag/build_index.py      # 构建本地 JSONL 索引，待实现
+start.ps1                       # 启动前后端，当前已存在
+apps/web/src/components/RunMargin.tsx
+```
+
+<details>
+<summary>展开：v0.2 完成后的演示路径</summary>
+
+最终演示路径应该很短：
+
+```text
+1. 准备知识文件
+   data/knowledge/global/klara-overview.md
+   data/knowledge/chapters/ch01-minimal-agent.md
+   data/knowledge/chapters/ch02-rag-agent.md
+
+2. 构建索引
+   python scripts/rag/build_index.py
+
+3. 启动前后端
+   powershell -ExecutionPolicy Bypass -File .\start.ps1 -NoOpen
+
+4. 提问
+   What did Klara learn in chapter one?
+
+5. 查看右侧 Run Chain
+   Intent Router
+   Dense Retrieval
+   BM25 Retrieval
+   Hybrid Retrieval
+   Reranking
+   Context Builder
+   KlaraAgent Writer
+   Trace Saved
+```
+
+如果某一步还没有实现，README 中的代码路径就是下一步要补的工程入口。
+
+</details>
+
+### 18. Known Limitations
+
+这一章的限制会保留在主线里，避免把 v0.2 做成过度复杂的生产系统。
+
+```text
+Local JSONL index
+Rule-based intent router
+Simple BM25
+Simple hybrid fusion
+Simple reranker
+Basic citations
+```
+
+这些限制是刻意保留的，因为本章目标是讲清楚基础 RAG 主线，不是一次性做完 Agentic RAG。
+
+### 19. 下一章：Agentic RAG
+
+下一章会进入 Agentic RAG。
+
+```text
+RAG
+→ query rewrite
+→ retrieval planning
+→ evidence selection
+→ citation verification
+→ insufficient evidence fallback
+→ state machine
+```
+
+v0.2 解决的是：Klara 如何基于本地资料回答。
+
+v0.3 要解决的是：Klara 如何主动规划检索、判断证据质量、处理多问题、多轮检索和不足证据。
+
+
+### 20. v0.2 实现顺序
+
+这一节解决的问题是：README 已经给出完整学习路线，代码实现要按最小模块逐步落地，不能一次性把 RAG 做成黑盒。
+
+```text
+Retrieval core
+→ Route + context
+→ KlaraAgent writer
+→ Run Chain cards
+→ Freeze
+```
+
+输入是前面已经写好的 contracts、loader、chunker、embedding 和 vector index，输出是一个能真实走通的 RAG Agent。Klara 在这里学会：每一步都以结构化对象传输，并且每一步都能在右侧 Run Chain 被看见。
+
+对应实现顺序：
+
+```text
+1. src/agent_ladder/rag/retrieval/tokenizer.py
+2. src/agent_ladder/rag/retrieval/bm25.py
+3. src/agent_ladder/rag/retrieval/dense.py
+4. src/agent_ladder/rag/retrieval/hybrid.py
+5. src/agent_ladder/rag/reranking/simple_reranker.py
+6. src/agent_ladder/rag/routing/intent_router.py
+7. src/agent_ladder/rag/context/context_builder.py
+8. src/agent_ladder/rag/contracts/answer_frame.py
+9. src/agent_ladder/core/runtime/klara_agent.py
+10. apps/web/src/components/RunMargin.tsx
+```
+
+<details>
+<summary>展开：为什么按这个顺序实现</summary>
+
+实现顺序必须从“可检索”开始，而不是从前端开始。因为前端 Run Chain 要展示的是后端真实模块输出，不应该先写一套假 UI。
+
+#### 第一阶段：检索核心
+
+先完成：
+
+```text
+BM25
+Dense retrieval wrapper
+Hybrid fusion
+Reranking
+```
+
+这样 Klara 可以从本地知识库里找到候选 chunks。
+
+#### 第二阶段：RAG 链路
+
+再完成：
+
+```text
+Intent Router
+Context Builder
+AnswerFrameV1
+```
+
+这样用户问题可以被路由，证据可以被组织，答案可以结构化返回。
+
+#### 第三阶段：KlaraAgent Writer
+
+`KlaraAgent` 不替代第一章的 `MinimalAgent`，而是在它上面增加 RAG 能力：
+
+```text
+如果 route = direct：
+  KlaraAgent → LLM Writer
+
+如果 route = rag：
+  KlaraAgent → Retrieval → Context → Writer → AnswerFrameV1
+```
+
+#### 第四阶段：前端 Run Chain
+
+前端只做一件事：展示真实模块结果。
+
+每张卡片对应一个结构化 module result：
+
+```text
+module_name
+status
+latency_ms
+input_summary
+output_summary
+details
+```
+
+这样粗排、精排、Writer 都能用统一卡片展示，也方便后续 v0.3 加入 query rewrite、evidence grader、citation verifier。
+
+</details>
