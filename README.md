@@ -1,783 +1,611 @@
-# Klara / Agent Ladder
+# 章节二：RAG Agent，克拉拉的阳光图书馆
+> 从模型本身能力，到可检索、可引用、可追踪的知识图书馆
 
-**From Prompt to Policy**
+当前分支： v0.2-rag-agent
+如何运行： 
 
-当前分支：
+## 本章总结
+在第一章中，Klara 只是一个能够调用 LLM、完成单次问答的 Minimal Agent。
 
-```text
-v0.1-minimal-agent
-```
+她能够听见用户的问题，也能够依靠模型本身给出回答。但这时的 Klara 还没有真正属于自己的资料世界。她不知道自己的成长经历，不知道项目路线，也无法在回答中说明“我是从哪里知道这件事的”。
 
-当前章节：
+在第二章中，我们为 Klara 建造她的第一间小书房：
 
-```text
-Chapter 1：克拉拉诞生
-```
+Klara's Sun Library
 
-下一个分支：
+这间小书房里放的不是庞大的互联网，也不是复杂的论文库，而是 Klara 最初应该读懂的资料：
 
-```text
-v0.2-rag-agent
-```
+1. Klara 的身份与设定
+2. Agent Ladder 的项目经历与成长路线
 
-下一章中，Klara 会开始学习 RAG：读取本地知识库、切分文档、向量检索、source card、citation，并基于资料回答问题。
+从这一章开始，Klara 不再只依靠模型参数来回答问题，她会学习**如何读取本地文档**、**切分知识片段**、**生成embedding**、**建立向量索引**、**召回相关资料**、**对资料进行粗/细粒度重排序**、**并且路径种有sourceCard、Citation和AnswerFrame**。
+并且还有一些辅助克拉拉理解知识的设计，比如Metadata、Index、意图识别、Context Builder等。
 
-Klara 现在还只是一个最小形态的 **Artificial Friend**。她可以接收一个问题，调用真实的大模型 API，生成回答，统计 token，保存运行记录，并在前端展示一次可观察的 run。
+在每一次问题中，克拉拉都会告诉我们，她每一步都分别做了什么，我们可以从一个完整的回答链路中，看到每一次思考的详细过程。
 
-这个分支要讲清楚一件事：
+## Part A：本章定位
+### 1. 为什么需要RAG
+在第一章中，Klara已经能完成一次最小问答。当我们提出一个问题，她可以接受输入，调用LLM，生成回答，并且记录这一次的trace。
+但是，她只能依靠LLM自己的能力去做出反应。如果你要问Klara，你的这个Klara：Agent Ladder是在做什么，我们的第一章学到了什么，第二章有什么能力，她并不知道。因为这些问题不属于普通常识，而是属于我们的私有知识、阶段知识以及需要持续更新的知识。
+RAG的价值就在这里，它它可以给 LLM 外挂一个可维护的知识库，让知识不再只依赖模型本身，而是可以被新增、修改、删除、重新索引和重新检索。这样 Klara 的回答就能随着项目一起更新，也能在回答时说明自己参考了哪些资料。
+并且当我们的知识有了源头，Klara就可以对自己的回答进行溯源，避免很多幻觉问题。
 
-> 一次 LLM API Call，如何变成一个有状态、可观察、可追踪的 Minimal Agent。
+一次基础 RAG 流程可以理解为：Raw Documents → Cleaning → Chunking → Metadata → Embedding → Vector Index → Query → Hybrid Retrieval → Coarse Retrieval → Reranking → Context Builder → LLM Writer → SourceCard → Citation → AnswerFrameV1 → Trace。也就是说，我们先把资料清洗、切块、加上 metadata，再将文本向量化并存入索引；当用户提问时，系统会通过关键词和向量等方式进行混合检索，先粗排召回可能相关的内容，再精排选出最重要的片段，最后把这些片段交给 LLM 生成有来源支撑的回答。
 
----
+### 2. Klara's Sun Library：为什么是小书房
+第二章中，我们不会直接让 Klara 读取整个互联网，也不会一上来放入大量复杂论文。我们先给她一间小而清晰的书房：Klara's Sun Library。这间小书房里放的是 Klara 最应该先读懂的内容：她是谁、她的性格和边界是什么。Agent Ladder 的项目路线是什么、第一章发生了什么、第二章要学习什么。
 
-> 【截图占位 1：首页截图】
->
-> 建议文件：`docs/assets/readme/klara-home.png`
->
-> 建议内容：Klara 首页，包含大 logo、输入框、左侧会话栏。
+之所以叫小书房，是因为第二章的重点不是堆资料规模，而是讲清楚 RAG 从前到后的基础链路。Klara 不需要一开始就拥有一座庞大的图书馆，她需要先学会如何整理资料、如何检索资料、如何选择相关片段、如何把资料交给 LLM，以及如何展示来源。从这一章开始，Klara 不再只是回答，而是开始学会先查资料后再回答。
 
----
+因此，本章的目标可以概括为：让 Klara 拥有第一批可检索、可更新、可引用、可追踪的本地知识。第二章的 Klara 学会的是基础 RAG：如何把小书房里的资料变成可检索知识，并基于这些知识生成有来源的回答。第三章才会进一步升级到 Agentic RAG，让 Klara 学会复杂意图拆分、检索规划、query rewrite、证据选择和回答验证。
+## Part B：资料进入系统
 
-## 当前分支里，Klara 会什么？
-
-在 `v0.1-minimal-agent` 中，Klara 已经具备以下能力：
-
-- 接收用户输入的问题
-- 调用真实 LLM，而不是 mock 回答
-- 流式输出回答
-- 创建 `AskState`
-- 创建 `AnswerState`
-- 创建 `RunLog`
-- 统计 input tokens / output tokens
-- 保存 JSONL trace
-- 在前端展示对话
-- 在右侧 Run Margin 中展示当前 run 的公开运行信息
-- 支持会话创建、删除、恢复
-- 保持 core / backend / frontend 分离
-
-这一章的 Klara 还不会：
-
-- RAG
-- 记忆
-- 搜索网页
-- MCP 工具
-- 长报告研究
-- Eval
-- RL 自优化
-
-这些会在后续章节逐步加入。
-
----
-
-## 快速启动
-
-### 1. 准备 API Key
-
-本项目当前使用阿里云百炼 / DashScope 的 OpenAI-compatible API。
-
-你需要先在阿里云百炼平台创建自己的 API Key。
-
-官方入口：
-
-- [阿里云百炼控制台](https://bailian.console.aliyun.com/)
-- [阿里云百炼官方文档：如何获取 API Key](https://help.aliyun.com/zh/model-studio/get-api-key/)
-
-> 注意：不要把真实 API Key 提交到 GitHub。真实 key 只应该放在本地 `.env` 文件中。
-
----
-
-> 【截图占位 2：阿里云百炼 API Key 页面】
->
-> 建议文件：`docs/assets/readme/bailian-api-key.png`
->
-> 建议内容：展示 API Key 创建入口，注意不要露出真实 key。
-
----
-
-复制 `.env.example` 为 `.env`：
-
-```env
-DASHSCOPE_API_KEY=your_api_key_here
-AGENT_LADDER_MODEL=qwen3.6-flash
-AGENT_LADDER_ENABLE_THINKING=false
-```
-
-默认模型建议使用：
+Part B 只做两件事：先读取 Klara 小书房里的 markdown 和 metadata，再把标准化后的 `Document` 切成 `TextChunk[]`。
 
 ```text
-qwen3.6-flash
+Markdown + Metadata
+→ Document
+→ TextChunk[]
 ```
 
-因为第一章的目标不是追求最强回答，而是观察一次 agent run 是怎么发生的。
+这一部分还不涉及 embedding，也不涉及检索算法。它的目标是让磁盘上的知识文件进入系统，并变成下一部分索引层可以继续处理的文本块。
 
----
+### 3. 读取与 Metadata 设计
 
-### 2. 启动前后端
-
-在项目根目录运行：
-
-```powershell
-.\start.ps1
-```
-
-如果不想自动打开浏览器：
-
-```powershell
-.\start.ps1 -NoOpen
-```
-
-默认地址：
+这一节解决的问题是：Klara 如何把本地知识文件带着身份信息读入系统。
 
 ```text
-Frontend: http://localhost:5123
-Backend:  http://localhost:8000
+.md file + .metadata.yaml file
+→ LocalMarkdownLoader
+→ Document
 ```
 
----
+输入是小书房里的 markdown 正文和同名 metadata 文件；输出是统一的 `Document`。Klara 在这里学会：每一份资料都不只是文本，还必须知道它来自哪里、属于哪一章、对应哪个版本。
 
-> 【截图占位 3：PowerShell 启动截图】
->
-> 建议文件：`docs/assets/readme/start-script.png`
->
-> 建议内容：展示 `.\start.ps1` 启动成功，前端和后端都挂起来。
-
----
-
-### 3. 发送第一个问题
-
-你可以问：
+对应代码：
 
 ```text
-What is an AI Agent?
+src/agent_ladder/rag/contracts/document.py
+src/agent_ladder/rag/ingestion/local_markdown.py
 ```
 
-或者：
+<details>
+<summary>展开：资料、metadata 字段与 Document 设计</summary>
+
+Klara 的小书房里现在有三份最初的英文知识资料：
 
 ```text
-什么是 AI Agent？
+data/knowledge/
+├── global/
+│   ├── klara-overview.md
+│   └── klara-overview.metadata.yaml
+└── chapters/
+    ├── ch01-minimal-agent.md
+    ├── ch01-minimal-agent.metadata.yaml
+    ├── ch02-rag-agent.md
+    └── ch02-rag-agent.metadata.yaml
 ```
 
-Klara 会开始一次最小运行：
+其中：
+
+- `klara-overview.md`：Klara 的全局能力地图，说明 Klara 是谁、Agent Ladder 是什么、她会沿着哪些能力成长
+- `ch01-minimal-agent.md`：Klara 第一章已经学会的 Minimal Agent 能力
+- `ch02-rag-agent.md`：Klara 第二章正在学习的 RAG Agent 能力
+
+每一份 markdown 都有一个同名 metadata 文件。例如：
 
 ```text
-User Question
-→ AskState
-→ Prompt
-→ LLM Call
-→ AnswerState
-→ RunLog
-→ JSONL Trace
-→ UI Run Margin
+ch02-rag-agent.md
+ch02-rag-agent.metadata.yaml
 ```
 
----
+这样设计是因为正文和身份信息要分开：
 
-> 【截图占位 4：一次完整问答截图】
->
-> 建议文件：`docs/assets/readme/klara-chat.png`
->
-> 建议内容：中间对话区显示用户问题和 Klara 回答。
+- `.md` 负责保存 Klara 能阅读的知识正文
+- `.metadata.yaml` 负责说明这份资料是谁、来自哪里、属于哪一章、对应哪个版本
 
----
-
-> 【截图占位 5：右侧 Run Margin 截图】
->
-> 建议文件：`docs/assets/readme/klara-run-margin.png`
->
-> 建议内容：点击 thinking / run 后，右侧展示 LLM Call、latency、input/output tokens、summary。
-
----
-
-## Chapter 1：克拉拉诞生
-
-我们要设计一个新一代的 **AF：Artificial Friend**。
-
-她的名字叫 **Klara**。
-
-Klara 不是一开始就会搜索网页、调用工具、记住上下文、写研究报告。她一开始只是一个非常简单的存在：
-
-> 你给她一句话，她加工后，返回一句话。
-
-这一章，我们要从零开始，看一个 AF 是如何诞生的。
-
----
-
-## 什么是 Klara？
-
-在这个项目里，Klara 可以先被理解成两个部分：
+读取后的结果是统一的 `Document`：
 
 ```text
-Klara = 内核 + 四肢
+Markdown File
++
+Metadata File
+→ Document
 ```
 
-### 内核
-
-Klara 的内核，就是一个大语言模型，也就是 LLM。
-
-LLM 最本质的能力非常简单：
+在代码里，`Document` 的最小结构是：
 
 ```text
-输入一段信息
-→ 加工这段信息
-→ 输出一段信息
+Document = text + metadata
 ```
 
-比如：
+其中 metadata 包含：
 
 ```text
-User: hi
-LLM: hi, how can I help you?
+document_id
+title
+source_path
+source_type
+category
+chapter
+version
+language
+tags
+summary
 ```
 
-或者：
+例如 `ch02-rag-agent.metadata.yaml` 会告诉系统：
 
 ```text
-User: 什么是 AI Agent？
-LLM: AI Agent 是一种能够感知输入、进行推理，并采取行动的系统。
+document_id: doc_ch02_rag_agent
+title: Chapter 2 Capability: RAG Agent
+category: chapters
+chapter: ch02
+version: v0.2-rag-agent
+source_type: markdown
 ```
 
-这就是 Klara 最早的大脑。
+这一层解决的是：Klara 的资料如何带着身份进入系统。后续做 source card、citation、版本过滤、章节过滤时，都依赖这些 metadata。
 
-她现在还不会主动去查网页。她也不会自己操作电脑。她不会真的打开文件、调用搜索引擎、访问数据库。
+</details>
 
-她的大脑只会做一件事：
+### 4. 分块策略：Overlap Chunking
 
-> 接收信息，然后生成新的信息。
-
----
-
-### 四肢和工具
-
-那为什么市面上的 AI 产品可以搜索网页、调用工具、读文件、查资料？
-
-因为真正的 Agent 不是只有一个 LLM。
-
-它通常是：
+这一节解决的问题是：整篇 `Document` 太长，不适合直接检索，需要切成更小的文本块。
 
 ```text
-LLM 大脑
-+ 状态
-+ 工具
-+ 运行流程
-+ 观察记录
-+ 错误处理
-+ 记忆
-+ 评估
+Document
+→ OverlapTextSplitter
+→ TextChunk[]
 ```
 
-LLM 本身不会真的“伸手”去搜索网页。它只是判断：
+输入是 `Document`，输出是带来源信息的 `TextChunk[]`。Klara 在这里学会：检索系统通常检索的是片段，不是整篇文章；相邻片段保留一点 overlap，可以减少边界信息丢失。
+
+对应代码：
 
 ```text
-我可能需要搜索
-我可能需要调用工具
-我可能需要读取资料
+src/agent_ladder/rag/contracts/chunk.py
+src/agent_ladder/rag/chunking/overlap.py
 ```
 
-真正调用工具的是外层程序。
+<details>
+<summary>展开：常见切块策略与本章为什么选择 overlap</summary>
 
-比如用户问：
+如果整篇文档太长，检索会变粗；如果片段太短，又容易丢失上下文。所以 RAG 系统通常会使用 chunking 策略。
+
+常见的 chunking 策略包括：
 
 ```text
-今天北京天气怎么样？
+fixed-size chunking
+recursive markdown chunking
+heading-based chunking
+semantic chunking
+overlap chunking
 ```
 
-更合理的运行过程是：
+这一章先不做复杂策略，只选择一个最基础、最容易理解、也最常见的策略：
 
 ```text
-用户问题
-→ LLM 判断：这需要天气工具
-→ 程序调用 weather tool
-→ weather tool 返回天气数据
-→ LLM 阅读工具返回结果
-→ LLM 用自然语言回答用户
+overlap chunking
 ```
 
-也就是说：
+它的意思是：相邻 chunk 之间保留一小段重叠文本。
+
+例如：
 
 ```text
-大脑决定方向
-工具执行动作
-大脑阅读结果
-最后生成回答
+chunk_size = 800
+chunk_overlap = 120
 ```
 
-这一章我们还不做工具。我们先做 Klara 的第一颗种子：
-
-> 一次真实 LLM 调用，变成一次有状态、可观察、可保存的运行。
-
----
-
-## 为什么一次 API Call 还不是 Agent？
-
-最小的 LLM 调用大概长这样：
-
-```python
-from openai import OpenAI
-import os
-
-client = OpenAI(
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-)
-
-completion = client.chat.completions.create(
-    model="qwen3.6-flash",
-    messages=[
-        {"role": "user", "content": "你好，你是谁？"}
-    ],
-)
-
-print(completion.choices[0].message.content)
-```
-
-这一段代码说明了 LLM 的本质：
+这样切块时，大概会形成：
 
 ```text
-messages 输入进去
-content 输出出来
+Chunk 1: characters 0-800
+Chunk 2: characters 680-1480
+Chunk 3: characters 1360-2160
 ```
 
-但是如果只停留在这里，它还不是 Agent。
+重叠部分可以减少边界信息丢失。
 
-因为我们不知道：
+Part B 结束时，Klara 的资料会从：
 
 ```text
-这次问题有没有编号？
-这次回答属于哪个问题？
-使用了哪个模型？
-用了多少 token？
-耗时多久？
-有没有保存 trace？
-失败时发生了什么？
-```
-
-所以我们要把一次 API call 包装成一次可观察的运行。
-
----
-
-## 从 API Call 到 Minimal Agent
-
-在第一章里，我们加入三个核心状态：
-
-```text
-AskState
-AnswerState
-RunLog
-```
-
-它们分别回答三个问题：
-
-```text
-用户问了什么？
-Klara 回答了什么？
-这次运行发生了什么？
-```
-
-这就是 Minimal Agent 的最小骨架。
-
----
-
-## AskState：用户问了什么
-
-`AskState` 是一次提问的结构化记录。
-
-```python
-class AskState(BaseModel):
-    ask_id: str
-    question: str
-    language: str = "auto"
-    created_at: datetime
-```
-
-它不是 prompt。它也不是模型输出。
-
-它是 Klara 在程序内部保存的状态。
-
-比如用户问：
-
-```text
-什么是 AI Agent？
-```
-
-Klara 会先创建：
-
-```json
-{
-  "ask_id": "ask_xxx",
-  "question": "什么是 AI Agent？",
-  "language": "auto",
-  "created_at": "..."
-}
-```
-
-这一步很重要。
-
-因为从这里开始，用户的问题不再只是一段临时字符串。它变成了 Klara 可以追踪、保存、关联的状态。
-
----
-
-## AnswerState：Klara 回答了什么
-
-当 LLM 返回内容后，我们把它封装成 `AnswerState`。
-
-```python
-class AnswerState(BaseModel):
-    ask_id: str
-    answer: str
-    model: str
-    created_at: datetime
-```
-
-它记录：
-
-```text
-这次回答对应哪个 ask_id
-回答内容是什么
-使用了哪个模型
-什么时候生成
-```
-
-比如：
-
-```json
-{
-  "ask_id": "ask_xxx",
-  "answer": "AI Agent 是一种能够接收输入、进行推理，并采取行动的系统。",
-  "model": "qwen3.6-flash",
-  "created_at": "..."
-}
-```
-
-这一步让 Klara 的回答可以被追踪。
-
-不是简单地：
-
-```text
-print(answer)
-```
-
-而是：
-
-```text
-这个 answer 属于哪个 question？
-由哪个 model 生成？
-什么时候生成？
-```
-
----
-
-## RunLog：这次运行发生了什么
-
-`RunLog` 是 Klara 的观察记录。
-
-```python
-class RunLog(BaseModel):
-    run_id: str
-    ask_id: str
-    model: str
-    latency_ms: int | None = None
-    prompt_tokens: int | None = None
-    completion_tokens: int | None = None
-    total_tokens: int | None = None
-    token_source: str = "unknown"
-    error: str | None = None
-    created_at: datetime
-```
-
-它回答的是：
-
-```text
-这次运行用了多久？
-用了多少 token？
-token 是 API 返回的，还是本地估算的？
-有没有报错？
-```
-
-比如：
-
-```json
-{
-  "run_id": "run_xxx",
-  "ask_id": "ask_xxx",
-  "model": "qwen3.6-flash",
-  "latency_ms": 1840,
-  "prompt_tokens": 52,
-  "completion_tokens": 128,
-  "total_tokens": 180,
-  "token_source": "reported",
-  "error": null
-}
-```
-
-这里的 token 统计规则是：
-
-```text
-优先使用模型 API 返回的真实 usage
-如果 API 没返回，就使用本地估算
-```
-
-所以前端一定会尽量展示 token 信息。
-
----
-
-## Trace：把一次运行保存下来
-
-Klara 每次回答后，都会保存一条 JSONL trace。
-
-一条 trace 大概长这样：
-
-```json
-{
-  "schema_version": "v0.1",
-  "ask": {
-    "ask_id": "ask_xxx",
-    "question": "什么是 AI Agent？"
-  },
-  "prompt": {
-    "messages": [
-      {
-        "role": "system",
-        "content": "You are Klara..."
-      },
-      {
-        "role": "user",
-        "content": "什么是 AI Agent？"
-      }
-    ]
-  },
-  "answer": {
-    "ask_id": "ask_xxx",
-    "answer": "AI Agent 是一种..."
-  },
-  "run": {
-    "run_id": "run_xxx",
-    "model": "qwen3.6-flash",
-    "latency_ms": 1840,
-    "prompt_tokens": 52,
-    "completion_tokens": 128,
-    "total_tokens": 180
-  }
-}
-```
-
-这就是我们第一章的核心：
-
-```text
-一次问题
-一次回答
-一次运行记录
-一条 trace
-```
-
-Klara 不只是回答了问题。她留下了自己运行的痕迹。
-
----
-
-## 为什么这些状态一开始就要设计好？
-
-因为后面的 Klara 会越来越复杂。
-
-现在她只会：
-
-```text
-问题 → LLM → 回答
-```
-
-但以后她会学会：
-
-```text
-问题 → 判断意图
-问题 → 检索资料
-问题 → 调用工具
-问题 → 读取网页
-问题 → 使用记忆
-问题 → 验证 citation
-问题 → 评估回答质量
-```
-
-到那时，Klara 的状态会越来越多：
-
-```text
-AskState
-AnswerState
-RunLog
-ToolCallState
-ObservationState
-EvidenceItem
-EvidencePack
-MemoryState
-EvalResult
-PolicyTrace
-```
-
-所以第一章虽然简单，但它在打地基。
-
-我们先让 Klara 学会：
-
-```text
-每一步都可以被记录
-每一次运行都可以被观察
-每一个回答都可以被追踪
-```
-
-这就是 Agent 工程的开始。
-
----
-
-## 当前代码结构
-
-第一章的核心代码在这里：
-
-```text
-src/agent_ladder/
-  core/
-    contracts/
-      ask.py        # AskState
-      answer.py     # AnswerState
-      run.py        # RunLog
-      usage.py      # TokenUsage
-
-    runtime/
-      minimal_agent.py   # MinimalAgent
-      lifecycle.py       # answer / run / token lifecycle helpers
-
-    tracing/
-      jsonl_tracer.py    # JSONL trace writer
-
-  llm/
-    prompts/
-      minimal.py         # Klara system prompt
-
-    providers/
-      dashscope.py       # DashScope / OpenAI-compatible provider
-
-  infra/
-    config/
-      loader.py          # config + env loader
-```
-
-前后端在这里：
-
-```text
-apps/
-  api/     # FastAPI backend
-  web/     # React frontend
-```
-
-配置在这里：
-
-```text
-configs/
-  default.yaml
-  models.yaml
-```
-
----
-
-## Learning Ladder：Klara 会如何成长？
-
-Agent Ladder 的主线不是把所有功能一次性塞进 main。
-
-我们会按大主题冻结分支：
-
-| Branch | 主题 | Klara 学会什么 |
-|---|---|---|
-| `v0.1-minimal-agent` | Minimal Agent | 从一次 LLM 调用变成可观察的最小 Agent |
-| `v0.2-rag-agent` | RAG Agent | 阅读本地知识库并基于资料回答 |
-| `v0.3-agentic-rag` | Agentic RAG | 检索、阅读、选择证据、写作、验证 |
-| `v0.4-memory-agent` | Memory Agent | 记住上下文并处理追问 |
-| `v0.5-research-agent` | Research Agent | 联网搜索、阅读、交叉验证、综合报告 |
-| `v0.6-mcp-tool-agent` | MCP Tool Agent | 接入外部工具生态 |
-| `v0.7-production-agent` | Production Agent | 处理并发、重试、超时、成本、鉴权、安全 |
-| `v0.8-eval-data-flywheel` | Eval Data Flywheel | 用测试和 trace 判断 Agent 是否变好 |
-| `v0.9-rl-for-agent` | RL for Agent | 从轨迹和反馈中优化策略 |
-
----
-
-## Branch Philosophy
-
-每个主线 branch 对应一个大主题。
-
-我们不为每一个小概念创建一个 branch。
-
-不是这样：
-
-```text
-learn/v0.0-hello-llm-api
-learn/v0.1-ask-answer-agent
-learn/v0.2-observable-agent
-```
-
-而是这样：
-
-```text
-v0.1-minimal-agent
-```
-
-然后在这个分支内部讲清楚：
-
-```text
-API Call
-AskState
-AnswerState
-RunLog
-JSONL Trace
-MinimalAgent
-Web UI
-```
-
-这样仓库会更清爽，学习路径也更清楚。
-
----
-
-## 下一章：Klara 学会阅读资料
-
-在 `v0.2-rag-agent` 中，Klara 会学习 RAG。
-
-她不再只依赖模型自己的参数回答问题。她会开始读取本地知识库：
-
-```text
-document loading
-chunking
-embedding
-vector search
-retriever
-source card
-citation
-RAG answer
-```
-
-那时 Klara 会从：
-
-```text
-只会回答
+Markdown + Metadata
 ```
 
 变成：
 
 ```text
-能基于资料回答
+Document
+→ TextChunk[]
 ```
 
-这就是她成长的第二步。
+这些 chunk 还没有向量，也还不能被检索。它们只是进入下一部分算法层的输入。
 
----
+</details>
 
-## 一句话总结
+## Part C：从文本块到可检索索引
 
-Chapter 1 不是在做一个 ChatGPT clone。
-
-我们是在见证 Klara 的诞生：
+Part C 的目标是：让每一个 `TextChunk` 进入索引层，拥有语义表示和关键词表示，最终可以被检索、融合排序和精排。
 
 ```text
-一次 API Call
-变成 AskState
-变成 AnswerState
-变成 RunLog
-变成 Trace
-最后变成一个最小但可观察的 Agent
+TextChunk[]
+→ IndexRecord[]
+→ Dense Embedding
+→ Dense Vector Index
+→ Sparse / BM25 Index
+→ Hybrid Retrieval
+→ Reranked Results
 ```
 
-她还很小。
+### 5. IndexRecord：Chunk 如何进入索引层
 
-但她已经开始留下自己的光。
+这一节解决的问题是：`TextChunk` 只是文档切块层对象，不能承担 embedding、tokens、scores 等检索状态。
+
+```text
+TextChunk[]
+→ records_from_chunks()
+→ IndexRecord[]
+```
+
+输入是 `TextChunk[]`，输出是 `IndexRecord[]`。Klara 在这里学会：把“文档切块层”和“索引检索层”分开，后面的 dense vector、sparse tokens、BM25 信息和检索分数都放到索引层对象里。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/indexing/index_record.py
+```
+
+<details>
+<summary>展开：为什么需要 IndexRecord，以及它和真实向量库的关系</summary>
+
+Part B 的终点是 `TextChunk`。一个 `TextChunk` 只说明：
+
+```text
+这段文本来自哪份 Document
+它是第几个 chunk
+它在原文中的起止位置是什么
+它带着哪些 metadata
+```
+
+例如：
+
+```text
+chunk_id: doc_ch02_rag_agent_chunk_0003
+document_id: doc_ch02_rag_agent
+text: "RAG lets Klara search local knowledge before answering..."
+metadata:
+  chapter: ch02
+  version: v0.2-rag-agent
+```
+
+但是检索系统需要的不只是文本。Dense retrieval 需要：
+
+```text
+dense_vector
+```
+
+Sparse / BM25 retrieval 需要：
+
+```text
+sparse_tokens
+term frequency
+document length
+```
+
+Hybrid retrieval 后面还会产生：
+
+```text
+dense_score
+sparse_score
+hybrid_score
+```
+
+这些都不应该直接塞回 `TextChunk`。因为 `TextChunk` 的职责是表示文本如何从 `Document` 中切出来，而索引层需要一个新的对象：
+
+```text
+IndexRecord = TextChunk + 检索层信息
+```
+
+在本章的最小版本里，`IndexRecord` 包含：
+
+```text
+record_id
+chunk_id
+document_id
+text
+metadata
+dense_vector
+sparse_tokens
+token_count
+```
+
+这一层的意义是把三个世界分开：
+
+```text
+TextChunk      = 文档切块层
+IndexRecord    = 索引检索层
+RetrievedChunk = 检索结果层
+```
+
+真实向量库里也有类似边界：
+
+```text
+Qdrant point      = id + vector + payload
+Weaviate object   = properties + vector + inverted index entry
+Elasticsearch doc = _source + dense_vector field + text field
+```
+
+我们现在不直接接这些数据库，而是先手写一个教学版 `IndexRecord`。这样后面无论换成本地 JSONL、Qdrant、Weaviate、Milvus，核心结构都不会乱。
+
+</details>
+
+### 6. Dense Embedding：把文本变成语义向量
+
+这一节解决的问题是：普通文本不能直接做语义相似度计算，需要先变成 dense vector。
+
+```text
+IndexRecord.text
+→ Embedding Model
+→ dense_vector
+```
+
+输入是 `IndexRecord.text`，输出是 `dense_vector`。Klara 在这里学会：把 chunk 和用户 query 都转成向量，下一节再用相似度搜索找到相关资料。本章不训练 embedding model，而是调用已有 embedding model；Sparse / BM25 部分会自己手写，Dense Embedding 使用真实模型生成语义向量。
+
+对应代码：
+
+```text
+src/agent_ladder/rag/embeddings/base.py
+src/agent_ladder/rag/embeddings/dashscope.py
+```
+
+<details>
+<summary>展开：从 one-hot、Bag of Words 到 Dense Embedding</summary>
+
+#### 为什么文本不能直接计算
+
+用户可能会问：
+
+```text
+What did Klara learn in chapter one?
+```
+
+资料里可能写的是：
+
+```text
+Chapter 1 introduced AskState, AnswerState, RunLog, and the MinimalAgent runtime.
+```
+
+人可以看出它们相关，但是程序看到的只是两段字符串。字符串本身只能直接做一些很浅的比较：是否完全相等、是否包含某个词、两个字符串编辑距离是多少。
+
+它不知道：
+
+```text
+learn ≈ introduced
+chapter one ≈ Chapter 1
+Klara's first ability ≈ Minimal Agent
+```
+
+所以，我们需要把文本变成数字。只有变成数字后，系统才能计算“这两个文本有多相似”。
+
+#### Vocabulary：先把世界变成词表
+
+最基础的方法是先定义一个词表：
+
+```text
+vocabulary = ["klara", "agent", "rag", "answer", "trace"]
+```
+
+词表里的每个词对应一个位置：
+
+```text
+klara  → 0
+agent  → 1
+rag    → 2
+answer → 3
+trace  → 4
+```
+
+这不是现代 embedding，但它能帮助我们理解：文本向量化的第一步，是把文本放进一个可计算的坐标系统。
+
+#### One-hot Encoding：一个词一个位置
+
+如果当前词是 `rag`，那么它在上面词表里的 one-hot 表示就是：
+
+```text
+[0, 0, 1, 0, 0]
+```
+
+如果当前词是 `klara`，就是：
+
+```text
+[1, 0, 0, 0, 0]
+```
+
+one-hot 的特点是只有一个位置是 1，其他位置都是 0。它非常容易理解，但它只能表示“这是哪个词”，不能表示“这个词和哪个词语义更近”。
+
+#### Bag of Words：一句话里出现了哪些词
+
+一句话可以看成多个词的集合。例如：
+
+```text
+Klara uses RAG to answer.
+```
+
+在词表：
+
+```text
+["klara", "agent", "rag", "answer", "trace"]
+```
+
+里，可以表示成：
+
+```text
+[1, 0, 1, 1, 0]
+```
+
+如果记录出现次数：
+
+```text
+Klara uses RAG. Klara answers.
+→ [2, 0, 1, 1, 0]
+```
+
+这就是 bag of words 的直觉。它比单个 one-hot 更像“文本向量”，但它仍然主要关心词有没有出现、出现了几次，还不真正理解语义。
+
+#### Sparse Vector 的问题
+
+词表向量通常是 sparse vector。真实词表可能有几万、几十万词，而一句话只会出现其中很少一部分，所以向量大概会长这样：
+
+```text
+[0, 0, 0, 1, 0, 0, 0, 0, ...]
+```
+
+这类表示的问题是：维度很大、大部分位置为空、只知道词出现没出现、不理解同义词、不理解改写后的相同含义。
+
+但是 sparse representation 也不是没用。它非常适合处理：
+
+```text
+AskState
+RunLog
+AnswerFrameV1
+v0.2-rag-agent
+source_card
+```
+
+这些项目术语、字段名、版本号、代码名，往往需要精确匹配。所以后面第 8 节我们还会学习 BM25。
+
+#### Dense Embedding：把语义压缩进向量
+
+现代 embedding 模型做的是：
+
+```text
+text → dense vector
+```
+
+例如：
+
+```text
+"What did Klara learn in chapter one?"
+→ [0.031, -0.482, 0.105, 0.774, ...]
+```
+
+dense vector 和 sparse vector 不同。它通常大部分位置都有小数值，每个维度不再对应一个人工指定的词，而是模型从大量数据里学出来的语义特征。
+
+所以这两句话虽然字面不同：
+
+```text
+What did Klara learn in chapter one?
+Which abilities did Klara gain in the first chapter?
+```
+
+它们的 dense vector 仍然可能很接近。这就是 dense embedding 对 RAG 的价值：Klara 不只按字面找资料，也能按语义找资料。
+
+#### Cosine Similarity：比较两个向量方向
+
+当 chunk 和 query 都变成向量后，我们还需要一个相似度算法。最常用的是 cosine similarity：
+
+```text
+cosine_similarity(a, b)
+= (a · b) / (||a|| × ||b||)
+```
+
+其中：
+
+```text
+a · b = dot product，两个向量对应位置相乘再相加
+||a|| = 向量 a 的长度
+||b|| = 向量 b 的长度
+```
+
+直觉是比较两个向量的方向是否接近。如果两个向量方向越接近，分数越高。在 RAG 里就是：
+
+```text
+query_vector
+vs
+chunk_vector
+```
+
+谁更接近，谁就更可能是相关资料。这会成为下一节 `Dense Vector Index` 的数学基础。
+
+#### 我们自己写 embedding model 吗？
+
+这一章不训练 dense embedding model。原因是 dense embedding model 本身需要大量语料、训练目标、对比学习数据、GPU、评估集和持续调优，这不是本章重点。
+
+本章采用：
+
+```text
+Sparse / BM25：我们自己手写
+Dense Embedding：调用已有 embedding model
+```
+
+这样 Klara 可以使用真实语义向量，学习者仍然能手写并理解检索、BM25、hybrid 和 reranking。
+
+#### Embedding 存在哪里？
+
+刚生成的 embedding 可以先放在内存里的 `IndexRecord.dense_vector`：
+
+```text
+IndexRecord.text
+→ embedding model
+→ IndexRecord.dense_vector
+```
+
+但是如果每次运行都重新调用 embedding API，会慢，也会增加成本。所以后面第 7 节会把带向量的索引记录保存到本地：
+
+```text
+data/rag/index/index_records.jsonl
+```
+
+这一章先使用本地 JSONL。未来可以替换成真正的向量库：Qdrant、Weaviate、Milvus、Elasticsearch / OpenSearch。
+
+#### Klara 这一章怎么做
+
+Klara 当前会使用 DashScope 的 OpenAI-compatible embedding API。这里的重点是区分：
+
+```text
+Chat Model ≠ Embedding Model
+```
+
+Chat model 负责生成回答：
+
+```text
+question → answer
+```
+
+Embedding model 负责生成向量：
+
+```text
+text → vector
+```
+
+Klara 会把每个 `IndexRecord.text` 送给 embedding model：
+
+```text
+IndexRecord.text
+→ text-embedding-v4
+→ dense_vector
+```
+
+这一节只负责 `Text → Dense Vector`。下一节才会继续 `Dense Vector → Vector Index → Similarity Search`。
+
+</details>
+
+### 7. Dense Vector Index：最小世界算法
+### 8. Sparse / BM25 Index：关键词检索
+### 9. Hybrid Retrieval + Reranking
+
+## Part D：问题进入 RAG 链路
+### 10. Direct vs RAG Decision
+### 11. Context Builder
+
+## Part E：从资料到答案
+### 12. SourceCard / Citation
+### 13. AnswerFrameV1 / Trace
+
+## Part F：章节冻结
+### 14. How to Run
+### 15. Tests
+### 16. Known Limitations
+### 17. Next Chapter: Agentic RAG

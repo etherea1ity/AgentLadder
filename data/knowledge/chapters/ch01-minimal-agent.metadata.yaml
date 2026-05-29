@@ -1,0 +1,15 @@
+document_id: doc_ch01_minimal_agent
+title: "Chapter 1 Capability: Minimal Agent"
+source_type: markdown
+category: chapters
+chapter: ch01
+version: v0.1-minimal-agent
+language: en
+tags:
+  - minimal-agent
+  - ask-state
+  - answer-state
+  - run-log
+  - trace
+summary: >-
+  Chapter 1 knowledge about Klara's minimal agent loop, AskState, AnswerState, RunLog, JSONL trace, UI run margin, and v0.1 capability boundaries.

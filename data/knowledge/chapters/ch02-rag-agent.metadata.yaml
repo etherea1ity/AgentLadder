@@ -1,0 +1,16 @@
+document_id: doc_ch02_rag_agent
+title: "Chapter 2 Capability: RAG Agent"
+source_type: markdown
+category: chapters
+chapter: ch02
+version: v0.2-rag-agent
+language: en
+tags:
+  - rag
+  - local-knowledge
+  - document
+  - chunk
+  - citation
+  - answer-frame
+summary: >-
+  Chapter 2 knowledge about Klara's local RAG ability, Sun Library, Document Loader, metadata, chunking, embedding, retrieval, sources, citations, and v0.2 boundaries.
