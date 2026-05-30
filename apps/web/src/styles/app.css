@@ -2520,3 +2520,26 @@ body,
     padding: 6px 12px;
   }
 }
+
+/* v0.2 compact reading pass: narrower history rail and slightly smaller chat text. */
+:root {
+  --sidebar-w: 252px;
+  --message-w: 640px;
+}
+.app-shell.is-empty {
+  --sidebar-w: 286px;
+}
+.conversation-turn .user-message p,
+.conversation-turn .assistant-content {
+  font-size: 18.5px;
+  line-height: 1.52;
+}
+.conversation-turn .rich-answer h1 { font-size: 26px; }
+.conversation-turn .rich-answer h2 { font-size: 22px; }
+.conversation-turn .rich-answer h3 { font-size: 19px; }
+@media (max-width: 900px) {
+  .conversation-turn .user-message p,
+  .conversation-turn .assistant-content {
+    font-size: 17px;
+  }
+}

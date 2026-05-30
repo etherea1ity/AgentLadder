@@ -1,8 +1,39 @@
 # 章节二：RAG Agent，克拉拉的阳光图书馆
-> 从模型本身能力，到可检索、可引用、可追踪的知识图书馆
+> 从模型本身能力，到可检索、可引用、可追踪的本地知识系统
 
-当前分支： v0.2-rag-agent
-如何运行： 
+当前分支：`v0.2-rag-agent`  
+下一分支：`v0.3-agentic-rag`，会继续加入 query rewrite、retrieval planning、evidence selection、citation verification 和不足证据 fallback。
+
+## 如何运行
+
+```powershell
+# 1. 准备 API Key
+# 在 .env 中配置 DASHSCOPE_API_KEY=你的百炼 Key
+
+# 2. 构建本地 RAG 索引
+py scripts/rag/build_index.py
+
+# 3. 启动后端和前端
+powershell -ExecutionPolicy Bypass -File .\start.ps1 -NoOpen
+
+# 4. 打开前端
+# http://127.0.0.1:5123
+```
+
+可以用这些问题触发 RAG：
+
+```text
+What does this chapter teach?
+Tell me about chapter 2.
+What did Klara learn in chapter one?
+What is AnswerFrameV1?
+```
+
+## 当前界面
+
+![Klara v0.2 Home](docs/screenshots/v0.2-klara-home.png)
+
+![Klara v0.2 RAG Run Chain](docs/screenshots/v0.2-rag-run-chain.png)
 
 ## 本章总结
 在第一章中，Klara 只是一个能够调用 LLM、完成单次问答的 Minimal Agent。
@@ -18,19 +49,19 @@ Klara's Sun Library
 1. Klara 的身份与设定
 2. Agent Ladder 的项目经历与成长路线
 
-从这一章开始，Klara 不再只依靠模型参数来回答问题，她会学习**如何读取本地文档**、**切分知识片段**、**生成embedding**、**建立向量索引**、**召回相关资料**、**对资料进行粗/细粒度重排序**、**并且路径种有sourceCard、Citation和AnswerFrame**。
-并且还有一些辅助克拉拉理解知识的设计，比如Metadata、Index、意图识别、Context Builder等。
+从这一章开始，Klara 不再只依靠模型参数来回答问题，她会学习**如何读取本地文档**、**切分知识片段**、**生成 embedding**、**建立向量索引**、**召回相关资料**、**对资料进行粗/细粒度重排序**，并把 evidence、SourceCard、Citation 和 AnswerFrameV1 串成一条可观察链路。
+并且还有一些辅助克拉拉理解知识的设计，比如 Metadata、Index、意图识别、Context Builder 等。
 
-在每一次问题中，克拉拉都会告诉我们，她每一步都分别做了什么，我们可以从一个完整的回答链路中，看到每一次思考的详细过程。
+在每一次问题中，克拉拉都会告诉我们，她每一步都分别做了什么，我们可以从一个完整的回答链路中，看到每一次公开运行链路的详细过程。
 
 ## Part A：本章定位
 ### 1. 为什么需要RAG
 在第一章中，Klara已经能完成一次最小问答。当我们提出一个问题，她可以接受输入，调用LLM，生成回答，并且记录这一次的trace。
 但是，她只能依靠LLM自己的能力去做出反应。如果你要问Klara，你的这个Klara：Agent Ladder是在做什么，我们的第一章学到了什么，第二章有什么能力，她并不知道。因为这些问题不属于普通常识，而是属于我们的私有知识、阶段知识以及需要持续更新的知识。
-RAG的价值就在这里，它它可以给 LLM 外挂一个可维护的知识库，让知识不再只依赖模型本身，而是可以被新增、修改、删除、重新索引和重新检索。这样 Klara 的回答就能随着项目一起更新，也能在回答时说明自己参考了哪些资料。
+RAG 的价值就在这里：它可以给 LLM 外接一个可维护的知识库，让知识不再只依赖模型本身，而是可以被新增、修改、删除、重新索引和重新检索。这样 Klara 的回答就能随着项目一起更新，也能在回答时说明自己参考了哪些资料。
 并且当我们的知识有了源头，Klara就可以对自己的回答进行溯源，避免很多幻觉问题。
 
-一次基础 RAG 流程可以理解为：Raw Documents → Cleaning → Chunking → Metadata → Embedding → Vector Index → Query → Hybrid Retrieval → Coarse Retrieval → Reranking → Context Builder → LLM Writer → SourceCard → Citation → AnswerFrameV1 → Trace。也就是说，我们先把资料清洗、切块、加上 metadata，再将文本向量化并存入索引；当用户提问时，系统会通过关键词和向量等方式进行混合检索，先粗排召回可能相关的内容，再精排选出最重要的片段，最后把这些片段交给 LLM 生成有来源支撑的回答。
+一次基础 RAG 流程可以理解为：Markdown + Metadata → Document → TextChunk → IndexRecord → Embedding → Local Vector Index + BM25 → Hybrid Retrieval → Reranking → Context Builder → Klara Writer → AnswerFrameV1 → Run Chain / Trace。也就是说，我们先把资料清洗、切块、加上 metadata，再将文本向量化并存入索引；当用户提问时，系统会通过关键词和向量等方式进行混合检索，先粗排召回可能相关的内容，再精排选出最重要的片段，最后把这些片段交给 LLM 生成有来源支撑的回答。
 
 ### 2. Klara's Sun Library：为什么是小书房
 第二章中，我们不会直接让 Klara 读取整个互联网，也不会一上来放入大量复杂论文。我们先给她一间小而清晰的书房：Klara's Sun Library。这间小书房里放的是 Klara 最应该先读懂的内容：她是谁、她的性格和边界是什么。Agent Ladder 的项目路线是什么、第一章发生了什么、第二章要学习什么。
@@ -1309,7 +1340,6 @@ Selected chunks + Answer Draft
 ```text
 src/agent_ladder/rag/contracts/source.py
 src/agent_ladder/rag/citations/source_card.py
-src/agent_ladder/rag/citations/citation_builder.py
 ```
 
 <details>
@@ -1365,11 +1395,11 @@ v0.2 可以先做简单 citation：把答案末尾列出 sources，或者在段�
 这一节解决的问题是：RAG 的输出不应该只是一个字符串，而应该是一个结构化答案对象，方便前端、trace、eval 和后续章节复用。
 
 ```text
-Answer Draft + Sources + Citations + Run Summary
+Question + Final Answer + Evidence
 → AnswerFrameV1
 ```
 
-输入是 Writer 草稿、sources、citations 和运行摘要，输出是 `AnswerFrameV1`。Klara 在这里学会：把答案、来源和运行信息一起返回。
+输入是用户问题、最终回答和被选中的 evidence，输出是 `AnswerFrameV1`。Klara 在这里学会：答案对象保持轻量；运行信息、token、route、source card 和 citation 属于 RunLog / module trace，而不是塞进最终答案本身。
 
 对应代码：
 
@@ -1399,19 +1429,16 @@ trace 保存在哪里
 所以需要 `AnswerFrameV1`：
 
 ```text
+question: string
 answer: string
-route: direct | rag
-sources: SourceCard[]
-citations: Citation[]
-used_chunks: chunk_id[]
-run_log: summary
+evidence: EvidenceItem[]
 ```
 
-这样前端可以渲染答案，右侧 Run Chain 可以展示模块卡片，trace 可以保存结构化过程。
+这样前端可以渲染答案，右侧 Run Chain 可以通过 module trace 展示 route、retrieval、token、source card 和 citation 等运行信息。
 
 #### V1 的边界
 
-V1 不做复杂评估，不做 evidence verifier，不做 claim-level citation。它只保证：答案和 sources/citations 可以放在同一个结构里。
+V1 不做复杂评估，不做 evidence verifier，不做 claim-level citation，也不保存 runtime metadata。它只保证：最终答案和被使用的 evidence 可以用一个稳定结构保存。
 
 </details>
 
@@ -1442,8 +1469,8 @@ ModuleResult[]
 ```text
 apps/web/src/components/RunMargin.tsx
 apps/web/src/types/domain.ts
-src/agent_ladder/api/runs.py
-src/agent_ladder/api/schemas.py
+apps/api/routes/runs.py
+apps/api/schemas.py
 ```
 
 <details>
@@ -1471,7 +1498,7 @@ Hybrid Retrieval
 Reranking
 Context Builder
 KlaraAgent Writer
-Trace Saved
+Run Summary
 ```
 
 每张卡片可展开看结构化输入输出。
@@ -1526,7 +1553,7 @@ Knowledge markdown
 对应入口会固定为：
 
 ```text
-scripts/rag/build_index.py      # 构建本地 JSONL 索引，待实现
+scripts/rag/build_index.py      # 构建本地 JSONL 索引，当前已实现
 start.ps1                       # 启动前后端，当前已存在
 apps/web/src/components/RunMargin.tsx
 ```
@@ -1543,7 +1570,7 @@ apps/web/src/components/RunMargin.tsx
    data/knowledge/chapters/ch02-rag-agent.md
 
 2. 构建索引
-   python scripts/rag/build_index.py
+   py scripts/rag/build_index.py
 
 3. 启动前后端
    powershell -ExecutionPolicy Bypass -File .\start.ps1 -NoOpen
@@ -1559,10 +1586,10 @@ apps/web/src/components/RunMargin.tsx
    Reranking
    Context Builder
    KlaraAgent Writer
-   Trace Saved
+   Run Summary
 ```
 
-如果某一步还没有实现，README 中的代码路径就是下一步要补的工程入口。
+这条路径对应当前 v0.2 的完整演示：知识文件进入索引，问题进入 RAG，右侧 Run Chain 展示每一步结构化结果。
 
 </details>
 
@@ -1572,11 +1599,12 @@ apps/web/src/components/RunMargin.tsx
 
 ```text
 Local JSONL index
-Rule-based intent router
+LLM JSON intent router with deterministic rule fallback
 Simple BM25
-Simple hybrid fusion
-Simple reranker
-Basic citations
+Simple weighted hybrid fusion
+Rule-based reranker
+Basic SourceCard / Citation contracts
+No citation verifier yet
 ```
 
 这些限制是刻意保留的，因为本章目标是讲清楚基础 RAG 主线，不是一次性做完 Agentic RAG。

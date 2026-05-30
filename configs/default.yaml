@@ -1,7 +1,7 @@
 llm:
   provider: dashscope
   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
-  # Default for local v0.1 demos: fast + low-cost. Other choices live in configs/models.yaml.
+  # Default for local v0.2 RAG demos: fast + low-cost. Other choices live in configs/models.yaml.
   model: qwen3.6-flash
   temperature: 0.2
   stream: true

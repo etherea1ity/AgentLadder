@@ -2,7 +2,7 @@
 # Runtime default is configs/default.yaml -> llm.model.
 # Quick switch options:
 #   PowerShell: $env:AGENT_LADDER_MODEL="qwen3.6-plus"; .\start.ps1
-#   Bash/WSL:    AGENT_LADDER_MODEL=qwen3.6-plus ./start.sh
+#   PowerShell one-shot: $env:AGENT_LADDER_MODEL="qwen3.6-plus"; .\start.ps1 -NoOpen
 models:
   flash:
     model: qwen3.6-flash
