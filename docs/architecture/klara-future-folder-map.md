@@ -35,6 +35,24 @@ src/klara/
     tool_loader.py
     user_context.py
 
+  workspace/
+    bootstrap.py
+    context_files.py
+    profile_loader.py
+    templates/
+      IDENTITY.md
+      USER.md
+      PROJECT.md
+      MEMORY.md
+
+  sessions/
+    transcript.py
+    window.py
+    summary.py
+    compaction.py
+    searchable_history.py
+    store.py
+
   context/
     budget.py
     priority.py
@@ -95,6 +113,34 @@ src/klara/
   background/
     post_turn/
     scheduler.py
+    routines.py
+    triggers/
+      cron.py
+      webhook.py
+      api.py
+    delivery/
+      local.py
+      webhook.py
+
+  safety/
+    permissions.py
+    prompt_injection.py
+    external_content.py
+    path_guard.py
+    redaction.py
+
+  resilience/
+    retry.py
+    fallback.py
+    loop_guard.py
+    truncation.py
+    recovery.py
+
+  plugins/
+    manifests.py
+    discovery.py
+    resources.py
+    adapters.py
 
   backend/
     api/
@@ -109,7 +155,6 @@ src/klara/
     llm/
     observability/
     storage/
-    resilience/
 
   eval/
     datasets.py
@@ -186,6 +231,8 @@ tenancy, accounts, or production user management.
 - prompts
 - user-context contracts
 - memory provider interfaces
+- workspace/profile bootstrap contracts
+- session store interfaces
 
 `src/klara/capabilities/tools/*` may import:
 
@@ -194,6 +241,23 @@ tenancy, accounts, or production user management.
 - its own prompt guidance
 
 Concrete services live under `src/klara/services/*`.
+
+`src/klara/workspace` owns readable bootstrap material: persona-adjacent files,
+project context, user-facing profile hints, and memory summaries prepared for
+prompt assembly. It should not own raw long-term memory.
+
+`src/klara/sessions` owns transcripts, message windows, summaries, compaction
+artifacts, and searchable history references. It should not call models or
+execute tools.
+
+`src/klara/safety` owns permissions, redaction, external-content labeling,
+prompt-injection checks, and path guards.
+
+`src/klara/resilience` owns retries, fallback, loop guards, truncation behavior,
+and recovery plans.
+
+`src/klara/plugins` is a late-stage extension boundary for manifests, external
+resource declarations, and adapter loading. It is not part of the early loop.
 
 Backend and UI should receive public events and trace summaries, not raw prompts, private memory content, raw tool arguments, or private evidence bodies.
 
@@ -249,6 +313,11 @@ Local runtime artifacts should stay outside source:
 .klara/
   traces/
     <run-id>.jsonl
+  sessions/
+    <session-id>/
+      transcript.jsonl
+      summary.json
+      compaction.jsonl
   users/
     <user-key>/
       messages.jsonl
@@ -276,6 +345,7 @@ Chapter 1: default local user only
 Chapter 2: UserContext contract appears in Harness
 Chapter 6: memory uses user partitioning
 Chapter 7: skills use user/project partitioning
+Chapter 11: routines use restricted user/project capability profiles
 Chapter 14: auth, accounts, storage adapters, and production session management
 ```
 

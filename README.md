@@ -29,4 +29,4 @@ RAG is not Klara's core identity. RAG is a knowledge capability/tool that Klara 
 - `docs/architecture/klara-technical-roadmap.md` - chapter-by-chapter technical route.
 - `docs/architecture/klara-future-folder-map.md` - target repository and package layout.
 - `docs/architecture/ch01-minimal-loop-spec.md` - first implementation chapter scope.
-
+- `docs/architecture/klara-reference-synthesis.md` - lessons from ReAct, OpenClaw, Claw Code, Hermes, and Claude-Code-style architecture.

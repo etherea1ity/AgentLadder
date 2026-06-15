@@ -132,7 +132,10 @@ Chapter 1 should not implement:
 - RAG
 - memory
 - skills
+- workspace/profile bootstrap files
 - context compression
+- plugins/extensions
+- scheduled routines
 - production backend
 - frontend UI polish
 - MCP
@@ -171,4 +174,3 @@ tests/klara/architecture/test_boundaries.py
 ```
 
 This list is for the future implementation branch. This documentation branch should not add those code files.
-

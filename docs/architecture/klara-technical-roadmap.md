@@ -7,10 +7,10 @@ Klara is a calm, branch-aware, observable agent runtime. She should grow one tec
 The main line is not RAG. The main line is:
 
 ```text
-Loop -> Runtime assembly -> Lifecycle control -> Capabilities -> Context
-     -> Continuity -> Procedure -> Knowledge -> Evidence -> Policy
-     -> Background maintenance -> Research -> External tools -> Production
-     -> Evaluation -> Policy learning
+Loop -> Runtime assembly -> Lifecycle control -> Capabilities -> Workspace
+     -> Context -> Continuity -> Procedure -> Knowledge -> Evidence
+     -> Safety/Resilience -> Routines -> Research -> External tools
+     -> Production -> Evaluation -> Policy learning
 ```
 
 ## Architecture Principles
@@ -25,6 +25,8 @@ Loop -> Runtime assembly -> Lifecycle control -> Capabilities -> Context
 8. **RAG is a capability.** RAG can have an internal pipeline, but from Klara's loop it appears as a knowledge tool/service result.
 9. **Trace starts on day one.** Trace is not only UI debug output; it becomes the future eval and policy-learning dataset.
 10. **Eval and RL optimize policy, not magic intelligence.** The final stage improves routing, tool choice, stop decisions, retrieval parameters, fallback behavior, and answer policy from traces and feedback.
+11. **Workspace bootstrap is explicit.** Persona, project context, user profile hints, and memory summaries are readable inputs assembled by the harness, not hidden state inside the loop.
+12. **Routines are not foreground autonomy.** Scheduled work, webhooks, and background maintenance run through restricted profiles, audit, and trace.
 
 ## Chapter Route
 
@@ -60,6 +62,7 @@ Includes:
 
 - Klara persona prompt
 - local default `UserContext`
+- workspace/profile bootstrap contract
 - runtime context object
 - model configuration
 - session message loading
@@ -250,10 +253,15 @@ Includes:
 
 - route policy
 - stop policy
+- permission policy
+- prompt-injection and external-content checks
 - tool retry policy
 - model fallback
 - tool fallback
 - RAG fallback
+- loop guard
+- truncation policy
+- recovery plan
 - budget exhaustion
 - timeout behavior
 - safe perturbation for eval
@@ -270,7 +278,7 @@ Purpose:
 
 Prepare for eval and policy learning without letting foreground behavior become chaotic.
 
-### Chapter 11 - Background Jobs
+### Chapter 11 - Background Jobs And Routines
 
 **Topic:** How Klara maintains herself outside the foreground turn.
 
@@ -282,12 +290,17 @@ Includes:
 - summary refresh job
 - index refresh job
 - eval sampling job
+- cron trigger
+- webhook/API trigger
+- delivery adapter
+- routine trace
 - restricted background capability profiles
 - job trace
 
 Rule:
 
-Background jobs may propose or store maintenance artifacts. They must not silently rewrite foreground conversation behavior.
+Background jobs and routines may propose or store maintenance artifacts. They
+must not silently rewrite foreground conversation behavior.
 
 ### Chapter 12 - Research Agent
 
@@ -309,7 +322,7 @@ Rule:
 
 Research is a composition of capabilities and evidence policy, not a rewrite of the loop.
 
-### Chapter 13 - MCP And External Tools
+### Chapter 13 - MCP, Plugins, And External Tools
 
 **Topic:** How Klara connects to external tool ecosystems.
 
@@ -318,6 +331,9 @@ Includes:
 - MCP client
 - MCP server
 - tool adapters
+- plugin/resource manifests
+- extension discovery
+- skill/plugin boundary
 - permission gate
 - audit log
 - sandbox
