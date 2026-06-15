@@ -58,6 +58,17 @@ will attach to.
 `src/klara/core` is intentionally ignorant. It does not import app, RAG,
 memory, skills, backend, eval, training, or production services.
 
+Core is allowed to have several small files. The danger is not file count; the
+danger is responsibility creep. In Chapter 1, core is limited to:
+
+- messages
+- tool contracts
+- events
+- hooks
+- loop policy
+- tool execution boundary
+- loop execution
+
 The harness owns assembly:
 
 - persona prompt
