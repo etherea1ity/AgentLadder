@@ -73,3 +73,15 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     events = [json.loads(line) for line in trace_path.read_text().splitlines()]
     assert events[0]["type"] == "run.started"
     assert events[-1]["type"] == "run.completed"
+
+
+def test_harness_defaults_to_chapter1_registry() -> None:
+    """Harness should be runnable without manually passing a registry."""
+
+    llm = HarnessLlm()
+    harness = KlaraHarness(llm=llm)
+
+    result = harness.run("hello", run_id="default-registry-run")
+
+    assert result.final_answer == "harness final"
+    assert [tool.name for tool in llm.tools] == ["debug_echo"]

@@ -1,0 +1,42 @@
+[models.providers.deepseek]
+api = "openai-completions"
+base_url = "https://api.deepseek.com/v1"
+api_key_env = "DEEPSEEK_API_KEY"
+allow_unlisted_models = false
+
+[[models.providers.deepseek.models]]
+id = "deepseek-v4-flash"
+label = "DeepSeek V4 Flash"
+supports_tools = true
+supports_json = true
+
+[[models.providers.deepseek.models]]
+id = "deepseek-v4-pro"
+label = "DeepSeek V4 Pro"
+supports_tools = true
+supports_json = true
+
+[models.providers.qwen]
+api = "openai-completions"
+base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+api_key_env = "DASHSCOPE_API_KEY"
+allow_unlisted_models = false
+
+[[models.providers.qwen.models]]
+id = "qwen3.6-flash"
+label = "Qwen3.6 Flash"
+supports_tools = true
+supports_json = true
+
+[[models.providers.qwen.models]]
+id = "qwen3.6-plus"
+label = "Qwen3.6 Plus"
+supports_tools = true
+supports_json = true
+
+[models.profiles.agent]
+primary = "deepseek/deepseek-v4-flash"
+fallbacks = [
+  "deepseek/deepseek-v4-pro",
+  "qwen/qwen3.6-flash",
+]

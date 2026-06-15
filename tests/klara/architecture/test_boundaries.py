@@ -28,6 +28,7 @@ FORBIDDEN_CORE_IMPORT_PREFIXES = (
     "klara.backend",
     "klara.eval",
     "klara.training",
+    "klara.infra",
 )
 
 

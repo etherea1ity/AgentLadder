@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from klara.capabilities.tools.fake_tool import DebugEchoTool
 from klara.core.tools import KlaraTool
 
 
@@ -21,6 +22,16 @@ class CapabilityRegistry:
 
         # Tools remain ordered so model-visible specs have deterministic order.
         self._tools = list(tools or [])
+
+    @classmethod
+    def with_default_chapter1_tools(cls) -> "CapabilityRegistry":
+        """Create the default Chapter 1 registry.
+
+        Returns:
+            A registry exposing only the deterministic `debug_echo` tool.
+        """
+
+        return cls([DebugEchoTool()])
 
     def register_tool(self, tool: KlaraTool) -> None:
         """Add one visible tool to the registry.

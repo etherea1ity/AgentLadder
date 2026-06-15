@@ -269,6 +269,58 @@ tests/klara/app/test_harness.py
 
 </details>
 
+## 5.5. Real LLM Adapter: DeepSeek / Qwen 放在哪里
+
+真实 provider 不属于 core。Klara 可以用 DeepSeek 或 Qwen，但它们必须通过 infra adapter
+接到 harness，再由 harness 注入 loop。
+
+```text
+config/models.toml
+-> RoutedLlmClient
+-> OpenAICompatibleLlmClient
+-> KlaraLoop LlmClient protocol
+```
+
+Input: `deepseek/deepseek-v4-flash` 或 `qwen/qwen3.6-flash` 这种 model ref。
+Output: core 能理解的 `ModelResponse`。
+Klara learns: provider 是可替换基础设施，不是 loop 的一部分。
+
+Corresponding code:
+
+```text
+config/models.toml
+src/klara/infra/config/loader.py
+src/klara/infra/llm/routed_client.py
+src/klara/infra/llm/openai_compatible.py
+tests/klara/infra/llm/test_openai_compatible.py
+tests/klara/infra/llm/test_routed_client.py
+```
+
+<details>
+<summary>Expand: why real LLM support does not change core</summary>
+
+Chapter 1 的 core 只要求一个 `LlmClient` protocol：
+
+```text
+complete(system_prompt, messages, tools, model) -> ModelResponse
+```
+
+DeepSeek、Qwen、OpenAI、Bedrock 或本地模型都应该适配到这个 protocol，而不是让
+`KlaraLoop` 去知道 HTTP、API key、base URL、retry、fallback 或 provider response
+格式。
+
+这一层参考 ReAct 的本地配置：
+
+- DeepSeek 使用 `DEEPSEEK_API_KEY`
+- Qwen 使用 `DASHSCOPE_API_KEY`
+- 两者都是 OpenAI-compatible chat completions
+- model profile 可以指定 primary 和 fallback
+
+本章只做 non-streaming adapter。streaming、model selection policy、更复杂 fallback、
+provider-specific reasoning replay 都属于后续章节。
+
+</details>
+
 ## 6. Architecture Boundary: core 到底能放什么
 
 `src/klara/core` 是 runtime mechanics，不是产品层。
