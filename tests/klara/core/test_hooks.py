@@ -10,12 +10,20 @@ from klara.core.tool_executor import ToolExecutor
 
 
 class FinalLlm:
+    """Fake LLM that always returns a final answer."""
+
     def complete(self, **kwargs: object) -> ModelResponse:
+        """Return a deterministic response for hook tests."""
+
         return ModelResponse(content="done")
 
 
 class BrokenHook:
+    """Hook that fails so tests can verify failure isolation."""
+
     def on_event(self, event: KlaraEvent) -> None:
+        """Raise for every event."""
+
         raise RuntimeError("hook broke")
 
 
@@ -37,6 +45,7 @@ def test_jsonl_trace_hook_writes_public_events(tmp_path) -> None:
 
     loop.run("hi", run_id="run-trace")
 
+    # Parse every trace line so assertions use the same public JSONL contract.
     events = [
         json.loads(line)
         for line in trace_path.read_text(encoding="utf-8").splitlines()

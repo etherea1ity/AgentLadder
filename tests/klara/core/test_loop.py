@@ -9,8 +9,14 @@ from klara.core.tools import ToolCall, ToolSpec
 
 
 class ScriptedLlm:
+    """Fake LLM that returns pre-scripted responses in call order."""
+
     def __init__(self, responses: list[ModelResponse]) -> None:
+        """Store scripted responses and model-call observations for assertions."""
+
+        # Responses are consumed so tests can prove turn ordering.
         self.responses = responses
+        # Calls keep the model-visible transcript and tool specs per turn.
         self.calls: list[tuple[tuple[KlaraMessage, ...], tuple[ToolSpec, ...]]] = []
 
     def complete(
@@ -21,6 +27,9 @@ class ScriptedLlm:
         tools: tuple[ToolSpec, ...],
         model: str,
     ) -> ModelResponse:
+        """Return the next scripted model response."""
+
+        # Capture each call before popping so failure cases still expose evidence.
         self.calls.append((messages, tools))
         if not self.responses:
             raise AssertionError("No scripted LLM response left")
