@@ -33,6 +33,7 @@ src/klara/
     context_builder.py
     prompt_loader.py
     tool_loader.py
+    user_context.py
 
   context/
     budget.py
@@ -59,13 +60,14 @@ src/klara/
       mcp/
 
   services/
+    users/
     knowledge/
     rag/
     papers/
     web/
     mcp/
     evidence/
-    users/
+    storage/
 
   memory/
     lifecycle.py
@@ -97,8 +99,17 @@ src/klara/
   backend/
     api/
     chat/
+    users/
+    sessions/
     streaming/
     trace.py
+
+  infra/
+    config/
+    llm/
+    observability/
+    storage/
+    resilience/
 
   eval/
     datasets.py
@@ -130,6 +141,7 @@ src/klara/core/
 
 src/klara/app/
   harness.py
+  user_context.py
 
 src/klara/capabilities/
   registry.py
@@ -142,6 +154,9 @@ src/klara/prompts/
 docs/chapters/
   ch01-minimal-agent-loop.md
 ```
+
+Chapter 1 can use a local default user context. It should not teach auth,
+tenancy, accounts, or production user management.
 
 ## Boundary Rules
 
@@ -169,6 +184,7 @@ docs/chapters/
 - context
 - capabilities
 - prompts
+- user-context contracts
 - memory provider interfaces
 
 `src/klara/capabilities/tools/*` may import:
@@ -180,6 +196,50 @@ docs/chapters/
 Concrete services live under `src/klara/services/*`.
 
 Backend and UI should receive public events and trace summaries, not raw prompts, private memory content, raw tool arguments, or private evidence bodies.
+
+## User And Session Boundary
+
+Klara should have user partitioning in the final architecture, but it should not
+dominate the early teaching chapters.
+
+The recommended model is:
+
+```text
+UserContext
+  user_id          stable internal identity
+  display_name     prompt-visible, optional, not unique
+  locale           optional prompt/runtime hint
+  timezone         optional prompt/runtime hint
+  storage_key      filesystem/database partition key
+```
+
+Early chapters may use:
+
+```text
+UserContext.local_default()
+```
+
+This keeps Chapter 1 and Chapter 2 focused on loop and harness while still
+preventing later rewrites when memory, sessions, skills, eval traces, and
+production auth arrive.
+
+User management ownership:
+
+```text
+src/klara/app/user_context.py      runtime identity contract
+src/klara/services/users/          user lookup and local user adapters
+src/klara/backend/users/           HTTP/auth-facing user binding
+src/klara/backend/sessions/        session history and session lifecycle
+src/klara/infra/storage/           filesystem/database adapters
+```
+
+Rules:
+
+- Core loop never knows user accounts.
+- Harness receives a `UserContext`.
+- Memory, skills, session history, and traces are partitioned by `storage_key`.
+- Display name can enter prompts; storage keys and private identifiers should not.
+- Production auth belongs to the Production Runtime chapter, not Chapter 1.
 
 ## Runtime Data Layout
 
@@ -203,3 +263,20 @@ Local runtime artifacts should stay outside source:
 
 These are local adapters. Production storage may replace them without changing the loop.
 
+## Teaching Versus Final Architecture
+
+The final architecture needs user/session/storage boundaries from the beginning,
+because memory, skills, trace datasets, and eval all become user- or project-
+scoped later.
+
+The teaching path should reveal that boundary gradually:
+
+```text
+Chapter 1: default local user only
+Chapter 2: UserContext contract appears in Harness
+Chapter 6: memory uses user partitioning
+Chapter 7: skills use user/project partitioning
+Chapter 14: auth, accounts, storage adapters, and production session management
+```
+
+This keeps the early learning path simple without designing a dead-end runtime.

@@ -59,6 +59,7 @@ Does not include:
 Includes:
 
 - Klara persona prompt
+- local default `UserContext`
 - runtime context object
 - model configuration
 - session message loading
@@ -72,6 +73,7 @@ Does not include:
 - long-term memory
 - context compression
 - full tool ecosystem
+- production auth or account management
 
 ### Chapter 3 - Hooks And Lifecycle Control
 
@@ -333,6 +335,7 @@ External side effects always require explicit permission and traceable audit.
 Includes:
 
 - user partitioning
+- account/auth boundary
 - storage adapters
 - auth
 - session history
@@ -348,6 +351,13 @@ Includes:
 Rule:
 
 Storage and transport can change, but loop/harness/capability boundaries should remain stable.
+
+User management note:
+
+Early chapters should carry a simple `UserContext` contract so memory, skills,
+sessions, and traces have a stable partition key. Real accounts, auth,
+multi-tenant storage, and production session management belong here, not in the
+first loop chapters.
 
 ### Chapter 15 - Eval Data Flywheel
 
@@ -422,4 +432,3 @@ boundary tests
 ```
 
 Everything else should be documented as future architecture, not implemented in Chapter 1.
-
