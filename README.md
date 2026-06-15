@@ -30,3 +30,17 @@ RAG is not Klara's core identity. RAG is a knowledge capability/tool that Klara 
 - `docs/architecture/klara-future-folder-map.md` - target repository and package layout.
 - `docs/architecture/ch01-minimal-loop-spec.md` - first implementation chapter scope.
 - `docs/architecture/klara-reference-synthesis.md` - lessons from ReAct, OpenClaw, Claw Code, Hermes, and Claude-Code-style architecture.
+- `docs/chapters/ch01-minimal-agent-loop.md` - Chapter 1 reading guide for the minimal loop implementation.
+
+## Current Implementation
+
+The implementation branch starts with Chapter 1 only:
+
+- `src/klara/core` contains the minimal loop, messages, tools, events, hooks,
+  policy, and tool executor.
+- `src/klara/app` contains the thin harness and local default `UserContext`.
+- `src/klara/capabilities` exposes the Chapter 1 `debug_echo` fake tool.
+- `tests/klara` verifies loop behavior, hook isolation, harness assembly, and
+  the core import boundary.
+
+Chapter 1 details live in `docs/chapters/ch01-minimal-agent-loop.md`.

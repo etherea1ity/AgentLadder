@@ -1,0 +1,1 @@
+"""Capability registration for Klara."""

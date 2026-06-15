@@ -1,0 +1,10 @@
+[project]
+name = "klara-agent-ladder"
+version = "0.1.0"
+description = "Klara Chapter 1 minimal agent loop."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
