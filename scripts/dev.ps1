@@ -45,6 +45,35 @@ function Wait-ForHttp {
     return $false
 }
 
+function Test-Http {
+    param([string]$Url)
+    try {
+        Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5 | Out-Null
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+function Stop-Listener {
+    param(
+        [int]$Port,
+        [string]$Reason
+    )
+    $listener = Get-Listener $Port
+    if (-not $listener) {
+        return
+    }
+    $pid = [int]$listener.OwningProcess
+    if ($pid -le 0) {
+        throw "Port $Port is busy, but no owning process could be resolved."
+    }
+    Write-Host "Stopping process $pid on port ${Port}: $Reason"
+    Stop-Process -Id $pid -Force
+    Start-Sleep -Seconds 1
+}
+
 function New-EncodedCommand {
     param([string]$Command)
     $bytes = [System.Text.Encoding]::Unicode.GetBytes($Command)
@@ -99,12 +128,22 @@ python -m uvicorn apps.api.main:app --host 127.0.0.1 --port $ApiPort *> "$ApiLog
     Write-Host "Started API on http://127.0.0.1:$ApiPort (launcher PID $($apiProcess.Id))."
 }
 
+$apiReadyBeforeWeb = Wait-ForHttp "http://127.0.0.1:$ApiPort/api/health" 40
+
 $webProcess = $null
 $webListener = Get-Listener $WebPort
 if ($webListener) {
-    Write-Host "Web app already listening on http://127.0.0.1:$WebPort (PID $($webListener.OwningProcess))."
+    $webApiBridgeReady = Test-Http "http://127.0.0.1:$WebPort/api/health"
+    if ($apiReadyBeforeWeb -and -not $webApiBridgeReady) {
+        Stop-Listener $WebPort "existing web server does not proxy /api to Klara API"
+        $webListener = $null
+    }
+    else {
+        Write-Host "Web app already listening on http://127.0.0.1:$WebPort (PID $($webListener.OwningProcess))."
+    }
 }
-else {
+
+if (-not $webListener) {
     $webCommand = @"
 Set-Location -LiteralPath "$WebRoot"
 `$env:VITE_API_BASE_URL = "http://127.0.0.1:$ApiPort"
