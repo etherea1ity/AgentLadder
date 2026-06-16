@@ -2520,7 +2520,7 @@ body,
 }
 
 /* Empty home cleanup: keep the landing chat surface inside one viewport and
-   remove chapter/runtime teaching labels from the visible product shell. */
+   keep non-product teaching labels out of the visible shell. */
 .chat-workspace.is-empty {
   overflow: hidden;
 }
