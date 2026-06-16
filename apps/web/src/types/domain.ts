@@ -101,7 +101,7 @@ export type ModelOption = {
 };
 
 // Klara Presence public event model. This is intentionally separate from the
-// current backend RunEvent DTO above so the UI can grow without breaking v0.2 SSE.
+// backend RunEvent DTO above so the UI can grow without breaking existing SSE.
 export type KlaraVisualPhase =
   | 'idle'
   | 'listening'

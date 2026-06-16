@@ -21,6 +21,8 @@ apps/web/playwright-report/
 apps/web/test-results/
 
 # Local runtime data
+.tmp/
+.klara/
 data/app/*.jsonl
 data/traces/*.jsonl
 *.egg-info/
