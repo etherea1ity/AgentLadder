@@ -7,7 +7,6 @@ import "katex/dist/katex.min.css";
 import {
   Check,
   Copy,
-  GitBranch,
   Moon,
   SlidersHorizontal,
   Sun,
@@ -94,9 +93,6 @@ export function ChatWorkspace(props: Props) {
             onFocusChange={setComposerFocused}
             onTypingPulse={pulseTyping}
           />
-          <small className="home-hint">
-            Runtime Loop <span>·</span> Model → Tool → Observation → Answer
-          </small>
         </section>
       ) : (
         <>
@@ -142,8 +138,7 @@ function TopPath({
 }) {
   return (
     <div className={`top-path ${compact ? "is-compact" : ""}`}>
-      <GitBranch size={compact ? 17 : 0} className="path-branch" />
-      <span>klara/runtime</span>
+      <span>Klara</span>
       {compact ? (
         <div className="top-actions">
           <button
@@ -346,8 +341,14 @@ function buildConversationTurns(
 function UserMessage({ message }: { message: Message }) {
   return (
     <article className="message user-message">
-      <div className="message-label">
-        You <time>{formatClock(message.created_at)}</time>
+      <div className="message-label user-label">
+        <span className="user-identity">
+          <span className="user-avatar" aria-hidden="true">
+            Y
+          </span>
+          <span>You</span>
+        </span>
+        <time>{formatClock(message.created_at)}</time>
       </div>
       <p>{message.content}</p>
     </article>

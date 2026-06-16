@@ -57,6 +57,19 @@ Core additions must pass all three checks:
 
 If not, put it outside core.
 
+Concrete model-visible tools are packages, not flat files:
+
+```text
+src/klara/capabilities/tools/<tool_name>/
+  __init__.py
+  schema.py
+  tool.py
+```
+
+Add helper files inside the tool package when they make one concern easier to
+teach, such as `timezones.py`, `query.py`, or `result_parser.py`. Do not create
+generic `utils.py`, `helpers.py`, or `common.py`.
+
 ## Comments And Docstrings
 
 Klara uses high teaching density:
@@ -88,6 +101,10 @@ Public function docstrings should use `Args` and `Returns`; add `Raises` for mea
 - Do not put chapter numbers, branch names, release numbers, or roadmap positions
   into runtime identifiers, storage keys, API responses, class names, method names,
   comments, or UI labels. Those labels belong in docs and chapter navigation only.
+- Product frontend code must be branch-neutral. Routes, headers, empty states,
+  sidebars, local storage keys, CSS class names, screenshots, and user-visible
+  labels must describe Klara and the current product capability, not the current
+  Git branch, chapter number, course stage, or roadmap slot.
 - Package-manager metadata may keep required package versions; runtime contracts
   should expose capabilities and schema ids, not course-version labels.
 
