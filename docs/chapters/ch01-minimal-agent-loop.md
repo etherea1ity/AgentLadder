@@ -293,7 +293,7 @@ Klara 学到：模型只能请求工具，真正执行工具的是 runtime。
 ```text
 src/klara/core/loop.py
 src/klara/core/tool_executor.py
-src/klara/capabilities/tools/fake_tool.py
+src/klara/capabilities/tools/debug_echo/tool.py
 ```
 
 <details>

@@ -293,7 +293,7 @@ Code:
 ```text
 src/klara/core/loop.py
 src/klara/core/tool_executor.py
-src/klara/capabilities/tools/fake_tool.py
+src/klara/capabilities/tools/debug_echo/tool.py
 ```
 
 <details>

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from klara.core.tools import JsonObject, ToolResult, ToolSpec
+from klara.capabilities.tools.debug_echo.schema import DEBUG_ECHO_METADATA, DEBUG_ECHO_SPEC
+from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 
 
 @dataclass(frozen=True)
@@ -15,18 +16,10 @@ class DebugEchoTool:
     mechanics deterministic in tests and examples.
     """
 
-    # Spec is model-visible and small enough for deterministic fake LLM paths.
-    spec: ToolSpec = ToolSpec(
-        name="debug_echo",
-        description="Echoes text for deterministic loop tests.",
-        input_schema={
-            "type": "object",
-            "properties": {
-                "text": {"type": "string"},
-            },
-            "required": ["text"],
-        },
-    )
+    # Spec is imported from schema.py so the model contract is easy to teach.
+    spec: ToolSpec = DEBUG_ECHO_SPEC
+    # Metadata stays separate because it is runtime policy, not prompt text.
+    metadata: ToolMetadata = DEBUG_ECHO_METADATA
 
     def execute(self, arguments: JsonObject) -> ToolResult:
         """Return the requested text as a tool observation.

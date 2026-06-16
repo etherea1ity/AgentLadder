@@ -82,6 +82,32 @@ production-grade tool exposure is assembled by the app/harness layer. Chapter 1
 may include a minimal fake tool path to prove the observation loop; Chapter 2
 teaches the real tool/capability system.
 
+## Tool Package Layout
+
+Each concrete model-visible tool lives in its own package under
+`src/klara/capabilities/tools/`:
+
+```text
+src/klara/capabilities/tools/
+  current_time/
+    __init__.py
+    schema.py
+    timezones.py
+    tool.py
+```
+
+Use this package shape by default:
+
+- `schema.py`: model-visible `ToolSpec` and Klara-visible `ToolMetadata`.
+- `tool.py`: the `KlaraTool` implementation and narrow execution method.
+- focused helper files: parsing, normalization, adapters, or domain helpers.
+- package `__init__.py`: export the concrete tool class only.
+
+Concrete tools may import `klara.core` contracts and capability-local helpers.
+They must not import the loop, backend, frontend, or trace sinks. External
+provider clients belong in `src/klara/services/`; the tool package should wrap
+that service into a model-visible capability.
+
 ## Documentation Hygiene
 
 Keep `docs/skills/` small and current. These files are the compact project

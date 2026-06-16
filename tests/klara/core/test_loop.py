@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from klara.capabilities.tools.fake_tool import DebugEchoTool
+from klara.capabilities.tools.debug_echo import DebugEchoTool
 from klara.core.loop import KlaraLoop
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from klara.core.tools import KlaraTool, ToolCall, ToolResult, ToolSpec
+from klara.core.tools import KlaraTool, ToolCall, ToolMetadata, ToolResult, ToolSpec
 
 
 class ToolExecutor:
@@ -32,6 +32,16 @@ class ToolExecutor:
         """
 
         return tuple(tool.spec for tool in self._tools.values())
+
+    @property
+    def metadata(self) -> tuple[ToolMetadata, ...]:
+        """Return Klara-visible tool metadata in model-spec order.
+
+        Returns:
+            Tool metadata used by planning, trace, UI, and guard layers.
+        """
+
+        return tuple(tool.metadata for tool in self._tools.values())
 
     def execute(self, call: ToolCall) -> ToolResult:
         """Execute one tool call and convert failures into observations.
@@ -64,13 +74,38 @@ class ToolExecutor:
                 ok=False,
                 error=f"{type(exc).__name__}: {exc}",
             )
-        if result.tool_call_id != call.id:
-            # Normalize mismatched tool ids so the transcript joins request/result.
-            return ToolResult(
-                tool_call_id=call.id,
-                name=call.name,
-                content=result.content,
-                ok=result.ok,
-                error=result.error,
-            )
-        return result
+        # Normalize and limit results before exposing observations to the model.
+        normalized = self._normalize_result(call, result)
+        return self._limit_result(normalized, max_chars=tool.metadata.max_output_chars)
+
+    def _normalize_result(self, call: ToolCall, result: ToolResult) -> ToolResult:
+        """Normalize a concrete result against the original model request."""
+
+        if result.tool_call_id == call.id and result.name == call.name:
+            return result
+        # Normalize mismatched ids/names so the transcript joins request/result.
+        return ToolResult(
+            tool_call_id=call.id,
+            name=call.name,
+            content=result.content,
+            ok=result.ok,
+            error=result.error,
+        )
+
+    def _limit_result(self, result: ToolResult, *, max_chars: int) -> ToolResult:
+        """Apply the tool's model-visible output limit."""
+
+        if len(result.content) <= max_chars:
+            return result
+        # Truncate content at the declared boundary and make truncation explicit.
+        content = result.content[:max_chars]
+        error = result.error
+        if result.error and len(result.error) > max_chars:
+            error = result.error[:max_chars]
+        return ToolResult(
+            tool_call_id=result.tool_call_id,
+            name=result.name,
+            content=f"{content}\n[tool output truncated after {max_chars} characters]",
+            ok=result.ok,
+            error=error,
+        )

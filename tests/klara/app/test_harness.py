@@ -4,7 +4,7 @@ import json
 
 from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.capabilities.registry import CapabilityRegistry
-from klara.capabilities.tools.fake_tool import DebugEchoTool
+from klara.capabilities.tools.debug_echo import DebugEchoTool
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.tools import ToolCall, ToolSpec
 
@@ -84,4 +84,4 @@ def test_harness_defaults_to_default_registry() -> None:
     result = harness.run("hello", run_id="default-registry-run")
 
     assert result.final_answer == "harness final"
-    assert [tool.name for tool in llm.tools] == ["debug_echo"]
+    assert [tool.name for tool in llm.tools] == ["debug_echo", "current_time"]

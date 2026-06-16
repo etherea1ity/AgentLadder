@@ -57,6 +57,19 @@ Core additions must pass all three checks:
 
 If not, put it outside core.
 
+Concrete model-visible tools are packages, not flat files:
+
+```text
+src/klara/capabilities/tools/<tool_name>/
+  __init__.py
+  schema.py
+  tool.py
+```
+
+Add helper files inside the tool package when they make one concern easier to
+teach, such as `timezones.py`, `query.py`, or `result_parser.py`. Do not create
+generic `utils.py`, `helpers.py`, or `common.py`.
+
 ## Comments And Docstrings
 
 Klara uses high teaching density:

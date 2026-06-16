@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from klara.capabilities.tools.fake_tool import DebugEchoTool
+from klara.capabilities.tools import CurrentTimeTool, DebugEchoTool
 from klara.core.tools import KlaraTool
 
 
@@ -28,10 +28,10 @@ class CapabilityRegistry:
         """Create the default local registry.
 
         Returns:
-            A registry exposing only the deterministic `debug_echo` tool.
+            A registry exposing deterministic local tools useful for development.
         """
 
-        return cls([DebugEchoTool()])
+        return cls([DebugEchoTool(), CurrentTimeTool()])
 
     def register_tool(self, tool: KlaraTool) -> None:
         """Add one visible tool to the registry.
