@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -25,6 +25,7 @@ import { KlaraRunStatus } from "./klara/KlaraRunStatus";
 import { KlaraHandoffOverlay, useKlaraHandoff } from "./klara/useKlaraHandoff";
 import { isKlaraRunActive } from "./klara/useKlaraRunMotion";
 import { normalizeMathMarkdown } from "../utils/markdown";
+import { useDismissibleDetails } from "../hooks/useDismissibleDetails";
 
 type Props = {
   activeSessionId: string | null;
@@ -590,8 +591,18 @@ function ModelPicker({
   onChange: (model: string) => void;
   disabled?: boolean;
 }) {
+  const pickerRef = useRef<HTMLDetailsElement | null>(null);
+  const closePicker = useCallback(() => {
+    const picker = pickerRef.current;
+    if (!picker?.open) return;
+    picker.open = false;
+  }, []);
+
+  useDismissibleDetails(pickerRef);
+
   return (
     <details
+      ref={pickerRef}
       className="model-picker"
       onToggle={(event) => {
         if (disabled && event.currentTarget.open)
@@ -618,7 +629,10 @@ function ModelPicker({
           <button
             key={option.model}
             className={option.model === selectedModel ? "is-selected" : ""}
-            onClick={() => onChange(option.model)}
+            onClick={() => {
+              onChange(option.model);
+              closePicker();
+            }}
           >
             <span>{option.label}</span>
             <small>{option.model}</small>

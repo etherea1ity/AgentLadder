@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
 import type { Session } from '../types/domain';
+import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
 type Props = {
   sessions: Session[];
@@ -49,33 +50,10 @@ function ConversationItem({ session, active, deleting, renaming, onSelect, onRen
   const [mode, setMode] = useState<'menu' | 'rename' | 'delete'>('menu');
   const [draftTitle, setDraftTitle] = useState(session.title);
   const menuRef = useRef<HTMLDetailsElement | null>(null);
-
-  useEffect(() => {
-    const closeMenu = () => {
-      const menu = menuRef.current;
-      if (!menu?.open) return;
-      menu.open = false;
-      setMode('menu');
-    };
-
-    const onPointerDown = (event: PointerEvent) => {
-      const menu = menuRef.current;
-      if (!menu?.open) return;
-      if (event.target instanceof Node && menu.contains(event.target)) return;
-      closeMenu();
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMenu();
-    };
-
-    document.addEventListener('pointerdown', onPointerDown, true);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown, true);
-      document.removeEventListener('keydown', onKeyDown);
-    };
+  const resetMenu = useCallback(() => {
+    setMode('menu');
   }, []);
+  useDismissibleDetails(menuRef, resetMenu);
 
   return (
     <div className={`conversation-item ${active ? 'active' : ''}`}>
