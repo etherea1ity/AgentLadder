@@ -3,7 +3,7 @@
 语言：中文 | [English](./ch01-minimal-agent-loop.en.md)
 
 上一章：无  
-下一章：Chapter 2: Tool Calling, Registry, And Capability Partitioning  
+下一章：Chapter 2: Tool Calling
 总路线：[Klara Roadmap](../skills/roadmap.md)
 
 ---
@@ -642,7 +642,7 @@ python -m pytest tests\klara\core\test_hooks.py tests\klara\app\test_harness.py
 
 ## 下一章预告
 
-Chapter 2 会把本章的最小工具路径升级成真正的 tool calling、registry 和 capability partitioning。
+Chapter 2 会把本章的最小工具路径升级成完整的 tool calling：工具包目录、schema、metadata、registry、executor、串并行执行和错误 observation。
 
 Klara 会继续学习：
 

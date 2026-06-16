@@ -1,266 +1,362 @@
-# Klara Chapter Roadmap Reference
+# Klara Roadmap Reference
 
 ## Teaching North Star
 
-Klara grows from a visible ReAct-style loop into a production-ready agent runtime.
+Klara grows as a runnable harness, not as a pile of abstractions.
 
-The teaching order follows the learner's natural questions:
+Each foundation chapter must leave behind a working Klara version that can be
+started, tested, and explained in a README. The chapter may keep implementation
+small, but it must not be only a design note.
 
-```text
-Can Klara run?
--> Can Klara use tools?
--> Can we intercept and observe lifecycle points?
--> Can one real run be assembled cleanly?
--> Can context fit?
--> Can Klara remember?
--> Can Klara learn procedures?
--> Can Klara read knowledge?
--> Can Klara reason over evidence?
--> Can Klara recover safely?
--> Can Klara work in the background?
--> Can Klara research?
--> Can Klara use external ecosystems?
--> Can Klara run in production?
--> Can traces become eval data?
--> Can eval improve policy through post-training/RL?
-```
-
-Compact main line:
+The long-term course has two layers:
 
 ```text
-Loop -> Tools -> Hooks -> Harness -> Context -> Memory -> Skills
--> RAG -> Evidence -> Policy/Fallback -> Routines -> Research
--> MCP/Plugins -> Production -> Eval -> Post-training/RL
+Foundation Track:
+  build a complete Claude-Code-like Klara harness around one loop
+
+Advanced Labs:
+  use Klara traces and runtime surfaces to study training, MoE, RAG,
+  memory, and RL optimization
 ```
 
-RAG is not Klara's core identity. RAG is a knowledge capability that arrives after loop, tools, hooks, context, memory, and skills have stable boundaries.
+The foundation track is about the harness: tools, hooks, context, memory, RAG,
+tasks, teams, external tools, production boundaries, and trace/eval data.
 
-## Boundary Rule
+The advanced labs are about improving the intelligence and policies that run
+inside or around that harness.
 
-Each chapter has one main question. Supporting mechanisms are allowed only when they make that question runnable and testable.
+## Course Shape
 
-Move a topic earlier only if the current chapter cannot be understood or tested without it. Move a topic later if it distracts from the chapter's main question.
+Use this rule when deciding whether a topic deserves its own chapter:
 
-## Chapter Route
+```text
+one chapter = one runnable Klara version with one dominant mechanism
+```
+
+Do not split internal parts of one mechanism into separate chapters unless each
+split creates a meaningful runnable version.
+
+Examples:
+
+- Tool schema, registry, metadata, executor, serial/parallel execution, and tool
+  errors belong in one tool-calling chapter.
+- Permission should not be an early standalone chapter. It is first represented
+  as metadata and hook placement, then taught concretely when external tools,
+  background work, MCP, teams, and production risks make approval meaningful.
+- The UI/window is not a standalone chapter. The frontend is the visible proof
+  surface for each runnable chapter.
+
+## Compact Foundation Line
+
+```text
+Loop -> Tool Calling -> Hooks/Trace -> Harness/Config -> Todo
+-> Context Assembly -> Context Compression -> Recovery -> Skills -> Memory
+-> RAG Tool -> Agentic RAG -> Research -> Task System
+-> Background/Scheduler -> Subagents/Teams -> MCP -> Production/Eval Bridge
+```
+
+RAG is not Klara's core identity. RAG is a knowledge capability that becomes
+clear after the loop, tools, hooks, context, memory, and skills have homes.
+
+## Foundation Track
 
 ### Chapter 1 - Minimal LLM Loop
 
 Main question: what is the smallest real Klara runtime heartbeat?
 
+Runnable result:
+
+- chat can call a configured LLM
+- one minimal tool path can return an observation
+- the loop can continue or stop
+- trace/UI receives public lifecycle events
+
 Includes:
 
 - user / assistant / tool message shape
 - LLM request and response shape
-- optional minimal `debug_echo` tool path to prove the loop can continue
+- model response with optional tool calls
 - tool observation as a message
 - `prepare_next_turn` as identity
-- final answer versus max-turn stop reason
-- public lifecycle events
+- bounded stop reason
 - observer hook for JSONL trace and frontend projection
-- minimal full-stack run path
 
 Excludes:
 
 - formal tool ecosystem
-- permission hooks
-- memory
+- permission policy
 - RAG
+- memory
 - context compression
-- skill system
-- production auth
-- RL
+- skills
+- training/RL
 
-Why here: readers first need to see a running loop, not a framework.
+### Chapter 2 - Tool Calling
 
-### Chapter 2 - Tool Calling, Registry, And Capability Partitioning
+Main question: how does Klara expose actions to the model and turn tool calls
+back into observations?
 
-Main question: how does a model request action, and how does runtime safely decide what actions exist?
+Runnable result:
+
+- model can call local time and utility tools
+- tool errors return model-visible observations
+- registry exposes only visible tools
+- tool traces show start/result/error
 
 Includes:
 
-- model-visible tool schema
+- one-package-per-tool layout
+- model-visible `ToolSpec`
+- Klara-visible `ToolMetadata`
 - tool registry
 - tool executor
-- tool result contract
-- tool error contract
+- tool result/error contract
 - unknown tool handling
-- tool observation returned to the next LLM turn
-- tool namespaces and capability profiles
-- visible-tool selection for a chapter/profile
-- simple capability partitioning algorithm: choose a small allowed tool set from a larger registry
-- starter tools: `clock`, `calculator`, `debug_echo`, `clarify`, fake `search`
-- trace events for tool selection, tool start, tool result, and tool error
+- serial versus parallel execution planning
+- starter tools such as current time, calculator, debug echo, fake search, web
+  search/fetch when available
 
 Excludes:
 
-- `PreToolUse` permission hooks
-- external side effects such as shell/filesystem writes
-- MCP
+- full permission approval
+- shell/filesystem mutation tools
+- MCP transport
 - real RAG
-- long-term memory
 
-Why here: after the loop, the next ReAct idea is action and observation. Tool selection also introduces the first practical "partitioning" problem without needing full context/memory yet.
+### Chapter 3 - Hooks And Trace
 
-### Chapter 3 - Hooks And Lifecycle Control
+Main question: where can Klara observe or influence lifecycle behavior without
+rewriting the loop?
 
-Main question: where can Klara observe, block, modify, or stop runtime behavior without rewriting the loop?
+Runnable result:
+
+- hooks receive lifecycle events
+- trace and frontend projections are produced from the same public events
+- tool start/result cards appear in the run surface
 
 Includes:
 
-- `SessionStart`
+- observer hooks
 - `UserPromptSubmit`
-- `PreToolUse`
+- `PreToolUse` placement
 - `PostToolUse`
 - `Stop`
-- `PreCompact`
-- `SessionEnd`
-- observer hooks versus decision hooks
-- hook result contract: allow, block, continue, stop, add context, rewrite safe input
 - hook failure isolation
-- stop-hook recursion guard
-- timeout/cancel shape for hook execution
 - public versus private hook payloads
-- trace hook remains the simplest observer hook
+- trace event schema
 
 Excludes:
 
-- full permission policy engine
-- full context compression implementation
-- memory write policies
-- production audit backend
+- complete permission engine
+- context compression implementation
+- memory write policy
 
-Why here: tools create real lifecycle pressure. Now hooks have something meaningful to intercept.
-
-### Chapter 4 - Harness And Runtime Context
+### Chapter 4 - Harness And Config
 
 Main question: how is one real Klara run assembled before the loop starts?
+
+Runnable result:
+
+- CLI/API/frontend runs all go through `KlaraHarness`
+- provider and model choices come from config
+- persona and capability profile are assembled outside core
 
 Includes:
 
 - persona prompt loading
-- response style and Klara identity boundaries
-- local `UserContext`
-- workspace/project profile bootstrap
-- model selection
+- model/provider routing
+- `.env` and config loading
 - capability profile selection
 - visible tools
 - hook list
 - trace sink selection
-- session message loading
 - runtime context object
 - frontend/backend run creation boundary
 
 Excludes:
 
 - durable memory
-- context compression
-- full auth/account system
+- auth/user management
 - production storage design
 
-Why here: after loop, tools, and hooks are understood, harness becomes concrete: it is the app-layer assembly point for all of them.
+### Chapter 5 - Todo Planning
 
-### Chapter 5 - Context Engine And Compression
+Main question: how does Klara keep the current task from drifting?
 
-Main question: what should Klara carry into the next LLM turn when the transcript grows?
+Runnable result:
+
+- model can call `todo_write`
+- current session shows todo state
+- todo updates are visible in trace/UI
 
 Includes:
 
-- context budget estimation
+- todo item contract
+- pending / in-progress / completed states
+- one active item convention
+- current-session persistence
+- todo trace events
+- frontend plan display
+
+Excludes:
+
+- durable task graph
+- multi-agent task claiming
+- background jobs
+
+### Chapter 6 - System Prompt And Context Assembly
+
+Main question: what does Klara assemble before a model turn?
+
+Runnable result:
+
+- system prompt is assembled at runtime
+- workspace/project/user context can be injected safely
+- the loop still receives prepared dependencies only
+
+Includes:
+
+- prompt sections
+- persona section
+- workspace profile
+- current session summary placeholder
+- capability summary
+- context boundary between public trace and private prompt material
+
+Excludes:
+
+- compression
+- long-term memory
+- RAG retrieval
+
+### Chapter 7 - Context Compression
+
+Main question: what should Klara carry forward when the transcript grows?
+
+Runnable result:
+
+- long runs trigger compaction
+- recent messages stay visible
+- older material is summarized or trimmed according to policy
+
+Includes:
+
+- token or character budget estimate
 - message window
 - priority order
 - tool-result micro-compaction
 - session summary
-- compaction threshold
-- `PreCompact` hook integration
+- `PreCompact` hook placement
 - context budget trace events
-- private versus public context boundaries
-
-Priority order:
-
-```text
-current user input
--> current tool results
--> recent visible messages
--> compact profile/context
--> session summary
--> searchable history references
-```
 
 Excludes:
 
 - durable memory store
 - RAG retrieval
-- RL-based context policy
+- learned context policy
 
-Why here: the loop can now act and be intercepted; the next failure mode is context overflow and noisy history.
+### Chapter 8 - Error Recovery And Fallback
 
-### Chapter 6 - Memory System
+Main question: how does Klara recover when a provider, prompt, or tool fails?
 
-Main question: how does Klara gain durable continuity without treating chat history as memory?
+Runnable result:
+
+- transient provider failures retry
+- prompt-too-long can trigger compaction and retry
+- fallback model path is visible in trace
 
 Includes:
 
-- short-term context versus memory
-- profile memory
-- durable memory
-- event memory
-- memory search
-- remember/update/delete semantics
-- sensitivity classes
-- memory lifecycle
-- explicit memory tool
-- post-run memory review hook
+- retry taxonomy
+- timeout handling
+- prompt-too-long recovery
+- fallback model route
+- tool failure observation
+- public failure trace
 
 Excludes:
 
-- procedural skills
-- RAG over documents
-- automatic saving of every chat message
+- production incident response
+- learned fallback policy
 
-Why here: memory depends on context and hooks, but should arrive before skills and knowledge retrieval so continuity is not confused with documents.
+### Chapter 9 - Skills / Procedural Memory
 
-### Chapter 7 - Skills / Procedural Memory
+Main question: how does Klara learn repeatable procedures without stuffing every
+instruction into the prompt?
 
-Main question: how does Klara learn repeatable ways of doing work?
+Runnable result:
+
+- skills can be listed
+- one skill can be loaded on demand
+- loaded skill content affects a later model turn
 
 Includes:
 
 - skill metadata
-- skill store
+- skill catalog
 - `skills_list`
 - `skill_view`
-- `skill_manage`
 - built-in skills
-- user/project skills
+- project skills
 - precedence rules
 - progressive disclosure
-- background skill review
 - skill activation trace
 
 Excludes:
 
 - factual memory
 - RAG document retrieval
-- plugin/MCP ecosystem
+- MCP plugin ecosystem
 
-Why here: after Klara can remember facts, she can learn procedures. Skills are "how to do work"; memory is "what should be remembered."
+### Chapter 10 - Memory System
 
-### Chapter 8 - RAG As Knowledge Tool
+Main question: how does Klara gain durable continuity without treating chat
+history as memory?
 
-Main question: how does Klara read a local knowledge base as one capability?
+Runnable result:
+
+- user can ask Klara to remember, search, update, and delete memory
+- memory writes are explicit or policy-approved
+- Klara can explain what she remembers
 
 Includes:
 
-- `local_knowledge_search`
-- `read_source`
-- document metadata
+- short-term context versus memory
+- profile memory
+- event memory
+- durable memory records
+- remember/search/update/delete
+- sensitivity classes
+- memory review hook
+- deletion semantics
+
+Excludes:
+
+- automatic saving of every chat message
+- RAG over document collections
+- advanced consolidation research
+
+### Chapter 11 - RAG As Knowledge Tool
+
+Main question: how does Klara read a local knowledge base as one capability?
+
+Runnable result:
+
+- local documents can be indexed
+- Klara can answer with source cards and citations
+- RAG appears as a tool/capability, not as the core loop
+
+Includes:
+
+- local document loader
+- metadata sidecars
 - chunking
 - embedding
 - BM25 retrieval
 - vector retrieval
 - hybrid retrieval
-- reranking
-- context building
+- simple reranking
+- context builder
 - SourceCard
 - Citation
 - AnswerFrame
@@ -268,95 +364,57 @@ Includes:
 Excludes:
 
 - evidence-heavy multi-step workflow
-- policy learning
 - unrestricted web research
+- RAG optimization benchmark lab
 
-Why here: RAG becomes understandable once tools, context, memory, and skills already have separate meanings.
+### Chapter 12 - Controlled Agentic RAG
 
-### Chapter 9 - Controlled Evidence / Agentic RAG
+Main question: how does Klara handle evidence-heavy work with runtime-owned
+workflow instead of a free agent loop?
 
-Main question: how does Klara handle evidence-heavy tasks with runtime-owned workflow rather than a free agent loop?
+Runnable result:
+
+- request is normalized
+- search/fetch/evidence/write/verify steps are visible
+- insufficient evidence is an explicit outcome
 
 Includes:
 
-- route
-- plan
-- retrieve
-- rewrite/query expansion
+- RequestSpec
+- EvidenceSearchPlan
+- SearchProvider / FetchProvider
+- multi-path retrieval
 - evidence pack
 - source selection
-- answer writing
-- verification
-- fallback
+- answer writer
+- verifier
 - DecisionRecord trace
-- frontend source cards and evidence trace
+- old AgentLadder Agentic RAG lessons
 
 Excludes:
 
 - arbitrary tool autonomy
+- web-scale crawling
 - RL optimization
-- production data governance
 
-Why here: this preserves the useful old AgentLadder Agentic RAG lessons, but places them after the general runtime foundations.
+### Chapter 13 - Research Agent
 
-### Chapter 10 - Policy, Fallback, And Safe Perturbation
+Main question: how does Klara run bounded research across local knowledge and
+web/page reading?
 
-Main question: how does Klara stay stable when tools, retrieval, models, or evidence are uncertain?
+Runnable result:
 
-Includes:
-
-- tool/model route policy
-- retry rules
-- fallback chains
-- budget policy
-- failure taxonomy
-- safe degradation
-- local perturbation experiments
-- engineering rollback points
-- policy trace
-
-Excludes:
-
-- learned policy training
-- production incident system
-
-Why here: after evidence workflows, failure and recovery are concrete rather than abstract.
-
-### Chapter 11 - Background Jobs And Routines
-
-Main question: how can Klara do bounded work outside the foreground chat turn?
+- Klara can search, fetch, rank, synthesize, and produce a report
+- source uncertainty is visible
+- contradictions can be called out
 
 Includes:
 
-- scheduler
-- cron triggers
-- webhook triggers
-- API triggers
-- routine profiles
-- restricted capability sets
-- audit trace
-- notification/delivery
-- routine result summaries
-
-Excludes:
-
-- unconstrained autonomy
-- background work without trace
-- production queue scaling
-
-Why here: routines need policy, hooks, trace, and restricted capabilities.
-
-### Chapter 12 - Research Agent
-
-Main question: how does Klara run a bounded research workflow?
-
-Includes:
-
-- search/read/synthesize/check loop
-- source tracking
-- uncertainty tracking
-- evidence trace
-- note cards
+- web search
+- page fetch/read
+- source ranking
+- evidence table
+- contradiction handling
 - report generation
 - follow-up question handling
 
@@ -366,94 +424,323 @@ Excludes:
 - arbitrary external side effects
 - post-training
 
-Why here: research combines tools, evidence, policy, and routine-like iteration.
+### Chapter 14 - Task System
 
-### Chapter 13 - MCP, Plugins, And External Tools
+Main question: how does Klara persist larger goals as ordered work?
 
-Main question: how does Klara connect to external tool ecosystems without losing boundaries?
+Runnable result:
+
+- tasks are written to disk
+- dependencies and status are visible
+- task records survive process restart
 
 Includes:
 
-- MCP clients
-- MCP servers
-- plugin manifests
-- resource discovery
-- adapters
-- permission classes
-- external audit events
-- tool sandboxing rules
+- TaskRecord
+- task states
+- blocked-by dependencies
+- claim/complete contract
+- task board
+- trace events
 
 Excludes:
 
-- full production deployment
-- arbitrary unrestricted tool execution
+- team agents
+- background execution
+- scheduler
 
-Why here: external ecosystems should arrive only after internal tool, hook, policy, and audit concepts exist.
+### Chapter 15 - Background Work And Scheduler
 
-### Chapter 14 - Production Runtime
+Main question: how can Klara run bounded work outside the foreground turn?
 
-Main question: what changes when Klara must run for real users?
+Runnable result:
+
+- slow jobs run in background
+- completion notification is injected into chat
+- simple scheduled jobs can fire later
+
+Includes:
+
+- background job runner
+- notification queue
+- queue processor
+- cron-like schedule
+- session-only versus durable jobs
+- routine profile
+- bounded capability set
+
+Excludes:
+
+- worker fleet scaling
+- production queue infrastructure
+- autonomous task claiming
+
+### Chapter 16 - Subagents, Teams, And Worktrees
+
+Main question: when one context is not enough, how does Klara delegate safely?
+
+Runnable result:
+
+- one-shot subagent can run with clean context
+- persistent teammate can communicate through a mailbox
+- task/worktree isolation prevents obvious interference
+
+Includes:
+
+- one-shot subagent
+- isolated messages
+- summary-only return
+- persistent teammate
+- MessageBus / inbox
+- team protocol
+- autonomous task claiming
+- worktree isolation
+- permission bubbling placeholder
+
+Excludes:
+
+- production orchestration fleet
+- learned multi-agent routing
+
+### Chapter 17 - MCP And External Tools
+
+Main question: how does Klara connect external tool ecosystems without losing
+the same runtime boundaries?
+
+Runnable result:
+
+- one MCP-like external tool source can be connected
+- dynamic tools appear in the same tool pool
+- external tool calls are traced and guarded
+
+Includes:
+
+- MCP client concept
+- server/tool discovery
+- adapter boundary
+- dynamic tool naming
+- external audit events
+- allow/deny/ask policy placement
+- tool error surfaces
+
+Excludes:
+
+- complete OAuth/resource subscription coverage
+- production plugin marketplace
+
+### Chapter 18 - Production Runtime And Eval Bridge
+
+Main question: what changes when Klara must be reliable, and how do traces
+become improvement data?
+
+Runnable result:
+
+- local production-shaped run path works
+- redacted trace can be exported into an eval dataset
+- regression report can be generated
 
 Includes:
 
 - API boundaries
-- users and auth boundary
-- sessions
-- storage
-- streaming
+- session storage
+- streaming and cancellation
+- user/auth boundary as a production concern
 - privacy and redaction
 - observability
-- deployment safety
-- operational runbooks
-
-Excludes:
-
-- teaching-only shortcuts
-- policy learning mutation
-
-Why here: user management belongs here, not in the early learning chapters.
-
-### Chapter 15 - Eval Data Flywheel
-
-Main question: how do traces become evaluation data?
-
-Includes:
-
-- trace dataset extraction
+- eval dataset extraction
 - gold examples
-- scorers
-- rubrics
-- failure taxonomy
-- regression suites
-- reports
-- policy candidate evaluation
+- scorers/rubrics
+- regression report
+- final comprehensive Klara freeze
 
 Excludes:
 
 - live policy mutation
-- RL training loop
+- full production deployment
+- training jobs
 
-Why here: eval requires stable traces from many earlier chapters.
+## Advanced Labs
 
-### Chapter 16 - Post-training / RL For Agent Policy
+Advanced labs are not regular foundation chapters. They are compact runnable
+experiments that use Klara's traces, tools, memory, and RAG surfaces.
 
-Main question: how can eval and feedback improve Klara's policy choices?
+### Lab A - Trace Dataset And Evaluation
+
+Question: how do Klara traces become reusable data?
 
 Includes:
 
-- preference data
-- reward signals
-- route policy evaluation
-- tool choice policy
-- stop decision policy
-- retrieval parameter policy
-- fallback policy
-- offline optimization
-- deployment gate for learned policies
+- trace normalization
+- state/action/outcome records
+- train/eval split
+- rubric scoring
+- regression dashboard artifact
 
-Excludes:
+### Lab B - Tiny Pretrain
 
-- training Klara's persona from scratch
-- direct mutation of production behavior from raw eval
+Question: what is the smallest visible pretraining pipeline?
 
-Why here: RL/post-training is the capstone after trace, eval, and policy boundaries exist.
+Includes:
+
+- tokenizer
+- tiny transformer
+- dataset preparation
+- pretraining loop
+- loss curves
+- simple generation check
+
+### Lab C - Tool-Use SFT
+
+Question: can Klara traces teach a small model tool-use format?
+
+Includes:
+
+- tool-call trace filtering
+- supervised examples
+- SFT run
+- held-out tool-call validation
+- failure taxonomy
+
+### Lab D - Preference / DPO
+
+Question: how does post-training improve answer or policy preferences?
+
+Includes:
+
+- preference pairs
+- DPO or ORPO-style objective
+- small model update
+- before/after eval
+- safety gate before use
+
+### Lab E - MoE Router
+
+Question: can several small experts behave like a routed system?
+
+Includes:
+
+- expert roles
+- router/gating model
+- load balancing check
+- expert specialization eval
+- distillation option
+
+### Lab F - RAG Optimization
+
+Question: how do retrieval choices change recall, faithfulness, and latency?
+
+Includes:
+
+- retrieval benchmark
+- chunking ablation
+- hybrid/RRF tuning
+- query rewrite
+- reranking
+- multi-hop retrieval
+- multimodal/figure-aware extension when available
+
+### Lab G - Memory And RL Policy
+
+Question: can memory and policy improve from experience?
+
+Includes:
+
+- mem0-style memory baseline
+- reflection/consolidation
+- dream-like offline memory review
+- bandit-style tool/retrieval policy
+- GRPO/PPO-style toy policy experiment when feasible
+
+## One-Month Execution Plan
+
+Target window: June 16, 2026 through July 15, 2026.
+
+The schedule optimizes for runnable teaching versions, not production
+completeness.
+
+### Week 1 - June 16 to June 22
+
+Target chapters: 2 through 6.
+
+Outcome:
+
+- real tool calling
+- hooks and trace
+- harness/config
+- todo planning
+- prompt/context assembly
+
+### Week 2 - June 23 to June 29
+
+Target chapters: 7 through 12.
+
+Outcome:
+
+- context compression
+- recovery/fallback
+- skills
+- memory
+- RAG tool
+- controlled Agentic RAG
+
+### Week 3 - June 30 to July 6
+
+Target chapters: 13 through 18.
+
+Outcome:
+
+- research agent
+- task system
+- background/scheduler
+- subagents/teams/worktrees
+- MCP/external tools
+- production/eval bridge
+
+### Week 4 - July 7 to July 15
+
+Target labs: A through G plus final freeze.
+
+Outcome:
+
+- trace dataset
+- tiny pretrain
+- tool-use SFT
+- preference/DPO
+- MoE router
+- RAG optimization
+- memory/RL policy experiment
+- final documentation, README cleanup, and freeze notes
+
+## Keep / Rebuild / Defer
+
+Keep:
+
+- Klara persona and calm observable identity
+- one loop as the runtime center
+- chapter/freeze documentation habit
+- existing frontend as proof surface
+- old RAG contracts around sources, citations, and answer frames
+- old Agentic RAG lessons around EvidencePack, verifier, and DecisionRecord
+
+Rebuild:
+
+- generic runtime as `KlaraLoop`
+- app assembly as `KlaraHarness`
+- concrete tools as capability packages
+- RAG as a knowledge tool/service
+- trace as the shared backend/UI/eval substrate
+
+Defer:
+
+- early standalone permission chapter
+- full user management before production
+- production queue scaling
+- model training before trace/eval export exists
+- advanced memory/RL until foundation memory and traces exist
+
+Drop or archive:
+
+- chapter-specific orchestration inside core
+- product-specific ZENO services or naming
+- hidden memory behavior before the memory chapter
+- UI pages that encode one old chapter as a permanent runtime contract

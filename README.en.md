@@ -3,7 +3,7 @@
 Language: [中文](./README.md) | English
 
 Previous: none  
-Next: Chapter 2: Tool Calling, Registry, And Capability Partitioning  
+Next: Chapter 2: Tool Calling
 Roadmap: [Klara Roadmap](./docs/skills/roadmap.md)
 
 ---
@@ -642,7 +642,7 @@ These tests confirm:
 
 ## Next Chapter
 
-Chapter 2 upgrades this minimal tool path into real tool calling, registry, and capability partitioning.
+Chapter 2 upgrades this minimal tool path into complete tool calling: tool packages, schemas, metadata, registry, executor, serial/parallel execution, and error observations.
 
 Klara will learn:
 
