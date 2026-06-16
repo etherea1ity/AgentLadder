@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from klara.infra.config.env import get_env_secret
-from klara.infra.config.loader import load_models_config
+from klara.infra.config.loader import load_images_config, load_models_config
 
 
 def test_load_models_config_reads_deepseek_and_qwen() -> None:
@@ -13,6 +13,21 @@ def test_load_models_config_reads_deepseek_and_qwen() -> None:
     assert models.providers["deepseek"].api_key_env == "DEEPSEEK_API_KEY"
     assert models.providers["qwen"].base_url == "https://dashscope.aliyuncs.com/compatible-mode/v1"
     assert models.profile("agent").primary == "deepseek/deepseek-v4-flash"
+
+
+def test_load_images_config_reads_verified_qwen_image_model() -> None:
+    """Future media tools should read image config without touching chat config."""
+
+    images = load_images_config("config")
+    qwen = images.providers["qwen"]
+    model = qwen.models[0]
+
+    assert qwen.api == "dashscope-multimodal-generation"
+    assert qwen.api_key_env == "DASHSCOPE_API_KEY"
+    assert qwen.endpoint.endswith("/services/aigc/multimodal-generation/generation")
+    assert model.id == "qwen-image-2.0"
+    assert model.supports_text_to_image is True
+    assert model.verified is True
 
 
 def test_get_env_secret_can_read_one_key_from_dotenv_without_exporting_all(tmp_path, monkeypatch) -> None:

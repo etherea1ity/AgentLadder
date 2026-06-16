@@ -1,0 +1,13 @@
+[images.providers.qwen]
+api = "dashscope-multimodal-generation"
+endpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+api_key_env = "DASHSCOPE_API_KEY"
+
+[[images.providers.qwen.models]]
+id = "qwen-image-2.0"
+label = "Qwen Image 2.0"
+supports_text_to_image = true
+supports_image_editing = true
+default_size = "512*512"
+verified = true
+verified_note = "Verified with the local DASHSCOPE_API_KEY on 2026-06-16."
