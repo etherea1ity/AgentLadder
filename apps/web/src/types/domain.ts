@@ -117,7 +117,7 @@ export type KlaraVisualPhase =
   | 'error';
 
 export type KlaraCapability =
-  | 'minimal'
+  | 'runtime'
   | 'rag'
   | 'agentic_rag'
   | 'memory'

@@ -1,10 +1,10 @@
 import type { KlaraCapabilityChip, KlaraRunEvent, KlaraRunEventKind } from '../../types/domain';
 
-type Scenario = 'minimal' | 'calculator' | 'rag' | 'web' | 'error' | 'loop';
+type Scenario = 'runtime' | 'calculator' | 'rag' | 'web' | 'error' | 'loop';
 type Step = [KlaraRunEventKind, string, KlaraCapabilityChip[]?, number?];
 
 const scenarios: Record<Scenario, Step[]> = {
-  minimal: [
+  runtime: [
     ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['answer.completed', 'AnswerState completed'], ['run.completed', 'Completed', ['model']]
   ],
   calculator: [
@@ -42,7 +42,7 @@ export function createMockKlaraEvents(scenario: Scenario, runId = `mock_${scenar
   }));
 }
 
-export const mockKlaraScenarios: Scenario[] = ['minimal', 'calculator', 'rag', 'web', 'error', 'loop'];
+export const mockKlaraScenarios: Scenario[] = ['runtime', 'calculator', 'rag', 'web', 'error', 'loop'];
 
 function conceptForKind(kind: KlaraRunEventKind) {
   if (kind.startsWith('model') || kind.startsWith('answer')) return 'LLMClient';

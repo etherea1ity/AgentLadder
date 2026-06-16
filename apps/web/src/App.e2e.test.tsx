@@ -30,7 +30,7 @@ class MockEventSource {
 const now = new Date().toISOString();
 const session = {
   session_id: "sess_1",
-  title: "minimal loop",
+  title: "runtime loop",
   created_at: now,
   updated_at: now,
   message_ids: [],
@@ -74,7 +74,7 @@ describe("Klara app flow", () => {
                 message_id: "msg_u",
                 session_id: "sess_1",
                 role: "user",
-                content: "run the minimal loop",
+                content: "run the runtime loop",
                 status: "completed",
                 created_at: now,
               },
@@ -82,7 +82,7 @@ describe("Klara app flow", () => {
                 message_id: "msg_a",
                 session_id: "sess_1",
                 role: "assistant",
-                content: "Klara completed the minimal loop.",
+                content: "Klara completed the runtime loop.",
                 run_id: "run_1",
                 status: "completed",
                 created_at: now,
@@ -104,35 +104,35 @@ describe("Klara app flow", () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it("streams a minimal loop answer without a right-side trace panel", async () => {
+  it("streams a runtime loop answer without a right-side trace panel", async () => {
     render(<App />);
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
-      "run the minimal loop",
+      "run the runtime loop",
     );
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
 
     const source = MockEventSource.instances[0];
-    source.emit("thinking_started", evt("thinking_started", "Klara is entering the minimal loop."));
+    source.emit("thinking_started", evt("thinking_started", "Klara is preparing the runtime loop."));
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
       "tool_call_started",
-      evt("tool_call_started", "Klara is using debug_echo.", {
-        tool_call: { name: "debug_echo" },
+      evt("tool_call_started", "Klara is using current_time.", {
+        tool_call: { name: "current_time" },
       }),
     );
     source.emit(
       "tool_call_completed",
-      evt("tool_call_completed", "debug_echo returned.", {
-        tool_result: { name: "debug_echo", ok: true },
+      evt("tool_call_completed", "current_time returned.", {
+        tool_result: { name: "current_time", ok: true },
       }),
     );
     source.emit("answer_streaming_started", evt("answer_streaming_started", "Klara is writing."));
     source.emit(
       "answer_delta",
       evt("answer_delta", "", {
-        delta: "Klara completed the minimal loop.",
+        delta: "Klara completed the runtime loop.",
         streamed_chars: 33,
       }),
     );
@@ -144,7 +144,7 @@ describe("Klara app flow", () => {
       }),
     );
 
-    expect(await screen.findByText(/Klara completed the minimal loop/)).toBeInTheDocument();
+    expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
     expect(screen.queryByText("Run Margin")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /open run trace/i })).not.toBeInTheDocument();
   });

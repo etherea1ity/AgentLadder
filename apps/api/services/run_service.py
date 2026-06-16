@@ -147,7 +147,7 @@ class RunService:
 
         current = run.model_copy(update={"status": "thinking", "started_at": now_iso()})
         self.store.save_run(current)
-        self._emit(run_id, "thinking_started", "Klara is entering the minimal loop.", {})
+        self._emit(run_id, "thinking_started", "Klara is preparing the runtime loop.", {})
 
         usage_totals = _UsageTotals()
         bridge = _RunEventBridge(self, run_id, usage_totals)
@@ -204,7 +204,7 @@ class RunService:
             )
         except Exception as exc:
             latency_ms = int((perf_counter() - started) * 1000)
-            error = RunError(code=_error_code(exc), message=str(exc), stage="minimal_loop")
+            error = RunError(code=_error_code(exc), message=str(exc), stage="runtime_loop")
             failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
             self.store.save_run(failed)
             self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
@@ -314,7 +314,7 @@ class _UsageTotals:
 
 
 def _system_prompt() -> str:
-    """Build the minimal app prompt while keeping persona outside core."""
+    """Build the app prompt while keeping persona outside core."""
 
     persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8").strip()
     user = UserContext.local_default()
