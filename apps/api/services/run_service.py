@@ -16,7 +16,6 @@ from apps.api.schemas import (
 )
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.sse_bus import SSEBus
-from klara.app.user_context import UserContext
 from klara.capabilities.registry import CapabilityRegistry
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
@@ -161,7 +160,7 @@ class RunService:
                 hooks=hooks,
                 policy=self.loop_policy,
                 model=current.model or self.default_model or "fake-model",
-                system_prompt=_system_prompt(registry),
+                system_prompt=_system_prompt(),
             )
             result = loop.run(user_message.content, run_id=run_id)
             if run_id in self._cancel_requested:
@@ -314,40 +313,10 @@ class _UsageTotals:
         self.total_tokens += payload["total_tokens"] or 0
 
 
-def _system_prompt(registry: CapabilityRegistry) -> str:
+def _system_prompt() -> str:
     """Build the app prompt while keeping persona outside core."""
 
-    persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8").strip()
-    user = UserContext.local_default()
-    return "\n\n".join(
-        _non_empty_sections(
-            [
-                persona,
-                (
-                    "Runtime user context:\n"
-                    f"- display_name: {user.display_name}\n"
-                    f"- locale: {user.locale}\n"
-                    f"- timezone: {user.timezone}"
-                ),
-                *_tool_guidance_sections(registry),
-            ]
-        )
-    )
-
-
-def _tool_guidance_sections(registry: CapabilityRegistry) -> list[str]:
-    """Build prompt sections from currently visible tools."""
-
-    guidance = registry.prompt_guidance()
-    if not guidance:
-        return []
-    return ["Visible tool guidance:\n" + "\n\n".join(guidance)]
-
-
-def _non_empty_sections(sections: list[str]) -> list[str]:
-    """Remove empty prompt sections while preserving order."""
-
-    return [section for section in sections if section.strip()]
+    return (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8").strip()
 
 
 def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:

@@ -1,10 +1,10 @@
 # Chapter 2: Tool Calling
 
-Language: [中文](./README.md) | English
+Language: [中文](./ch02-tool-calling.md) | English
 
-Previous: [Chapter 1: Minimal LLM Loop](./docs/chapters/ch01-minimal-agent-loop.en.md)
+Previous: [Chapter 1: Minimal LLM Loop](./ch01-minimal-agent-loop.en.md)
 Next: Chapter 3: Hooks And Trace
-Roadmap: [Klara Roadmap](./docs/skills/roadmap.md)
+Roadmap: [Klara Roadmap](../skills/roadmap.md)
 
 ---
 
@@ -12,7 +12,7 @@ Roadmap: [Klara Roadmap](./docs/skills/roadmap.md)
 
 The Chapter 1 loop stays the same; this chapter turns "the model wants a tool" into a registered, executable, recoverable, observable runtime boundary.
 
-![Klara Chapter 2 Tool Calling](./docs/assets/ch02-tool-calling.png)
+![Klara Chapter 2 Tool Calling](../assets/ch02-tool-calling.png)
 
 | What Klara sees | What runtime does |
 | --- | --- |

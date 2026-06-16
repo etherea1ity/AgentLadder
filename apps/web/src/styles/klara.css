@@ -714,6 +714,35 @@
   transform: none;
 }
 
+/* Larger chat avatars: keep Klara readable beside user turns without changing the motion model. */
+.conversation-turn .assistant-label .klara-status-row {
+  min-height: 34px;
+  gap: 8px;
+}
+.conversation-turn .assistant-label .klara-stamp img {
+  width: 30px;
+  height: 30px;
+  opacity: 0.88;
+}
+.conversation-turn .assistant-label .klara-status-presence-slot {
+  width: 30px;
+  height: 30px;
+  flex-basis: 30px;
+}
+.conversation-turn .assistant-label .klara-status-row.is-active .klara-status-presence-slot,
+.conversation-turn .assistant-label .klara-status-row.is-receiving-handoff .klara-status-presence-slot {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+}
+.conversation-turn .assistant-label .klara-status {
+  --klara-size: 30px;
+}
+.conversation-turn .assistant-label .klara-status-row.is-active .klara-status,
+.conversation-turn .assistant-label .klara-status-row.is-receiving-handoff .klara-status {
+  --klara-size: 40px;
+}
+
 
 /* Viewport-height responsive hero: browser zoom and short screens keep the
    input usable while preserving the poster's proportions. */

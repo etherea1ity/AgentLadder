@@ -57,18 +57,6 @@ class CapabilityRegistry:
 
         return tuple(self._tools)
 
-    def prompt_guidance(self) -> tuple[str, ...]:
-        """Collect prompt guidance owned by visible tool classes."""
-
-        guidance: list[str] = []
-        for tool in self._tools:
-            if not isinstance(tool, BaseTool):
-                continue
-            prompt = tool.prompt_guidance()
-            if prompt and prompt.strip():
-                guidance.append(prompt.strip())
-        return tuple(guidance)
-
     def effects_for_results(self, results: list[ToolResult]) -> tuple[ToolTurnEffect, ...]:
         """Dispatch result callbacks back to their owning tool classes."""
 

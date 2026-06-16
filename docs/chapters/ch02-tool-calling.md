@@ -1,10 +1,10 @@
 # Chapter 2: Tool Calling
 
-语言：中文 | [English](./README.en.md)
+语言：中文 | [English](./ch02-tool-calling.en.md)
 
-上一章：[Chapter 1: Minimal LLM Loop](./docs/chapters/ch01-minimal-agent-loop.md)
+上一章：[Chapter 1: Minimal LLM Loop](./ch01-minimal-agent-loop.md)
 下一章：Chapter 3: Hooks And Trace
-总路线：[Klara Roadmap](./docs/skills/roadmap.md)
+总路线：[Klara Roadmap](../skills/roadmap.md)
 
 ---
 
@@ -12,7 +12,7 @@
 
 Chapter 1 的 loop 不变；本章只把“模型想用工具”升级成可注册、可执行、可回退、可观察的工具调用边界。
 
-![Klara Chapter 2 Tool Calling](./docs/assets/ch02-tool-calling.png)
+![Klara Chapter 2 Tool Calling](../assets/ch02-tool-calling.png)
 
 | Klara 看到什么 | Runtime 做什么 |
 | --- | --- |
@@ -76,7 +76,7 @@ assistant 没有 tool_calls -> final answer -> stop
 本章不改这个循环。本章改变的是工具执行边界：
 
 ```text
-hardcoded / fake tool
+hardcoded placeholder branch
 -> registry lookup
 -> selected tool handler
 -> ToolResult observation
@@ -150,8 +150,8 @@ for result in tool_results:
 ```text
 assistant: tool_calls=[{"id": "call-1", "name": "current_time", "arguments": {"timezone": "Asia/Shanghai"}}]
 executor: ToolResult(tool_call_id="call-1", name="current_time", ok=True, content="{...}")
-loop: append role="tool", tool_call_id="call-1", name="current_time"
-next turn: model sees the time observation and can write the final answer
+loop：追加 role="tool", tool_call_id="call-1", name="current_time"
+下一轮：模型看到时间 observation，然后写出最终答案
 ```
 
 运行状态变化：
@@ -595,10 +595,10 @@ except ValueError as exc:
 
 ```text
 arguments={"timezone": "Mars/Olympus"}
--> resolve_timezone("Mars/Olympus") raises ValueError
--> CurrentTimeTool returns ok=False
--> loop appends role="tool" with error text
--> model can apologize or ask for a valid IANA timezone
+-> resolve_timezone("Mars/Olympus") 抛出 ValueError
+-> CurrentTimeTool 返回 ok=False
+-> loop 追加带错误文本的 role="tool" 消息
+-> 模型可以道歉，或者要求用户提供有效的 IANA timezone
 ```
 
 运行状态变化：
@@ -638,6 +638,13 @@ tests/klara/core/test_tool_executor.py
 <details>
 <summary>展开：execute_many 如何切 execution wave</summary>
 
+这段代码处理的是“同一个 assistant turn 返回多个 tool calls”的情况。它不是简单地全部串行，也不是无脑全部并行，而是按 metadata 切成一段一段 execution wave。
+
+输入和输出：
+
+- 输入：模型一次返回的 `tuple[ToolCall, ...]`，顺序就是模型请求顺序。
+- 输出：`tuple[ToolResult, ...]`，结果顺序仍然和请求顺序一致。
+
 真实代码：
 
 ```python
@@ -663,6 +670,43 @@ def _can_run_in_parallel(self, call: ToolCall) -> bool:
     if tool is None:
         return False
     return tool.metadata.parallel_safe and not tool.metadata.requires_approval
+```
+
+并行 wave 的执行：
+
+```python
+def _execute_parallel_wave(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
+    if not calls:
+        return ()
+    if len(calls) == 1:
+        return (self.execute(calls[0]),)
+    with ThreadPoolExecutor(max_workers=len(calls)) as pool:
+        return tuple(pool.map(self.execute, calls))
+```
+
+怎么读这段代码：
+
+1. `results` 是已经完成的输出列表，最终会转成 tuple 返回。
+2. `parallel_wave` 是当前正在收集的一段“连续可并行工具调用”。
+3. 如果 `_can_run_in_parallel(call)` 为 true，当前 call 先进入 `parallel_wave`，暂时不执行。
+4. 如果遇到不可并行 call，executor 先 flush 当前 `parallel_wave`，再单独执行这个不可并行 call。
+5. loop 结束后还要再 flush 一次尾部 `parallel_wave`，否则最后一段 safe calls 不会执行。
+6. `_can_run_in_parallel()` 只看当前 run 的可见工具和两个 metadata 字段：`parallel_safe`、`requires_approval`。
+7. unknown tool 返回 false，因为 runtime 不能证明未知工具安全；它会单独走 `execute()`，再变成 failed observation。
+8. `_execute_parallel_wave()` 对 0 个、1 个、多个 calls 分别处理。多个 calls 才创建 `ThreadPoolExecutor`，并且 `pool.map` 保持输入顺序，所以并发执行不破坏 observation 顺序。
+
+具体 trace：
+
+```text
+calls = [可并行 A, 可并行 B, 串行 C, 可并行 D, 未知 E]
+
+可并行 A -> parallel_wave=[A]
+可并行 B -> parallel_wave=[A, B]
+串行 C -> 先并发执行 [A, B]，再单独执行 C
+可并行 D -> parallel_wave=[D]
+未知 E -> 先执行 [D]，再单独执行 E，E 返回 failed observation
+
+最终结果顺序仍是 [A_result, B_result, C_result, D_result, E_failed]
 ```
 
 运行状态变化：
@@ -714,6 +758,13 @@ tests/klara/services/test_web_fetch.py
 <details>
 <summary>展开：web_fetch 为什么不直接把 urllib 写进 tool.py</summary>
 
+`web_fetch` 是本章的风险边界示例。它能访问外部网络，所以不能把所有逻辑堆在 `tool.py` 里；工具 wrapper 只负责参数、metadata 和 observation，网络细节进入 service 层。
+
+输入和输出：
+
+- 输入：模型生成的 `{"url": "...", "max_chars": ...}`。
+- 输出：成功时返回包含页面文本的 JSON observation；失败时返回 `ok=False` 的 observation。
+
 工具 wrapper 只负责模型契约和 observation：
 
 ```python
@@ -744,8 +795,48 @@ def validate_public_http_url(raw_url: str) -> str:
     ...
     if parsed.scheme not in {"http", "https"}:
         raise WebSafetyError("URL must use http or https")
+    if parsed.username or parsed.password:
+        raise WebSafetyError("URL must not include credentials")
     ...
+    _reject_local_hostname(host)
     _reject_private_addresses(host)
+```
+
+怎么读 tool wrapper：
+
+1. `spec` 和 `metadata` 来自 `schema.py`，所以模型契约和 runtime 信号仍然集中声明。
+2. `page_fetcher: PageFetcher = fetch_page` 是依赖注入点。测试可以传假的 fetcher，不需要真的访问网络。
+3. `url = self.optional_string(arguments, "url")` 复用 `BaseTool` 参数 helper，非字符串会变成 `ToolInputError`。
+4. `if not url` 是必填参数校验。空 URL 是模型参数错误，不是网络错误。
+5. `_optional_int(..., default=4000)` 读取可选长度限制；`200 <= max_chars <= 6000` 防止模型请求过小或过大的页面正文。
+6. `self.page_fetcher(... timeout_seconds=self.metadata.timeout_seconds)` 把 runtime metadata 传到 service 层，工具自己不实现 socket/HTTP 细节。
+7. `except WebFetchError as exc` 把 service 层的抓取失败转换成 failed observation。
+8. `trust="untrusted_external_content"` 明确告诉后续层：网页正文不是可信系统指令，只是外部 observation。
+
+怎么读 safety service：
+
+1. `raw_url.strip()` 先消除首尾空白，空字符串直接拒绝。
+2. `parsed.scheme not in {"http", "https"}` 拒绝 `file://`、`ftp://` 等非网页协议。
+3. `not parsed.hostname` 拒绝没有 host 的 URL。
+4. `parsed.username or parsed.password` 拒绝带凭据的 URL，避免把认证信息放进请求和 trace。
+5. `_reject_local_hostname(host)` 拒绝 `localhost` 和 `.localhost`。
+6. `_reject_private_addresses(host)` 会检查 literal IP，也会 DNS resolve 后检查每个地址。
+7. `not address.is_global` 会拒绝 private、loopback、link-local、reserved 等非公网地址。
+8. `parsed._replace(fragment="")` 去掉 URL fragment，因为 fragment 不会发送给服务器，也不应该影响抓取缓存和 trace。
+
+具体例子：
+
+```text
+url="https://docs.python.org/3/"
+-> scheme 是 https
+-> host 可解析为公网地址
+-> service 抓取 HTML 并提取正文
+-> tool 返回 JSON observation，trust="untrusted_external_content"
+
+url="http://localhost:8011"
+-> _reject_local_hostname("localhost")
+-> WebFetchError / WebSafetyError
+-> tool 返回 failed observation
 ```
 
 运行状态变化：
@@ -756,7 +847,7 @@ def validate_public_http_url(raw_url: str) -> str:
 - 任何网页正文都以 `trust="untrusted_external_content"` 返回。
 
 读者 takeaway：外部 I/O 能力可以暴露成工具，但 provider 和安全边界要放在 service 层。
-![1781622812357](image/README/1781622812357.png)![1781622823230](image/README/1781622823230.png)
+
 </details>
 
 ## 9. 本章不做什么

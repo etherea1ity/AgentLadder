@@ -101,6 +101,10 @@ Public function docstrings should use `Args` and `Returns`; add `Raises` for mea
 - Do not put chapter numbers, branch names, release numbers, or roadmap positions
   into runtime identifiers, storage keys, API responses, class names, method names,
   comments, or UI labels. Those labels belong in docs and chapter navigation only.
+- Product frontend code must be branch-neutral. Routes, headers, empty states,
+  sidebars, local storage keys, CSS class names, screenshots, and user-visible
+  labels must describe Klara and the current product capability, not the current
+  Git branch, chapter number, course stage, or roadmap slot.
 - Package-manager metadata may keep required package versions; runtime contracts
   should expose capabilities and schema ids, not course-version labels.
 

@@ -87,7 +87,7 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
 
     assert result.final_answer == "harness final"
     assert "You are Klara" in llm.system_prompt
-    assert "display_name: Local User" in llm.system_prompt
+    assert "Runtime user context" not in llm.system_prompt
     assert [tool.name for tool in llm.tools] == ["test_echo"]
     assert llm.messages_seen[1][-1].content == "from harness"
 
@@ -107,5 +107,5 @@ def test_harness_defaults_to_default_registry() -> None:
     result = harness.run("hello", run_id="default-registry-run")
 
     assert result.final_answer == "harness final"
-    assert {tool.name for tool in llm.tools} == {"current_time"}
-    assert "Current time tool guidance" in llm.system_prompt
+    assert {tool.name for tool in llm.tools} == {"current_time", "web_fetch", "web_search"}
+    assert "Visible tool guidance" not in llm.system_prompt

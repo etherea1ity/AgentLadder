@@ -103,8 +103,6 @@ Each concrete model-visible tool lives in its own package under
 src/klara/capabilities/tools/
   current_time/
     __init__.py
-    prompts/
-      tool_use.md
     schema.py
     timezones.py
     tool.py
@@ -113,9 +111,8 @@ src/klara/capabilities/tools/
 Use this package shape by default:
 
 - `schema.py`: model-visible `ToolSpec` and Klara-visible `ToolMetadata`.
-- `prompts/tool_use.md`: optional model-facing guidance owned by this tool.
-- `tool.py`: the `BaseTool` implementation, guidance hook, result effects,
-  and narrow execution method.
+- `tool.py`: the `BaseTool` implementation, result effects, and narrow
+  execution method.
 - focused helper files: parsing, normalization, adapters, or domain helpers.
 - package `__init__.py`: export the concrete tool class only.
 
@@ -127,14 +124,14 @@ that service into a model-visible capability.
 Tool registration is automatic for local built-in tools: each package under
 `src/klara/capabilities/tools/` must expose exactly one `BaseTool` subclass from
 `tool.py`. The registry discovers packages, filters visibility later by profile,
-and collects tool-owned prompt guidance. It must not carry a hand-written list
-of default tool instances.
+and must not carry a hand-written list of default tool instances.
 
 Tool-use negotiation belongs to the tool wrapper:
 
 - model schema and description live in `ToolSpec`
 - runtime policy lives in `ToolMetadata`
-- tool-specific prompt rules live in `prompt_guidance()`
+- system prompt identity lives in `src/klara/prompts/persona.md`
+- tool-specific model guidance belongs in the `ToolSpec` description and schema
 - post-result next-turn advice lives in `after_result()`
 - execution remains a narrow `run(arguments)` method
 

@@ -4,15 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 
 from klara.capabilities.base_tool import BaseTool
 from klara.capabilities.tools.current_time.schema import CURRENT_TIME_METADATA, CURRENT_TIME_SPEC
 from klara.capabilities.tools.current_time.timezones import format_utc_offset, resolve_timezone
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
-
-
-PROMPT_DIR = Path(__file__).parent / "prompts"
 
 
 @dataclass(frozen=True)
@@ -28,11 +24,6 @@ class CurrentTimeTool(BaseTool):
     spec: ToolSpec = CURRENT_TIME_SPEC
     # Metadata is separate from the spec because it is never sent to the model.
     metadata: ToolMetadata = CURRENT_TIME_METADATA
-
-    def prompt_guidance(self) -> str | None:
-        """Return current-time tool-use guidance."""
-
-        return (PROMPT_DIR / "tool_use.md").read_text(encoding="utf-8").strip()
 
     def run(self, arguments: JsonObject) -> ToolResult:
         """Return current time for the requested timezone.

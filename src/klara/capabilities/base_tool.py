@@ -55,11 +55,6 @@ class BaseTool:
 
         raise NotImplementedError
 
-    def prompt_guidance(self) -> str | None:
-        """Return optional tool-use guidance owned by this tool."""
-
-        return None
-
     def after_result(self, result: ToolResult) -> ToolTurnEffect | None:
         """Return optional next-turn effects after this tool result."""
 

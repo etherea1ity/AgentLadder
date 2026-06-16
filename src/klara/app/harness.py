@@ -23,14 +23,14 @@ class KlaraHarnessConfig:
     trace_path: Path | None = None
     # Max turns bounds the loop before a real policy system exists.
     max_turns: int = 12
-    # User context is local-only, but keeps future partitioning stable.
+    # User context is local-only and kept for future partitioning.
     user_context: UserContext = field(default_factory=UserContext.local_default)
     # Persona prompt stays in app so core does not own product identity.
     persona_path: Path = Path(__file__).parents[1] / "prompts" / "persona.md"
 
 
 class KlaraHarness:
-    """Assemble persona, user context, tools, trace, policy, and loop.
+    """Assemble persona, tools, trace, policy, and loop.
 
     The harness owns run setup. It does not implement loop execution, concrete
     tool behavior, memory, RAG, backend streaming, or production auth.
@@ -55,7 +55,7 @@ class KlaraHarness:
         self.llm = llm
         # Registry defaults to discovered local tools.
         self.registry = registry or CapabilityRegistry.with_default_tools()
-        # Config owns local user context, model id, prompt path, and trace path.
+        # Config owns local model id, prompt path, trace path, and future partition context.
         self.config = config or KlaraHarnessConfig()
 
     def run(self, user_input: str, *, run_id: str | None = None) -> KlaraRunResult:
@@ -86,38 +86,6 @@ class KlaraHarness:
         return loop.run(user_input, run_id=run_id)
 
     def _system_prompt(self) -> str:
-        """Build the system prompt from persona and local user context."""
+        """Build the system prompt from the single persona prompt."""
 
-        # Persona text carries Klara's identity without entering core.
-        persona = self.config.persona_path.read_text(encoding="utf-8").strip()
-        # User context is prompt-visible only through selected public fields.
-        user = self.config.user_context
-        return "\n\n".join(
-            _non_empty_sections(
-                [
-                    persona,
-                    (
-                        "Runtime user context:\n"
-                        f"- display_name: {user.display_name}\n"
-                        f"- locale: {user.locale}\n"
-                        f"- timezone: {user.timezone}"
-                    ),
-                    *_tool_guidance_sections(self.registry),
-                ]
-            )
-        )
-
-
-def _tool_guidance_sections(registry: CapabilityRegistry) -> list[str]:
-    """Build prompt sections from currently visible tools."""
-
-    guidance = registry.prompt_guidance()
-    if not guidance:
-        return []
-    return ["Visible tool guidance:\n" + "\n\n".join(guidance)]
-
-
-def _non_empty_sections(sections: list[str]) -> list[str]:
-    """Remove empty prompt sections while preserving order."""
-
-    return [section for section in sections if section.strip()]
+        return self.config.persona_path.read_text(encoding="utf-8").strip()

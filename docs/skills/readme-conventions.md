@@ -182,7 +182,7 @@ Use this shape:
 再问：
 
 ```text
-调用 fake tool 帮我查一下 klara-loop。
+调用 current_time 告诉我 Asia/Shanghai 现在几点。
 ```
 
 你应该看到：模型请求工具，runtime 执行工具，然后把 observation 放回下一轮。
@@ -250,7 +250,7 @@ Example for Chapter 2:
 ```text
 Existing loop stays the same.
 Only tool execution changes:
-hardcoded fake tool -> registry lookup -> selected tool handler.
+hardcoded placeholder branch -> registry lookup -> selected tool handler.
 ```
 
 Example for hooks:
@@ -344,15 +344,84 @@ For each code walkthrough:
 
 1. Explain why this code appears at this point in the run.
 2. Show a real code block from the repository.
-3. Explain important parameters, variables, emitted events, and returned values.
-4. State the architecture boundary protected by the code.
-5. State the reader takeaway in one sentence.
+3. Explain the input and output of the code before walking through it.
+4. Explain important parameters, variables, emitted events, returned values, and
+   failure branches.
+5. State the runtime state change after each important branch.
+6. State the architecture boundary protected by the code.
+7. State the reader takeaway in one sentence.
 
 Do not paste code as decoration. Every code block must answer:
 
 ```text
 What has changed in runtime state after this block runs?
 ```
+
+## Code Explanation Depth
+
+Klara chapters are teaching chapters, so details blocks must teach the code, not
+merely prove that code exists.
+
+Every non-trivial details block should use this order:
+
+```text
+Why this code is here
+-> Input / output contract
+-> Real code excerpt
+-> How to read this code step by step
+-> Concrete example
+-> Runtime state changes
+-> Boundary protected
+-> Takeaway
+```
+
+The step-by-step explanation should be explicit enough that a reader can follow
+the execution without opening the source file in another tab. Include:
+
+- what each important variable represents
+- who constructed that value
+- who reads it next
+- which branch is the success path
+- which branch is the failure or fallback path
+- how ids, names, messages, events, or observations are joined together
+- which metadata fields are consumed now and which are only future-facing signals
+
+Prefer prose around the code over adding many tutorial comments into production
+source. Short comments inside README code excerpts are allowed when they make the
+excerpt easier to teach, but the repository source should stay production-grade.
+
+For example, an executor walkthrough should not stop at:
+
+```text
+unknown tool becomes failed observation
+```
+
+It should say:
+
+```text
+`call.name` comes from the model's tool call. The executor looks it up in the
+visible tool map for this run. If the name is absent, the executor still returns
+`ToolResult(tool_call_id=call.id, name=call.name, ok=False, error=...)` so the
+loop can append a model-visible tool message joined to the original request id.
+```
+
+For algorithms, include one small trace example. For example:
+
+```text
+[safe A, safe B, serial C, safe D]
+-> run A/B in one wave
+-> run C alone
+-> run D in the next wave
+```
+
+For metadata-driven sections, include a field table:
+
+```text
+field -> who reads it -> current behavior -> future behavior if any
+```
+
+This is especially important when a metadata field exists for future policy but
+is not yet consumed by the current algorithm.
 
 For Chapter 1, `KlaraLoop.run()` must be explained in this order:
 
@@ -466,6 +535,18 @@ Write Chinese first unless asked otherwise, then create the English mirror.
 The English version must preserve structure, diagrams, code blocks, paths,
 commands, and section order. Translate prose; do not invent new technical
 claims.
+
+Code explanations must stay in the document language:
+
+- Chinese README files use Chinese prose for walkthroughs, branch explanations,
+  examples, and takeaways.
+- English README files use English prose for the same walkthroughs.
+- Code blocks, identifiers, paths, commands, and literal error strings remain as
+  they appear in the repository.
+
+Do not leave English teaching prose inside the Chinese README, and do not leave
+Chinese teaching prose inside the English README except when quoting user-facing
+prompts that are intentionally Chinese.
 
 ## Run And Verification
 
