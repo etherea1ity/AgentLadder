@@ -29,7 +29,7 @@ class ImageModel:
 class ImageProviderConfig:
     """Connection and model-list configuration for one image provider."""
 
-    # Adapter id for future media tools, not for the Chapter 1 chat loop.
+    # Adapter id for future media tools, not for the chat loop.
     api: str
     # Provider endpoint used by the future image adapter.
     endpoint: str

@@ -18,12 +18,12 @@ class StopReason(StrEnum):
 class LoopPolicy:
     """Bounded execution policy for the minimal loop.
 
-    Chapter 1 only needs max-turn control. Later chapters can add richer policy
-    outside core or through deliberate extensions to this contract.
+    The minimal runtime only needs max-turn control. Richer policy should live
+    outside core or enter through deliberate extensions to this contract.
     """
 
     # Max turns prevents a model from requesting tools forever.
-    max_turns: int = 4
+    max_turns: int = 12
 
     def __post_init__(self) -> None:
         """Validate policy values as soon as the immutable policy is created."""

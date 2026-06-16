@@ -14,8 +14,8 @@ class ToolCall:
     """A model-requested tool invocation.
 
     Core records the request but does not know whether the tool is RAG, memory,
-    web, or a fake Chapter 1 capability. Concrete ability ownership stays in
-    `klara.capabilities` and service layers.
+    web, or a deterministic demonstration capability. Concrete ability
+    ownership stays in `klara.capabilities` and service layers.
     """
 
     # Id joins this request with the tool result observation.

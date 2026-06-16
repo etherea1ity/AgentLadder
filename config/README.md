@@ -4,10 +4,10 @@ Klara keeps operator configuration in a small number of files:
 
 - `.env` stores local secrets and is ignored by git.
 - `.env.example` lists the required and optional environment names.
-- `config/models.toml` lists chat LLM providers exposed to the Chapter 1 loop.
+- `config/models.toml` lists chat LLM providers exposed to the loop.
 - `config/images.toml` lists future image-generation providers.
 
-Chapter 1 currently uses only chat completions in the runtime loop. Image generation
+The runtime loop currently uses only chat completions. Image generation
 is configured but intentionally not wired into the frontend model picker or loop.
 
 ## Required Secrets
@@ -40,7 +40,7 @@ These are the models that `/api/models` returns to the frontend.
 Image models live in `config/images.toml`.
 
 `qwen/qwen-image-2.0` has been verified with the local DashScope key, but it is
-not part of Chapter 1's chat model picker. When Klara adds image generation, it
+not part of the chat model picker. When Klara adds image generation, it
 should enter as a tool or capability:
 
 ```text

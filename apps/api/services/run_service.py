@@ -36,6 +36,7 @@ class RunService:
         trace_path: str = "data/traces/runs.jsonl",
         allowed_models: set[str] | None = None,
         default_model: str | None = None,
+        loop_policy: LoopPolicy | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -46,6 +47,7 @@ class RunService:
             trace_path: Optional JSONL lifecycle trace destination.
             allowed_models: Model refs accepted from the UI.
             default_model: Model ref used when a run does not select one.
+            loop_policy: Bounded execution policy for loop safety.
         """
 
         self.store = store
@@ -53,6 +55,7 @@ class RunService:
         self.llm_client = llm_client
         self.allowed_models = allowed_models or set()
         self.default_model = default_model
+        self.loop_policy = loop_policy or LoopPolicy()
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -153,9 +156,9 @@ class RunService:
         try:
             loop = KlaraLoop(
                 llm=self.llm_client,
-                tool_executor=ToolExecutor(list(CapabilityRegistry.with_default_chapter1_tools().visible_tools())),
+                tool_executor=ToolExecutor(list(CapabilityRegistry.with_default_tools().visible_tools())),
                 hooks=hooks,
-                policy=LoopPolicy(max_turns=4),
+                policy=self.loop_policy,
                 model=current.model or self.default_model or "fake-model",
                 system_prompt=_system_prompt(),
             )

@@ -23,7 +23,7 @@ class ProviderModel:
 class ProviderConfig:
     """Connection and model-list configuration for one LLM provider."""
 
-    # API adapter id, currently only openai-completions for Chapter 1.5.
+    # API adapter id, currently only openai-completions.
     api: str
     # OpenAI-compatible base URL without the /chat/completions suffix.
     base_url: str = ""

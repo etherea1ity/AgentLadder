@@ -18,9 +18,9 @@ type PersistedUi = {
   sidebarCollapsed: boolean;
 };
 
-const UI_STORAGE_KEY = "klara_ch01_ui_state";
-const MODEL_STORAGE_KEY = "klara_ch01_selected_model";
-const THEME_STORAGE_KEY = "klara_ch01_theme";
+const UI_STORAGE_KEY = "klara_ui_state";
+const MODEL_STORAGE_KEY = "klara_selected_model";
+const THEME_STORAGE_KEY = "klara_theme";
 const RUN_POLL_MS = 12_000;
 
 export default function App() {
@@ -894,7 +894,7 @@ function sortSessions(items: Session[]) {
 function clearStoredFeedback(messageIds: string[]) {
   try {
     messageIds.forEach((messageId) =>
-      window.localStorage.removeItem(`klara_ch01_feedback_${messageId}`),
+      window.localStorage.removeItem(`klara_feedback_${messageId}`),
     );
   } catch {
     // Ignore storage cleanup failures; backend deletion is authoritative.

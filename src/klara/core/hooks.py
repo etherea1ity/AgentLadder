@@ -25,9 +25,9 @@ class KlaraHook(Protocol):
 class HookManager:
     """Fan out events while isolating hook failures from loop execution.
 
-    Chapter 1 uses hooks mainly for trace output. Later chapters can attach
-    policy checks, compaction, memory review, or streaming projectors without
-    changing the loop contract.
+    The minimal runtime uses hooks mainly for trace output. Later extensions can
+    attach policy checks, compaction, memory review, or streaming projectors
+    without changing the loop contract.
     """
 
     def __init__(self, hooks: list[KlaraHook] | None = None) -> None:

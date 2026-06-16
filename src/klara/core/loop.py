@@ -177,7 +177,7 @@ class KlaraLoop:
                         )
                     )
 
-                # Chapter 1 keeps preparation as identity; compression arrives later.
+                # The minimal loop keeps preparation as identity until context policy exists.
                 self._emit(
                     active_run_id,
                     "prepare_next_turn.started",

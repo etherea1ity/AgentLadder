@@ -1,4 +1,4 @@
-"""Deterministic demonstration tool for Chapter 1 loop tests."""
+"""Deterministic demonstration tool for minimal loop tests."""
 
 from __future__ import annotations
 
@@ -9,16 +9,16 @@ from klara.core.tools import JsonObject, ToolResult, ToolSpec
 
 @dataclass(frozen=True)
 class DebugEchoTool:
-    """Echo text so Chapter 1 can prove tool observation flow.
+    """Echo text so tests can prove tool observation flow.
 
     This is not a real product capability. It exists only to make tool-call
     mechanics deterministic in tests and examples.
     """
 
-    # Spec is model-visible and small enough for the Chapter 1 fake LLM path.
+    # Spec is model-visible and small enough for deterministic fake LLM paths.
     spec: ToolSpec = ToolSpec(
         name="debug_echo",
-        description="Echoes text for deterministic Chapter 1 loop tests.",
+        description="Echoes text for deterministic loop tests.",
         input_schema={
             "type": "object",
             "properties": {

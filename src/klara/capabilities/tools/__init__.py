@@ -1,1 +1,1 @@
-"""Chapter 1 demonstration tools."""
+"""Deterministic demonstration tools."""

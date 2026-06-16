@@ -23,7 +23,7 @@ class KlaraEvent:
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     # Payload carries public event details; private prompt bodies stay out by default.
     payload: dict[str, Any] = field(default_factory=dict)
-    # Schema version lets future chapters evolve trace payloads deliberately.
+    # Schema version lets trace payloads evolve deliberately.
     schema_version: int = 1
 
     def to_public_dict(self) -> dict[str, Any]:

@@ -15,15 +15,15 @@ from klara.core.tool_executor import ToolExecutor
 
 @dataclass(frozen=True)
 class KlaraHarnessConfig:
-    """Configuration needed to assemble a Chapter 1 loop run."""
+    """Configuration needed to assemble one loop run."""
 
     # Model id is passed through to the injected LLM client.
     model: str = "fake-model"
     # Trace path is optional so tests can choose when to write JSONL.
     trace_path: Path | None = None
     # Max turns bounds the loop before a real policy system exists.
-    max_turns: int = 4
-    # User context is local-only in Chapter 1, but keeps future partitioning stable.
+    max_turns: int = 12
+    # User context is local-only, but keeps future partitioning stable.
     user_context: UserContext = field(default_factory=UserContext.local_default)
     # Persona prompt stays in app so core does not own product identity.
     persona_path: Path = Path(__file__).parents[1] / "prompts" / "persona.md"
@@ -51,10 +51,10 @@ class KlaraHarness:
             config: Optional run-assembly configuration.
         """
 
-        # LLM stays injected so Chapter 1 can run with deterministic fake models.
+        # LLM stays injected so tests can run with deterministic fake models.
         self.llm = llm
-        # Registry defaults to the single Chapter 1 demonstration tool.
-        self.registry = registry or CapabilityRegistry.with_default_chapter1_tools()
+        # Registry defaults to the minimal deterministic demonstration tool.
+        self.registry = registry or CapabilityRegistry.with_default_tools()
         # Config owns local user context, model id, prompt path, and trace path.
         self.config = config or KlaraHarnessConfig()
 

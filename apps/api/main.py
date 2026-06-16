@@ -8,7 +8,7 @@ from apps.api.routes.models import router as models_router
 from apps.api.routes.runs import router as runs_router
 from apps.api.routes.sessions import router as sessions_router
 
-app = FastAPI(title="Klara API", version="0.1.0")
+app = FastAPI(title="Klara API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,4 +26,4 @@ app.include_router(assets_router)
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "version": "0.1.0"}
+    return {"ok": True}

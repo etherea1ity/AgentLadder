@@ -95,7 +95,7 @@ export function ChatWorkspace(props: Props) {
             onTypingPulse={pulseTyping}
           />
           <small className="home-hint">
-            Chapter 1 Minimal Loop <span>·</span> Model → Tool → Observation → Answer
+            Minimal Loop <span>·</span> Model → Tool → Observation → Answer
           </small>
         </section>
       ) : (
@@ -143,7 +143,7 @@ function TopPath({
   return (
     <div className={`top-path ${compact ? "is-compact" : ""}`}>
       <GitBranch size={compact ? 17 : 0} className="path-branch" />
-      <span>klara/chapter-1-minimal-loop</span>
+      <span>klara/minimal-loop</span>
       {compact ? (
         <div className="top-actions">
           <button
@@ -655,7 +655,7 @@ async function copyText(value: string) {
   await navigator.clipboard?.writeText(value);
 }
 
-const FEEDBACK_STORAGE_PREFIX = "klara_ch01_feedback_";
+const FEEDBACK_STORAGE_PREFIX = "klara_feedback_";
 function readFeedback(messageId: string): "up" | "down" | null {
   try {
     const value = window.localStorage.getItem(

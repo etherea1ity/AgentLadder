@@ -1,8 +1,18 @@
 [project]
 name = "klara-agent-ladder"
 version = "0.1.0"
-description = "Klara Chapter 1 minimal agent loop."
+description = "Klara minimal agent loop."
 requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "pydantic>=2.8,<3.0",
+    "uvicorn>=0.30,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

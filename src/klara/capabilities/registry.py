@@ -9,8 +9,8 @@ from klara.core.tools import KlaraTool
 class CapabilityRegistry:
     """Store the tools visible to a Klara run.
 
-    Chapter 1 has no profiles or permissions yet. The registry is intentionally
-    small so later chapters can add visibility policy without changing core.
+    The registry starts small so profiles, permissions, and visibility policy
+    can be added without changing core loop contracts.
     """
 
     def __init__(self, tools: list[KlaraTool] | None = None) -> None:
@@ -24,8 +24,8 @@ class CapabilityRegistry:
         self._tools = list(tools or [])
 
     @classmethod
-    def with_default_chapter1_tools(cls) -> "CapabilityRegistry":
-        """Create the default Chapter 1 registry.
+    def with_default_tools(cls) -> "CapabilityRegistry":
+        """Create the default local registry.
 
         Returns:
             A registry exposing only the deterministic `debug_echo` tool.

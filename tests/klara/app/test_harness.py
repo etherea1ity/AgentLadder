@@ -75,7 +75,7 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     assert events[-1]["type"] == "run.completed"
 
 
-def test_harness_defaults_to_chapter1_registry() -> None:
+def test_harness_defaults_to_default_registry() -> None:
     """Harness should be runnable without manually passing a registry."""
 
     llm = HarnessLlm()

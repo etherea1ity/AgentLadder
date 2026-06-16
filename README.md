@@ -8,115 +8,66 @@
 
 ---
 
-## 本章主要内容
+## 一句话看懂本章
 
-这一章让 Klara 拥有最小可运行的 LLM loop。
-
-她可以接收用户输入，调用真实 LLM，判断模型是否请求工具，执行工具，把工具结果放回下一轮上下文，并通过 hook 记录公共 trace。
-
-本章重点：
-
-- LLM 如何被调用
-- loop 如何组织多轮运行
-- tool call 如何进入下一轮上下文
-- hook 为什么是 trace 和前端事件的挂点
-- harness 为什么负责组装运行，而不是让 core loop 读取配置
-
-这一章不做完整 agent，不做 RAG，不做 memory，不做复杂 permission，也不做 RL。它只建立以后所有能力都会挂上的运行骨架。
+Klara 从一次性 pipeline 变成最小 loop：模型要工具，runtime 执行工具并继续；模型不要工具，loop 停止并返回答案。
 
 ![Klara Chapter 1 Minimal LLM Loop](./docs/assets/ch01-minimal-loop.png)
 
-## Loop 思想
+| 看到什么 | Klara 做什么 |
+| --- | --- |
+| 有 `tool_calls` | 执行工具，把结果放回上下文，继续下一轮 |
+| 没有 `tool_calls` | 返回最终答案，停止 |
+| 达到 `max_turns` | 按 policy 停止，并展示停止原因 |
 
-旧的 pipeline 更像一次固定流程：
+## 快速体验
 
-```text
-question
--> retrieve
--> prompt
--> answer
+准备好 `.env` 后，一次性启动后端和前端：
+
+```powershell
+.\scripts\dev.ps1
 ```
 
-Klara 要从第一章开始变成 loop：
+打开：
 
 ```text
-user input
--> harness assembles dependencies
--> loop emits run.started
--> LLM call
--> if tool calls exist, execute tools
--> append tool observations
--> prepare next turn
--> stop with final answer or max turns
--> hooks receive public lifecycle events
+http://127.0.0.1:5123
 ```
 
-输入：
-
-- 用户消息
-- Klara system prompt
-- model id
-- visible tools
-- hook manager
-- loop policy
-
-输出：
-
-- final answer
-- stop reason
-- transcript messages
-- public trace events
-
-Klara learns: 一次 agent run 不是黑盒模型调用，而是一个可观察、可测试、可继续、可停止的运行循环。
-
-## 代码地图
-
-核心 loop：
+先问：
 
 ```text
-src/klara/core/loop.py
+用一句话介绍你自己。
 ```
 
-消息、工具、事件、hook：
+你应该看到：模型直接回答，本次 run 结束。
+
+再问：
 
 ```text
-src/klara/core/messages.py
-src/klara/core/tools.py
-src/klara/core/events.py
-src/klara/core/hooks.py
-src/klara/core/tool_executor.py
-src/klara/core/policies.py
+请使用 debug_echo 工具回显 klara-loop，然后告诉我你看到了什么。
 ```
 
-app 层组装：
+你应该看到：模型请求 `debug_echo`，runtime 执行工具，把 observation 放回上下文，然后进入下一轮或返回最终答案。
+
+## 为什么从 loop 开始
+
+旧路线里的 pipeline 更像一条固定路径：
 
 ```text
-src/klara/app/harness.py
-apps/api/services/run_service.py
+question -> retrieve -> prompt -> answer
 ```
 
-真实 LLM provider：
+Klara 要从第一章开始学会“运行一轮、观察结果、决定继续还是停止”。这也是后面 tool registry、RAG、memory、hooks、context compression、RL 都会挂上的骨架。
 
-```text
-config/models.toml
-src/klara/infra/llm/openai_compatible.py
-src/klara/infra/llm/routed_client.py
-```
-
-配置与运行：
-
-```text
-.env.example
-config/README.md
-scripts/dev.ps1
-```
+Klara 学到：一次 agent run 不是黑盒模型调用，而是一个可观察、可测试、可继续、可停止的运行循环。
 
 ---
 
 ## 1. Harness 先组装一次运行
 
-core loop 不应该知道环境变量、前端、存储路径、用户配置或产品 persona。  
-这些由 harness 组装好，再注入给 loop。
+Core loop 不读取环境变量，不决定 persona，不关心前端和存储路径。
+这些由 app 层 harness 组装好，再注入给 loop。
 
 ```text
 user input
@@ -125,7 +76,7 @@ user input
 -> KlaraLoop
 ```
 
-Klara learns: core 只负责执行运行逻辑，app 层负责把运行世界组装好。
+Klara 学到：core 只负责执行运行逻辑，app 层负责把运行世界组装好。
 
 对应代码：
 
@@ -162,21 +113,20 @@ return loop.run(user_input, run_id=run_id)
 - 如果配置了 trace path，就注册 `JsonlTraceHook`
 - 把 LLM、工具、hooks、policy、model 和 system prompt 注入 `KlaraLoop`
 
-重点是：`KlaraLoop` 没有自己读取 `.env`，没有自己创建 trace 文件，也没有自己选择工具。  
-它只接收已经准备好的依赖。
+重点是：`KlaraLoop` 没有自己读取 `.env`，没有自己创建 trace 文件，也没有自己选择工具。它只接收已经准备好的依赖。
 
 </details>
 
 ## 2. Loop 接收依赖，不自己创建世界
 
-Klara 的 core loop 是运行核心，但它不是产品入口。它只接收依赖，然后执行 loop。
+`KlaraLoop` 是运行核心，但不是产品入口。它只保存依赖，然后在 `run()` 里执行 loop。
 
 ```text
 llm + tool_executor + hooks + policy + model + system_prompt
 -> KlaraLoop
 ```
 
-Klara learns: loop 要小，依赖要显式注入。
+Klara 学到：loop 要小，依赖要显式注入。
 
 对应代码：
 
@@ -230,8 +180,6 @@ self.system_prompt = system_prompt
 - frontend bridge 不在 core 里创建
 - tool list 不在 core 里发现
 
-core loop 只保存这些依赖，等待 `run()` 开始执行。
-
 </details>
 
 ## 3. Run 从一个用户消息开始
@@ -245,7 +193,7 @@ user_input
 -> run.started event
 ```
 
-Klara learns: trace、前端事件、测试断言都需要同一个 `run_id` 作为连接点。
+Klara 学到：trace、前端事件、测试断言都需要同一个 `run_id` 作为连接点。
 
 对应代码：
 
@@ -276,28 +224,27 @@ self._emit(active_run_id, "run.started", {"model": self.model})
 - `messages` 从一条 user message 开始。
 - `run.started` 不是直接写 log，而是发给 hook manager。
 
-所以 trace 不是 loop 里的硬编码日志。  
-loop 只发事件，真正写 JSONL 的是后面的 `JsonlTraceHook`。
+所以 trace 不是 loop 里的硬编码日志。loop 只发事件，真正写 JSONL 的是 `JsonlTraceHook`。
 
 </details>
 
-## 4. Loop 调用 LLM
+## 4. 每一轮都先调用 LLM
 
 每一轮 loop 都会把当前消息、system prompt、工具 schema 和 model id 交给 LLM client。
 
 ```text
 system_prompt + messages + tool specs + model
 -> llm.complete(...)
--> ModelResponse
+-> ModelResponse(content, tool_calls)
 ```
 
-Klara learns: LLM 调用是 loop 的一个步骤，不是整个 agent。
+Klara 学到：LLM 调用是 loop 的一个步骤，不是整个 agent。
 
 对应代码：
 
 ```text
 src/klara/core/loop.py
-src/klara/core/types.py
+src/klara/core/messages.py
 src/klara/infra/llm/openai_compatible.py
 ```
 
@@ -318,13 +265,6 @@ response = self.llm.complete(
 )
 ```
 
-这里有两个重要事件：
-
-- `turn.started`：一轮开始。
-- `llm.started`：准备调用模型。
-
-然后调用 `self.llm.complete(...)`。
-
 传进去的内容是：
 
 - `system_prompt`：Klara 应该如何说话、如何保持人设和边界。
@@ -336,24 +276,22 @@ LLM client 返回 `ModelResponse`。它可能包含最终文本，也可能包�
 
 </details>
 
-## 5. 如果模型请求工具，runtime 执行工具
+## 5. `tool_calls` 决定继续还是停止
 
-模型不能自己执行工具。它只能发出 tool call。  
-真正执行工具的是 runtime 的 `ToolExecutor`。
+这是 Chapter 1 最核心的判断：
 
 ```text
-ModelResponse.tool_calls
--> ToolExecutor.execute(call)
--> ToolResult
--> tool observation message
+response.tool_calls?
+-> yes: execute tools, append observations, continue
+-> no: final answer, stop
 ```
 
-Klara learns: tool 是 runtime 能力，不是模型魔法。
+Klara 学到：模型只能请求工具，真正执行工具的是 runtime。
 
 对应代码：
 
 ```text
-src/klara/core/tools.py
+src/klara/core/loop.py
 src/klara/core/tool_executor.py
 src/klara/capabilities/tools/fake_tool.py
 ```
@@ -362,6 +300,22 @@ src/klara/capabilities/tools/fake_tool.py
 <summary>展开：tool call 如何变成 observation</summary>
 
 真实代码：
+
+```python
+if not response.tool_calls:
+    # No tool calls means the assistant content is the final answer.
+    self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
+    return self._complete(
+        active_run_id,
+        messages,
+        response.content,
+        StopReason.FINAL,
+    )
+```
+
+如果没有 `tool_calls`，loop 直接结束。
+
+如果有 `tool_calls`，runtime 执行每一个工具：
 
 ```python
 # Execute every requested tool before preparing the next model turn.
@@ -391,21 +345,13 @@ for call in response.tool_calls:
     )
 ```
 
-逐步看：
-
-- `tool.started` 先发出，trace 和前端可以知道工具开始执行。
-- `ToolExecutor.execute(call)` 执行工具。
-- `tool.completed` 发出工具结果。
-- 工具结果被追加成一条 `role="tool"` 的消息。
-
-这一步很关键：工具结果不是隐藏变量。  
-它会作为 observation 回到消息列表，让下一轮 LLM 能看到。
+关键状态变化：工具结果被追加成一条 `role="tool"` 的消息。它不是隐藏变量，而是下一轮 LLM 能看到的 observation。
 
 </details>
 
-## 6. prepare_next_turn 先保持最小，但边界已经存在
+## 6. prepare_next_turn 先保持最小
 
-第一章的 `prepare_next_turn` 只做 identity，也就是不压缩、不改写、不注入 memory。  
+第一章的 `prepare_next_turn` 只做 identity：不压缩、不改写、不注入 memory。
 但这个边界必须现在就出现，因为后面 context compression、memory、RAG 和 tool effects 都会挂在这里。
 
 ```text
@@ -414,7 +360,7 @@ messages
 -> messages for next LLM turn
 ```
 
-Klara learns: 下一轮上下文需要一个明确的准备阶段。
+Klara 学到：下一轮上下文需要一个明确的准备阶段。
 
 对应代码：
 
@@ -428,7 +374,7 @@ src/klara/core/loop.py
 真实代码：
 
 ```python
-# Chapter 1 keeps preparation as identity; compression arrives later.
+# The minimal loop keeps preparation as identity until context policy exists.
 self._emit(
     active_run_id,
     "prepare_next_turn.started",
@@ -443,27 +389,21 @@ self._emit(
 self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
 ```
 
-这一章暂时不做压缩，但事件已经存在：
-
-- `prepare_next_turn.started`
-- `prepare_next_turn.completed`
-- `turn.completed`
-
-后面章节加 context compression 时，不需要重写 loop 的基本结构，只需要让 `prepare_next_turn` 真正开始处理消息。
+这一章暂时不做压缩，但事件已经存在。后面加 context compression 时，不需要重写 loop 的基本结构。
 
 </details>
 
-## 7. Loop 必须明确停止原因
+## 7. Loop 必须说明为什么停止
 
 Klara 不能只是“跑完了”。她要知道为什么停。
 
 ```text
-no tool calls -> final answer
-max turns -> max_turns stop reason
+no tool calls -> StopReason.FINAL
+max turns -> StopReason.MAX_TURNS
 unexpected error -> run.failed
 ```
 
-Klara learns: 停止是 runtime policy 的一部分。
+Klara 学到：停止是 runtime policy 的一部分。
 
 对应代码：
 
@@ -474,18 +414,6 @@ src/klara/core/policies.py
 
 <details>
 <summary>展开：final 和 max turns 怎么结束</summary>
-
-当模型没有请求工具时，loop 把当前内容当作最终回答：
-
-```python
-if not response.tool_calls:
-    return self._complete(
-        active_run_id,
-        messages,
-        response.content,
-        StopReason.FINAL,
-    )
-```
 
 如果模型一直请求工具，超过最大轮数时，loop 用 `max_turns` 停止：
 
@@ -512,8 +440,7 @@ self._emit(run_id, "run.completed", {"stop_reason": stop_reason.value})
 
 ## 8. Hook 是 trace 和 UI 的挂点
 
-这一章的 hook 先只做 observer。  
-也就是说，hook 接收事件，但不改变 loop 行为。
+这一章的 hook 先只做 observer：hook 接收事件，但不改变 loop 行为。
 
 ```text
 KlaraLoop._emit(...)
@@ -522,7 +449,7 @@ KlaraLoop._emit(...)
 -> frontend bridge on_event(event)
 ```
 
-Klara learns: trace 不是写死的 log，而是 hook 的第一个实现。
+Klara 学到：trace 不是写死的 log，而是 hook 的第一个实现。
 
 对应代码：
 
@@ -548,8 +475,7 @@ class KlaraHook(Protocol):
         ...
 ```
 
-第一章只使用 observer hook。  
-后面才会引入 `PreToolUse`、`PostToolUse`、`Stop` 这种更像 claw-code / learn-claude-code 的生命周期 hook。
+第一章只使用 observer hook。后面才会引入 `PreToolUse`、`PostToolUse`、`Stop` 这种更接近 Claude Code / claw-code 的生命周期 hook。
 
 真实代码：
 
@@ -566,8 +492,7 @@ def emit(self, event: KlaraEvent) -> None:
             self.failures.append((event.type, f"{type(exc).__name__}: {exc}"))
 ```
 
-hook 失败不会让 loop 崩掉。  
-它会被记录成 hook failure。
+hook 失败不会让 loop 崩掉，它会被记录成 hook failure。
 
 真实代码：
 
@@ -600,15 +525,11 @@ bridge = _RunEventBridge(self, run_id, usage_totals)
 hooks = HookManager([bridge, JsonlTraceHook(Path(self.trace_path))])
 ```
 
-所以 JSONL trace 和前端 SSE 不是两套 runtime。  
-它们都是同一批 lifecycle events 的不同消费者。
-
 </details>
 
 ## 9. 真实 LLM 配置放在 infra，不放在 core
 
-Chapter 1 已经可以使用真实模型，但 provider 仍然在 infra 层。  
-core 只知道 `LlmClient` 协议。
+Chapter 1 已经可以使用真实模型，但 provider 仍然在 infra 层。Core 只知道 `LlmClient` 协议。
 
 ```text
 .env
@@ -618,7 +539,7 @@ core 只知道 `LlmClient` 协议。
 -> KlaraLoop
 ```
 
-Klara learns: DeepSeek 和 Qwen 是可替换 provider，不是 loop 的一部分。
+Klara 学到：DeepSeek 和 Qwen 是可替换 provider，不是 loop 的一部分。
 
 对应代码：
 
@@ -663,49 +584,32 @@ qwen/qwen3.6-flash
 qwen/qwen3.6-plus
 ```
 
-Qwen image model 已经放在 `config/images.toml`，但本章不把生图接入 loop。  
-以后它应该作为 tool 或 capability 进入，而不是混进 chat model picker。
+Qwen image model 已经放在 `config/images.toml`，但本章不把生图接入 loop。以后它应该作为 tool 或 capability 进入，而不是混进 chat model picker。
 
 </details>
 
----
-
-## 本章暂时不做什么
-
-这一章不做：
-
-- RAG
-- memory
-- context compression
-- skill registry
-- scheduled jobs
-- permission guard
-- complex Stop hook
-- RL / post-training
-- multi-user auth
-
-这些都重要，但不能塞进 Chapter 1。  
-Chapter 1 只负责建立 Klara 的最小运行骨架。
-
 ## 如何运行和验证
 
-1. 在仓库根目录创建 `.env`
+1. 安装 Python 依赖
+
+```powershell
+python -m pip install -e ".[dev]"
+```
+
+2. 在仓库根目录创建 `.env`
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-2. 填入自己的 key
+3. 填入自己的 key
 
 ```text
 DEEPSEEK_API_KEY=...
 DASHSCOPE_API_KEY=...
 ```
 
-`DEEPSEEK_API_KEY` 用于 DeepSeek chat models。  
-`DASHSCOPE_API_KEY` 用于 Qwen chat models，也会供未来 Qwen image capability 使用。
-
-3. 一次性启动后端和前端
+4. 一次性启动后端和前端
 
 ```powershell
 .\scripts\dev.ps1
@@ -717,11 +621,6 @@ DASHSCOPE_API_KEY=...
 API: http://127.0.0.1:8011
 Web: http://127.0.0.1:5123
 ```
-
-4. 打开前端，选择模型，发送一条消息
-
-前端会调用后端 API，后端会运行 `KlaraLoop`，并把生命周期事件投射到前端。  
-同时，`JsonlTraceHook` 会把公共 trace 写到本地 JSONL。
 
 5. 运行核心测试
 
@@ -735,11 +634,17 @@ python -m pytest tests\klara\core\test_hooks.py tests\klara\app\test_harness.py
 - JSONL trace 是通过 hook 写出的
 - harness 能组装 persona、tools、user context 和 trace hook
 
+## 小实验
+
+- 把 `KlaraHarnessConfig.max_turns` 调小，再观察 `StopReason.MAX_TURNS`。
+- 问模型明确使用 `debug_echo`，观察右侧事件里 `tool.started` 和 `tool.completed` 的顺序。
+- 打开本地 trace JSONL，确认同一个 `run_id` 串起 `run.started`、`llm.completed`、`tool.completed` 和 `run.completed`。
+
 ## 下一章预告
 
-Chapter 2 会把本章的最小工具路径，升级成真正的 tool calling 和 capability partitioning。
+Chapter 2 会把本章的最小工具路径升级成真正的 tool calling、registry 和 capability partitioning。
 
-Klara 会学会：
+Klara 会继续学习：
 
 - 如何把 tool schema 暴露给 LLM
 - 如何让 runtime 执行 tool call
@@ -747,5 +652,4 @@ Klara 会学会：
 - 如何从一组 registry 工具中选择本章可见工具
 - 如何记录 tool selection、tool start、tool result 和 tool error
 
-Chapter 1 的原则会继续保留：  
-loop 只拥有运行结构，能力通过边界接入，trace 通过 hook 观察。
+Chapter 1 的原则会保留：loop 只拥有运行结构，能力通过边界接入，trace 通过 hook 观察。

@@ -141,14 +141,14 @@ textarea {
   margin: 0;
   font-size: 14px;
 }
-.version-row {
+.stage-row {
   display: flex;
   gap: 14px;
   align-items: center;
   color: var(--text-secondary);
   font-size: 14px;
 }
-.version-row span:first-child {
+.stage-row span:first-child {
   background: #e0ecd9;
   border: 1px solid rgba(95, 123, 98, 0.16);
   color: var(--accent-ink);
@@ -1527,7 +1527,7 @@ body,
   color: #f3f3f3;
 }
 .theme-dark .brand-row p,
-.theme-dark .version-row,
+.theme-dark .stage-row,
 .theme-dark .assistant-label,
 .theme-dark .empty-home,
 .theme-dark .empty-home p,
@@ -1618,7 +1618,7 @@ body,
     0 12px 28px rgba(0, 0, 0, 0.3),
     0 0 24px rgba(212, 170, 102, 0.12);
 }
-.theme-dark .version-row span:first-child {
+.theme-dark .stage-row span:first-child {
   background: #173b23;
   border-color: #2c6b3f;
   color: #b5f3b0;

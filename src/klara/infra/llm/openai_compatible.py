@@ -244,8 +244,8 @@ def _assistant_wire_message(
     if tool_calls:
         item["tool_calls"] = tool_calls
     if include_reasoning_content:
-        # Chapter 1 does not store reasoning content, but the branch is kept for
-        # DeepSeek compatibility once metadata arrives in later chapters.
+        # The loop does not store reasoning content, but the branch is kept for
+        # DeepSeek compatibility once public metadata handling exists.
         reasoning_content = getattr(message, "reasoning_content", "")
         if isinstance(reasoning_content, str) and reasoning_content.strip():
             item["reasoning_content"] = reasoning_content

@@ -13,7 +13,7 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class JsonlAppStore:
-    """JSONL store for local v0.1 learning mode. Writes append, delete purges related records."""
+    """JSONL store for local learning mode. Writes append, delete purges related records."""
 
     def __init__(self, root: str | Path = "data/app") -> None:
         self.root = Path(root)
@@ -57,7 +57,7 @@ class JsonlAppStore:
     def delete_session(self, session_id: str, trace_path: str | Path = "data/traces/runs.jsonl") -> SessionRecord | None:
         """Hard-delete a local learning conversation and every related app/trace record.
 
-        v0.1 is a single-user local app. The product delete action means the
+        The local app is single-user by default. The product delete action means the
         conversation should disappear from the UI *and* from local JSONL stores,
         not just receive a tombstone. We still return a transient deleted record
         so the API can acknowledge the deletion time.

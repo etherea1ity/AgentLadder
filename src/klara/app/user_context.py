@@ -7,10 +7,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class UserContext:
-    """Minimal user identity contract for local Chapter 1 runs.
+    """Minimal user identity contract for local runs.
 
     This is not production auth. It gives traces, sessions, memory, and skills a
-    future partition key while keeping Chapter 1 focused on loop mechanics.
+    future partition key while keeping the current runtime focused on loop
+    mechanics.
     """
 
     # Internal user id is stable but not necessarily prompt-visible.

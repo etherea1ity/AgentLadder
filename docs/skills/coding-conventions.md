@@ -85,6 +85,11 @@ Public function docstrings should use `Args` and `Returns`; add `Raises` for mea
 - Do not leak secrets, private prompts, raw hidden context, or chain-of-thought into trace.
 - Use dataclasses/Pydantic-style contracts where structured state matters.
 - Keep chapter code small but real enough to test and run.
+- Do not put chapter numbers, branch names, release numbers, or roadmap positions
+  into runtime identifiers, storage keys, API responses, class names, method names,
+  comments, or UI labels. Those labels belong in docs and chapter navigation only.
+- Package-manager metadata may keep required package versions; runtime contracts
+  should expose capabilities and schema ids, not course-version labels.
 
 ## Imports
 

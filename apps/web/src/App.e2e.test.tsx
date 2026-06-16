@@ -44,7 +44,7 @@ const runResponse = {
   events_url: "/api/runs/run_1/events/stream",
 };
 
-describe("Klara Chapter 1 app flow", () => {
+describe("Klara app flow", () => {
   beforeEach(() => {
     localStorage.clear();
     MockEventSource.instances = [];

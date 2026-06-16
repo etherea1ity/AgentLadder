@@ -8,115 +8,66 @@ Roadmap: [Klara Roadmap](./docs/skills/roadmap.md)
 
 ---
 
-## What This Chapter Builds
+## The Chapter In One Sentence
 
-This chapter gives Klara the smallest real LLM loop.
-
-Klara can receive user input, call a real LLM, check whether the model requested tools, execute those tools, put tool observations back into the next turn, and record public trace events through hooks.
-
-This chapter focuses on:
-
-- how the LLM is called
-- how the loop organizes turns
-- how tool calls return to the next model turn
-- why hooks are the trace and frontend event attachment point
-- why the harness assembles a run instead of letting the core loop read config
-
-This chapter does not build the full agent, RAG, memory, complex permissions, or RL. It builds the runtime skeleton that later capabilities will attach to.
+Klara moves from a one-shot pipeline to a minimal loop: if the model asks for tools, runtime executes them and continues; if the model asks for no tools, the loop stops and returns the answer.
 
 ![Klara Chapter 1 Minimal LLM Loop](./docs/assets/ch01-minimal-loop.png)
 
-## The Loop Idea
+| What Klara sees | What Klara does |
+| --- | --- |
+| `tool_calls` exists | Execute tools, append observations, continue |
+| no `tool_calls` | Return the final answer and stop |
+| `max_turns` reached | Stop by policy and expose the stop reason |
 
-The old pipeline shape is a fixed path:
+## Quick Experience
 
-```text
-question
--> retrieve
--> prompt
--> answer
+After `.env` is ready, start backend and frontend together:
+
+```powershell
+.\scripts\dev.ps1
 ```
 
-Klara starts as a loop:
+Open:
 
 ```text
-user input
--> harness assembles dependencies
--> loop emits run.started
--> LLM call
--> if tool calls exist, execute tools
--> append tool observations
--> prepare next turn
--> stop with final answer or max turns
--> hooks receive public lifecycle events
+http://127.0.0.1:5123
 ```
 
-Input:
+Ask first:
 
-- user message
-- Klara system prompt
-- model id
-- visible tools
-- hook manager
-- loop policy
+```text
+Introduce yourself in one sentence.
+```
 
-Output:
+You should see: the model answers directly and the run ends.
 
-- final answer
-- stop reason
-- transcript messages
-- public trace events
+Then ask:
+
+```text
+Please use the debug_echo tool to echo klara-loop, then tell me what you saw.
+```
+
+You should see: the model requests `debug_echo`, runtime executes the tool, the observation returns to context, and the loop either continues or returns the final answer.
+
+## Why Start With A Loop
+
+The old pipeline shape was a fixed path:
+
+```text
+question -> retrieve -> prompt -> answer
+```
+
+Klara needs to learn how to run one turn, inspect the result, then decide whether to continue or stop. That skeleton is where later tool registry, RAG, memory, hooks, context compression, and RL will attach.
 
 Klara learns: an agent run is not a black-box model call. It is an observable, testable, continuable, stoppable runtime loop.
-
-## Code Map
-
-Core loop:
-
-```text
-src/klara/core/loop.py
-```
-
-Messages, tools, events, and hooks:
-
-```text
-src/klara/core/messages.py
-src/klara/core/tools.py
-src/klara/core/events.py
-src/klara/core/hooks.py
-src/klara/core/tool_executor.py
-src/klara/core/policies.py
-```
-
-App-layer assembly:
-
-```text
-src/klara/app/harness.py
-apps/api/services/run_service.py
-```
-
-Real LLM providers:
-
-```text
-config/models.toml
-src/klara/infra/llm/openai_compatible.py
-src/klara/infra/llm/routed_client.py
-```
-
-Config and startup:
-
-```text
-.env.example
-config/README.md
-scripts/dev.ps1
-```
 
 ---
 
 ## 1. The Harness Assembles One Run
 
-The core loop should not know environment variables, frontend state, storage paths, user settings, or product persona.  
-The harness assembles those dependencies and injects them into the loop.
+The core loop does not read environment variables, choose persona, or know frontend and storage paths.
+The app-layer harness assembles those dependencies and injects them into the loop.
 
 ```text
 user input
@@ -168,7 +119,7 @@ The key boundary: `KlaraLoop` does not read `.env`, create trace files, or choos
 
 ## 2. The Loop Receives Dependencies
 
-Klara's core loop is the runtime core, not the product entry point. It receives dependencies and executes the loop.
+`KlaraLoop` is the runtime core, not the product entry point. It stores dependencies, then executes the loop in `run()`.
 
 ```text
 llm + tool_executor + hooks + policy + model + system_prompt
@@ -277,14 +228,14 @@ Trace is therefore not hardcoded logging inside the loop. The loop emits events;
 
 </details>
 
-## 4. The Loop Calls the LLM
+## 4. Each Turn Calls The LLM First
 
 Each turn sends the current transcript, system prompt, tool specs, and model id to the LLM client.
 
 ```text
 system_prompt + messages + tool specs + model
 -> llm.complete(...)
--> ModelResponse
+-> ModelResponse(content, tool_calls)
 ```
 
 Klara learns: the LLM call is one step inside the loop, not the whole agent.
@@ -293,7 +244,7 @@ Code:
 
 ```text
 src/klara/core/loop.py
-src/klara/core/types.py
+src/klara/core/messages.py
 src/klara/infra/llm/openai_compatible.py
 ```
 
@@ -325,24 +276,22 @@ The result is a `ModelResponse`, which may contain final text or tool calls.
 
 </details>
 
-## 5. If the Model Requests Tools, Runtime Executes Them
+## 5. `tool_calls` Decides Continue Or Stop
 
-The model does not execute tools by itself. It can only request tool calls.  
-The runtime executes them through `ToolExecutor`.
+This is Chapter 1's core decision:
 
 ```text
-ModelResponse.tool_calls
--> ToolExecutor.execute(call)
--> ToolResult
--> tool observation message
+response.tool_calls?
+-> yes: execute tools, append observations, continue
+-> no: final answer, stop
 ```
 
-Klara learns: tools are runtime capabilities, not model magic.
+Klara learns: the model can request tools, but runtime executes them.
 
 Code:
 
 ```text
-src/klara/core/tools.py
+src/klara/core/loop.py
 src/klara/core/tool_executor.py
 src/klara/capabilities/tools/fake_tool.py
 ```
@@ -351,6 +300,22 @@ src/klara/capabilities/tools/fake_tool.py
 <summary>Expand: how a tool call becomes an observation</summary>
 
 Real code:
+
+```python
+if not response.tool_calls:
+    # No tool calls means the assistant content is the final answer.
+    self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
+    return self._complete(
+        active_run_id,
+        messages,
+        response.content,
+        StopReason.FINAL,
+    )
+```
+
+If there are no `tool_calls`, the loop ends.
+
+If there are `tool_calls`, runtime executes every tool:
 
 ```python
 # Execute every requested tool before preparing the next model turn.
@@ -380,11 +345,11 @@ for call in response.tool_calls:
     )
 ```
 
-Tool results are not hidden state. They become `role="tool"` messages so the next LLM turn can see the observation.
+Runtime state changes here: the tool result becomes a `role="tool"` message. It is not hidden state; the next LLM turn can see it as an observation.
 
 </details>
 
-## 6. prepare_next_turn Is Minimal, But the Boundary Exists
+## 6. prepare_next_turn Starts Minimal
 
 Chapter 1 keeps `prepare_next_turn` as identity: no compression, rewriting, or memory injection yet.  
 The boundary exists now because later context compression, memory, RAG, and tool effects need it.
@@ -395,7 +360,7 @@ messages
 -> messages for next LLM turn
 ```
 
-Klara learns: the next-turn context needs a deliberate preparation phase.
+Klara learns: next-turn context needs a deliberate preparation phase.
 
 Code:
 
@@ -409,7 +374,7 @@ src/klara/core/loop.py
 Real code:
 
 ```python
-# Chapter 1 keeps preparation as identity; compression arrives later.
+# The minimal loop keeps preparation as identity until context policy exists.
 self._emit(
     active_run_id,
     "prepare_next_turn.started",
@@ -424,7 +389,7 @@ self._emit(
 self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
 ```
 
-Later chapters can make `prepare_next_turn` do real work without changing the loop shape.
+This chapter does not compress context yet, but the event boundary already exists. Later chapters can add real context preparation without rewriting the loop shape.
 
 </details>
 
@@ -433,8 +398,8 @@ Later chapters can make `prepare_next_turn` do real work without changing the lo
 Klara should not merely be "done." She should know why the loop ended.
 
 ```text
-no tool calls -> final answer
-max turns -> max_turns stop reason
+no tool calls -> StopReason.FINAL
+max turns -> StopReason.MAX_TURNS
 unexpected error -> run.failed
 ```
 
@@ -449,18 +414,6 @@ src/klara/core/policies.py
 
 <details>
 <summary>Expand: final and max-turn stopping</summary>
-
-If the model does not request tools, the response becomes the final answer:
-
-```python
-if not response.tool_calls:
-    return self._complete(
-        active_run_id,
-        messages,
-        response.content,
-        StopReason.FINAL,
-    )
-```
 
 If the model keeps requesting tools until the turn budget is exhausted:
 
@@ -481,12 +434,13 @@ Completion is still emitted as an event:
 self._emit(run_id, "run.completed", {"stop_reason": stop_reason.value})
 ```
 
+The stop reason enters trace and the final `KlaraRunResult`.
+
 </details>
 
-## 8. Hooks Are the Attachment Point for Trace and UI
+## 8. Hooks Attach Trace And UI
 
-Chapter 1 uses hooks as observers.  
-They receive events but do not change loop behavior.
+Chapter 1 uses hooks as observers: hooks receive events but do not change loop behavior.
 
 ```text
 KlaraLoop._emit(...)
@@ -538,6 +492,8 @@ def emit(self, event: KlaraEvent) -> None:
             self.failures.append((event.type, f"{type(exc).__name__}: {exc}"))
 ```
 
+Hook failure does not crash the loop. It becomes hook failure data.
+
 Real code:
 
 ```python
@@ -561,7 +517,7 @@ hook consumes events
 trace is one hook implementation
 ```
 
-The frontend event stream follows the same model:
+The frontend event stream follows the same idea. The API layer attaches `_RunEventBridge` and `JsonlTraceHook` to one `HookManager`:
 
 ```python
 usage_totals = _UsageTotals()
@@ -571,10 +527,9 @@ hooks = HookManager([bridge, JsonlTraceHook(Path(self.trace_path))])
 
 </details>
 
-## 9. Real LLM Config Lives in Infra, Not Core
+## 9. Real LLM Config Lives In Infra
 
-Chapter 1 can use real models, but providers stay in infra.  
-The core loop only knows the `LlmClient` protocol.
+Chapter 1 can use real models, but providers stay in infra. Core only knows the `LlmClient` protocol.
 
 ```text
 .env
@@ -633,40 +588,28 @@ The Qwen image model is configured in `config/images.toml`, but image generation
 
 </details>
 
----
+## Run And Verify
 
-## What This Chapter Does Not Build Yet
+1. Install Python dependencies:
 
-This chapter does not build:
+```powershell
+python -m pip install -e ".[dev]"
+```
 
-- RAG
-- memory
-- context compression
-- skill registry
-- scheduled jobs
-- permission guards
-- complex Stop hooks
-- RL / post-training
-- multi-user auth
-
-Chapter 1 only establishes Klara's minimal runtime skeleton.
-
-## Run and Verify
-
-1. Create `.env` at the repo root:
+2. Create `.env` at the repo root:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-2. Fill in your keys:
+3. Fill in your keys:
 
 ```text
 DEEPSEEK_API_KEY=...
 DASHSCOPE_API_KEY=...
 ```
 
-3. Start backend and frontend together:
+4. Start backend and frontend together:
 
 ```powershell
 .\scripts\dev.ps1
@@ -678,10 +621,6 @@ Default URLs:
 API: http://127.0.0.1:8011
 Web: http://127.0.0.1:5123
 ```
-
-4. Open the frontend, choose a model, and send a message.
-
-The frontend calls the backend API. The backend runs `KlaraLoop`, projects lifecycle events to the UI, and `JsonlTraceHook` writes public trace events to local JSONL.
 
 5. Run core tests:
 
@@ -695,9 +634,15 @@ These tests confirm:
 - JSONL trace is written through hooks
 - the harness assembles persona, tools, user context, and trace hook
 
+## Small Experiments
+
+- Lower `KlaraHarnessConfig.max_turns`, then observe `StopReason.MAX_TURNS`.
+- Ask the model to use `debug_echo`, then inspect `tool.started` and `tool.completed` order in the event area.
+- Open the local trace JSONL and confirm one `run_id` joins `run.started`, `llm.completed`, `tool.completed`, and `run.completed`.
+
 ## Next Chapter
 
-Chapter 2 upgrades the minimal tool path into real tool calling and capability partitioning.
+Chapter 2 upgrades this minimal tool path into real tool calling, registry, and capability partitioning.
 
 Klara will learn:
 
