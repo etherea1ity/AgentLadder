@@ -29,20 +29,20 @@ def test_payload_maps_messages_tools_and_tool_results() -> None:
                 role="assistant",
                 content="",
                 tool_calls=(
-                    ToolCall(id="call-1", name="debug_echo", arguments={"text": "x"}),
+                    ToolCall(id="call-1", name="lookup", arguments={"text": "x"}),
                 ),
             ),
             KlaraMessage(
                 role="tool",
                 content="x",
-                name="debug_echo",
+                name="lookup",
                 tool_call_id="call-1",
             ),
         ),
         tools=(
             ToolSpec(
-                name="debug_echo",
-                description="Echo",
+                name="lookup",
+                description="Lookup",
                 input_schema={"type": "object", "properties": {"text": {"type": "string"}}},
             ),
         ),
@@ -52,13 +52,13 @@ def test_payload_maps_messages_tools_and_tool_results() -> None:
 
     assert payload["model"] == "deepseek-v4-flash"
     assert payload["messages"][0] == {"role": "system", "content": "system"}
-    assert payload["messages"][2]["tool_calls"][0]["function"]["name"] == "debug_echo"
+    assert payload["messages"][2]["tool_calls"][0]["function"]["name"] == "lookup"
     assert payload["messages"][3] == {
         "role": "tool",
         "tool_call_id": "call-1",
         "content": "x",
     }
-    assert payload["tools"][0]["function"]["name"] == "debug_echo"
+    assert payload["tools"][0]["function"]["name"] == "lookup"
     assert payload["tool_choice"] == "auto"
 
 
@@ -75,7 +75,7 @@ def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None
                             {
                                 "id": "call-1",
                                 "function": {
-                                    "name": "debug_echo",
+                                    "name": "lookup",
                                     "arguments": "{\"text\":\"x\"}",
                                 },
                             }
@@ -90,7 +90,7 @@ def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None
     )
 
     assert isinstance(response, ModelResponse)
-    assert response.tool_calls[0].name == "debug_echo"
+    assert response.tool_calls[0].name == "lookup"
     assert response.tool_calls[0].arguments == {"text": "x"}
     assert response.usage == {"total_tokens": 12}
 

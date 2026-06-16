@@ -53,7 +53,7 @@ class KlaraHarness:
 
         # LLM stays injected so tests can run with deterministic fake models.
         self.llm = llm
-        # Registry defaults to the minimal deterministic demonstration tool.
+        # Registry defaults to discovered local tools.
         self.registry = registry or CapabilityRegistry.with_default_tools()
         # Config owns local user context, model id, prompt path, and trace path.
         self.config = config or KlaraHarnessConfig()
@@ -86,20 +86,38 @@ class KlaraHarness:
         return loop.run(user_input, run_id=run_id)
 
     def _system_prompt(self) -> str:
-        """Build the minimal system prompt from persona and local user context."""
+        """Build the system prompt from persona and local user context."""
 
         # Persona text carries Klara's identity without entering core.
         persona = self.config.persona_path.read_text(encoding="utf-8").strip()
         # User context is prompt-visible only through selected public fields.
         user = self.config.user_context
         return "\n\n".join(
-            [
-                persona,
-                (
-                    "Runtime user context:\n"
-                    f"- display_name: {user.display_name}\n"
-                    f"- locale: {user.locale}\n"
-                    f"- timezone: {user.timezone}"
-                ),
-            ]
+            _non_empty_sections(
+                [
+                    persona,
+                    (
+                        "Runtime user context:\n"
+                        f"- display_name: {user.display_name}\n"
+                        f"- locale: {user.locale}\n"
+                        f"- timezone: {user.timezone}"
+                    ),
+                    *_tool_guidance_sections(self.registry),
+                ]
+            )
         )
+
+
+def _tool_guidance_sections(registry: CapabilityRegistry) -> list[str]:
+    """Build prompt sections from currently visible tools."""
+
+    guidance = registry.prompt_guidance()
+    if not guidance:
+        return []
+    return ["Visible tool guidance:\n" + "\n\n".join(guidance)]
+
+
+def _non_empty_sections(sections: list[str]) -> list[str]:
+    """Remove empty prompt sections while preserving order."""
+
+    return [section for section in sections if section.strip()]

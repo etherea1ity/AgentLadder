@@ -1,4 +1,4 @@
-"""Core loop execution for Klara's minimal runtime."""
+"""Core loop execution for Klara runtime."""
 
 from __future__ import annotations
 
@@ -158,8 +158,10 @@ class KlaraLoop:
                         "tool.started",
                         {"turn_index": turn_index, "tool_call": call.to_public_dict()},
                     )
-                    # Tool results become model-visible observations.
-                    result = self.tool_executor.execute(call)
+
+                # Tool results become model-visible observations in request order.
+                tool_results = self.tool_executor.execute_many(response.tool_calls)
+                for result in tool_results:
                     self._emit(
                         active_run_id,
                         "tool.completed",
@@ -177,7 +179,7 @@ class KlaraLoop:
                         )
                     )
 
-                # The minimal loop keeps preparation as identity until context policy exists.
+                # Preparation stays as identity until context policy exists.
                 self._emit(
                     active_run_id,
                     "prepare_next_turn.started",

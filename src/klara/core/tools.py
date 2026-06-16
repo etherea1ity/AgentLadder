@@ -39,7 +39,7 @@ class ToolMetadata:
 
     # Label is human-facing and can be shown in trace/UI surfaces.
     label: str
-    # Category groups tools without leaking package or chapter structure.
+    # Category groups tools without leaking package or teaching structure.
     category: str
     # Side effect tells the runtime how risky the tool is.
     side_effect: ToolSideEffect = ToolSideEffect.NONE

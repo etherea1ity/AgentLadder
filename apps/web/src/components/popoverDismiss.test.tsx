@@ -22,7 +22,7 @@ const modelOptions: ModelOption[] = [
 
 const session: Session = {
   session_id: "sess_1",
-  title: "minimal loop",
+  title: "runtime loop",
   created_at: now,
   updated_at: now,
   message_ids: [],

@@ -16,9 +16,9 @@ class StopReason(StrEnum):
 
 @dataclass(frozen=True)
 class LoopPolicy:
-    """Bounded execution policy for the minimal loop.
+    """Bounded execution policy for the runtime loop.
 
-    The minimal runtime only needs max-turn control. Richer policy should live
+    The runtime currently uses max-turn control. Richer policy should live
     outside core or enter through deliberate extensions to this contract.
     """
 

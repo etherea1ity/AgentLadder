@@ -147,20 +147,21 @@ class RunService:
 
         current = run.model_copy(update={"status": "thinking", "started_at": now_iso()})
         self.store.save_run(current)
-        self._emit(run_id, "thinking_started", "Klara is entering the minimal loop.", {})
+        self._emit(run_id, "thinking_started", "Klara is preparing the runtime loop.", {})
 
         usage_totals = _UsageTotals()
         bridge = _RunEventBridge(self, run_id, usage_totals)
         hooks = HookManager([bridge, JsonlTraceHook(Path(self.trace_path))])
 
         try:
+            registry = CapabilityRegistry.with_default_tools()
             loop = KlaraLoop(
                 llm=self.llm_client,
-                tool_executor=ToolExecutor(list(CapabilityRegistry.with_default_tools().visible_tools())),
+                tool_executor=ToolExecutor(list(registry.visible_tools())),
                 hooks=hooks,
                 policy=self.loop_policy,
                 model=current.model or self.default_model or "fake-model",
-                system_prompt=_system_prompt(),
+                system_prompt=_system_prompt(registry),
             )
             result = loop.run(user_message.content, run_id=run_id)
             if run_id in self._cancel_requested:
@@ -204,7 +205,7 @@ class RunService:
             )
         except Exception as exc:
             latency_ms = int((perf_counter() - started) * 1000)
-            error = RunError(code=_error_code(exc), message=str(exc), stage="minimal_loop")
+            error = RunError(code=_error_code(exc), message=str(exc), stage="runtime_loop")
             failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
             self.store.save_run(failed)
             self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
@@ -313,22 +314,40 @@ class _UsageTotals:
         self.total_tokens += payload["total_tokens"] or 0
 
 
-def _system_prompt() -> str:
-    """Build the minimal app prompt while keeping persona outside core."""
+def _system_prompt(registry: CapabilityRegistry) -> str:
+    """Build the app prompt while keeping persona outside core."""
 
     persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8").strip()
     user = UserContext.local_default()
     return "\n\n".join(
-        [
-            persona,
-            (
-                "Runtime user context:\n"
-                f"- display_name: {user.display_name}\n"
-                f"- locale: {user.locale}\n"
-                f"- timezone: {user.timezone}"
-            ),
-        ]
+        _non_empty_sections(
+            [
+                persona,
+                (
+                    "Runtime user context:\n"
+                    f"- display_name: {user.display_name}\n"
+                    f"- locale: {user.locale}\n"
+                    f"- timezone: {user.timezone}"
+                ),
+                *_tool_guidance_sections(registry),
+            ]
+        )
     )
+
+
+def _tool_guidance_sections(registry: CapabilityRegistry) -> list[str]:
+    """Build prompt sections from currently visible tools."""
+
+    guidance = registry.prompt_guidance()
+    if not guidance:
+        return []
+    return ["Visible tool guidance:\n" + "\n\n".join(guidance)]
+
+
+def _non_empty_sections(sections: list[str]) -> list[str]:
+    """Remove empty prompt sections while preserving order."""
+
+    return [section for section in sections if section.strip()]
 
 
 def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:

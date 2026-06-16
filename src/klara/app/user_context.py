@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class UserContext:
-    """Minimal user identity contract for local runs.
+    """Local user identity contract for Klara runs.
 
     This is not production auth. It gives traces, sessions, memory, and skills a
     future partition key while keeping the current runtime focused on loop
@@ -27,7 +27,7 @@ class UserContext:
 
     @classmethod
     def local_default(cls) -> "UserContext":
-        """Create the single-user local context used by early chapters.
+        """Create the single-user local context used by local runs.
 
         Returns:
             A deterministic local user context for tests and examples.

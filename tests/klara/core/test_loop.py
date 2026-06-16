@@ -1,11 +1,34 @@
 from __future__ import annotations
 
-from klara.capabilities.tools.debug_echo import DebugEchoTool
+from dataclasses import dataclass
+
+from klara.capabilities.base_tool import BaseTool
 from klara.core.loop import KlaraLoop
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
 from klara.core.tool_executor import ToolExecutor
-from klara.core.tools import ToolCall, ToolSpec
+from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
+
+
+@dataclass(frozen=True)
+class EchoFixtureTool(BaseTool):
+    """Test-only echo fixture for proving loop tool observations."""
+
+    spec: ToolSpec = ToolSpec(
+        name="test_echo",
+        description="Echo text for tests.",
+        input_schema={
+            "type": "object",
+            "properties": {"text": {"type": "string"}},
+            "additionalProperties": False,
+        },
+    )
+    metadata: ToolMetadata = ToolMetadata(label="Test Echo", category="test")
+
+    def run(self, arguments: JsonObject) -> ToolResult:
+        """Return the requested text as a tool observation."""
+
+        return self.success(arguments, str(arguments.get("text", "")))
 
 
 class ScriptedLlm:
@@ -50,7 +73,7 @@ def test_no_tool_run_returns_final_answer() -> None:
 def test_one_tool_run_feeds_observation_back_to_llm() -> None:
     tool_call = ToolCall(
         id="call-1",
-        name="debug_echo",
+        name="test_echo",
         arguments={"text": "observed"},
     )
     llm = ScriptedLlm(
@@ -61,7 +84,7 @@ def test_one_tool_run_feeds_observation_back_to_llm() -> None:
     )
     loop = KlaraLoop(
         llm=llm,
-        tool_executor=ToolExecutor([DebugEchoTool()]),
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
     )
 
     result = loop.run("use a tool", run_id="run-tool")
@@ -84,20 +107,20 @@ def test_loop_stops_at_max_turns_when_model_keeps_requesting_tools() -> None:
             ModelResponse(
                 content="",
                 tool_calls=(
-                    ToolCall(id="call-1", name="debug_echo", arguments={"text": "1"}),
+                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"}),
                 ),
             ),
             ModelResponse(
                 content="",
                 tool_calls=(
-                    ToolCall(id="call-2", name="debug_echo", arguments={"text": "2"}),
+                    ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
                 ),
             ),
         ]
     )
     loop = KlaraLoop(
         llm=llm,
-        tool_executor=ToolExecutor([DebugEchoTool()]),
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
         policy=LoopPolicy(max_turns=2),
     )
 

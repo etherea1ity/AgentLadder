@@ -8,7 +8,10 @@ from klara.core.tools import ToolMetadata, ToolSideEffect, ToolSpec
 # The spec is model-visible: it teaches the LLM how to call the tool.
 CURRENT_TIME_SPEC = ToolSpec(
     name="current_time",
-    description="Return the current date and time for a requested timezone.",
+    description=(
+        "Return the current date, time, weekday, and UTC offset for a requested "
+        "timezone. Use for current-time questions, not historical or web facts."
+    ),
     input_schema={
         "type": "object",
         "properties": {
@@ -20,6 +23,8 @@ CURRENT_TIME_SPEC = ToolSpec(
                 ),
             },
         },
+        "required": [],
+        "additionalProperties": False,
     },
 )
 

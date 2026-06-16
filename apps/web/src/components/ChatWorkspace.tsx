@@ -95,7 +95,7 @@ export function ChatWorkspace(props: Props) {
             onTypingPulse={pulseTyping}
           />
           <small className="home-hint">
-            Minimal Loop <span>·</span> Model → Tool → Observation → Answer
+            Runtime Loop <span>·</span> Model → Tool → Observation → Answer
           </small>
         </section>
       ) : (
@@ -143,7 +143,7 @@ function TopPath({
   return (
     <div className={`top-path ${compact ? "is-compact" : ""}`}>
       <GitBranch size={compact ? 17 : 0} className="path-branch" />
-      <span>klara/minimal-loop</span>
+      <span>klara/runtime</span>
       {compact ? (
         <div className="top-actions">
           <button

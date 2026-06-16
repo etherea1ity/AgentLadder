@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 from klara.core.tools import KlaraTool, ToolCall, ToolMetadata, ToolResult, ToolSpec
 
 
@@ -77,6 +79,48 @@ class ToolExecutor:
         # Normalize and limit results before exposing observations to the model.
         normalized = self._normalize_result(call, result)
         return self._limit_result(normalized, max_chars=tool.metadata.max_output_chars)
+
+    def execute_many(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
+        """Execute one model-requested tool batch in dependency-safe waves.
+
+        Args:
+            calls: Tool calls requested by one assistant turn.
+
+        Returns:
+            Tool results in the same order as the requested calls.
+        """
+
+        # Consecutive parallel-safe calls can share a wave; serial calls split waves.
+        results: list[ToolResult] = []
+        parallel_wave: list[ToolCall] = []
+        for call in calls:
+            if self._can_run_in_parallel(call):
+                parallel_wave.append(call)
+                continue
+            results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
+            parallel_wave = []
+            results.append(self.execute(call))
+        results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
+        return tuple(results)
+
+    def _can_run_in_parallel(self, call: ToolCall) -> bool:
+        """Return whether a tool call may run beside another call."""
+
+        tool = self._tools.get(call.name)
+        if tool is None:
+            return False
+        return tool.metadata.parallel_safe and not tool.metadata.requires_approval
+
+    def _execute_parallel_wave(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
+        """Execute a contiguous wave of parallel-safe tool calls."""
+
+        if not calls:
+            return ()
+        if len(calls) == 1:
+            return (self.execute(calls[0]),)
+        # Thread pool keeps the sync tool interface simple while allowing I/O tools to overlap.
+        with ThreadPoolExecutor(max_workers=len(calls)) as pool:
+            return tuple(pool.map(self.execute, calls))
 
     def _normalize_result(self, call: ToolCall, result: ToolResult) -> ToolResult:
         """Normalize a concrete result against the original model request."""

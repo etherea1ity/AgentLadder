@@ -13,11 +13,13 @@ def test_current_time_tool_declares_real_tool_template_metadata() -> None:
 
     assert tool.spec.name == "current_time"
     assert "timezone" in tool.spec.input_schema["properties"]
+    assert tool.spec.input_schema["additionalProperties"] is False
     assert tool.metadata.label == "Current Time"
     assert tool.metadata.category == "time"
     assert tool.metadata.side_effect == ToolSideEffect.NONE
     assert tool.metadata.parallel_safe is True
     assert tool.metadata.output_trust == ToolOutputTrust.TRUSTED
+    assert "Current time tool guidance" in (tool.prompt_guidance() or "")
 
 
 def test_current_time_tool_returns_json_observation_for_known_timezone() -> None:
@@ -32,6 +34,7 @@ def test_current_time_tool_returns_json_observation_for_known_timezone() -> None
     assert result.name == "current_time"
     assert payload["timezone"] == "Asia/Shanghai"
     assert payload["utc_offset"] == "+08:00"
+    assert payload["weekday"]
     assert "T" in payload["iso"]
 
 

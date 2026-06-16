@@ -103,6 +103,8 @@ Each concrete model-visible tool lives in its own package under
 src/klara/capabilities/tools/
   current_time/
     __init__.py
+    prompts/
+      tool_use.md
     schema.py
     timezones.py
     tool.py
@@ -111,7 +113,9 @@ src/klara/capabilities/tools/
 Use this package shape by default:
 
 - `schema.py`: model-visible `ToolSpec` and Klara-visible `ToolMetadata`.
-- `tool.py`: the `KlaraTool` implementation and narrow execution method.
+- `prompts/tool_use.md`: optional model-facing guidance owned by this tool.
+- `tool.py`: the `BaseTool` implementation, guidance hook, result effects,
+  and narrow execution method.
 - focused helper files: parsing, normalization, adapters, or domain helpers.
 - package `__init__.py`: export the concrete tool class only.
 
@@ -119,6 +123,29 @@ Concrete tools may import `klara.core` contracts and capability-local helpers.
 They must not import the loop, backend, frontend, or trace sinks. External
 provider clients belong in `src/klara/services/`; the tool package should wrap
 that service into a model-visible capability.
+
+Tool registration is automatic for local built-in tools: each package under
+`src/klara/capabilities/tools/` must expose exactly one `BaseTool` subclass from
+`tool.py`. The registry discovers packages, filters visibility later by profile,
+and collects tool-owned prompt guidance. It must not carry a hand-written list
+of default tool instances.
+
+Tool-use negotiation belongs to the tool wrapper:
+
+- model schema and description live in `ToolSpec`
+- runtime policy lives in `ToolMetadata`
+- tool-specific prompt rules live in `prompt_guidance()`
+- post-result next-turn advice lives in `after_result()`
+- execution remains a narrow `run(arguments)` method
+
+Tool execution uses metadata-driven waves:
+
+- consecutive `parallel_safe=True` calls may run in the same wave
+- `parallel_safe=False`, approval-gated, or unknown calls split the wave
+- result observations keep the original model request order
+- dependency planning must use metadata and profiles, not concrete tool names
+
+Core loop and frontend must not branch on concrete tool names.
 
 ## Documentation Hygiene
 

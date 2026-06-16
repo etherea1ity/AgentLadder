@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
+from klara.capabilities.base_tool import BaseTool
 from klara.capabilities.tools.current_time.schema import CURRENT_TIME_METADATA, CURRENT_TIME_SPEC
 from klara.capabilities.tools.current_time.timezones import format_utc_offset, resolve_timezone
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 
 
+PROMPT_DIR = Path(__file__).parent / "prompts"
+
+
 @dataclass(frozen=True)
-class CurrentTimeTool:
+class CurrentTimeTool(BaseTool):
     """Return the current local or requested time as a model observation.
 
     This tool is the template for real local capabilities: it has a
@@ -25,7 +29,12 @@ class CurrentTimeTool:
     # Metadata is separate from the spec because it is never sent to the model.
     metadata: ToolMetadata = CURRENT_TIME_METADATA
 
-    def execute(self, arguments: JsonObject) -> ToolResult:
+    def prompt_guidance(self) -> str | None:
+        """Return current-time tool-use guidance."""
+
+        return (PROMPT_DIR / "tool_use.md").read_text(encoding="utf-8").strip()
+
+    def run(self, arguments: JsonObject) -> ToolResult:
         """Return current time for the requested timezone.
 
         Args:
@@ -36,19 +45,11 @@ class CurrentTimeTool:
             when the requested timezone cannot be resolved.
         """
 
-        # The executor normalizes this fallback id to the actual tool call id.
-        tool_call_id = str(arguments.get("tool_call_id", "tool-call"))
         timezone_name = str(arguments.get("timezone") or "").strip()
         try:
             resolved_name, resolved_timezone = resolve_timezone(timezone_name)
         except ValueError as exc:
-            return ToolResult(
-                tool_call_id=tool_call_id,
-                name=self.spec.name,
-                content="",
-                ok=False,
-                error=str(exc),
-            )
+            return self.failure(arguments, str(exc))
 
         # Timestamp fields stay explicit so the model need not parse prose.
         now = datetime.now(resolved_timezone)
@@ -57,10 +58,7 @@ class CurrentTimeTool:
             "iso": now.isoformat(timespec="seconds"),
             "date": now.date().isoformat(),
             "time": now.time().isoformat(timespec="seconds"),
+            "weekday": now.strftime("%A"),
             "utc_offset": format_utc_offset(now),
         }
-        return ToolResult(
-            tool_call_id=tool_call_id,
-            name=self.spec.name,
-            content=json.dumps(content, ensure_ascii=False),
-        )
+        return self.json_success(arguments, content)
