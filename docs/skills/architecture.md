@@ -72,15 +72,27 @@ The chapter order is intentionally not the same as the final package layering.
 Teach the ideas in the order learners naturally need them:
 
 ```text
-Loop -> Tools -> Hooks -> Harness -> Context -> Memory -> Skills
--> RAG -> Evidence -> Policy/Fallback -> Routines -> Research
--> MCP/Plugins -> Production -> Eval -> Post-training/RL
+Loop -> Tool Calling -> Hooks/Trace -> Harness/Config -> Todo
+-> Context Assembly -> Context Compression -> Recovery -> Skills -> Memory
+-> RAG Tool -> Agentic RAG -> Research -> Task System
+-> Background/Scheduler -> Subagents/Teams -> MCP -> Production/Eval Bridge
 ```
 
-This means tools are taught before the full harness chapter, even though
-production-grade tool exposure is assembled by the app/harness layer. Chapter 1
-may include a minimal fake tool path to prove the observation loop; Chapter 2
-teaches the real tool/capability system.
+The foundation track teaches runnable Klara versions. Internal parts of one
+mechanism stay together unless splitting them creates a meaningful runnable
+chapter. For example, tool schema, registry, metadata, execution, tool errors,
+and serial/parallel planning all belong to the tool-calling chapter.
+
+Permission is not an early standalone chapter. It starts as tool metadata and
+hook placement, then becomes concrete when external tools, background work,
+teams, MCP, and production boundaries create real approval pressure.
+
+Advanced training topics live in labs after the foundation track:
+
+```text
+Trace Dataset -> Tiny Pretrain -> Tool-Use SFT -> Preference/DPO
+-> MoE Router -> RAG Optimization -> Memory/RL Policy
+```
 
 ## Documentation Hygiene
 
