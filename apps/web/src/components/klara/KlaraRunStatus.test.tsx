@@ -9,7 +9,7 @@ const baseRun: Run = {
   user_message_id: "msg_u",
   assistant_message_id: "msg_a",
   status: "streaming",
-  model: "qwen3.6-flash",
+  model: "qwen/qwen3.7-plus",
   events: [],
   live: { streamed_chars: 12, current_label: "Writing answer..." },
 };

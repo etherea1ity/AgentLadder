@@ -61,6 +61,12 @@ def _models(data: dict[str, Any]) -> ModelsConfig:
                 label=str(item.get("label", item["id"])),
                 supports_tools=bool(item.get("supports_tools", False)),
                 supports_json=bool(item.get("supports_json", False)),
+                supports_vision=bool(item.get("supports_vision", False)),
+                enable_thinking=(
+                    bool(item["enable_thinking"])
+                    if "enable_thinking" in item
+                    else None
+                ),
             )
             for item in provider_data.get("models", [])
         )

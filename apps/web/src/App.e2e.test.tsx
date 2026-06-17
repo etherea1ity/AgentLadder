@@ -54,12 +54,12 @@ describe("Klara app flow", () => {
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url === "/api/models")
           return json({
-            default_model: "deepseek/deepseek-v4-flash",
+            default_model: "qwen/qwen3.7-plus",
             models: [
               {
-                id: "deepseek/deepseek-v4-flash",
-                model: "deepseek/deepseek-v4-flash",
-                label: "DeepSeek V4 Flash",
+                id: "qwen/qwen3.7-plus",
+                model: "qwen/qwen3.7-plus",
+                label: "Qwen3.7 Plus",
               },
             ],
           });

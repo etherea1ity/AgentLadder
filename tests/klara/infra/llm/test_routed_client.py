@@ -34,7 +34,7 @@ def test_routed_client_tries_profile_fallback(monkeypatch) -> None:
             profiles={
                 "agent": ModelProfile(
                     primary="deepseek/deepseek-v4-flash",
-                    fallbacks=("qwen/qwen3.6-flash",),
+                    fallbacks=("qwen/qwen3.7-plus",),
                 )
             },
         )
@@ -47,8 +47,8 @@ def test_routed_client_tries_profile_fallback(monkeypatch) -> None:
         model="deepseek/deepseek-v4-flash",
     )
 
-    assert response.content == "ok from qwen/qwen3.6-flash"
-    assert calls == ["deepseek/deepseek-v4-flash", "qwen/qwen3.6-flash"]
+    assert response.content == "ok from qwen/qwen3.7-plus"
+    assert calls == ["deepseek/deepseek-v4-flash", "qwen/qwen3.7-plus"]
 
 
 def test_routed_client_rejects_unknown_provider() -> None:

@@ -92,9 +92,9 @@ export default function App() {
         );
       })
       .catch(() => {
-        const fallback = "qwen3.6-flash";
+        const fallback = "qwen/qwen3.7-plus";
         setModelOptions([
-          { id: "flash", model: fallback, label: "Qwen 3.6 Flash" },
+          { id: fallback, model: fallback, label: "Qwen3.7 Plus" },
         ]);
         setSelectedModel(fallback);
       });

@@ -24,10 +24,19 @@ def _load_model_options(models: ModelsConfig) -> list[ModelOption]:
                     id=model_ref,
                     model=model_ref,
                     label=item.label or model_ref,
-                    use_when=f"{provider_id} provider",
+                    use_when=_model_use_when(provider_id, item.supports_vision),
+                    enable_thinking=item.enable_thinking,
                 )
             )
     return options
+
+
+def _model_use_when(provider_id: str, supports_vision: bool) -> str:
+    """Return a compact UI hint for one configured model."""
+
+    if supports_vision:
+        return f"{provider_id} provider, vision-capable"
+    return f"{provider_id} provider"
 
 
 def _default_model(models: ModelsConfig) -> str:

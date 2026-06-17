@@ -61,6 +61,14 @@ Please use web_search to search for python docs, then use web_fetch to open the 
 
 `web_search` finds candidates; `web_fetch` reads one URL. External page content is marked as an untrusted observation.
 
+You can also try the media tool:
+
+```text
+Generate a warm Klara desk illustration and show the image in the answer.
+```
+
+You should see: Klara calls `image_generate`, the tool downloads Qwen's short-lived image URL into a local asset, and the final answer embeds the image with Markdown beside normal text.
+
 ---
 
 ## 1. What Changes In This Chapter
@@ -319,6 +327,10 @@ src/klara/capabilities/tools/
     schema.py
     timezones.py
     tool.py
+  image_generate/
+    __init__.py
+    schema.py
+    tool.py
   web_search/
     __init__.py
     schema.py
@@ -340,6 +352,7 @@ Code:
 
 ```text
 src/klara/capabilities/tools/current_time/
+src/klara/capabilities/tools/image_generate/
 src/klara/capabilities/tools/web_search/
 src/klara/capabilities/tools/web_fetch/
 tests/klara/architecture/test_boundaries.py
@@ -420,6 +433,7 @@ Concrete example:
 
 ```text
 tools/current_time/tool.py  -> CurrentTimeTool
+tools/image_generate/tool.py -> ImageGenerateTool
 tools/web_fetch/tool.py     -> WebFetchTool
 tools/web_search/tool.py    -> WebSearchTool
 ```
@@ -436,7 +450,7 @@ Runtime state changes:
 The current default set is locked by test:
 
 ```python
-assert names == {"current_time", "web_fetch", "web_search"}
+assert names == {"current_time", "image_generate", "web_fetch", "web_search"}
 ```
 
 Takeaway: the registry owns visibility. It is not the executor.

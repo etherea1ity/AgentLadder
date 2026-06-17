@@ -14,7 +14,7 @@ def test_default_registry_discovers_local_tool_packages() -> None:
 
     names = {tool.spec.name for tool in registry.visible_tools()}
 
-    assert names == {"current_time", "web_fetch", "web_search"}
+    assert names == {"current_time", "image_generate", "web_fetch", "web_search"}
 
 
 def test_discovered_local_tools_use_base_template() -> None:

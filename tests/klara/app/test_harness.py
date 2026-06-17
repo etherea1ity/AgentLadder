@@ -107,5 +107,10 @@ def test_harness_defaults_to_default_registry() -> None:
     result = harness.run("hello", run_id="default-registry-run")
 
     assert result.final_answer == "harness final"
-    assert {tool.name for tool in llm.tools} == {"current_time", "web_fetch", "web_search"}
+    assert {tool.name for tool in llm.tools} == {
+        "current_time",
+        "image_generate",
+        "web_fetch",
+        "web_search",
+    }
     assert "Visible tool guidance" not in llm.system_prompt

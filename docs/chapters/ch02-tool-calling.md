@@ -61,6 +61,14 @@ http://127.0.0.1:5123
 
 `web_search` 只负责找到结果；`web_fetch` 才读取某个 URL 的正文。网页内容被标为不可信 observation。
 
+也可以直接试媒体工具：
+
+```text
+请生成一张暖色调的 Klara 书桌插画，并把图片展示在回答里。
+```
+
+你应该看到：Klara 调用 `image_generate`，工具把 Qwen 返回的短期图片 URL 下载成本地资产，然后最终回答用 Markdown 把图片穿插在文字中。
+
 ---
 
 ## 1. 本章改变了什么
@@ -319,6 +327,10 @@ src/klara/capabilities/tools/
     schema.py
     timezones.py
     tool.py
+  image_generate/
+    __init__.py
+    schema.py
+    tool.py
   web_search/
     __init__.py
     schema.py
@@ -340,6 +352,7 @@ src/klara/capabilities/tools/
 
 ```text
 src/klara/capabilities/tools/current_time/
+src/klara/capabilities/tools/image_generate/
 src/klara/capabilities/tools/web_search/
 src/klara/capabilities/tools/web_fetch/
 tests/klara/architecture/test_boundaries.py
@@ -420,6 +433,7 @@ def discover_local_tool_classes() -> tuple[type[BaseTool], ...]:
 
 ```text
 tools/current_time/tool.py  -> CurrentTimeTool
+tools/image_generate/tool.py -> ImageGenerateTool
 tools/web_fetch/tool.py     -> WebFetchTool
 tools/web_search/tool.py    -> WebSearchTool
 ```
@@ -436,7 +450,7 @@ tools/web_search/tool.py    -> WebSearchTool
 当前默认工具由测试锁住：
 
 ```python
-assert names == {"current_time", "web_fetch", "web_search"}
+assert names == {"current_time", "image_generate", "web_fetch", "web_search"}
 ```
 
 读者 takeaway：registry 是“工具可见性”边界，不是执行器。

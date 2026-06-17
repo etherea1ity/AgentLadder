@@ -12,7 +12,12 @@ def test_load_models_config_reads_deepseek_and_qwen() -> None:
     assert models.providers["deepseek"].base_url == "https://api.deepseek.com/v1"
     assert models.providers["deepseek"].api_key_env == "DEEPSEEK_API_KEY"
     assert models.providers["qwen"].base_url == "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    assert models.profile("agent").primary == "deepseek/deepseek-v4-flash"
+    qwen_model = models.providers["qwen"].models[0]
+    assert qwen_model.id == "qwen3.7-plus"
+    assert qwen_model.supports_tools is True
+    assert qwen_model.supports_vision is True
+    assert qwen_model.enable_thinking is False
+    assert models.profile("agent").primary == "qwen/qwen3.7-plus"
 
 
 def test_load_images_config_reads_verified_qwen_image_model() -> None:
@@ -25,7 +30,7 @@ def test_load_images_config_reads_verified_qwen_image_model() -> None:
     assert qwen.api == "dashscope-multimodal-generation"
     assert qwen.api_key_env == "DASHSCOPE_API_KEY"
     assert qwen.endpoint.endswith("/services/aigc/multimodal-generation/generation")
-    assert model.id == "qwen-image-2.0"
+    assert model.id == "qwen-image-2.0-pro"
     assert model.supports_text_to_image is True
     assert model.verified is True
 

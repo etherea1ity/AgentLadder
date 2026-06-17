@@ -8,6 +8,7 @@ import pytest
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.tools import ToolCall, ToolSpec
 from klara.infra.config.models import ProviderConfig
+from klara.infra.config.models import ProviderModel
 from klara.infra.llm.model_ref import ModelRef
 from klara.infra.llm.openai_compatible import (
     LlmProviderError,
@@ -60,6 +61,21 @@ def test_payload_maps_messages_tools_and_tool_results() -> None:
     }
     assert payload["tools"][0]["function"]["name"] == "lookup"
     assert payload["tool_choice"] == "auto"
+
+
+def test_payload_can_disable_qwen_thinking_for_tool_calls() -> None:
+    """Qwen tool calling should be able to opt out of thinking mode."""
+
+    payload = build_chat_completion_payload(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen3.7-plus",
+        settings=OpenAICompatibleSettings(),
+        enable_thinking=False,
+    )
+
+    assert payload["enable_thinking"] is False
 
 
 def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None:
@@ -132,8 +148,7 @@ def test_openai_compatible_client_builds_authenticated_request(monkeypatch) -> N
             api="openai-completions",
             base_url="https://api.deepseek.com/v1",
             api_key_env="DEEPSEEK_API_KEY",
-            models=(),
-            allow_unlisted_models=True,
+            models=(ProviderModel(id="deepseek-v4-flash"),),
         ),
         settings=OpenAICompatibleSettings(timeout_seconds=7, retry_attempts=1),
     )
