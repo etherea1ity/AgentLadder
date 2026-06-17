@@ -23,8 +23,17 @@ export function normalizeMathMarkdown(value: string) {
   return text.replace(/@@AGENT_LADDER_MD_(\d+)@@/g, (_match, index) => placeholders[Number(index)] ?? '');
 }
 
-const LOCAL_IMAGE_URL =
-  /\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg)/gi;
+const LOCAL_IMAGE_URL_SOURCE =
+  '(?:https?:\\/\\/(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::\\d+)?)?\\/api\\/assets\\/local\\?path=data\\/assets\\/images\\/[^\\s)]+?\\.(?:png|jpg|jpeg|webp|gif|svg)';
+const LOCAL_IMAGE_URL = new RegExp(LOCAL_IMAGE_URL_SOURCE, 'gi');
+const MARKDOWN_LOCAL_IMAGE_LINK = new RegExp(
+  `\\[([^\\]\\n]*)\\]\\((${LOCAL_IMAGE_URL_SOURCE})\\)`,
+  'gi',
+);
+const MARKDOWN_LOCAL_IMAGE = new RegExp(
+  `!\\[[^\\]\\n]*\\]\\(${LOCAL_IMAGE_URL_SOURCE}\\)`,
+  'gi',
+);
 
 export function normalizeGeneratedImagesMarkdown(value: string) {
   let text = repairSplitLocalImageUrls(value);
@@ -40,13 +49,23 @@ export function normalizeGeneratedImagesMarkdown(value: string) {
     /!\[([^\]\n]*)\]\((\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg))\)\s*\n+\s*\2/gi,
     (_match, alt, url) => `![${alt || 'Generated image'}](${url})`,
   );
-  return protectExistingMarkdownImages(text, (unprotected) =>
-    unprotected.replace(LOCAL_IMAGE_URL, (url, offset, fullText) => {
+  return protectExistingMarkdownImages(text, (unprotected) => {
+    const linkedImages = unprotected.replace(
+      MARKDOWN_LOCAL_IMAGE_LINK,
+      (_match, label, url) => `![${generatedImageAlt(label)}](${url})`,
+    );
+    return linkedImages.replace(LOCAL_IMAGE_URL, (url, offset, fullText) => {
       const before = fullText.slice(Math.max(0, offset - 3), offset);
       if (before.endsWith('](')) return url;
       return `![Generated image](${url})`;
-    }),
-  );
+    });
+  });
+}
+
+function generatedImageAlt(value: string) {
+  const label = value.trim();
+  if (!label || /^open generated image$/i.test(label)) return 'Generated image';
+  return label;
 }
 
 function repairSplitLocalImageUrls(value: string) {
@@ -92,7 +111,7 @@ function isLocalImageUrlFragment(line: string) {
 }
 
 function isCompleteLocalImageUrl(value: string) {
-  return /^\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg)$/i.test(value);
+  return new RegExp(`^${LOCAL_IMAGE_URL_SOURCE}$`, 'i').test(value);
 }
 
 function protectExistingMarkdownImages(
@@ -101,7 +120,7 @@ function protectExistingMarkdownImages(
 ) {
   const placeholders: string[] = [];
   const protectedText = value.replace(
-    /!\[[^\]\n]*\]\(\/api\/assets\/local\?path=data\/assets\/images\/[^)\n]+\)/gi,
+    MARKDOWN_LOCAL_IMAGE,
     (match) => {
       const index = placeholders.push(match) - 1;
       return `@@KLARA_IMAGE_${index}@@`;

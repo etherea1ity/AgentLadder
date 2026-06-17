@@ -44,6 +44,20 @@ describe('normalizeMathMarkdown', () => {
     expect(output).toBe(`![Generated image](${url})`);
   });
 
+  it('converts generated image markdown links back into images', () => {
+    const url = 'http://127.0.0.1:8011/api/assets/local?path=data/assets/images/20260617/sample.png';
+    const output = normalizeGeneratedImagesMarkdown(`[Open generated image](${url})`);
+
+    expect(output).toBe(`![Generated image](${url})`);
+  });
+
+  it('keeps absolute generated image links out of math normalization', () => {
+    const url = 'http://127.0.0.1:8011/api/assets/local?path=data/assets/images/20260617/sample.png';
+    const output = normalizeMathMarkdown(`[Open generated image](${url})`);
+
+    expect(output).toBe(`![Generated image](${url})`);
+  });
+
   it('repairs local image urls split across tiny lines', () => {
     const output = normalizeGeneratedImagesMarkdown(
       [
