@@ -676,7 +676,7 @@ function ModelPicker({
             }}
           >
             <span>{option.label}</span>
-            <small>{option.model}</small>
+            <small>{option.use_when ?? option.model}</small>
             {option.model === selectedModel ? <Check size={15} /> : null}
           </button>
         ))}

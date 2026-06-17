@@ -27,19 +27,20 @@ DASHSCOPE_API_KEY
 Chat models live in `config/models.toml`:
 
 ```text
-deepseek/deepseek-v4-flash
-deepseek/deepseek-v4-pro
 qwen/qwen-flash
 qwen/qwen3.7-plus
 qwen/qwen3.7-max
 qwen/qwen3.6-plus
+deepseek/deepseek-v4-flash
+deepseek/deepseek-v4-pro
 ```
 
 These are the models that `/api/models` returns to the frontend.
 
-The default `agent` profile is `qwen/qwen-flash`, with Qwen3.7 Plus,
-Qwen3.6 Plus, Qwen3.7 Max, and DeepSeek models available as fallbacks or
-frontend choices. Qwen3.7 Plus remains the configured vision-capable chat model.
+The default `agent` profile is `qwen/qwen-flash`, shown in the UI as
+Qwen 3.7 Flash. Qwen 3.7 Plus, Qwen 3.7 Max, Qwen 3.6 Plus, and DeepSeek
+models remain available as fallbacks or frontend choices. Qwen 3.7 Plus remains
+the configured vision-capable chat model.
 
 ## Image Tool Model
 

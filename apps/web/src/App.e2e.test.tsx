@@ -59,7 +59,8 @@ describe("Klara app flow", () => {
               {
                 id: "qwen/qwen-flash",
                 model: "qwen/qwen-flash",
-                label: "Qwen Flash",
+                label: "Qwen 3.7 Flash",
+                use_when: "qwen provider",
               },
             ],
           });

@@ -11,12 +11,14 @@ const modelOptions: ModelOption[] = [
   {
     id: "qwen/qwen-flash",
     model: "qwen/qwen-flash",
-    label: "Qwen Flash",
+    label: "Qwen 3.7 Flash",
+    use_when: "qwen provider",
   },
   {
     id: "qwen/qwen3.7-max",
     model: "qwen/qwen3.7-max",
-    label: "Qwen3.7 Max",
+    label: "Qwen 3.7 Max",
+    use_when: "qwen provider",
   },
 ];
 
@@ -64,7 +66,7 @@ describe("popover dismissal", () => {
 
     await user.click(pickerSummary);
     expect(picker).toHaveAttribute("open");
-    await user.click(screen.getByRole("button", { name: /Qwen3.7 Max/i }));
+    await user.click(screen.getByRole("button", { name: /Qwen 3.7 Max/i }));
 
     expect(onModelChange).toHaveBeenCalledWith("qwen/qwen3.7-max");
     await waitFor(() => expect(picker).not.toHaveAttribute("open"));

@@ -9,12 +9,14 @@ def test_load_models_config_reads_deepseek_and_qwen() -> None:
 
     models = load_models_config("config")
 
+    assert list(models.providers) == ["qwen", "deepseek"]
     assert models.providers["deepseek"].base_url == "https://api.deepseek.com/v1"
     assert models.providers["deepseek"].api_key_env == "DEEPSEEK_API_KEY"
     assert models.providers["qwen"].base_url == "https://dashscope.aliyuncs.com/compatible-mode/v1"
     qwen_flash = models.providers["qwen"].models[0]
     qwen_plus = models.providers["qwen"].model_entry("qwen3.7-plus")
     assert qwen_flash.id == "qwen-flash"
+    assert qwen_flash.label == "Qwen 3.7 Flash"
     assert qwen_flash.supports_tools is True
     assert qwen_flash.supports_vision is False
     assert qwen_flash.enable_thinking is False
