@@ -1,0 +1,75 @@
+{
+  "paper_id": "paper_032",
+  "title": "LayoutVLM: Differentiable Optimization of 3D Layout via Vision-Language Models",
+  "authors": [
+    "Fan-Yun Sun"
+  ],
+  "year": 2024,
+  "venue": "CVPR 2025",
+  "url": "https://arxiv.org/abs/2412.02193",
+  "pdf_url": "https://arxiv.org/pdf/2412.02193.pdf",
+  "arxiv_id": "2412.02193",
+  "doi": null,
+  "domains": [
+    "3d-spatial-world",
+    "VLM"
+  ],
+  "method_tags": [
+    "3D-layout",
+    "differentiable-optimization",
+    "VLM",
+    "physical-plausibility"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_032.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 199,
+    "visual_count": 117,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_032.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 199,
+      "visual_count": 117,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 19,
+      "total_chars": 75481,
+      "total_words": 11718,
+      "sections_found": 99,
+      "chunks_generated": 199,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

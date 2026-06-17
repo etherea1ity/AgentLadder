@@ -1,3 +1,76 @@
+# 章节三：Agentic RAG，Klara 的受控研究运行时
+> 从固定检索，到受控证据搜索
+
+当前分支：`v0.3-agentic-rag`  
+上一分支：`v0.2-rag-agent`
+
+Chapter 3 把第二章的 fixed retrieve-and-answer RAG 升级为本地版 controlled evidence search runtime。Klara 不做自由 agent loop；runtime 拥有 workflow、budget、failure policy、trace 和 schema validation，worker 只通过 typed contracts 单次输入/输出。
+
+## 如何运行 Chapter 3
+
+```powershell
+# 本地 fixture paper corpus 已在 data/papers/fixtures 中准备好
+py -m agent_ladder.app.cli.main ask-agentic "给我 10 篇 Agentic RAG 相关论文，并按路线分类"
+py -m agent_ladder.app.cli.main ask-agentic "Explain figure aware RAG in Chinese, include figure"
+
+# 真实论文语料（如果已经运行 scripts/ingest/build_paper_corpus.py）
+py -m agent_ladder.app.cli.main ask-agentic "给我 10 篇 Agentic RAG 相关论文，并按路线分类" --paper-root data/papers
+```
+
+输出包含：Question、Answer、Sources、Visual Sources、route、run_mode、search_units、retrieval_attempts、evidence_items、verification status、latency_ms、trace_saved。
+
+## Chapter 3 前后端真实联调
+
+```powershell
+# 后端
+.\.venv-win\Scripts\python.exe -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8000
+
+# 前端
+cd apps\web
+npm run dev -- --host 127.0.0.1 --port 5123
+```
+
+打开：
+
+```text
+http://127.0.0.1:5123
+```
+
+页面会调用真实 API `POST /api/runs`，显示 answer、sources、citations、visual sources、run info、search plan、retrieval attempts、EvidencePack summary 和 trace path。Visual source 如果有真实图片会走 `/api/assets/local?path=...` 安全预览；如果只有 caption/text placeholder，会显示 caption card，不伪造图片。
+
+## 本章新增
+
+- RequestSpec / LanguagePlan / AnswerRequirement
+- EvidenceSearchPlan with search units and budgets
+- SearchProvider / FetchProvider abstraction
+- PaperCorpus fixture interface
+- Multi-path retrieval + RRF fusion + paper-level dedup + diversity rerank
+- Figure-aware caption retrieval
+- EvidencePack writer boundary
+- AnswerFrameV2
+- Citation/Evidence/Visual/Language verification
+- DecisionRecord trace for later Eval/RL
+
+## Chapter 3 文档
+
+- `docs/architecture/ch03-discovery-report.md`
+- `docs/architecture/ch03-agentic-rag-architecture.md`
+- `docs/chapters/ch03-agentic-rag.md`
+- `docs/labs/ch03-multimodal-rag-labs.md`
+- `docs/freezes/v0.3-agentic-rag-freeze.md`
+- `docs/reports/ch03-fullstack-smoke-report.md`
+- `docs/reports/ch03-visual-rag-ui-report.md`
+
+## 测试
+
+```powershell
+py -m pytest -q
+```
+
+---
+
+## Chapter 2 Archive
+
 # 章节二：RAG Agent，克拉拉的阳光图书馆
 > 从模型本身能力，到可检索、可引用、可追踪的本地知识系统
 

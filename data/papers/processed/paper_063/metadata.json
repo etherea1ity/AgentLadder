@@ -1,0 +1,47 @@
+{
+  "paper_id": "paper_063",
+  "title": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning",
+  "authors": [
+    "DeepSeek-AI"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2501.12948",
+  "pdf_url": "https://arxiv.org/pdf/2501.12948.pdf",
+  "arxiv_id": "2501.12948",
+  "doi": null,
+  "domains": [
+    "llm",
+    "reasoning",
+    "rl"
+  ],
+  "method_tags": [
+    "DeepSeek-R1",
+    "chain-of-thought",
+    "RL",
+    "reasoning"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_063.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2501.12948",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

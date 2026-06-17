@@ -1,0 +1,53 @@
+{
+  "paper_id": "paper_072",
+  "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+  "authors": [
+    "Vladimir Karpukhin",
+    "Barlas Oguz",
+    "Sewon Min",
+    "Patrick Lewis",
+    "Ledell Wu",
+    "Sergey Edunov",
+    "Danqi Chen",
+    "Wen-tau Yih"
+  ],
+  "year": 2020,
+  "venue": "EMNLP 2020",
+  "url": "https://arxiv.org/abs/2004.04906",
+  "pdf_url": "https://arxiv.org/pdf/2004.04906.pdf",
+  "arxiv_id": "2004.04906",
+  "doi": null,
+  "domains": [
+    "retrieval",
+    "dense-retrieval",
+    "qa"
+  ],
+  "method_tags": [
+    "DPR",
+    "dense-passage-retrieval",
+    "dual-encoder"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_072.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2004.04906",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

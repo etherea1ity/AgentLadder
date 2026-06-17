@@ -1,0 +1,43 @@
+{
+  "paper_id": "paper_090",
+  "title": "Beyond the Imitation Game: Quantifying and Extrapolating the Capabilities of Language Models (BIG-Bench)",
+  "authors": [
+    "BIG-Bench collaboration"
+  ],
+  "year": 2022,
+  "venue": "TMLR 2023",
+  "url": "https://arxiv.org/abs/2206.04615",
+  "pdf_url": "https://arxiv.org/pdf/2206.04615.pdf",
+  "arxiv_id": "2206.04615",
+  "doi": null,
+  "domains": [
+    "eval",
+    "benchmark"
+  ],
+  "method_tags": [
+    "BIG-Bench",
+    "large-scale",
+    "capability"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_090.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2206.04615",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

@@ -2521,7 +2521,7 @@ body,
   }
 }
 
-/* v0.2 compact reading pass: narrower history rail and slightly smaller chat text. */
+/* Compact reading pass: narrower history rail and slightly smaller chat text. */
 :root {
   --sidebar-w: 252px;
   --message-w: 640px;
@@ -2542,4 +2542,97 @@ body,
   .conversation-turn .assistant-content {
     font-size: 17px;
   }
+}
+
+.agentic-run-summary {
+  border: 1px solid rgba(95, 123, 98, 0.18);
+  border-radius: 22px;
+  background: rgba(224, 236, 217, 0.28);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+.agentic-run-summary header small {
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.agentic-run-summary header h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+  color: var(--accent-ink);
+}
+.agentic-run-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.agentic-run-metrics div {
+  border: 1px solid rgba(221, 209, 189, 0.66);
+  border-radius: 14px;
+  padding: 9px;
+  background: rgba(255, 253, 248, 0.58);
+}
+.agentic-run-metrics dt {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.agentic-run-metrics dd {
+  margin: 4px 0 0;
+  font-weight: 680;
+  color: var(--text-primary);
+}
+.agentic-run-cards {
+  display: grid;
+  gap: 8px;
+}
+.agentic-run-cards strong {
+  color: var(--accent-ink);
+  font-size: 13px;
+}
+.agentic-run-cards article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  border-top: 1px solid rgba(221, 209, 189, 0.6);
+  padding-top: 8px;
+}
+.agentic-run-cards article span {
+  align-self: start;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.72);
+  color: var(--accent-ink);
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.agentic-run-cards article b {
+  display: block;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.agentic-run-cards article p {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.42;
+}
+
+.visual-source-cards img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.4);
+  margin: 0.45rem 0;
+}
+
+.visual-source-cards small {
+  display: block;
+  color: rgba(226, 232, 240, 0.55);
+  overflow-wrap: anywhere;
 }

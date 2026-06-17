@@ -1,0 +1,51 @@
+{
+  "paper_id": "paper_070",
+  "title": "Reflexion: Language Agents with Verbal Reinforcement Learning",
+  "authors": [
+    "Noah Shinn",
+    "Federico Cassano",
+    "Ashwin Gopinath",
+    "Karthik Narasimhan",
+    "Shunyu Yao"
+  ],
+  "year": 2023,
+  "venue": "NeurIPS 2023",
+  "url": "https://arxiv.org/abs/2303.11366",
+  "pdf_url": "https://arxiv.org/pdf/2303.11366.pdf",
+  "arxiv_id": "2303.11366",
+  "doi": null,
+  "domains": [
+    "reasoning",
+    "reflection",
+    "rl"
+  ],
+  "method_tags": [
+    "Reflexion",
+    "verbal-RL",
+    "self-reflection",
+    "agent"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_070.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2303.11366",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

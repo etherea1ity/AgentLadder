@@ -1,0 +1,55 @@
+{
+  "paper_id": "paper_114",
+  "title": "Let's Verify Step by Step (Process Reward Models)",
+  "authors": [
+    "Hunter Lightman",
+    "Vineet Kosaraju",
+    "Yura Burda",
+    "Harri Edwards",
+    "Bowen Baker",
+    "Teddy Lee",
+    "Jan Leike",
+    "John Schulman",
+    "Ilya Sutskever",
+    "Karl Cobbe"
+  ],
+  "year": 2023,
+  "venue": "ICLR 2024",
+  "url": "https://arxiv.org/abs/2305.20050",
+  "pdf_url": "https://arxiv.org/pdf/2305.20050.pdf",
+  "arxiv_id": "2305.20050",
+  "doi": null,
+  "domains": [
+    "rl",
+    "reasoning",
+    "verification"
+  ],
+  "method_tags": [
+    "PRM",
+    "process-reward-model",
+    "step-level-verification"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_114.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2305.20050",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

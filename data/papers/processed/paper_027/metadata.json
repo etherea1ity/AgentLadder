@@ -1,0 +1,75 @@
+{
+  "paper_id": "paper_027",
+  "title": "Web Agents with World Models: Learning and Leveraging Environment Dynamics in Web Navigation",
+  "authors": [
+    "Hyungjoo Chae"
+  ],
+  "year": 2024,
+  "venue": "ICLR 2025",
+  "url": "https://arxiv.org/abs/2410.13232",
+  "pdf_url": "https://arxiv.org/pdf/2410.13232.pdf",
+  "arxiv_id": "2410.13232",
+  "doi": null,
+  "domains": [
+    "world-models",
+    "web-agents"
+  ],
+  "method_tags": [
+    "world-model-augmented",
+    "transition-prediction",
+    "web-navigation",
+    "action-outcome-simulation"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_027.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 155,
+    "visual_count": 16,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_027.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 155,
+      "visual_count": 16,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 32,
+      "total_chars": 97511,
+      "total_words": 15249,
+      "sections_found": 81,
+      "chunks_generated": 155,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_103",
+  "title": "3D Gaussian Splatting for Real-Time Radiance Field Rendering",
+  "authors": [
+    "Bernhard Kerbl",
+    "Georgios Kopanas",
+    "Thomas Leimkuhler",
+    "George Drettakis"
+  ],
+  "year": 2023,
+  "venue": "SIGGRAPH 2023",
+  "url": "https://arxiv.org/abs/2308.04079",
+  "pdf_url": "https://arxiv.org/pdf/2308.04079.pdf",
+  "arxiv_id": "2308.04079",
+  "doi": null,
+  "domains": [
+    "3d-spatial-world",
+    "rendering",
+    "real-time"
+  ],
+  "method_tags": [
+    "3DGS",
+    "gaussian-splatting",
+    "real-time-rendering"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_103.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2308.04079",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

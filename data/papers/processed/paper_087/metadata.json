@@ -1,0 +1,46 @@
+{
+  "paper_id": "paper_087",
+  "title": "WebShop: Towards Scalable Real-World Web Interaction with Grounded Language Agents",
+  "authors": [
+    "Shunyu Yao",
+    "Howard Chen",
+    "John Yang",
+    "Karthik Narasimhan"
+  ],
+  "year": 2022,
+  "venue": "NeurIPS 2022",
+  "url": "https://arxiv.org/abs/2207.01206",
+  "pdf_url": "https://arxiv.org/pdf/2207.01206.pdf",
+  "arxiv_id": "2207.01206",
+  "doi": null,
+  "domains": [
+    "tool-use",
+    "web-agents"
+  ],
+  "method_tags": [
+    "WebShop",
+    "web-interaction",
+    "grounded-agent"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_087.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2207.01206",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "paper_id": "paper_112",
+  "title": "Constitutional AI: Harmlessness from AI Feedback",
+  "authors": [
+    "Yuntao Bai",
+    "Saurav Kadavath",
+    "Sandipan Kundu",
+    "Amanda Askell",
+    "Jackson Kernion",
+    "Andy Jones",
+    "Anna Chen",
+    "Anna Goldie",
+    "Azalia Mirhoseini",
+    "Cameron McKinnon"
+  ],
+  "year": 2022,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2212.08073",
+  "pdf_url": "https://arxiv.org/pdf/2212.08073.pdf",
+  "arxiv_id": "2212.08073",
+  "doi": null,
+  "domains": [
+    "rl",
+    "alignment",
+    "safety"
+  ],
+  "method_tags": [
+    "Constitutional-AI",
+    "RLHF",
+    "harmlessness",
+    "AI-feedback"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_112.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2212.08073",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

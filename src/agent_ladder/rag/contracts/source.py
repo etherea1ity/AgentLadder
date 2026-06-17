@@ -13,6 +13,13 @@ class SourceCard(BaseModel):
     version: str | None = None
     summary: str | None = None
     used_chunk_ids: list[str] = Field(default_factory=list)
+    source_type: str = "markdown"
+    paper_id: str | None = None
+    page: int | None = None
+    asset_path: str | None = None
+    source_domain: str | None = None
+    evidence_role: str | None = None
+    metadata: dict = Field(default_factory=dict)
 
 
 class Citation(BaseModel):

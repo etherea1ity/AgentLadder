@@ -96,7 +96,7 @@ export function ChatWorkspace(props: Props) {
             onTypingPulse={pulseTyping}
           />
           <small className="home-hint">
-            v0.2 RAG Agent <span>·</span> Route → Retrieve → Rerank → Write
+            v0.3 Agentic RAG <span>·</span> Normalize → Plan → Search → Verify
           </small>
         </section>
       ) : (
@@ -146,7 +146,7 @@ function TopPath({
   return (
     <div className={`top-path ${compact ? "is-compact" : ""}`}>
       <GitBranch size={compact ? 17 : 0} className="path-branch" />
-      <span>learn/v0.2-rag-agent</span>
+      <span>learn/v0.3-agentic-rag</span>
       {compact ? (
         <div className="top-actions">
           <button
@@ -657,7 +657,7 @@ async function copyText(value: string) {
   await navigator.clipboard?.writeText(value);
 }
 
-const FEEDBACK_STORAGE_PREFIX = "agent_ladder_v01_feedback_";
+const FEEDBACK_STORAGE_PREFIX = "agent_ladder_v03_feedback_";
 function readFeedback(messageId: string): "up" | "down" | null {
   try {
     const value = window.localStorage.getItem(

@@ -1,0 +1,77 @@
+{
+  "paper_id": "paper_005",
+  "title": "Agentic Large Language Models, a Survey",
+  "authors": [
+    "Aske Plaat",
+    "Max van Duijn",
+    "Niki van Stein"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2503.23037",
+  "pdf_url": "https://arxiv.org/pdf/2503.23037.pdf",
+  "arxiv_id": "2503.23037",
+  "doi": null,
+  "domains": [
+    "agent-basic-paradigms",
+    "survey"
+  ],
+  "method_tags": [
+    "survey",
+    "reasoning-acting-interacting",
+    "multi-agent",
+    "data-flywheel"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_005.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 434,
+    "visual_count": 30,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_005.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 434,
+      "visual_count": 30,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 76,
+      "total_chars": 271674,
+      "total_words": 39442,
+      "sections_found": 178,
+      "chunks_generated": 434,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

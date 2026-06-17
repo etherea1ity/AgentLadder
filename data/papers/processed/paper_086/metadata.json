@@ -1,0 +1,50 @@
+{
+  "paper_id": "paper_086",
+  "title": "Mind2Web: Towards a Generalist Agent for the Web",
+  "authors": [
+    "Xiang Deng",
+    "Yu Gu",
+    "Boyuan Zheng",
+    "Shijie Chen",
+    "Samuel Stevens",
+    "Boshen Wang",
+    "Huan Sun",
+    "Yu Su"
+  ],
+  "year": 2023,
+  "venue": "NeurIPS 2023",
+  "url": "https://arxiv.org/abs/2306.06070",
+  "pdf_url": "https://arxiv.org/pdf/2306.06070.pdf",
+  "arxiv_id": "2306.06070",
+  "doi": null,
+  "domains": [
+    "tool-use",
+    "web-agents"
+  ],
+  "method_tags": [
+    "Mind2Web",
+    "web-navigation",
+    "generalist-agent"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_086.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2306.06070",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

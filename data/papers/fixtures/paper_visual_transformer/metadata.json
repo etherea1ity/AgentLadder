@@ -1,0 +1,10 @@
+{
+  "paper_id": "paper_visual_transformer",
+  "title": "RAG-Anything: All-in-One RAG Framework for Multimodal Documents",
+  "authors": ["Fixture Author"],
+  "year": 2025,
+  "venue": "FixtureConf",
+  "domain": "multimodal_rag",
+  "method_tags": ["multimodal", "figure", "table", "document-rag"],
+  "abstract": "A fixture paper about multimodal document RAG with visual elements."
+}

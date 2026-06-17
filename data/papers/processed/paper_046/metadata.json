@@ -1,0 +1,46 @@
+{
+  "paper_id": "paper_046",
+  "title": "Dropout: A Simple Way to Prevent Neural Networks from Overfitting",
+  "authors": [
+    "Nitish Srivastava",
+    "Geoffrey Hinton",
+    "Alex Krizhevsky",
+    "Ilya Sutskever",
+    "Ruslan Salakhutdinov"
+  ],
+  "year": 2014,
+  "venue": "JMLR 2014",
+  "url": "https://jmlr.org/papers/v15/srivastava14a.html",
+  "pdf_url": "Unknown",
+  "arxiv_id": null,
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "regularization"
+  ],
+  "method_tags": [
+    "Dropout",
+    "regularization"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_046.pdf",
+  "access_status": "unknown",
+  "access_note": "Open-access status to be verified",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "paper_id": "paper_042",
+  "title": "Very Deep Convolutional Networks for Large-Scale Image Recognition",
+  "authors": [
+    "Karen Simonyan",
+    "Andrew Zisserman"
+  ],
+  "year": 2014,
+  "venue": "ICLR 2015",
+  "url": "https://arxiv.org/abs/1409.1556",
+  "pdf_url": "https://arxiv.org/pdf/1409.1556.pdf",
+  "arxiv_id": "1409.1556",
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "cnn",
+    "vision"
+  ],
+  "method_tags": [
+    "VGG",
+    "deep-network"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_042.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1409.1556",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

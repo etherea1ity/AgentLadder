@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_060",
+  "title": "Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity",
+  "authors": [
+    "William Fedus",
+    "Barret Zoph",
+    "Noam Shazeer"
+  ],
+  "year": 2021,
+  "venue": "JMLR 2022",
+  "url": "https://arxiv.org/abs/2101.03961",
+  "pdf_url": "https://arxiv.org/pdf/2101.03961.pdf",
+  "arxiv_id": "2101.03961",
+  "doi": null,
+  "domains": [
+    "llm",
+    "moe",
+    "sparse"
+  ],
+  "method_tags": [
+    "MoE",
+    "Switch-Transformer",
+    "sparsity",
+    "mixture-of-experts"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_060.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2101.03961",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

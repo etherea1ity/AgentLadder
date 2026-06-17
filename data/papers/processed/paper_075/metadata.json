@@ -1,0 +1,52 @@
+{
+  "paper_id": "paper_075",
+  "title": "Unsupervised Dense Information Retrieval with Contrastive Learning (Contriever)",
+  "authors": [
+    "Gautier Izacard",
+    "Mathilde Caron",
+    "Lucas Hosseini",
+    "Sebastian Riedel",
+    "Piotr Bojanowski",
+    "Armand Joulin",
+    "Edouard Grave"
+  ],
+  "year": 2021,
+  "venue": "TMLR 2022",
+  "url": "https://arxiv.org/abs/2112.09118",
+  "pdf_url": "https://arxiv.org/pdf/2112.09118.pdf",
+  "arxiv_id": "2112.09118",
+  "doi": null,
+  "domains": [
+    "retrieval",
+    "contrastive-learning"
+  ],
+  "method_tags": [
+    "Contriever",
+    "unsupervised",
+    "contrastive",
+    "dense-retrieval"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_075.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2112.09118",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

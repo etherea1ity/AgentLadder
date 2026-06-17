@@ -1,0 +1,83 @@
+{
+  "paper_id": "paper_013",
+  "title": "From Local to Global: A Graph RAG Approach to Query-Focused Summarization",
+  "authors": [
+    "Darren Edge",
+    "Ha Trinh",
+    "Newman Cheng",
+    "Joshua Bradley",
+    "Alex Chao",
+    "Apurva Mody",
+    "Steven Truitt",
+    "Jonathan Larson"
+  ],
+  "year": 2024,
+  "venue": "Microsoft Research",
+  "url": "https://arxiv.org/abs/2404.16130",
+  "pdf_url": "https://arxiv.org/pdf/2404.16130.pdf",
+  "arxiv_id": "2404.16130",
+  "doi": null,
+  "domains": [
+    "agentic-rag",
+    "knowledge-graph"
+  ],
+  "method_tags": [
+    "graph-RAG",
+    "knowledge-graph",
+    "Leiden-community-detection",
+    "hierarchical-summarization",
+    "global-query"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_013.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 160,
+    "visual_count": 2,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_013.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 160,
+      "visual_count": 2,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 26,
+      "total_chars": 89583,
+      "total_words": 13724,
+      "sections_found": 76,
+      "chunks_generated": 160,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

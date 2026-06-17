@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_052",
+  "title": "Language Models are Unsupervised Multitask Learners (GPT-2)",
+  "authors": [
+    "Alec Radford",
+    "Jeffrey Wu",
+    "Rewon Child",
+    "David Luan",
+    "Dario Amodei",
+    "Ilya Sutskever"
+  ],
+  "year": 2019,
+  "venue": "OpenAI",
+  "url": "https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf",
+  "pdf_url": "Unknown",
+  "arxiv_id": null,
+  "doi": null,
+  "domains": [
+    "llm",
+    "transformer",
+    "nlp"
+  ],
+  "method_tags": [
+    "GPT-2",
+    "zero-shot",
+    "scaling"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_052.pdf",
+  "access_status": "unknown",
+  "access_note": "Open-access status to be verified",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

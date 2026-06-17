@@ -1,0 +1,46 @@
+{
+  "paper_id": "paper_041",
+  "title": "ImageNet Classification with Deep Convolutional Neural Networks",
+  "authors": [
+    "Alex Krizhevsky",
+    "Ilya Sutskever",
+    "Geoffrey Hinton"
+  ],
+  "year": 2012,
+  "venue": "NeurIPS 2012",
+  "url": "https://papers.nips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html",
+  "pdf_url": "Unknown",
+  "arxiv_id": null,
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "cnn",
+    "vision"
+  ],
+  "method_tags": [
+    "AlexNet",
+    "ImageNet",
+    "CNN"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_041.pdf",
+  "access_status": "unknown",
+  "access_note": "Open-access status to be verified",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

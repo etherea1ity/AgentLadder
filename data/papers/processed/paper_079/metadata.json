@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_079",
+  "title": "LightRAG: Simple and Fast Retrieval-Augmented Generation",
+  "authors": [
+    "Zirui Guo",
+    "Lianghao Xia",
+    "Zhao Li",
+    "Hongzhi Yin"
+  ],
+  "year": 2024,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2410.05779",
+  "pdf_url": "https://arxiv.org/pdf/2410.05779.pdf",
+  "arxiv_id": "2410.05779",
+  "doi": null,
+  "domains": [
+    "retrieval",
+    "rag",
+    "graph"
+  ],
+  "method_tags": [
+    "LightRAG",
+    "graph-RAG",
+    "lightweight"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_079.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2410.05779",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

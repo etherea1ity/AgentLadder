@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_076",
+  "title": "Atlas: Few-shot Learning with Retrieval Augmented Models",
+  "authors": [
+    "Gautier Izacard",
+    "Patrick Lewis",
+    "Edouard Grave",
+    "Sebastian Riedel",
+    "Armand Joulin",
+    "Jason Weston"
+  ],
+  "year": 2022,
+  "venue": "JMLR 2023",
+  "url": "https://arxiv.org/abs/2208.03299",
+  "pdf_url": "https://arxiv.org/pdf/2208.03299.pdf",
+  "arxiv_id": "2208.03299",
+  "doi": null,
+  "domains": [
+    "retrieval",
+    "few-shot",
+    "rag"
+  ],
+  "method_tags": [
+    "Atlas",
+    "few-shot",
+    "retrieval-augmented"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_076.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2208.03299",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

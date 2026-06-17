@@ -1,0 +1,76 @@
+{
+  "paper_id": "paper_033",
+  "title": "Scene-LLM: Extending Language Model for 3D Visual Understanding and Reasoning",
+  "authors": [
+    "Rao Fu"
+  ],
+  "year": 2024,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2403.11401",
+  "pdf_url": "https://arxiv.org/pdf/2403.11401.pdf",
+  "arxiv_id": "2403.11401",
+  "doi": null,
+  "domains": [
+    "3d-spatial-world",
+    "VLM"
+  ],
+  "method_tags": [
+    "3D-VLM",
+    "scene-understanding",
+    "voxel-grid",
+    "ego-centric",
+    "3D-planning"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_033.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 118,
+    "visual_count": 57,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_033.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 118,
+      "visual_count": 57,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 29,
+      "total_chars": 78113,
+      "total_words": 11864,
+      "sections_found": 54,
+      "chunks_generated": 118,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

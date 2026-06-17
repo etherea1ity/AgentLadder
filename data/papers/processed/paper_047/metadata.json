@@ -1,0 +1,48 @@
+{
+  "paper_id": "paper_047",
+  "title": "Sequence to Sequence Learning with Neural Networks",
+  "authors": [
+    "Ilya Sutskever",
+    "Oriol Vinyals",
+    "Quoc V. Le"
+  ],
+  "year": 2014,
+  "venue": "NeurIPS 2014",
+  "url": "https://arxiv.org/abs/1409.3215",
+  "pdf_url": "https://arxiv.org/pdf/1409.3215.pdf",
+  "arxiv_id": "1409.3215",
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "nlp",
+    "sequence"
+  ],
+  "method_tags": [
+    "Seq2Seq",
+    "LSTM",
+    "machine-translation"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_047.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1409.3215",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

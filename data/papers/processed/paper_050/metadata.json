@@ -1,0 +1,57 @@
+{
+  "paper_id": "paper_050",
+  "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+  "authors": [
+    "Alexey Dosovitskiy",
+    "Lucas Beyer",
+    "Alexander Kolesnikov",
+    "Dirk Weissenborn",
+    "Xiaohua Zhai",
+    "Thomas Unterthiner",
+    "Mostafa Dehghani",
+    "Matthias Minderer",
+    "Georg Heigold",
+    "Sylvain Gelly",
+    "Jakob Uszkoreit",
+    "Neil Houlsby"
+  ],
+  "year": 2020,
+  "venue": "ICLR 2021",
+  "url": "https://arxiv.org/abs/2010.11929",
+  "pdf_url": "https://arxiv.org/pdf/2010.11929.pdf",
+  "arxiv_id": "2010.11929",
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "vision",
+    "transformer"
+  ],
+  "method_tags": [
+    "ViT",
+    "vision-transformer",
+    "image-classification"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_050.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2010.11929",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "paper_id": "paper_051",
+  "title": "Improving Language Understanding by Generative Pre-Training (GPT)",
+  "authors": [
+    "Alec Radford",
+    "Karthik Narasimhan",
+    "Tim Salimans",
+    "Ilya Sutskever"
+  ],
+  "year": 2018,
+  "venue": "OpenAI",
+  "url": "https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf",
+  "pdf_url": "Unknown",
+  "arxiv_id": null,
+  "doi": null,
+  "domains": [
+    "llm",
+    "transformer",
+    "nlp"
+  ],
+  "method_tags": [
+    "GPT",
+    "generative-pre-training",
+    "language-model"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_051.pdf",
+  "access_status": "unknown",
+  "access_note": "Open-access status to be verified",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

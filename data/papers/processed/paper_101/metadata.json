@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_101",
+  "title": "PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation",
+  "authors": [
+    "Charles R. Qi",
+    "Hao Su",
+    "Kaichun Mo",
+    "Leonidas J. Guibas"
+  ],
+  "year": 2017,
+  "venue": "CVPR 2017",
+  "url": "https://arxiv.org/abs/1612.00593",
+  "pdf_url": "https://arxiv.org/pdf/1612.00593.pdf",
+  "arxiv_id": "1612.00593",
+  "doi": null,
+  "domains": [
+    "3d-spatial-world",
+    "point-cloud",
+    "deep-learning"
+  ],
+  "method_tags": [
+    "PointNet",
+    "point-cloud",
+    "3D-classification"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_101.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1612.00593",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

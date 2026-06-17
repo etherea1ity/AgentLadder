@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_108",
+  "title": "Visual Instruction Tuning (LLaVA)",
+  "authors": [
+    "Haotian Liu",
+    "Chunyuan Li",
+    "Qingyang Wu",
+    "Yong Jae Lee"
+  ],
+  "year": 2023,
+  "venue": "NeurIPS 2023",
+  "url": "https://arxiv.org/abs/2304.08485",
+  "pdf_url": "https://arxiv.org/pdf/2304.08485.pdf",
+  "arxiv_id": "2304.08485",
+  "doi": null,
+  "domains": [
+    "multimodal",
+    "vlm",
+    "instruction-tuning"
+  ],
+  "method_tags": [
+    "LLaVA",
+    "visual-instruction",
+    "multimodal-conversation"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_108.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2304.08485",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

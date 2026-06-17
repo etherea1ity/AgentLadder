@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_077",
+  "title": "Precise Zero-Shot Dense Retrieval without Relevance Labels (HyDE)",
+  "authors": [
+    "Luyu Gao",
+    "Xueguang Ma",
+    "Jimmy Lin",
+    "Jamie Callan"
+  ],
+  "year": 2022,
+  "venue": "ACL 2023",
+  "url": "https://arxiv.org/abs/2212.10496",
+  "pdf_url": "https://arxiv.org/pdf/2212.10496.pdf",
+  "arxiv_id": "2212.10496",
+  "doi": null,
+  "domains": [
+    "retrieval",
+    "dense-retrieval",
+    "zero-shot"
+  ],
+  "method_tags": [
+    "HyDE",
+    "hypothetical-document",
+    "zero-shot"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_077.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2212.10496",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

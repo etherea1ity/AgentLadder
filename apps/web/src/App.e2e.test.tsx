@@ -27,7 +27,7 @@ class MockEventSource {
 const now = new Date().toISOString();
 const session = {
   session_id: "sess_1",
-  title: "What is an AI Agent?",
+  title: "tell me about react",
   created_at: now,
   updated_at: now,
   message_ids: [],
@@ -55,7 +55,7 @@ const completedMessages = [
     message_id: "msg_u",
     session_id: "sess_1",
     role: "user",
-    content: "What is an AI Agent?",
+    content: "tell me about react",
     status: "completed",
     created_at: now,
   },
@@ -63,7 +63,7 @@ const completedMessages = [
     message_id: "msg_a",
     session_id: "sess_1",
     role: "assistant",
-    content: "An AI Agent is a system that answers.",
+    content: "I’m Klara. Core paper: ReAct: Synergizing Reasoning and Acting in Language Models.",
     run_id: "run_1",
     status: "completed",
     created_at: now,
@@ -155,14 +155,14 @@ describe("App e2e flow", () => {
     sessionsVisible = true;
     render(<App />);
     await waitFor(() =>
-      expect(screen.getByTitle("What is an AI Agent?")).toBeInTheDocument(),
+      expect(screen.getByTitle("tell me about react")).toBeInTheDocument(),
     );
     expect(
       screen.getByPlaceholderText("Ask your first question..."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
     expect(
-      screen.queryByText("An AI Agent is a system that answers."),
+      screen.queryByText("I’m Klara. Core paper: ReAct: Synergizing Reasoning and Acting in Language Models."),
     ).not.toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalledWith(
       "/api/sessions/sess_1",
@@ -176,7 +176,7 @@ describe("App e2e flow", () => {
     failFirstSessionsList = true;
     render(<App />);
     await waitFor(() =>
-      expect(screen.getByTitle("What is an AI Agent?")).toBeInTheDocument(),
+      expect(screen.getByTitle("tell me about react")).toBeInTheDocument(),
     );
     expect(
       screen.getByPlaceholderText("Ask your first question..."),
@@ -188,7 +188,7 @@ describe("App e2e flow", () => {
     render(<App />);
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
-      "What is an AI Agent?",
+      "tell me about react",
     );
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
@@ -203,7 +203,7 @@ describe("App e2e flow", () => {
     );
     source.emit(
       "answer_delta",
-      evt("answer_delta", "", { delta: "An AI Agent is ", streamed_chars: 15 }),
+      evt("answer_delta", "", { delta: "I’m Klara. Core paper: ReAct ", streamed_chars: 15 }),
     );
     source.emit(
       "run_completed",
@@ -215,7 +215,7 @@ describe("App e2e flow", () => {
         total_tokens: 30,
       }),
     );
-    expect(await screen.findByText(/An AI Agent is/)).toBeInTheDocument();
+    expect(await screen.findByText(/I’m Klara/)).toBeInTheDocument();
     await userEvent.click(
       screen.getByRole("button", { name: /open run trace/i }),
     );
@@ -240,7 +240,7 @@ describe("App e2e flow", () => {
     render(<App />);
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
-      "What is an AI Agent?",
+      "tell me about react",
     );
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
@@ -266,16 +266,16 @@ describe("App e2e flow", () => {
     render(<App />);
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
-      "What is an AI Agent?",
+      "tell me about react",
     );
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() =>
       expect(
-        screen.getAllByText("What is an AI Agent?").length,
+        screen.getAllByText("tell me about react").length,
       ).toBeGreaterThan(0),
     );
     const sidebarItem = screen
-      .getByTitle("What is an AI Agent?")
+      .getByTitle("tell me about react")
       .closest(".conversation-item") as HTMLElement;
     await userEvent.click(
       within(sidebarItem).getByLabelText("Conversation actions"),
@@ -304,7 +304,7 @@ describe("App e2e flow", () => {
     render(<App />);
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
-      "What is an AI Agent?",
+      "tell me about react",
     );
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
@@ -354,7 +354,7 @@ describe("App e2e flow", () => {
     );
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
-      "What is an AI Agent?",
+      "tell me about react",
     );
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() =>

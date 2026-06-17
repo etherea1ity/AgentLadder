@@ -1,0 +1,76 @@
+{
+  "paper_id": "paper_026",
+  "title": "WALL-E: World Alignment by Rule Learning Improves World Model-based LLM Agents",
+  "authors": [
+    "Siyu Zhou"
+  ],
+  "year": 2024,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2410.07484",
+  "pdf_url": "https://arxiv.org/pdf/2410.07484.pdf",
+  "arxiv_id": "2410.07484",
+  "doi": null,
+  "domains": [
+    "world-models",
+    "embodied"
+  ],
+  "method_tags": [
+    "world-model",
+    "rule-learning",
+    "neuro-symbolic",
+    "MPC",
+    "model-predictive-control"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_026.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 170,
+    "visual_count": 5,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_026.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 170,
+      "visual_count": 5,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 35,
+      "total_chars": 92088,
+      "total_words": 13959,
+      "sections_found": 82,
+      "chunks_generated": 170,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

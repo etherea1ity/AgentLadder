@@ -1,0 +1,58 @@
+{
+  "paper_id": "paper_104",
+  "title": "Learning Transferable Visual Models From Natural Language Supervision (CLIP)",
+  "authors": [
+    "Alec Radford",
+    "Jong Wook Kim",
+    "Chris Hallacy",
+    "Aditya Ramesh",
+    "Gabriel Goh",
+    "Sandhini Agarwal",
+    "Girish Sastry",
+    "Amanda Askell",
+    "Pamela Mishkin",
+    "Jack Clark",
+    "Gretchen Krueger",
+    "Ilya Sutskever"
+  ],
+  "year": 2021,
+  "venue": "ICML 2021",
+  "url": "https://arxiv.org/abs/2103.00020",
+  "pdf_url": "https://arxiv.org/pdf/2103.00020.pdf",
+  "arxiv_id": "2103.00020",
+  "doi": null,
+  "domains": [
+    "multimodal",
+    "vlm",
+    "vision-language"
+  ],
+  "method_tags": [
+    "CLIP",
+    "zero-shot",
+    "contrastive",
+    "vision-language"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_104.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2103.00020",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

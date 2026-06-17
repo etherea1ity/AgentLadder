@@ -1,0 +1,10 @@
+{
+  "paper_id": "paper_world_model",
+  "title": "DreamerV3: Mastering Diverse Domains through World Models",
+  "authors": ["Danijar Hafner", "Jurgis Pasukonis", "Jimmy Ba"],
+  "year": 2023,
+  "venue": "arXiv",
+  "domain": "world_model",
+  "method_tags": ["world-model", "reinforcement-learning", "planning"],
+  "abstract": "A fixture paper about learning compact world models for decision making."
+}

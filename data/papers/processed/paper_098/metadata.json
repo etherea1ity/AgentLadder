@@ -1,0 +1,50 @@
+{
+  "paper_id": "paper_098",
+  "title": "High-Resolution Image Synthesis with Latent Diffusion Models",
+  "authors": [
+    "Robin Rombach",
+    "Andreas Blattmann",
+    "Dominik Lorenz",
+    "Patrick Esser",
+    "Bjorn Ommer"
+  ],
+  "year": 2022,
+  "venue": "CVPR 2022",
+  "url": "https://arxiv.org/abs/2112.10752",
+  "pdf_url": "https://arxiv.org/pdf/2112.10752.pdf",
+  "arxiv_id": "2112.10752",
+  "doi": null,
+  "domains": [
+    "video-generation",
+    "diffusion",
+    "generative"
+  ],
+  "method_tags": [
+    "LDM",
+    "Stable-Diffusion",
+    "latent-diffusion"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_098.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2112.10752",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "paper_id": "paper_048",
+  "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+  "authors": [
+    "Dzmitry Bahdanau",
+    "KyungHyun Cho",
+    "Yoshua Bengio"
+  ],
+  "year": 2014,
+  "venue": "ICLR 2015",
+  "url": "https://arxiv.org/abs/1409.0473",
+  "pdf_url": "https://arxiv.org/pdf/1409.0473.pdf",
+  "arxiv_id": "1409.0473",
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "nlp",
+    "attention"
+  ],
+  "method_tags": [
+    "attention",
+    "NMT",
+    "encoder-decoder"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_048.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1409.0473",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

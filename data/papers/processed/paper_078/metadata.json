@@ -1,0 +1,51 @@
+{
+  "paper_id": "paper_078",
+  "title": "RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval",
+  "authors": [
+    "Parth Sarthi",
+    "Salman Abdullah",
+    "Aditi Tuli",
+    "Shubh Khanna",
+    "Rahul Gupta"
+  ],
+  "year": 2024,
+  "venue": "ICLR 2024",
+  "url": "https://arxiv.org/abs/2401.18059",
+  "pdf_url": "https://arxiv.org/pdf/2401.18059.pdf",
+  "arxiv_id": "2401.18059",
+  "doi": null,
+  "domains": [
+    "retrieval",
+    "rag",
+    "summarization"
+  ],
+  "method_tags": [
+    "RAPTOR",
+    "recursive",
+    "tree-structure",
+    "abstractive"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_078.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2401.18059",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

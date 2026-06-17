@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_107",
+  "title": "BLIP-2: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models",
+  "authors": [
+    "Junnan Li",
+    "Dongxu Li",
+    "Silvio Savarese",
+    "Steven Hoi"
+  ],
+  "year": 2023,
+  "venue": "ICML 2023",
+  "url": "https://arxiv.org/abs/2301.12597",
+  "pdf_url": "https://arxiv.org/pdf/2301.12597.pdf",
+  "arxiv_id": "2301.12597",
+  "doi": null,
+  "domains": [
+    "multimodal",
+    "vlm",
+    "vision-language"
+  ],
+  "method_tags": [
+    "BLIP-2",
+    "Q-Former",
+    "frozen-encoder"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_107.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2301.12597",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

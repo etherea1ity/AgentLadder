@@ -1,0 +1,66 @@
+{
+  "paper_id": "paper_058",
+  "title": "Training language models to follow instructions with human feedback (InstructGPT)",
+  "authors": [
+    "Long Ouyang",
+    "Jeff Wu",
+    "Xu Jiang",
+    "Diogo Almeida",
+    "Carroll L. Wainwright",
+    "Pamela Mishkin",
+    "Chong Zhang",
+    "Sandhini Agarwal",
+    "Katarina Slama",
+    "Alex Ray",
+    "John Schulman",
+    "Jacob Hilton",
+    "Fraser Kelton",
+    "Luke Miller",
+    "Maddie Simens",
+    "Amanda Askell",
+    "Peter Welinder",
+    "Paul Christiano",
+    "Jan Leike",
+    "Ryan Lowe"
+  ],
+  "year": 2022,
+  "venue": "NeurIPS 2022",
+  "url": "https://arxiv.org/abs/2203.02155",
+  "pdf_url": "https://arxiv.org/pdf/2203.02155.pdf",
+  "arxiv_id": "2203.02155",
+  "doi": null,
+  "domains": [
+    "llm",
+    "alignment",
+    "rlhf"
+  ],
+  "method_tags": [
+    "RLHF",
+    "InstructGPT",
+    "instruction-following",
+    "alignment"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_058.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2203.02155",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

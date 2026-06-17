@@ -1,0 +1,47 @@
+{
+  "paper_id": "paper_094",
+  "title": "World Models",
+  "authors": [
+    "David Ha",
+    "Jurgen Schmidhuber"
+  ],
+  "year": 2018,
+  "venue": "NeurIPS 2018",
+  "url": "https://arxiv.org/abs/1803.10122",
+  "pdf_url": "https://arxiv.org/pdf/1803.10122.pdf",
+  "arxiv_id": "1803.10122",
+  "doi": null,
+  "domains": [
+    "world-models",
+    "rl",
+    "generative"
+  ],
+  "method_tags": [
+    "world-model",
+    "VAE",
+    "MDN-RNN"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_094.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1803.10122",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

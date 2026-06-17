@@ -1,0 +1,57 @@
+{
+  "paper_id": "paper_105",
+  "title": "Segment Anything",
+  "authors": [
+    "Alexander Kirillov",
+    "Eric Mintun",
+    "Nikhila Ravi",
+    "Hanzi Mao",
+    "Chloe Rolland",
+    "Laura Gustafson",
+    "Tete Xiao",
+    "Spencer Whitehead",
+    "Alexander C. Berg",
+    "Wan-Yen Lo",
+    "Piotr Dollar",
+    "Ross Girshick"
+  ],
+  "year": 2023,
+  "venue": "ICCV 2023",
+  "url": "https://arxiv.org/abs/2304.02643",
+  "pdf_url": "https://arxiv.org/pdf/2304.02643.pdf",
+  "arxiv_id": "2304.02643",
+  "doi": null,
+  "domains": [
+    "multimodal",
+    "segmentation",
+    "vision"
+  ],
+  "method_tags": [
+    "SAM",
+    "segment-anything",
+    "foundation-model"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_105.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2304.02643",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

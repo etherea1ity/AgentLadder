@@ -22,9 +22,9 @@ type PersistedUi = {
   sidebarCollapsed: boolean;
 };
 
-const UI_STORAGE_KEY = "agent_ladder_v01_ui_state";
-const MODEL_STORAGE_KEY = "agent_ladder_v01_selected_model";
-const THEME_STORAGE_KEY = "agent_ladder_v01_theme";
+const UI_STORAGE_KEY = "agent_ladder_v03_ui_state";
+const MODEL_STORAGE_KEY = "agent_ladder_v03_selected_model";
+const THEME_STORAGE_KEY = "agent_ladder_v03_theme";
 const RUN_POLL_MS = 12_000;
 
 export default function App() {
@@ -939,7 +939,7 @@ function sortSessions(items: Session[]) {
 function clearStoredFeedback(messageIds: string[]) {
   try {
     messageIds.forEach((messageId) =>
-      window.localStorage.removeItem(`agent_ladder_v01_feedback_${messageId}`),
+      window.localStorage.removeItem(`agent_ladder_v03_feedback_${messageId}`),
     );
   } catch {
     // Ignore storage cleanup failures; backend deletion is authoritative.

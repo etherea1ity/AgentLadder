@@ -1,0 +1,48 @@
+{
+  "paper_id": "paper_116",
+  "title": "MemoryBank: Enhancing Large Language Models with Long-Term Memory",
+  "authors": [
+    "Wanjun Zhong",
+    "Lianghong Guo",
+    "Qiqi Gao",
+    "He Ye",
+    "Yanlin Wang"
+  ],
+  "year": 2023,
+  "venue": "AAAI 2024",
+  "url": "https://arxiv.org/abs/2305.10250",
+  "pdf_url": "https://arxiv.org/pdf/2305.10250.pdf",
+  "arxiv_id": "2305.10250",
+  "doi": null,
+  "domains": [
+    "memory",
+    "llm",
+    "long-term"
+  ],
+  "method_tags": [
+    "MemoryBank",
+    "long-term-memory",
+    "memory-retrieval"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_116.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2305.10250",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

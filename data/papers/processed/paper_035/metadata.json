@@ -1,0 +1,82 @@
+{
+  "paper_id": "paper_035",
+  "title": "SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering",
+  "authors": [
+    "John Yang",
+    "Carlos E. Jimenez",
+    "Alexander Wettig",
+    "Kilian Lieret",
+    "Shunyu Yao",
+    "Karthik Narasimhan",
+    "Ofir Press"
+  ],
+  "year": 2024,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2405.15793",
+  "pdf_url": "https://arxiv.org/pdf/2405.15793.pdf",
+  "arxiv_id": "2405.15793",
+  "doi": null,
+  "domains": [
+    "deep-research",
+    "tool-use",
+    "software-engineering"
+  ],
+  "method_tags": [
+    "agent-computer-interface",
+    "code-agent",
+    "SWE-bench",
+    "tool-design"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_035.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 489,
+    "visual_count": 35,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_035.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 489,
+      "visual_count": 35,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 118,
+      "total_chars": 291382,
+      "total_words": 42149,
+      "sections_found": 169,
+      "chunks_generated": 489,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

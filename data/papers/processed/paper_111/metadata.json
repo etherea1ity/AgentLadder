@@ -1,0 +1,51 @@
+{
+  "paper_id": "paper_111",
+  "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model (DPO)",
+  "authors": [
+    "Rafael Rafailov",
+    "Archit Sharma",
+    "Eric Mitchell",
+    "Stefano Ermon",
+    "Christopher D. Manning",
+    "Chelsea Finn"
+  ],
+  "year": 2023,
+  "venue": "NeurIPS 2023",
+  "url": "https://arxiv.org/abs/2305.18290",
+  "pdf_url": "https://arxiv.org/pdf/2305.18290.pdf",
+  "arxiv_id": "2305.18290",
+  "doi": null,
+  "domains": [
+    "rl",
+    "alignment",
+    "preference"
+  ],
+  "method_tags": [
+    "DPO",
+    "direct-preference-optimization",
+    "RLHF-alternative"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_111.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2305.18290",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

@@ -32,6 +32,7 @@ export function RunMargin({ run, onClose, trace }: Props) {
         </button>
       </header>
       <KlaraRunPanel run={run} trace={trace} />
+      <AgenticTraceSummary trace={trace} />
       {run.status === "failed" ? (
         <FailedView run={run} onClose={onClose} />
       ) : null}
@@ -48,6 +49,77 @@ export function RunMargin({ run, onClose, trace }: Props) {
       ) : null}
     </aside>
   );
+}
+
+
+function AgenticTraceSummary({ trace }: { trace?: Record<string, unknown> | null }) {
+  const answerFrame = asRecord(trace?.answer_frame);
+  const searchPlan = asRecord(trace?.search_plan);
+  const verification = asRecord(trace?.verification);
+  const sources = asArray(answerFrame?.sources).slice(0, 8).map(asRecord).filter(Boolean) as Record<string, unknown>[];
+  const visuals = asArray(answerFrame?.visual_sources).slice(0, 6).map(asRecord).filter(Boolean) as Record<string, unknown>[];
+  const attempts = asArray(trace?.retrieval_attempts);
+  if (!answerFrame && !searchPlan && !verification) return null;
+  return (
+    <section className="agentic-run-summary" aria-label="Agentic RAG run summary">
+      <header>
+        <small>Chapter 3 Runtime</small>
+        <h3>Controlled Evidence Search</h3>
+      </header>
+      <dl className="agentic-run-metrics">
+        <div><dt>search units</dt><dd>{asArray(searchPlan?.search_units).length}</dd></div>
+        <div><dt>retrieval attempts</dt><dd>{attempts.length}</dd></div>
+        <div><dt>evidence items</dt><dd>{asArray(answerFrame?.evidence_items).length}</dd></div>
+        <div><dt>verification</dt><dd>{String(verification?.status ?? "unknown")}</dd></div>
+      </dl>
+      {sources.length ? (
+        <div className="agentic-run-cards">
+          <strong>Sources</strong>
+          {sources.map((source, index) => (
+            <article key={String(source.source_id ?? index)}>
+              <span>{index + 1}</span>
+              <div>
+                <b>{String(source.title ?? source.paper_title ?? source.source_id ?? "Source")}</b>
+                <p>{source.source_type ? String(source.source_type) : "paper source"}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+      {visuals.length ? (
+        <div className="agentic-run-cards visual-source-cards">
+          <strong>Visual Sources</strong>
+          {visuals.map((visual, index) => {
+            const imagePath = typeof visual.image_path === "string" ? visual.image_path : "";
+            const imageUrl = isImageAsset(imagePath) ? `/api/assets/local?path=${encodeURIComponent(imagePath)}` : "";
+            return (
+              <article key={String(visual.visual_id ?? visual.source_id ?? index)}>
+                <span>{String(visual.visual_type ?? "visual")}</span>
+                <div>
+                  <b>{String(visual.title ?? visual.source_id ?? "Visual evidence")}</b>
+                  {imageUrl ? <img src={imageUrl} alt={String(visual.caption ?? "Visual evidence")} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} /> : null}
+                  <p>{String(visual.caption ?? visual.visual_summary ?? "Caption metadata available.")}</p>
+                  {imagePath ? <small>{imagePath}</small> : null}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function isImageAsset(path: string): boolean {
+  return /\.(png|jpe?g|webp|svg|gif)$/i.test(path);
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
 }
 
 function FailedView({ run, onClose }: { run: Run; onClose: () => void }) {

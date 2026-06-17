@@ -1,0 +1,76 @@
+{
+  "paper_id": "paper_014",
+  "title": "Towards Agentic RAG with Deep Reasoning: A Survey of RAG-Reasoning Systems in LLMs",
+  "authors": [
+    "Yangning Li"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2507.09477",
+  "pdf_url": "https://arxiv.org/pdf/2507.09477.pdf",
+  "arxiv_id": "2507.09477",
+  "doi": null,
+  "domains": [
+    "agentic-rag",
+    "reasoning",
+    "survey"
+  ],
+  "method_tags": [
+    "survey",
+    "RAG-reasoning-synergy",
+    "reasoning-enhanced-RAG",
+    "RAG-enhanced-reasoning"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_014.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 884,
+    "visual_count": 25,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_014.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 884,
+      "visual_count": 25,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 26,
+      "total_chars": 121172,
+      "total_words": 16715,
+      "sections_found": 326,
+      "chunks_generated": 884,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "paper_id": "paper_095",
+  "title": "Mastering Diverse Domains through World Models (DreamerV3)",
+  "authors": [
+    "Danijar Hafner",
+    "Jurgis Pasukonis",
+    "Jimmy Ba",
+    "Timothy Lillicrap"
+  ],
+  "year": 2023,
+  "venue": "NeurIPS 2023",
+  "url": "https://arxiv.org/abs/2301.04104",
+  "pdf_url": "https://arxiv.org/pdf/2301.04104.pdf",
+  "arxiv_id": "2301.04104",
+  "doi": null,
+  "domains": [
+    "world-models",
+    "rl"
+  ],
+  "method_tags": [
+    "DreamerV3",
+    "world-model",
+    "RL"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_095.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2301.04104",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

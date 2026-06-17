@@ -1,0 +1,53 @@
+{
+  "paper_id": "paper_080",
+  "title": "Active Retrieval Augmented Generation (FLARE)",
+  "authors": [
+    "Zhengbao Jiang",
+    "Frank F. Xu",
+    "Luyu Gao",
+    "Zhiqing Sun",
+    "Qian Liu",
+    "Jane Dwivedi-Yu",
+    "Yiming Yang",
+    "Jamie Callan",
+    "Graham Neubig"
+  ],
+  "year": 2023,
+  "venue": "EMNLP 2023",
+  "url": "https://arxiv.org/abs/2305.06983",
+  "pdf_url": "https://arxiv.org/pdf/2305.06983.pdf",
+  "arxiv_id": "2305.06983",
+  "doi": null,
+  "domains": [
+    "agentic-rag",
+    "active-retrieval"
+  ],
+  "method_tags": [
+    "FLARE",
+    "active-retrieval",
+    "on-demand"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_080.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2305.06983",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

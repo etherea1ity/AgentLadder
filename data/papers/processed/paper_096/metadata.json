@@ -1,0 +1,58 @@
+{
+  "paper_id": "paper_096",
+  "title": "Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model (MuZero)",
+  "authors": [
+    "Julian Schrittwieser",
+    "Ioannis Antonoglou",
+    "Thomas Hubert",
+    "Karen Simonyan",
+    "Laurent Sifre",
+    "Simon Schmitt",
+    "Arthur Guez",
+    "Edward Lockhart",
+    "Demis Hassabis",
+    "Thore Graepel",
+    "Timothy Lillicrap",
+    "David Silver"
+  ],
+  "year": 2019,
+  "venue": "Nature 2020",
+  "url": "https://arxiv.org/abs/1911.08265",
+  "pdf_url": "https://arxiv.org/pdf/1911.08265.pdf",
+  "arxiv_id": "1911.08265",
+  "doi": null,
+  "domains": [
+    "world-models",
+    "rl",
+    "planning"
+  ],
+  "method_tags": [
+    "MuZero",
+    "model-based-RL",
+    "planning",
+    "MCTS"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_096.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1911.08265",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

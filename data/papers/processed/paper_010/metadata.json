@@ -1,0 +1,79 @@
+{
+  "paper_id": "paper_010",
+  "title": "Agentic Retrieval-Augmented Generation: A Survey on Agentic RAG",
+  "authors": [
+    "Aditi Singh",
+    "Abul Ehtesham",
+    "Saket Kumar",
+    "Tala Talaei Khoei"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2501.09136",
+  "pdf_url": "https://arxiv.org/pdf/2501.09136.pdf",
+  "arxiv_id": "2501.09136",
+  "doi": null,
+  "domains": [
+    "agentic-rag",
+    "survey"
+  ],
+  "method_tags": [
+    "survey",
+    "agentic-RAG",
+    "single-agent",
+    "multi-agent",
+    "graph-based"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_010.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 210,
+    "visual_count": 24,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_010.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 210,
+      "visual_count": 24,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 42,
+      "total_chars": 115184,
+      "total_words": 15107,
+      "sections_found": 162,
+      "chunks_generated": 210,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

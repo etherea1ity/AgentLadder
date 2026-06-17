@@ -1,0 +1,769 @@
+# Agent Ladder Papers Index
+# 每篇论文的元数据，按7大分类组织
+# 字段说明:
+#   id: 唯一标识
+#   title: 论文标题
+#   authors: 作者列表
+#   year: 发表年份
+#   venue: 发表会议/期刊 (如有)
+#   arxiv: arxiv ID
+#   url: 论文链接
+#   code: 代码仓库 (可选)
+#   category: 所属分类
+#   tags: 标签
+#   status: to_download | downloaded | converted | indexed
+#   relevance: core | important | background
+#   description: 一句话描述核心贡献
+
+categories:
+  - id: "01-agent-paradigms"
+    name: "Agent 基础范式"
+    name_en: "Agent Basic Paradigms"
+    description: "LLM Agent 的基础概念、核心范式、方法论综述"
+
+  - id: "02-agentic-rag"
+    name: "Agentic RAG / Retrieval Control"
+    name_en: "Agentic RAG / Retrieval Control"
+    description: "具有自主检索控制、自适应检索、证据验证能力的 RAG 系统"
+
+  - id: "03-agent-architecture"
+    name: "LLM Agent Architecture"
+    name_en: "LLM Agent Architecture"
+    description: "Agent 系统架构、多 Agent 协作、框架设计"
+
+  - id: "04-memory-reflection-skill"
+    name: "Memory / Reflection / Skill Learning"
+    name_en: "Memory / Reflection / Skill Learning"
+    description: "Agent 记忆系统、反思学习、技能获取与复用"
+
+  - id: "05-world-models"
+    name: "World Models"
+    name_en: "World Models"
+    description: "LLM 作为世界模型、环境动力学学习、基于模型的规划"
+
+  - id: "06-3d-spatial-world"
+    name: "3D / Spatial World Models"
+    name_en: "3D / Spatial World Models"
+    description: "3D 空间理解、空间推理、视觉世界模型"
+
+  - id: "07-deep-research-tool-use"
+    name: "Deep Research / Tool-using Agents"
+    name_en: "Deep Research / Tool-using Agents"
+    description: "深度研究 Agent、工具使用、联网搜索、自动化科研"
+
+papers:
+  # =========================================================================
+  # Category 01: Agent 基础范式
+  # =========================================================================
+
+  - id: paper-0101
+    title: "ReAct: Synergizing Reasoning and Acting in Language Models"
+    authors: ["Shunyu Yao", "Jeffrey Zhao", "Dian Yu", "Nan Du", "Izhak Shafran", "Karthik Narasimhan", "Yuan Cao"]
+    year: 2022
+    venue: "ICLR 2023"
+    arxiv: "2210.03629"
+    url: "https://arxiv.org/abs/2210.03629"
+    code: "https://github.com/ysymyth/ReAct"
+    category: "01-agent-paradigms"
+    tags: ["reasoning", "acting", "prompting", "tool-use"]
+    status: "to_download"
+    relevance: "core"
+    description: "首次提出 reasoning 与 acting 交错的 prompting 范式，是现代 LLM Agent 的基础框架。"
+
+  - id: paper-0102
+    title: "A Review of Prominent Paradigms for LLM-Based Agents: Tool Use, Planning, and Feedback Learning"
+    authors: ["Xinzhe Li"]
+    year: 2024
+    venue: "CoLing 2025"
+    arxiv: "2406.05804"
+    url: "https://arxiv.org/abs/2406.05804"
+    code: "https://github.com/xinzhel/LLM-Agent-Survey"
+    category: "01-agent-paradigms"
+    tags: ["survey", "planning", "tool-use", "feedback", "taxonomy"]
+    status: "to_download"
+    relevance: "core"
+    description: "统一分类体系：Tool Use / Planning / Feedback Learning 三大范式的权威综述。"
+
+  - id: paper-0103
+    title: "Agentic Large Language Models, a Survey"
+    authors: ["Aske Plaat", "Max van Duijn", "Niki van Stein"]
+    year: 2025
+    arxiv: "2503.23037"
+    url: "https://arxiv.org/abs/2503.23037"
+    category: "01-agent-paradigms"
+    tags: ["survey", "reasoning", "acting", "interacting", "multi-agent"]
+    status: "to_download"
+    relevance: "core"
+    description: "Reasoning → Acting → Interacting 三阶段分类法，涵盖 agent 数据飞轮。"
+
+  - id: paper-0104
+    title: "Beyond Pipelines: A Survey of the Paradigm Shift toward Model-Native Agentic AI"
+    authors: ["Jitao Sang", "Jinlin Xiao", "Jiarun Han"]
+    year: 2025
+    arxiv: "2510.16720"
+    url: "https://arxiv.org/abs/2510.16720"
+    code: "https://github.com/ADaM-BJTU/model-native-agentic-ai"
+    category: "01-agent-paradigms"
+    tags: ["survey", "model-native", "RL", "pipeline", "paradigm-shift"]
+    status: "to_download"
+    relevance: "important"
+    description: "Pipeline-based → Model-native 的范式迁移，RL 驱动的 agent 内在化。"
+
+  - id: paper-0105
+    title: "Large Language Model Agent: A Survey on Methodology, Applications and Challenges"
+    authors: ["Junyu Luo"]
+    year: 2025
+    arxiv: "2503.21460"
+    url: "https://arxiv.org/abs/2503.21460"
+    category: "01-agent-paradigms"
+    tags: ["survey", "methodology", "architecture", "collaboration"]
+    status: "to_download"
+    relevance: "important"
+    description: "以方法论为中心的综述：架构基础 + 协作机制 + 演化路径。"
+
+  - id: paper-0106
+    title: "Generative Agents: Interactive Simulacra of Human Behavior"
+    authors: ["Joon Sung Park", "Joseph C. O'Brien", "Carrie J. Cai", "Meredith Ringel Morris", "Percy Liang", "Michael S. Bernstein"]
+    year: 2023
+    venue: "UIST 2023"
+    arxiv: "2304.03442"
+    url: "https://arxiv.org/abs/2304.03442"
+    code: "https://github.com/joonspk-research/generative_agents"
+    category: "01-agent-paradigms"
+    tags: ["memory", "reflection", "planning", "simulation", "social"]
+    status: "to_download"
+    relevance: "core"
+    description: "Smallville 实验：25 个 agent 的可信社会模拟，定义了 memory/reflection/planning 三组件。"
+
+  - id: paper-0107
+    title: "A Survey on LLM Test-Time Compute via Search"
+    authors: ["Xinzhe Li"]
+    year: 2025
+    venue: "TMLR 2025"
+    url: "https://openreview.net/forum?id=x9VQFjtOPS"
+    category: "01-agent-paradigms"
+    tags: ["test-time", "search", "MCTS", "reasoning"]
+    status: "to_download"
+    relevance: "background"
+    description: "LLM test-time compute 搜索方法综述：MCTS、beam search、tree-of-thought。"
+
+  # =========================================================================
+  # Category 02: Agentic RAG / Retrieval Control
+  # =========================================================================
+
+  - id: paper-0201
+    title: "Agentic Retrieval-Augmented Generation: A Survey on Agentic RAG"
+    authors: ["Aditi Singh", "Abul Ehtesham", "Saket Kumar", "Tala Talaei Khoei"]
+    year: 2025
+    arxiv: "2501.09136"
+    url: "https://arxiv.org/abs/2501.09136"
+    code: "https://github.com/asinghcsu/AgenticRAG-Survey"
+    category: "02-agentic-rag"
+    tags: ["survey", "agentic-rag", "single-agent", "multi-agent", "graph"]
+    status: "to_download"
+    relevance: "core"
+    description: "Agentic RAG 全面综述：单 agent / 多 agent / 图架构，含 pattern 分类。"
+
+  - id: paper-0202
+    title: "Towards Agentic RAG with Deep Reasoning: A Survey of RAG-Reasoning Systems in LLMs"
+    authors: ["Yangning Li", "et al."]
+    year: 2025
+    arxiv: "2507.09477"
+    url: "https://arxiv.org/abs/2507.09477"
+    code: "https://github.com/DavidZWZ/Awesome-RAG-Reasoning"
+    category: "02-agentic-rag"
+    tags: ["survey", "reasoning", "retrieval", "synergy"]
+    status: "to_download"
+    relevance: "core"
+    description: "检索与推理融合的三维分类：Reasoning→RAG / RAG→Reasoning / Synergized。"
+
+  - id: paper-0203
+    title: "Corrective Retrieval Augmented Generation (CRAG)"
+    authors: ["Yan Shi-Qi", "Gu Jia-Chen", "Zhu Yun", "Ling Zhen-Hua"]
+    year: 2024
+    arxiv: "2401.15884"
+    url: "https://arxiv.org/abs/2401.15884"
+    code: "https://github.com/HuskyInSalt/CRAG"
+    category: "02-agentic-rag"
+    tags: ["corrective", "retrieval-evaluator", "web-search", "plug-and-play"]
+    status: "to_download"
+    relevance: "core"
+    description: "轻量检索评估器自动判断检索质量，支持 Correct/Incorrect/Ambiguous 三级路由和 web 兜底。"
+
+  - id: paper-0204
+    title: "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection"
+    authors: ["Akari Asai", "et al."]
+    year: 2023
+    arxiv: "2310.11511"
+    url: "https://arxiv.org/abs/2310.11511"
+    category: "02-agentic-rag"
+    tags: ["self-reflection", "adaptive-retrieval", "critique", "on-demand"]
+    status: "to_download"
+    relevance: "core"
+    description: "按需检索 + 自我评判：LLM 通过 reflection token 自主决定何时检索和检索质量。"
+
+  - id: paper-0205
+    title: "From Local to Global: A Graph RAG Approach to Query-Focused Summarization"
+    authors: ["Darren Edge", "Ha Trinh", "Newman Cheng", "et al."]
+    year: 2024
+    venue: "Microsoft Research"
+    arxiv: "2404.16130"
+    url: "https://arxiv.org/abs/2404.16130"
+    code: "https://github.com/microsoft/graphrag"
+    category: "02-agentic-rag"
+    tags: ["graph", "knowledge-graph", "community-detection", "global-query"]
+    status: "to_download"
+    relevance: "core"
+    description: "微软 GraphRAG：知识图谱 + Leiden 社区检测 + 层次化摘要，解决全局语义理解。"
+
+  - id: paper-0206
+    title: "A Comprehensive Survey on Reinforcement Learning-based Agentic Search"
+    authors: ["ventr1c", "et al."]
+    year: 2025
+    arxiv: "2510.16724"
+    url: "https://arxiv.org/abs/2510.16724"
+    code: "https://github.com/ventr1c/Awesome-RL-based-Agentic-Search-Papers"
+    category: "02-agentic-rag"
+    tags: ["RL", "search", "retrieval-control", "survey"]
+    status: "to_download"
+    relevance: "important"
+    description: "RL 驱动的自适应检索控制综述：What/How/Where 三维分析。"
+
+  - id: paper-0207
+    title: "Data-Centric Perspectives on Agentic Retrieval-Augmented Generation: A Survey"
+    authors: ["Jingwen Deng", "Jihao Huang", "et al."]
+    year: 2025
+    arxiv: "2511.12410"
+    url: "https://www.techrxiv.org/users/996119/articles/1356832"
+    code: "https://github.com/fatty-belly/Awesome-AgenticRAG-Data"
+    category: "02-agentic-rag"
+    tags: ["data-centric", "survey", "dataset", "evaluation"]
+    status: "to_download"
+    relevance: "important"
+    description: "首个以数据为中心的 Agentic RAG 综述，覆盖全数据生命周期。"
+
+  # =========================================================================
+  # Category 03: LLM Agent Architecture
+  # =========================================================================
+
+  - id: paper-0301
+    title: "LLM-Agent-UMF: LLM-based Agent Unified Modeling Framework"
+    authors: ["Amine Ben Hassouna", "et al."]
+    year: 2024
+    venue: "Information Fusion 2026"
+    arxiv: "2409.11393"
+    url: "https://arxiv.org/abs/2409.11393"
+    category: "03-agent-architecture"
+    tags: ["framework", "core-agent", "planning", "memory", "profile"]
+    status: "to_download"
+    relevance: "core"
+    description: "统一建模框架：LLM + Tools + Core-Agent（5 模块：planning/memory/profile/action/security）。"
+
+  - id: paper-0302
+    title: "AgentNet: Decentralized Evolutionary Coordination for LLM-Based Multi-Agent Systems"
+    authors: ["Yingxuan Yang", "et al."]
+    year: 2025
+    venue: "NeurIPS 2025"
+    arxiv: "2504.00587"
+    url: "https://arxiv.org/abs/2504.00587"
+    code: "https://github.com/zoe-yyx/AgentNet"
+    category: "03-agent-architecture"
+    tags: ["multi-agent", "decentralized", "DAG", "evolutionary"]
+    status: "to_download"
+    relevance: "core"
+    description: "去中心化多 agent 框架：动态 DAG 拓扑 + 检索增强记忆 + 进化专业化。"
+
+  - id: paper-0303
+    title: "AGORA: Unifying Language Agent Algorithms with Graph-based Orchestration Engine"
+    authors: ["Haozhan Shen", "et al."]
+    year: 2025
+    venue: "ACL 2025 Demo"
+    arxiv: "2505.24354"
+    url: "https://arxiv.org/abs/2505.24354"
+    category: "03-agent-architecture"
+    tags: ["graph", "orchestration", "modular", "workflow"]
+    status: "to_download"
+    relevance: "important"
+    description: "图驱动的模块化 Agent 编排引擎，标准化评估框架。"
+
+  - id: paper-0304
+    title: "Concurrent Modular Agent: Framework for Autonomous LLM Agents"
+    authors: ["Norihiro Maruyama", "et al."]
+    year: 2025
+    arxiv: "2508.19042"
+    url: "https://arxiv.org/abs/2508.19042"
+    category: "03-agent-architecture"
+    tags: ["concurrent", "modular", "asynchronous", "emergent"]
+    status: "to_download"
+    relevance: "important"
+    description: "异步模块化 Agent：多 LLM 模块全异步运行，Minsky Society of Mind 实践。"
+
+  - id: paper-0305
+    title: "Fundamentals of Building Autonomous LLM Agents"
+    authors: ["Victor de Lamo", "et al."]
+    year: 2025
+    arxiv: "2510.09244"
+    url: "https://arxiv.org/abs/2510.09244"
+    category: "03-agent-architecture"
+    tags: ["survey", "perception", "reasoning", "memory", "execution"]
+    status: "to_download"
+    relevance: "important"
+    description: "自主 LLM Agent 构建基础：感知/推理/记忆/执行 + 失败模式分析。"
+
+  - id: paper-0306
+    title: "AutoML-Agent: A Multi-Agent LLM Framework for Full-Pipeline AutoML"
+    authors: ["Patara Trirat", "et al."]
+    year: 2024
+    venue: "ICML 2025"
+    arxiv: "2410.02958"
+    url: "https://arxiv.org/abs/2410.02958"
+    category: "03-agent-architecture"
+    tags: ["multi-agent", "AutoML", "planning", "tool-use"]
+    status: "to_download"
+    relevance: "background"
+    description: "多 Agent AutoML：检索增强规划 + 并行子任务分解 + 多阶段验证。"
+
+  # =========================================================================
+  # Category 04: Memory / Reflection / Skill Learning
+  # =========================================================================
+
+  - id: paper-0401
+    title: "Memento-II: Learning by Stateful Reflective Memory"
+    authors: ["Jun Wang", "et al."]
+    year: 2025
+    arxiv: "2512.22716"
+    url: "https://arxiv.org/abs/2512.22716"
+    category: "04-memory-reflection-skill"
+    tags: ["memory", "reflection", "RL", "convergence", "theory"]
+    status: "to_download"
+    relevance: "core"
+    description: "Stateful Reflective Decision Process：反思=学习机制的理论框架，无需反向传播或微调。"
+
+  - id: paper-0402
+    title: "Memento-Skills: Let Agents Design Agents"
+    authors: ["et al."]
+    year: 2025
+    arxiv: "2603.18743"
+    url: "https://arxiv.org/abs/2603.18743"
+    category: "04-memory-reflection-skill"
+    tags: ["skill-library", "auto-design", "memory", "continual-learning"]
+    status: "to_download"
+    relevance: "important"
+    description: "Skill Library 架构：通用 Agent 自主设计/适配/改进专用 agent，skills-as-memory。"
+
+  - id: paper-0403
+    title: "MemR³: Memory Retrieval via Reflective Reasoning for LLM Agents"
+    authors: ["Xingbo Du", "Loka Li", "Duzhen Zhang", "Le Song"]
+    year: 2025
+    arxiv: "2512.20237"
+    url: "https://arxiv.org/abs/2512.20237"
+    category: "04-memory-reflection-skill"
+    tags: ["memory-retrieval", "router", "evidence-gap", "closed-loop"]
+    status: "to_download"
+    relevance: "important"
+    description: "闭环记忆检索控制器：Router + Evidence Gap Tracker，可插拔设计。"
+
+  - id: paper-0404
+    title: "Self-evolving Agents with Reflective and Memory-Augmented Abilities"
+    authors: ["Xuechen Liang", "Tianyu Shi", "et al."]
+    year: 2024
+    arxiv: "2409.00872"
+    url: "https://arxiv.org/abs/2409.00872"
+    category: "04-memory-reflection-skill"
+    tags: ["self-evolving", "reflection", "Ebbinghaus", "memory-optimization"]
+    status: "to_download"
+    relevance: "core"
+    description: "迭代反馈 + 反思机制 + Ebbinghaus 遗忘曲线记忆优化，实现 agent 自我进化。"
+
+  - id: paper-0405
+    title: "MemGPT: Towards LLMs as Operating Systems"
+    authors: ["Charles Packer", "Sarah Wooders", "Kevin Lin", "Vivian Fang", "Shishir G. Patil", "Ion Stoica", "Joseph E. Gonzalez"]
+    year: 2023
+    arxiv: "2310.08560"
+    url: "https://arxiv.org/abs/2310.08560"
+    code: "https://github.com/cpacker/MemGPT"
+    category: "04-memory-reflection-skill"
+    tags: ["memory", "OS", "context-management", "virtual-memory"]
+    status: "to_download"
+    relevance: "core"
+    description: "虚拟上下文管理：借鉴 OS 分层内存，实现 LLM 的长对话和长文档理解。"
+
+  - id: paper-0406
+    title: "Voyager: An Open-Ended Embodied Agent with Large Language Models"
+    authors: ["Guanzhi Wang", "Yuqi Xie", "Yunfan Jiang", "Ajay Mandlekar", "Chaowei Xiao", "Yuke Zhu", "Linxi Fan", "Anima Anandkumar"]
+    year: 2023
+    venue: "NeurIPS 2023"
+    arxiv: "2305.16291"
+    url: "https://arxiv.org/abs/2305.16291"
+    code: "https://github.com/MineDojo/Voyager"
+    category: "04-memory-reflection-skill"
+    tags: ["skill-library", "lifelong-learning", "embodied", "Minecraft", "curriculum"]
+    status: "to_download"
+    relevance: "core"
+    description: "LLM 驱动的 Minecraft 终身学习 agent：自动课程 + 代码技能库 + 迭代提示。"
+
+  - id: paper-0407
+    title: "Agentic Learner with Grow-and-Refine Multimodal Semantic Memory (ViLoMem)"
+    authors: ["et al."]
+    year: 2025
+    arxiv: "2511.21678"
+    url: "https://arxiv.org/abs/2511.21678"
+    category: "04-memory-reflection-skill"
+    tags: ["multimodal", "semantic-memory", "grow-and-refine", "lifelong"]
+    status: "to_download"
+    relevance: "background"
+    description: "双流多模态语义记忆框架：视觉干扰 + 逻辑推理的解耦编码与终身学习。"
+
+  # =========================================================================
+  # Category 05: World Models
+  # =========================================================================
+
+  - id: paper-0501
+    title: "WALL-E: World Alignment by Rule Learning Improves World Model-based LLM Agents"
+    authors: ["Siyu Zhou", "et al."]
+    year: 2024
+    arxiv: "2410.07484"
+    url: "https://arxiv.org/abs/2410.07484"
+    category: "05-world-models"
+    tags: ["world-model", "rule-learning", "neuro-symbolic", "MPC", "embodied"]
+    status: "to_download"
+    relevance: "core"
+    description: "神经符号世界模型：LLM + 规则学习 → MPC 控制，Minecraft +15-30% 成功率。"
+
+  - id: paper-0502
+    title: "Web Agents with World Models: Learning and Leveraging Environment Dynamics in Web Navigation"
+    authors: ["Hyungjoo Chae", "et al."]
+    year: 2024
+    venue: "ICLR 2025"
+    arxiv: "2410.13232"
+    url: "https://arxiv.org/abs/2410.13232"
+    category: "05-world-models"
+    tags: ["world-model", "web", "navigation", "transition"]
+    status: "to_download"
+    relevance: "core"
+    description: "WMA web agent：模拟行动结果提升决策，揭示当前 LLM 缺乏 world model。"
+
+  - id: paper-0503
+    title: "WebDreamer: Is Your LLM Secretly a World Model of the Internet?"
+    authors: ["et al."]
+    year: 2024
+    arxiv: "2411.06559"
+    url: "https://arxiv.org/abs/2411.06559"
+    category: "05-world-models"
+    tags: ["world-model", "planning", "web", "model-based"]
+    status: "to_download"
+    relevance: "core"
+    description: "LLM 同时作为 world model 和 value function，Dreamer-7B 媲美 GPT-4o。"
+
+  - id: paper-0504
+    title: "Predicting vs. Acting: A Trade-off Between World Modeling & Agent Modeling"
+    authors: ["Margaret Li", "et al."]
+    year: 2024
+    arxiv: "2407.02446"
+    url: "https://arxiv.org/abs/2407.02446"
+    category: "05-world-models"
+    tags: ["trade-off", "RLHF", "world-modeling", "agent-modeling"]
+    status: "to_download"
+    relevance: "important"
+    description: "RLHF 对齐的 agent 模型会损失 world modeling 能力，揭示预测与行动的根本张力。"
+
+  - id: paper-0505
+    title: "A Comprehensive Survey on World Models for Embodied AI"
+    authors: ["Li-Zn-H", "et al."]
+    year: 2025
+    arxiv: "2510.16732"
+    url: "https://arxiv.org/abs/2510.16732"
+    code: "https://github.com/Li-Zn-H/AwesomeWorldModels"
+    category: "05-world-models"
+    tags: ["survey", "world-model", "embodied", "taxonomy"]
+    status: "to_download"
+    relevance: "core"
+    description: "具身 AI 世界模型三维分类：Functionality / Temporal / Spatial。"
+
+  - id: paper-0506
+    title: "Large Model Empowered Embodied AI: A Survey on Decision-Making and Embodied Learning"
+    authors: ["et al."]
+    year: 2025
+    arxiv: "2508.10399"
+    url: "https://arxiv.org/abs/2508.10399"
+    category: "05-world-models"
+    tags: ["survey", "embodied", "decision-making", "world-model"]
+    status: "to_download"
+    relevance: "important"
+    description: "首个将世界模型融入具身 AI 综述的论文，覆盖层级决策与端到端范式。"
+
+  - id: paper-0507
+    title: "Integrating World Models into Vision Language Action and Navigation: A Comprehensive Survey"
+    authors: ["et al."]
+    year: 2025
+    url: "https://www.techrxiv.org/doi/full/10.36227/techrxiv.176531987.77979037/v1"
+    category: "05-world-models"
+    tags: ["survey", "VLA", "navigation", "modular", "sequential", "unified"]
+    status: "to_download"
+    relevance: "important"
+    description: "世界模型集成范式：Modular / Sequential / Unified 三种架构对照。"
+
+  # =========================================================================
+  # Category 06: 3D / Spatial World Models
+  # =========================================================================
+
+  - id: paper-0601
+    title: "Agentic 3D Scene Generation with Spatially Contextualized VLMs"
+    authors: ["Xinhang Liu", "et al."]
+    year: 2025
+    arxiv: "2505.20129"
+    url: "https://arxiv.org/abs/2505.20129"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "scene-generation", "spatial-context", "VLM", "agentic"]
+    status: "to_download"
+    relevance: "core"
+    description: "空间上下文注入 VLM：Scene Portrait + Point Cloud + Scene Hypergraph 驱动 agentic 3D 场景生成。"
+
+  - id: paper-0602
+    title: "MetaSpatial: Reinforcing 3D Spatial Reasoning in VLMs for the Metaverse"
+    authors: ["Zhenyu Pan", "Han Liu"]
+    year: 2025
+    arxiv: "2503.18470"
+    url: "https://arxiv.org/abs/2503.18470"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "RL", "spatial-reasoning", "VLM", "VR"]
+    status: "to_download"
+    relevance: "core"
+    description: "首个 RL-based 3D 空间推理框架，3D-SPO 算法 + 物理感知奖励。"
+
+  - id: paper-0603
+    title: "GEODE: Beyond Flatlands — Decoupling 3D Reasoning from Numerical Regression"
+    authors: ["et al."]
+    year: 2025
+    arxiv: "2511.11239"
+    url: "https://arxiv.org/abs/2511.11239"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "spatial-reasoning", "decoupled", "CoT"]
+    status: "to_download"
+    relevance: "important"
+    description: "解耦 3D 推理架构：DRM + DRH，1.5B 模型匹敌 7B+ 空间推理模型。"
+
+  - id: paper-0604
+    title: "LayoutVLM: Differentiable Optimization of 3D Layout via Vision-Language Models"
+    authors: ["Fan-Yun Sun", "et al."]
+    year: 2024
+    venue: "CVPR 2025"
+    arxiv: "2412.02193"
+    url: "https://arxiv.org/abs/2412.02193"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "layout", "VLM", "differentiable", "physical-plausibility"]
+    status: "to_download"
+    relevance: "core"
+    description: "VLM 驱动的可微分 3D 布局优化：自洽解码 + 物理可行性保证。"
+
+  - id: paper-0605
+    title: "Scene-LLM: Extending Language Model for 3D Visual Understanding and Reasoning"
+    authors: ["Rao Fu", "et al."]
+    year: 2024
+    venue: "Meta AI"
+    arxiv: "2403.11401"
+    url: "https://arxiv.org/abs/2403.11401"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "scene-understanding", "VLM", "planning", "voxel"]
+    status: "to_download"
+    relevance: "important"
+    description: "3D-VLM：场景级 + 自视角 3D 点特征融合，SOTA on ScanQA。"
+
+  - id: paper-0606
+    title: "SandboxVLM: Abstract 3D Perception for Spatial Intelligence in VLMs"
+    authors: ["et al."]
+    year: 2025
+    arxiv: "2511.10946"
+    url: "https://arxiv.org/abs/2511.10946"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "spatial", "VLM", "bounding-box", "zero-shot"]
+    status: "to_download"
+    relevance: "important"
+    description: "抽象 3D 感知桥接 2D 训练和 3D 任务，zero-shot +8.3% on SAT Real。"
+
+  - id: paper-0607
+    title: "MM-Spatial: Exploring 3D Spatial Understanding in Multimodal LLMs"
+    authors: ["Erik Daxberger", "et al."]
+    year: 2025
+    arxiv: "2503.13111"
+    url: "https://arxiv.org/abs/2503.13111"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "spatial", "MLLM", "depth", "multiview"]
+    status: "to_download"
+    relevance: "background"
+    description: "数据驱动让 MLLM 获得媲美专用深度模型的 3D 空间理解能力。"
+
+  - id: paper-0608
+    title: "Genie 2: A Large-Scale Foundation World Model"
+    authors: ["Jack Parker-Holder", "et al."]
+    year: 2024
+    venue: "Google DeepMind"
+    url: "https://deepmind.google/blog/genie-2-a-large-scale-foundation-world-model/"
+    category: "06-3d-spatial-world"
+    tags: ["3D", "world-model", "foundation-model", "interactive", "generation"]
+    status: "to_download"
+    relevance: "core"
+    description: "单图生成可交互 3D 世界，自回归潜扩散模型，空间记忆 + 物理模拟。"
+
+  # =========================================================================
+  # Category 07: Deep Research / Tool-using Agents
+  # =========================================================================
+
+  - id: paper-0701
+    title: "A Survey of LLM-based Deep Search Agents: Paradigm, Optimization, Evaluation, and Challenges"
+    authors: ["Yunjia Xi", "Jianghao Lin", "et al."]
+    year: 2025
+    arxiv: "2508.05668"
+    url: "https://arxiv.org/abs/2508.05668"
+    code: "https://github.com/YunjiaXi/Awesome-Search-Agent-Papers"
+    category: "07-deep-research-tool-use"
+    tags: ["survey", "search-agent", "deep-research", "optimization"]
+    status: "to_download"
+    relevance: "core"
+    description: "首个 Search Agent 系统综述：架构 / 优化 / 评估 / 挑战。"
+
+  - id: paper-0702
+    title: "Deep Research: A Survey of Autonomous Research Agents"
+    authors: ["Wenlin Zhang", "Xiangyu Zhao", "et al."]
+    year: 2025
+    arxiv: "2508.12752"
+    url: "https://arxiv.org/abs/2508.12752"
+    category: "07-deep-research-tool-use"
+    tags: ["survey", "deep-research", "planning", "web-exploration", "report"]
+    status: "to_download"
+    relevance: "core"
+    description: "Pipeline 视角：Planning → Question Development → Web Exploration → Report Generation。"
+
+  - id: paper-0703
+    title: "Deep Research: A Systematic Survey"
+    authors: ["Zhengliang Shi", "et al."]
+    year: 2025
+    arxiv: "2512.02038"
+    url: "https://arxiv.org/abs/2512.02038"
+    category: "07-deep-research-tool-use"
+    tags: ["survey", "deep-research", "roadmap", "memory", "answer-generation"]
+    status: "to_download"
+    relevance: "core"
+    description: "三阶段路线图：Query Planning / Information Acquisition / Memory Management / Answer Generation。"
+
+  - id: paper-0704
+    title: "A Comprehensive Survey of Deep Research: Systems, Methodologies, and Applications"
+    authors: ["Renjun Xu", "et al."]
+    year: 2025
+    arxiv: "2506.12594"
+    url: "https://arxiv.org/abs/2506.12594"
+    category: "07-deep-research-tool-use"
+    tags: ["survey", "deep-research", "taxonomy", "commercial", "open-source"]
+    status: "to_download"
+    relevance: "core"
+    description: "80+ 商业/开源系统分析，四维分类：基础模型/工具使用/任务规划/知识综合。"
+
+  - id: paper-0705
+    title: "Reinforcement Learning Foundations for Deep Research Systems: A Survey"
+    authors: ["et al."]
+    year: 2025
+    arxiv: "2509.06733"
+    url: "https://arxiv.org/abs/2509.06733"
+    category: "07-deep-research-tool-use"
+    tags: ["RL", "deep-research", "GRPO", "survey"]
+    status: "to_download"
+    relevance: "important"
+    description: "首个 Deep Research RL 综述：数据合成、RL 方法、agentic RL 训练框架。"
+
+  - id: paper-0706
+    title: "Toolformer: Language Models Can Teach Themselves to Use Tools"
+    authors: ["Timo Schick", "Jane Dwivedi-Yu", "Roberto Dessì", "Roberta Raileanu", "Maria Lomeli", "Luke Zettlemoyer", "Nicola Cancedda", "Thomas Scialom"]
+    year: 2023
+    venue: "NeurIPS 2023"
+    arxiv: "2302.04761"
+    url: "https://arxiv.org/abs/2302.04761"
+    category: "07-deep-research-tool-use"
+    tags: ["tool-use", "self-supervised", "API", "fine-tuning"]
+    status: "to_download"
+    relevance: "core"
+    description: "LLM 自监督学习使用外部工具（API），无需人工标注，定义 agent 工具使用范式。"
+
+  - id: paper-0707
+    title: "SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering"
+    authors: ["John Yang", "et al."]
+    year: 2024
+    arxiv: "2405.15793"
+    url: "https://arxiv.org/abs/2405.15793"
+    code: "https://swe-agent.com"
+    category: "07-deep-research-tool-use"
+    tags: ["SWE", "coding", "tool-use", "ACI", "benchmark"]
+    status: "to_download"
+    relevance: "core"
+    description: "Agent-Computer Interface 概念：为 agent 设计专用编码工具接口，SWE-bench 12.5%。"
+
+  - id: paper-0708
+    title: "Agentless: Demystifying LLM-based Software Engineering Agents"
+    authors: ["Chunqiu Steven Xia", "et al."]
+    year: 2024
+    arxiv: "2407.01489"
+    url: "https://arxiv.org/abs/2407.01489"
+    category: "07-deep-research-tool-use"
+    tags: ["SWE", "simple-baseline", "benchmark", "cost"]
+    status: "to_download"
+    relevance: "important"
+    description: "反直觉基线：无自主工具的简单 pipeline 达 SWE-bench Lite 32%，$0.70/issue。"
+
+  - id: paper-0709
+    title: "Deep Research Agents: A Systematic Examination and Roadmap"
+    authors: ["Yuxuan Huang", "Jianye Hao", "Jun Wang", "et al."]
+    year: 2025
+    arxiv: "2506.18096"
+    url: "https://arxiv.org/abs/2506.18096"
+    category: "07-deep-research-tool-use"
+    tags: ["deep-research", "taxonomy", "API", "browser", "roadmap"]
+    status: "to_download"
+    relevance: "important"
+    description: "API vs Browser 检索对比，Static vs Dynamic workflow 分类。"
+
+  # =========================================================================
+  # 附加: 基础参考论文 (foundational papers for context)
+  # =========================================================================
+
+  - id: paper-found-01
+    title: "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+    authors: ["Patrick Lewis", "et al."]
+    year: 2020
+    venue: "NeurIPS 2020"
+    arxiv: "2005.11401"
+    url: "https://arxiv.org/abs/2005.11401"
+    category: "02-agentic-rag"
+    tags: ["RAG", "foundation", "retrieval", "generation"]
+    status: "to_download"
+    relevance: "core"
+    description: "RAG 原始论文：定义检索增强生成范式。"
+
+  - id: paper-found-02
+    title: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+    authors: ["Jason Wei", "et al."]
+    year: 2022
+    venue: "NeurIPS 2022"
+    arxiv: "2201.11903"
+    url: "https://arxiv.org/abs/2201.11903"
+    category: "01-agent-paradigms"
+    tags: ["CoT", "reasoning", "prompting", "foundation"]
+    status: "to_download"
+    relevance: "core"
+    description: "Chain-of-Thought：定义 LLM 推理的 prompting 方法，Agent reasoning 的基石。"
+
+  - id: paper-found-03
+    title: "Tree of Thoughts: Deliberate Problem Solving with Large Language Models"
+    authors: ["Shunyu Yao", "et al."]
+    year: 2023
+    venue: "NeurIPS 2023"
+    arxiv: "2305.10601"
+    url: "https://arxiv.org/abs/2305.10601"
+    category: "01-agent-paradigms"
+    tags: ["ToT", "planning", "search", "deliberate"]
+    status: "to_download"
+    relevance: "important"
+    description: "Tree of Thoughts：树搜索增强 LLM 推理，Agent planning 的技术源头。"
+
+# 统计
+# 总论文数: 45+
+# core: ~25, important: ~15, background: ~5
+# 年份分布: 2020:1, 2022:2, 2023:7, 2024:12, 2025:23+

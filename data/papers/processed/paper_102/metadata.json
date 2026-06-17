@@ -1,0 +1,51 @@
+{
+  "paper_id": "paper_102",
+  "title": "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis",
+  "authors": [
+    "Ben Mildenhall",
+    "Pratul P. Srinivasan",
+    "Matthew Tancik",
+    "Jonathan T. Barron",
+    "Ravi Ramamoorthi",
+    "Ren Ng"
+  ],
+  "year": 2020,
+  "venue": "ECCV 2020",
+  "url": "https://arxiv.org/abs/2003.08934",
+  "pdf_url": "https://arxiv.org/pdf/2003.08934.pdf",
+  "arxiv_id": "2003.08934",
+  "doi": null,
+  "domains": [
+    "3d-spatial-world",
+    "rendering",
+    "neural"
+  ],
+  "method_tags": [
+    "NeRF",
+    "neural-radiance-field",
+    "view-synthesis"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_102.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2003.08934",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "paper_id": "paper_083",
+  "title": "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs",
+  "authors": [
+    "Yujia Qin",
+    "Shihao Liang",
+    "Yining Ye",
+    "Kunlun Zhu",
+    "Lan Yan",
+    "Yaxi Lu",
+    "Yankai Lin",
+    "Xin Cong",
+    "Xiangru Tang",
+    "Bill Qian",
+    "Sihan Zhao",
+    "Laurent Hong",
+    "Rui Tian",
+    "RuoBing Xie",
+    "Jie Zhou",
+    "Mark Gerstein",
+    "Dahua Lin",
+    "Zhiyuan Liu",
+    "Maosong Sun"
+  ],
+  "year": 2023,
+  "venue": "NeurIPS 2024",
+  "url": "https://arxiv.org/abs/2307.16789",
+  "pdf_url": "https://arxiv.org/pdf/2307.16789.pdf",
+  "arxiv_id": "2307.16789",
+  "doi": null,
+  "domains": [
+    "tool-use",
+    "api",
+    "llm"
+  ],
+  "method_tags": [
+    "ToolLLM",
+    "ToolBench",
+    "API-calling"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_083.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2307.16789",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

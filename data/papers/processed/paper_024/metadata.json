@@ -1,0 +1,79 @@
+{
+  "paper_id": "paper_024",
+  "title": "MemR³: Memory Retrieval via Reflective Reasoning for LLM Agents",
+  "authors": [
+    "Xingbo Du",
+    "Loka Li",
+    "Duzhen Zhang",
+    "Le Song"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2512.20237",
+  "pdf_url": "https://arxiv.org/pdf/2512.20237.pdf",
+  "arxiv_id": "2512.20237",
+  "doi": null,
+  "domains": [
+    "memory",
+    "retrieval"
+  ],
+  "method_tags": [
+    "closed-loop-retrieval",
+    "router",
+    "evidence-gap-tracker",
+    "reflective-reasoning",
+    "plug-and-play"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_024.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 150,
+    "visual_count": 41,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_024.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 150,
+      "visual_count": 41,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 16,
+      "total_chars": 65752,
+      "total_words": 10089,
+      "sections_found": 50,
+      "chunks_generated": 150,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

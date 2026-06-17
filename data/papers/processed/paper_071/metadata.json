@@ -1,0 +1,50 @@
+{
+  "paper_id": "paper_071",
+  "title": "REALM: Retrieval-Augmented Language Model Pre-Training",
+  "authors": [
+    "Kelvin Guu",
+    "Kenton Lee",
+    "Zora Tung",
+    "Panupong Pasupat",
+    "Ming-Wei Chang"
+  ],
+  "year": 2020,
+  "venue": "ICML 2020",
+  "url": "https://arxiv.org/abs/2002.08909",
+  "pdf_url": "https://arxiv.org/pdf/2002.08909.pdf",
+  "arxiv_id": "2002.08909",
+  "doi": null,
+  "domains": [
+    "retrieval",
+    "rag",
+    "pre-training"
+  ],
+  "method_tags": [
+    "REALM",
+    "retrieval-augmented",
+    "knowledge-retrieval"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_071.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2002.08909",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

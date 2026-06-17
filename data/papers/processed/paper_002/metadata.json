@@ -1,0 +1,82 @@
+{
+  "paper_id": "paper_002",
+  "title": "Generative Agents: Interactive Simulacra of Human Behavior",
+  "authors": [
+    "Joon Sung Park",
+    "Joseph C. O'Brien",
+    "Carrie J. Cai",
+    "Meredith Ringel Morris",
+    "Percy Liang",
+    "Michael S. Bernstein"
+  ],
+  "year": 2023,
+  "venue": "UIST 2023",
+  "url": "https://arxiv.org/abs/2304.03442",
+  "pdf_url": "https://arxiv.org/pdf/2304.03442.pdf",
+  "arxiv_id": "2304.03442",
+  "doi": null,
+  "domains": [
+    "agent-basic-paradigms",
+    "memory",
+    "simulation"
+  ],
+  "method_tags": [
+    "memory-stream",
+    "reflection",
+    "planning",
+    "multi-agent-simulation",
+    "generative-agents"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_002.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 192,
+    "visual_count": 13,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_002.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 192,
+      "visual_count": 13,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 22,
+      "total_chars": 130350,
+      "total_words": 20158,
+      "sections_found": 58,
+      "chunks_generated": 192,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

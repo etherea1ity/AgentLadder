@@ -1,0 +1,1 @@
+Fixture figure asset: multimodal RAG architecture diagram.

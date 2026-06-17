@@ -1,0 +1,4478 @@
+1
+A Comprehensive Survey on World Models for Embodied AI
+Xinqing Li, Xin He, Le Zhang, Member, IEEE, Min Wu, Senior Member, IEEE,
+Xiaoli Li, Fellow, IEEE, and Yun Liu
+Abstract—Embodied AI requires agents that perceive, act,
+and anticipate how actions reshape future world states. World
+models serve as internal simulators that capture environment
+dynamics, enabling forward and counterfactual rollouts to support
+perception, prediction, and decision making. This survey presents
+a unified framework for world models in embodied AI. Specifically,
+we formalize the problem setting and learning objectives, and
+propose a three-axis taxonomy encompassing: (1) Functionality,
+Decision-Coupled vs. General-Purpose; (2) Temporal Modeling,
+Sequential Simulation and Inference vs. Global Difference Pre-
+diction; (3) Spatial Representation, Global Latent Vector, Token
+Feature Sequence, Spatial Latent Grid, and Decomposed Rendering
+Representation. We systematize data resources and metrics across
+robotics, autonomous driving, and general video settings, covering
+pixel prediction quality, state-level understanding, and task
+performance. Furthermore, we offer a quantitative comparison of
+state-of-the-art models and distill key open challenges, including
+the scarcity of unified datasets and the need for evaluation metrics
+that assess physical consistency over pixel fidelity, the trade-off
+between model performance and the computational efficiency
+required for real-time control, and the core modeling difficulty
+of achieving long-horizon temporal consistency while mitigating
+error accumulation. Finally, we maintain a curated bibliography
+at https://github.com/Li-Zn-H/AwesomeWorldModels.
+Index Terms—World Models, Embodied AI, Temporal Model-
+ing, Spatial Representation.
+I. INTRODUCTION
+E
+MBODIED AI aims to equip agents to perceive complex,
+multimodal environments, act within them, and anticipate
+how their actions will alter future world states [1], [2]. Central
+to this capability is the world model, an internal simulator that
+captures environment dynamics to support both forward and
+counterfactual rollouts for perception, prediction, and decision
+making [3], [4]. This survey focuses on world models that
+yield actionable predictions for embodied agents, distinguishing
+them from static scene descriptors or purely generative visual
+models that do not capture controllable dynamics.
+X. Li and Y. Liu are with the College of Computer Science, Nankai
+University, Tianjin 300350, China (e-mail: lixinqing@mail.nankai.edu.cn;
+liuyun@nankai.edu.cn).
+X.
+He
+is
+with
+the
+School
+of
+Computer
+Science
+and
+Engineer-
+ing, Tianjin University of Technology, Tianjin 300384, China (e-mail:
+hexin@email.tjut.edu.cn).
+L. Zhang is with the School of Information and Communication Engineering,
+University of Electronic Science and Technology of China, Chengdu 611731,
+Sichuan, China (e-mail: lezhang@uestc.edu.cn).
+M. Wu is with the Institute for Infocomm Research (I2R), Agency for
+Science, Technology and Research (A*STAR), 138632, Singapore (e-mail:
+wumin@i2r.a-star.edu.sg).
+X. Li is with the Information Systems Technology and Design (ISTD) Pillar,
+Singapore University of Technology and Design (SUTD), 487372, Singapore
+(e-mail: xiaoli_li@sutd.edu.sg).
+Corresponding author: Yun Liu (e-mail: liuyun@nankai.edu.cn)
+This work was supported in part by the National Natural Science Foundation
+of China (No. 62576176) and in part by the Fundamental Research Funds for
+the Central Universities (Nankai University, No. 070-63253235).
+Cognitive science suggests humans construct internal models
+of the world by integrating sensory inputs. These models
+do not merely predict and simulate future events but also
+shape perception and guide action [5]–[7]. Motivated by this
+view, early AI research on world models was rooted in model-
+based reinforcement learning (RL), where latent state-transition
+models were used to improve sample efficiency and planning
+performance [8]. The seminal work of Ha and Schmidhuber [9]
+crystallized the term world model and inspired the Dreamer
+series [10]–[12], highlighting how learned dynamics can drive
+imagination-based policy optimization. More recently, advances
+in large-scale generative modeling and multimodal learning
+have expanded world models beyond their initial focus on
+policy learning into general-purpose environment simulators
+capable of high-fidelity future prediction, exemplified by
+models like Sora [13] and V-JEPA 2 [14]. This expansion
+has diversified functional roles, temporal modeling strategies,
+and spatial representations, while introducing inconsistencies
+in terminology and taxonomy across sub-communities.
+Faithfully capturing environment dynamics requires address-
+ing both the temporal evolution of states and the spatial
+encoding of scenes [3]. Long-horizon rollouts are susceptible
+to error accumulation, which establishes coherence as a central
+challenge in video prediction and policy imagination [15], [16].
+Similarly, coarse or 2D-centric layouts provide insufficient
+geometric detail for handling challenges such as occlusion,
+object permanence, and geometry-aware planning. In contrast,
+volumetric or 3D occupancy representations such as neural
+fields [17] and structured voxel grids [18] provide geometric
+structure that better supports forecasting and control. Taken
+together, these points establish temporal modeling and spatial
+representation as core design dimensions that fundamentally
+influence the predictive horizon, physical fidelity, and down-
+stream performance of embodied agents.
+Several recent surveys have organized the rapidly growing
+literature on world models. Overall, these surveys follow two
+main approaches. The first is a function-oriented perspective.
+For example, Ding et al. [4] categorized relevant works based
+on the two core functions of understanding and prediction,
+while Zhu et al. [19] presented a framework based on the
+core capabilities of world models. The second approach
+is application-driven, focusing on specific domains such as
+autonomous driving. Notably, Guan et al. [20] and Feng et
+al. [21] provided overviews of world model techniques for
+autonomous driving.
+To address the lack of a unified taxonomy in the context of
+embodied AI, this work introduces a framework centered on
+the three core axes of functionality, temporal modeling, and
+spatial representation. At the functional level, this framework
+distinguishes between decision-coupled and general-purpose
+arXiv:2510.16732v2  [cs.CV]  29 Nov 2025
+
+
+2
+models. At the temporal level, it differentiates between Se-
+quential Simulation and Inference versus Global Difference
+Prediction. Finally, at the spatial level, it encompasses a range
+of representations from latent features to explicit geometry
+and neural fields. This framework offers a unified structure for
+organizing existing approaches and integrates standardized
+datasets and evaluation metrics. This structure facilitates
+quantitative comparisons and provides a panoramic, actionable
+knowledge map for future research.
+Fig. 1 presents an overview of the structure and taxonomy of
+this paper. We begin in §II by outlining the core concepts and
+theoretical foundations of world models. §III introduces our
+three-axis taxonomy and maps representative methods onto this
+framework. §IV surveys the datasets and evaluation metrics
+used for training and assessment. §V offers a quantitative
+comparison of state-of-the-art models. §VI discusses open chal-
+lenges and promising research directions, and §VII concludes
+the survey.
+II. BACKGROUND
+A. Core Concepts
+As discussed in §I, a world model functions as an internal
+simulator of environmental dynamics. Its functionality rests on
+three aspects:
+• Simulation & Planning, which uses learned dynamics to
+generate plausible future scenarios, allowing agents to assess
+potential actions through imagination without real-world
+interaction.
+• Temporal Evolution, which learns how the encoded state
+evolves, enabling temporally consistent rollouts.
+• Spatial Representation, which encodes scene geometry at
+an appropriate fidelity, using formats such as latent tokens
+or neural fields to provide context for control.
+These three pillars provide the conceptual foundation for
+the taxonomy introduced in §III and are formalized in the
+mathematical framework that follows.
+B. Mathematical Formulation of World Models
+We formalize the environment interaction as a POMDP [24].
+For notational consistency, we define a null initial action a0 at
+t = 0, which allows the dynamics to be written uniformly. At
+each step t ≥1, the agent receives an observation ot and takes
+an action at, while the true state st remains unobserved. To
+handle this partial observability, world models infer a learned
+latent state zt using a one-step filtering posterior, where the
+previous latent state zt−1 is assumed to summarize the relevant
+history. Finally, zt is used to reconstruct ot:
+Dynamics Prior:
+pθ(zt | zt−1, at−1)
+Filtered Posterior:
+qϕ(zt | zt−1, at−1, ot)
+Reconstruction:
+pθ(ot | zt)
+.
+(1)
+Consistent with the Markovian structure, the joint distribution
+over observations and latent states factorizes as:
+pθ(o1:T , z0:T |a0:T −1)=pθ(z0)
+T
+Y
+t=1
+pθ(zt |zt−1, at−1)pθ(ot |zt).
+(2)
+To infer the latent states, we must approximate the intractable
+true posterior pθ(z0:T | o1:T , a0:T −1) with a time-factorized
+variational distribution:
+qϕ(z0:T |o1:T , a0:T −1) = qϕ(z0 |o1)
+T
+Y
+t=1
+qϕ(zt |zt−1, at−1, ot),
+(3)
+which indeed reduces to the action-free case when ignoring
+a inputs. Directly maximizing the log-likelihood log pθ(o1:T |
+a0:T −1) is intractable. Instead, we optimize an ELBO using the
+approximate posterior qϕ, which provides a tractable objective
+for learning the model parameters:
+log pθ(o1:T |a0:T −1) =log
+Z
+pθ(o1:T , z0:T |a0:T −1) dz0:T
+≥Eqϕ
+h
+log pθ(o1:T , z0:T | a0:T −1)
+qϕ(z0:T | o1:T , a0:T −1)
+i
+=: L(θ, ϕ).
+(4)
+Under the assumption of Markov factorization for both pθ and
+qϕ, this ELBO decomposes into a reconstruction objective and
+a KL regularization term:
+L(θ,ϕ) =
+T
+X
+t=1
+Eqϕ(zt)
+
+log pθ(ot | zt)
+
+−DKL
+ qϕ(z0:T | o1:T , a0:T −1) ∥pθ(z0:T | a0:T −1)
+
+.
+(5)
+Modern
+world
+models
+thus
+adopt
+a
+reconstruc-
+tion–regularization
+training
+paradigm:
+the
+likelihood
+term
+log pθ(ot
+|
+zt)
+encourages
+faithful
+observation
+prediction, and KL regularization terms align the filtered
+posterior qϕ(zt | zt−1, at−1, ot) with the dynamics prior
+pθ(zt | zt−1, at−1). Such world models can be instantiated
+with
+recurrent
+models
+[25]–[27],
+Transformer-based
+architectures [28]–[30], or diffusion-based decoders [31]–[35].
+In all cases, the learned latent trajectory z1:T serves as a
+compact, predictive memory to support downstream policy
+optimization, model-predictive control, and counterfactual
+reasoning in embodied AI.
+III. TAXONOMY
+We categorize world models along three core dimensions,
+which provide the foundation for the subsequent analysis in
+this survey.
+The first dimension, decision coupling, distinguishes be-
+tween Decision-Coupled and General-Purpose world models.
+Decision-Coupled models are task-specific, learning dynamics
+optimized for a particular decision-making task. In contrast,
+General-Purpose models are task-agnostic simulators that focus
+on broad prediction, enabling generalization across various
+downstream applications.
+The second dimension, temporal reasoning, delineates two
+distinct paradigms of prediction. Sequential Simulation and
+Inference models dynamics in an autoregressive manner,
+unfolding future states one step at a time. In contrast, Global
+Difference Prediction directly estimates entire future states
+in parallel, offering greater efficiency at the potential cost of
+reduced temporal coherence.
+
+
+3
+§I Introduction
+§II Background
+§III Taxonomy
+§IV Data
+and Metrics
+§V Performance
+§VI Challenges
+and Trends
+§VII Conclusion
+History
+History
+Imagination
+Imagination
+World Model
+ (Internal Simulator)
+History
+Imagination
+World Model
+ (Internal Simulator)
+Core Concepts (§II-A)
+Image
+LiDAR
+Text
+Proprioception Action
+Π
+Image
+LiDAR
+Text
+Proprioception Action
+Π
+Decision-Coupled (§III-A)
+Fine-Tune
+Downstream 
+Models
+Video Generation
+Navigation
+Q&A
+Planning
+Manipulation
+...
+General-Purpose (§III-B)
+Sequential
+(§III-A1 &
+§III-B1)
+Dec.
+Dec.
+Enc.
+Enc.
+Dec.
+Enc.
+Dec.
+Dec.
+Enc.
+Dec.
+Dec.
+Enc.
+Enc.
+Dec.
+Enc.
+Dec.
+Enc.
+Dec.
+Enc.
+Recurrent Structure
+…
+…
+    Chunk-wise Autoregressive
+…
+…
+…
+    Chunk-wise Autoregressive
+…
+Autoregressive Methods
+Global
+(§III-A2 &
+§III-B2)
+Video Generator
+Visual Input
+Visual Input
+Conditions
+……
+……
+Command Text Intrinsics
+……
+Video Generator
+Visual Input
+Conditions
+……
+Command Text Intrinsics
+……
+Global Prediction
+Mask
+Enc.
+Enc.
+EMA
+Enc.
+Enc.
+EMA
+//
+stop-grad
+Mask
+Mask predictor
+L1
+Mask
+Enc.
+Enc.
+EMA
+//
+stop-grad
+Mask
+Mask predictor
+L1
+Masked JEPA
+Spatial
+Representation
+Zt
+Zt
+Zt
+^
+ht
+min KL
+Ot
+Ot
+Ot
+^
+rt
+^
+Zt
+Zt
+^
+ht
+min KL
+Ot
+Ot
+^
+rt
+^
+Global Latent Vector
+Enc.
+…
+Enc.
+…
+…
+World Model
+World Model
+…
+Q 
+K V
+…
+…
+Dec.
+Dec.
+Enc.
+…
+Enc.
+…
+…
+World Model
+…
+Q 
+K V
+…
+…
+Dec.
+Dec.
+Token Feature Sequence
+Fusion
+World Model
+World Model
+World Model
+World Model
+Fusion
+…
+…
+Fusion
+Fusion
+World Model
+World Model
+Fusion
+…
+…
+Fusion
+Spatial Latent Grid
+Voxel Diffusion
+Trajectory
+Voxel World
+Driving Video
+Conditions
+Gaussian
+Splatting
+HDMap & Boxes
+HDMap & Boxes
+Gaussian Scene
+Gaussian Scene
+Gaussian Scene
+Voxel Diffusion
+Trajectory
+Voxel World
+Driving Video
+Conditions
+Gaussian
+Splatting
+HDMap & Boxes
+Gaussian Scene
+Decomposed Rendering Representation
+Fig. 1. Structure of this survey. The figure classifies world models along three axes and illustrates representative methods for each, providing a unified view of
+the field. Figure design inspired in part by [12], [14], [22], [23].
+The third dimension, spatial representation, comprises four
+primary strategies used in current research to model spatial
+states:
+1) Global Latent Vector representations encode complex
+world states into a compact vector, enabling efficient real-
+time computation on physical devices.
+2) Token Feature Sequence representations model world
+states as sequences of tokens, focusing on capturing
+complex spatial, temporal, and cross-modal dependencies
+among tokens.
+3) Spatial Latent Grid representations incorporate spatial
+inductive biases into world models by leveraging geo-
+metric priors such as Bird’s-Eye View (BEV) features or
+voxel grids.
+4) Decomposed Rendering Representation involves de-
+composing 3D scenes into a set of learnable primitives,
+such as 3D Gaussian Splatting (3DGS) [36] or Neural
+Radiance Fields (NeRF) [37], and then using differentiable
+rendering to achieve high-fidelity novel view synthesis.
+The following tables apply this taxonomy to classify repre-
+sentative works. Tab. I reviews approaches in robotics, while
+Tab. II focuses on autonomous driving. Together, they provide
+a roadmap for the detailed analyses in the subsequent sections.
+A. Decision-Coupled World Models
+1) Sequential Simulation and Inference: Global Latent
+Vector.
+Early decision-coupled world models combined se-
+quential inference with global latent states. These approaches
+primarily use Recurrent Neural Networks (RNNs) for efficient
+real-time and long-horizon prediction.
+Ha and Schmidhuber [9] introduced an early world model
+that encodes observations into a latent space and employs an
+RNN to model dynamics for policy optimization. Building on
+this, PlaNet [38] introduced the Recurrent State-Space Model
+(RSSM), which fuses deterministic memory with stochastic
+components to enable robust long-horizon imagination. The
+successor models Dreamer, DreamerV2, and DreamerV3 [10]–
+[12] further advanced this formulation, inspiring a broad line
+of subsequent research.
+Building on RSSM, several variants modify or eliminate
+the decoder to better capture dynamics. For example, Dream-
+ing [110] uses contrastive learning and linear methods to
+mitigate state shifts, whereas DreamerPro [111] replaces the
+decoder with prototypes to suppress visual distractions. To fur-
+ther enhance robustness, HRSSM [25] was proposed, featuring
+a dual-branch architecture that aligns latent observations and
+shares information without reconstruction. Beyond architectural
+refinements, DisWM [112] disentangles semantic knowledge
+from video content, distilling it into a world model that enables
+cross-domain generalization.
+A unifying theme across recent RSSM extensions is transfer-
+ability, which reflects generalization across modalities, tasks,
+and embodiments for robust real-world robotics. At the repre-
+sentation level, PreLAR [52] learns implicit action abstractions
+to bridge video-pretrained representations and control fine-
+tuning. Similarly, Wang et al. [113] used optical flow as an
+embodiment-agnostic action representation to refine behavior-
+
+
+4
+TABLE I
+A SUMMARY OF REPRESENTATIVE WORLD MODELS IN ROBOTICS AND GENERAL-PURPOSE DOMAINS.
+Paper
+Publication
+Taxonomy1
+Characteristics2
+Datasets Platform
+Modality
+Reality4
+DMC
+Atari
+RLBench
+SSv2
+OXE
+Meta-world
+Franka
+RT-1
+LIBERO
+Other(s)
+Total3
+RGB
+Action
+Proprio.
+Depth
+Language
+Other(s)
+PlaNet [38]
+ICML’19
+Dec/Seq/GLV
+RSSM
+✓
+1
+✓
+✓
+Dreamer [10]
+ICLR’20
+Dec/Seq/GLV
+RSSM
+✓
+✓
+✓
+3
+✓
+✓
+GLAMOR [39]
+ICLR’21
+Dec/Seq/GLV
+IDM
+✓
+✓
+2
+✓
+✓
+DreamerV2 [11]
+ICLR’21
+Dec/Seq/GLV
+RSSM
+✓
+✓
+2
+✓
+✓
+TransDreamer [28]
+arXiv’22
+Dec/Seq/GLV
+TSSM
+✓
+✓
+✓
+4
+✓
+✓
+Iso-Dream [40]
+NeurIPS’22
+Dec/Seq/GLV
+IDM
+✓
+✓
+4
+✓
+✓
+MWM [41]
+CoRL’22
+Dec/Seq/TFS
+RSSM
+✓
+✓
+✓
+3
+✓
+✓
+Inner Monologue [42]
+CoRL’22
+Dec/Seq/TFS
+CoT
+✓
+3
+✓
+✓
+✓
+✓
+DayDreamer [43]
+CoRL’22
+Dec/Seq/GLV
+RSSM
+✓
+4
+✓
+✓
+✓
+✓
+✓
+TWM [29]
+ICLR’23
+Dec/Seq/TFS
+Transformer
+✓
+1
+✓
+✓
+IRIS [44]
+ICLR’23
+Dec/Seq/TFS
+Transformer
+✓
+1
+✓
+✓
+WorldDreamer [45]
+arXiv’24
+Gen/Glo/TFS
+Transformer
+✓
+4
+✓
+✓
+✓
+Statler [46]
+ICRA’24
+Dec/Seq/TFS
+LLM
+✓
+2
+✓
+✓
+✓
+✓
+✓
+Pandora [47]
+arXiv’24
+Gen/Seq/TFS
+Video Diffusion
+✓
+✓
+2
+✓
+✓
+DWL [48]
+RSS’24
+Dec/Seq/GLV
+MLP
+✓
+4
+✓
+✓
+✓
+✓
+RoboDreamer [49]
+ICML’24
+Dec/Glo/TFS
+IDM
+✓
+✓
+2
+✓
+✓
+✓
+✓
+Genie [50]
+ICML’24
+Gen/Seq/TFS
+Transformer
+✓
+✓
+3
+✓
+✓
+V-JEPA [51]
+TMLR’24
+Gen/Glo/TFS
+JEPA
+✓
+✓
+6
+✓
+PreLAR [52]
+ECCV’24
+Dec/Seq/GLV
+RSSM
+✓
+✓
+✓
+3
+✓
+✓
+ManiGaussian [53]
+ECCV’24
+Dec/Seq/DRR
+3DGS
+✓
+1
+✓
+✓
+✓
+✓
+✓
+ECoT [54]
+CoRL’24
+Dec/Glo/TFS
+CoT
+✓
+3
+✓
+✓
+✓
+✓
+VidMan [55]
+NeurIPS’24
+Dec/Glo/TFS
+IDM
+✓
+✓
+✓
+4
+✓
+✓
+✓
+✓
+iVideoGPT [56]
+NeurIPS’24
+Gen/Seq/TFS
+Transformer
+✓
+✓
+✓
+✓
+6
+✓
+✓
+EnerVerse [34]
+arXiv’25
+Dec/Seq/SLG
+Video Diffusion
+✓
+✓
+✓
+4
+✓
+✓
+✓
+✓
+GLAM [57]
+AAAI’25
+Dec/Seq/GLV
+Mamba
+✓
+1
+✓
+✓
+NavCoT [58]
+TPAMI’25
+Dec/Seq/TFS
+CoT
+✓
+4
+✓
+✓
+✓
+DreamerV3 [12]
+Nature’25
+Dec/Seq/GLV
+RSSM
+✓
+✓
+✓
+8
+✓
+✓
+✓
+MineWorld [59]
+arXiv’25
+Dec/Seq/TFS
+Transformer
+✓
+1
+✓
+✓
+DreMa [60]
+ICLR’25
+Dec/Seq/DRR
+3DGS
+✓
+✓
+2
+✓
+✓
+✓
+✓
+✓
+✓
+S2-SSM [61]
+arXiv’25
+Gen/Seq/TFS
+Mamba
+✓
+1
+✓
+✓
+RLVR-World [62]
+arXiv’25
+Gen/Seq/TFS
+RLVR
+✓
+✓
+3
+✓
+✓
+✓
+StateSpaceDiffuser [63]
+arXiv’25
+Gen/Seq/TFS
+Mamba
+✓
+2
+✓
+✓
+DeepVerse [64]
+arXiv’25
+Gen/Seq/TFS
+DiT
+✓
+1
+✓
+✓
+✓
+✓
+ORV [65]
+arXiv’25
+Gen/Glo/SLG
+DiT
+✓
+✓
+4
+✓
+✓
+✓
+✓
+✓
+V-JEPA 2 [14]
+arXiv’25
+Gen/Glo/TFS
+JEPA
+✓
+✓
+✓
+15
+✓
+✓
+✓
+✓
+✓
+NWM [66]
+CVPR’25
+Dec/Seq/TFS
+DiT
+✓
+6
+✓
+✓
+WorldVLA [67]
+arXiv’25
+Dec/Seq/TFS
+Transformer
+✓
+1
+✓
+✓
+✓
+World4Omni [68]
+arXiv’25
+Gen/Seq/TFS
+VLM
+✓
+✓
+2
+✓
+✓
+✓
+✓
+✓
+Dyn-O [69]
+arXiv’25
+Dec/Seq/TFS
+Mamba
+✓
+1
+✓
+✓
+DINO-WM [70]
+ICML’25
+Dec/Seq/SLG
+Transformer
+✓
+✓
+3
+✓
+✓
+✓
+EVA [71]
+ICML’25
+Gen/Seq/TFS
+RoG
+✓
+✓
+✓
+4
+✓
+✓
+✓
+AdaWorld [72]
+ICML’25
+Gen/Seq/TFS
+Video Diffusion
+✓
+✓
+✓
+✓
+6
+✓
+✓
+MindJourney [73]
+arXiv’25
+Gen/Seq/SLG
+VLM
+✓
+2
+✓
+✓
+✓
+GAF [74]
+arXiv’25
+Dec/Seq/DRR
+4DGS
+✓
+1
+✓
+✓
+✓
+✓
+Yume [75]
+arXiv’25
+Gen/Seq/TFS
+DiT
+✓
+1
+✓
+✓
+✓
+villa-X [76]
+arXiv’25
+Dec/Glo/TFS
+IDM
+✓
+✓
+✓
+✓
+✓
+5
+✓
+✓
+✓
+✓
+✓
+AETHER [77]
+ICCV’25
+Gen/Glo/SLG
+DiT
+✓
+6
+✓
+✓
+✓
+✓
+TesserAct [78]
+ICCV’25
+Dec/Glo/SLG
+IDM
+✓
+✓
+✓
+✓
+4
+✓
+✓
+✓
+✓
+MineDreamer [79]
+IROS’25
+Dec/Seq/TFS
+CoI
+✓
+3
+✓
+✓
+✓
+ManiGaussian++ [80]
+IROS’25
+Dec/Seq/DRR
+3DGS
+✓
+✓
+2
+✓
+✓
+✓
+✓
+✓
+✓
+1 Taxonomy: Abbreviations for the taxonomy categories defined in §III.
+2 Characteristics: Representative backbone or core technical approach.
+3 Total: Number of data platforms used. Underlined entries denote newly proposed or aggregated datasets.
+4 Reality: The check mark (✓) indicates validation on a physical robot.
+cloned policies, facilitating transfer across diverse embodiments.
+SENSEI [114] distilled a Vision-Language Model (VLM) to
+derive semantic rewards and employed an RSSM that learns to
+predict and propagate these rewards internally. Under limited
+supervision, SR-AIF [115] exploits prior preference learning
+and self-revision to enable adaptive learning in sparse-reward,
+continuous-control settings. To mitigate the Sim-to-Real (S2R)
+gap, ReDRAW [116] is pretrained in simulation and adapted to
+the real environment using a limited amount of reward-free data,
+applying residual corrections to the latent dynamics. To handle
+mismatches, AdaWM [117] identifies discrepancies between
+the learned dynamics and the planner and selectively fine-tunes
+critical components. Other methods like WMP [118] address
+S2R transfer for challenging tasks, and DayDreamer [43]
+demonstrated sample-efficient deployment on physical robots.
+To broaden transfer, FOUNDER [119] grounds representations
+from foundation models in the world-model state space, using
+temporal-distance prediction to handle flexible goals, and
+LUMOS [120] introduced a language-conditioned imitation
+framework that operates on-policy in latent space with intrinsic
+rewards, enabling zero-shot transfer to real-world robotics.
+RSSM-based models have also been developed for au-
+tonomous driving. MILE [81] leverages offline expert data
+to enable imagined future states for planning. SEM2 [83]
+integrates semantic filtering with multi-source sampling to
+extract driving-relevant features and balance data distribution.
+Popov et al. [121] addressed covariate shift through a latent
+generative world model that realigns policies with expert states.
+
+
+5
+TABLE II
+A SUMMARY OF REPRESENTATIVE WORLD MODELS FOR THE AUTONOMOUS DRIVING DOMAIN.
+Paper
+Publication
+Taxonomy1
+Characteristics2
+Datasets Platform
+Input Modality
+CARLA
+nuScenes
+nuPlan
+Waymo
+Occ3D
+OpenDV
+Other(s)
+Total3
+RGB
+Motion
+Map
+LiDAR
+Bound box
+Language
+Occpancy
+Other(s)
+MILE [81]
+NeurIPS’22
+Dec/Seq/GLV
+RSSM
+✓
+1
+✓
+✓
+✓
+Copilot4D [82]
+ICLR’24
+Gen/Seq/SLG
+Video Diffusion
+✓
+✓
+3
+✓
+✓
+SEM2 [83]
+TITS’24
+Dec/Seq/GLV
+RSSM
+✓
+1
+✓
+✓
+✓
+✓
+MagicDrive3D [84]
+arXiv’24
+Gen/Glo/DRR
+3DGS
+✓
+1
+✓
+✓
+✓
+✓
+✓
+✓
+OccSora [85]
+arXiv’24
+Gen/Glo/SLG
+Diffusion
+✓
+✓
+2
+✓
+✓
+Delphi [86]
+arXiv’24
+Gen/Seq/SLG
+Video Diffusion
+✓
+1
+✓
+✓
+✓
+✓
+DriveWorld [87]
+CVPR’24
+Dec/Seq/SLG
+RSSM
+✓
+✓
+2
+✓
+✓
+✓
+✓
+Drive-WM [88]
+CVPR’24
+Dec/Glo/SLG
+Video Diffusion
+✓
+1
+✓
+✓
+✓
+✓
+✓
+✓
+ViDAR [89]
+CVPR’24
+Gen/Seq/SLG
+Transformer
+✓
+1
+✓
+✓
+✓
+GenAD [90]
+CVPR’24
+Gen/Seq/TFS
+Video Diffusion
+✓
+✓
+✓
+✓
+✓
+4
+✓
+✓
+✓
+OccLLaMA [18]
+arXiv’24
+Dec/Seq/SLG
+Transformer
+✓
+✓
+✓
+3
+✓
+✓
+✓
+✓
+DriveDreamer [91]
+ECCV’24
+Dec/Seq/SLG
+GRU
+✓
+1
+✓
+✓
+✓
+✓
+✓
+GenAD [92]
+ECCV’24
+Dec/Seq/SLG
+GRU
+✓
+1
+✓
+OccWorld [93]
+ECCV’24
+Dec/Seq/SLG
+Transformer
+✓
+✓
+2
+✓
+✓
+✓
+✓
+DOME [94]
+arXiv’24
+Gen/Seq/SLG
+DiT
+✓
+✓
+2
+✓
+✓
+✓
+TOKEN [95]
+CoRL’24
+Dec/Glo/TFS
+Transformer
+✓
+✓
+2
+✓
+✓
+✓
+✓
+Vista [96]
+NeurIPS’24
+Gen/Seq/SLG
+Video Diffusion
+✓
+✓
+✓
+✓
+4
+✓
+✓
+✓
+DriveDreamer-2 [97]
+AAAI’25
+Gen/Glo/SLG
+Video Diffusion
+✓
+1
+✓
+✓
+✓
+✓
+✓
+DTT [98]
+arXiv’25
+Dec/Seq/DRR
+Transformer
+✓
+✓
+2
+✓
+✓
+✓
+✓
+DynamicCity [99]
+ICLR’25
+Gen/Glo/SLG
+DiT
+✓
+✓
+✓
+✓
+4
+✓
+✓
+✓
+✓
+LidarDM [100]
+ICRA’25
+Gen/Seq/SLG
+Diffusion
+✓
+✓
+3
+✓
+✓
+FutureSightDrive [101]
+arXiv’25
+Dec/Seq/TFS
+CoT(VLM)
+✓
+✓
+3
+✓
+✓
+✓
+GEM [102]
+CVPR’25
+Gen/Seq/SLG
+Video Diffusion
+✓
+✓
+1
+✓
+✓
+✓
+GaussianWorld [103]
+CVPR’25
+Gen/Seq/DRR
+Transformer
+✓
+✓
+2
+✓
+✓
+MaskGWM [104]
+CVPR’25
+Gen/Glo/TFS
+DiT
+✓
+✓
+✓
+3
+✓
+✓
+✓
+DriveDreamer4D [105]
+CVPR’25
+Gen/Glo/DRR
+4DGS
+✓
+✓
+✓
+3
+✓
+✓
+✓
+✓
+✓
+✓
+✓
+ReconDreamer [106]
+CVPR’25
+Gen/Glo/DRR
+3DGS
+✓
+✓
+✓
+3
+✓
+✓
+✓
+✓
+✓
+WoTE [107]
+ICCV’25
+Dec/Seq/SLG
+Transformer
+✓
+✓
+2
+✓
+✓
+✓
+HERMES [108]
+ICCV’25
+Gen/Glo/SLG
+LLM
+✓
+✓
+4
+✓
+✓
+✓
+InfiniCube [22]
+ICCV’25
+Gen/Seq/DRR
+3DGS
+✓
+1
+✓
+✓
+✓
+✓
+✓
+✓
+DriVerse [109]
+ACMMM’25
+Gen/Seq/TFS
+DiT
+✓
+✓
+2
+✓
+✓
+✓
+✓
+1 Taxonomy: Abbreviations for the taxonomy categories defined in §III.
+2 Characteristics: Representative backbone or core technical approach.
+3 Total: Number of data platforms used. Underlined entries denote newly proposed or aggregated datasets.
+For safety, VL-SAFE [122] supervises world models using
+safety scores derived from a VLM to generate safe trajectories.
+Finally, CALL [123] extended the RSSM framework to Multi-
+Agent RL by introducing ego-centric information sharing to
+enhance planning capabilities.
+In contrast to RSSM, TransDreamer [28] introduced a Trans-
+former State-Space Model (TSSM) that replaces the recurrent
+core in Dreamer, thereby substantially enhancing its capacity
+to capture long-horizon dependencies. The complementary
+OSVI-WM [124] employs a causal Transformer for one-shot
+Imitation Learning (IL), autoregressively predicting the future
+latent trajectory and decoding it into physical waypoints for
+robot control.
+Some approaches continue to employ RNNs to capture
+temporal dependencies. On the modeling side, RWM [125]
+introduced a dual-autoregressive, domain-agnostic neural sim-
+ulator for long-horizon prediction. X-MOBILITY [126], in
+contrast, disentangles modeling from policy learning, using
+multi-head decoders for large-scale pretraining followed by
+supervised fine-tuning to derive strong policies. For humanoid
+locomotion, DWL [48] and WMR [127] adopted end-to-end
+(E2E) frameworks. These frameworks reconstruct states from
+partial observations using either denoising or a gradient-blocked
+state estimator, which enables zero-shot transfer across complex
+real-world terrains.
+Recently, State Space Models (SSMs), exemplified by
+Mamba, have emerged as alternatives to RNNs and Trans-
+formers, combining linear-time complexity with long-horizon
+modeling capacity. Building on this, GLAM [57] improves both
+fidelity and efficiency via a Mamba-based parallel framework
+that integrates global and local modules to capture contextual
+and fine-grained dynamics.
+Beyond forward temporal modeling, Inverse Dynamics
+Modeling (IDM) is a key paradigm in world model construction.
+An IDM infers the actions required to transition between
+an initial and a target state. Agrawal et al. [128] integrated
+a forward model with an IDM for multi-step prediction,
+establishing the basis for subsequent research. More recent work
+includes GLAMOR [39], which trains an object-conditioned
+IDM to predict the actions necessary to reach a specified
+target. In Dreamer-style agents, Iso-Dream [40] leverages
+IDM to decompose the world model into controllable and
+uncontrollable components, using the rollout of uncontrollable
+states to guide policy learning.
+Token Feature Sequence.
+The Token Feature Sequence
+paradigm centers on modeling dependencies among discrete
+tokens. This representation supports causal inference, multi-
+modal integration, and the reuse of Large Language Model
+(LLM).
+Recent RSSM-centric studies have begun to exploit token-
+level dependencies to strengthen representation learning and
+
+
+6
+temporal reasoning. For example, MWM [41] decouples
+visual tokens from RSSM-based dynamics via a masked
+autoencoder, improving both performance and data efficiency.
+NavMorph [129] introduced a self-evolving RSSM with a
+contextual evolution memory for online adaptation. For tempo-
+ral abstraction, WISTER [130] employed action-conditioned
+contrastive predictive coding to train a TSSM that captures
+high-level temporal features. Similarly, TWM [29] used a
+Transformer to align multimodal tokens with historical states
+during training, while relying on a lightweight policy at infer-
+ence. To handle long-horizon tasks, some approaches integrate
+LLMs with RSSMs to decompose objectives into subtasks.
+EvoAgent [131], for example, uses an LLM to guide low-level
+actions and regularizes RSSM updates. RoboHorizon [132],
+in contrast, enhances task recognition with dense rewards and
+leverages key task segments via a masked autoencoder.
+In autonomous driving, token-based sequence representations
+are increasingly adopted to model cross-modal interactions and
+spatiotemporal structures. DrivingWorld [133] pairs next-state
+prediction for temporal dynamics with next-token prediction
+for spatial structure. For multimodal control, Doe-1 [134]
+formulates closed-loop driving as autoregressive prediction over
+perception-description-action tokens, which unifies perception,
+prediction, and planning, and DrivingGPT [23] interleaves vi-
+sion and action tokens and casts world modeling and trajectory
+planning as next-token prediction. To enhance diversity and
+safety, LatentDriver [135] models future actions as a mixture
+distribution and actuates the world model with planner-sampled
+intermediate actions. At the same time, Vasudevan et al. [136]
+proposed an adaptive model that predicts surrounding agents
+for safe navigation.
+The token-based paradigm also extends to broader robotics.
+Within RL, IRIS [44] and TWM [137] leverage discrete
+tokens to enable data-efficient policy learning via imagined
+or hybrid rollouts. DyWA [138] improves action learning by
+conditioning on trajectory dynamics and jointly predicting
+future states with single-view point-cloud and proprioceptive
+modalities. EgoAgent [139] interleaves state-action sequence
+modeling within a Transformer, enabling unified perception,
+prediction, and action inference. Tokenized representations
+unify multimodal inputs, including vision, language, and
+action (VLA), enabling generalist agents with cross-domain
+adaptability, as shown in WorldVLA [67]. Recent studies
+encode environmental states as discrete symbolic tokens and
+condition next-token prediction on action, as demonstrated by
+DCWM [140] and TrajWorld [141].
+Recent studies have strengthened the link between tokenized
+representations and planning, particularly through object-centric
+approaches. These models, such as CarFormer [142], the work
+of Jeong et al. [143], and Dyn-O [69], represent scenes as
+a collection of slots. CarFormer autoregressively models the
+relationships between these slots in BEV. Jeong et al. added
+language-guided manipulation, while Dyn-O used a Mamba
+with dropout scheduling for temporal modeling and to disen-
+tangle static from dynamic elements. ∆-IRIS [144] introduced
+a hybrid Transformer that integrates tokens with stochastic ∆-
+tokens to capture dynamics. D2PO [145] employed preference
+learning to jointly optimize state prediction and action selection,
+enhancing the model’s understanding of underlying dynamics.
+For efficiency, MineWorld [59] accelerated token generation
+by predicting sequences in parallel and introduced an IDM
+as a controllability metric. Meanwhile, PIVOT-R [146] and
+ReOI [147] incorporated VLMs into control. PIVOT-R parses
+instructions to produce waypoint-based plans that an action
+module decodes into low-level controls, whereas ReOI detects
+implausible prediction elements, reimagines the distractors, and
+reintegrates the corrected content.
+Based on tokenization, some studies employ autoregressive
+diffusion to achieve stable generation and long-horizon plan-
+ning. Epona [148] decouples spatiotemporal modeling, handled
+by a Transformer, from long-horizon multimodal generation,
+realized through trajectory and vision Diffusion Transformers
+(DiTs). Goff et al. [149] used a DiT to instantiate the state
+transition, which enables on-policy training and multi-second
+closed-loop rollouts. SceneDiffuser++ [150] pushes this further
+to city-scale traffic simulation, applying multi-tensor diffusion
+over agents and traffic lights to produce stable closed-loop
+rollouts. For navigation, NWM [66] introduced an efficient
+conditional DiT to simulate visual trajectories for zero-shot
+planning.
+Another emerging direction is to inject explicit reasoning
+into the world model using LLMs and Chain-of-Thought (CoT).
+NavCoT [58] decomposes navigation into imagination, filtering,
+and prediction, enabling parameter-efficient in-domain training,
+and ECoT [54] leverages a pipeline of foundation models to
+generate reasoning labels for training a VLA policy. Variants
+like MineDreamer [79] introduced Chain-of-Imagination (CoI),
+where a multimodal LLM imagines future observations to
+steer diffusion and guide actions, and FSDrive [101] generates
+physics-constrained future scenes and treats them as CoT
+supervision, enabling VLMs to function as IDMs for planning.
+Other approaches directly couple LLMs with world models to
+operationalize planning and data generation. Dyna-Think [151]
+fuses reasoning and acting via a distilled LLM, and RIG [152]
+unifies reasoning and imagination end-to-end generalist policy.
+In terms of explicit dynamics and long-horizon, Gkountouras et
+al. [153] trained a causal world-model simulator that grounds
+an LLM nvironment causal reasoning and planning skills,
+Statler [46] enables LLMs to keep a structured world-state,
+using a reader for planning and a writer for updating, and
+Inner Monologue [42] incorporates a closed-loop feedback into
+LLMs, enabling agents to reason and deliberate more akin
+to human thinking. Finally, WoMAP [154] synthesized 3DGS
+scenes and trained a world model that refines VLM instructions
+for precise execution.
+Spatial Latent Grid.
+By encoding features on geometry-
+aligned grids or incorporating explicit spatial priors, this
+paradigm preserves locality, enables efficient convolutional
+or attention-based updates and streaming rollouts.
+In autonomous driving, many studies couple RNN-based
+dynamics with spatial grids to guide planning. For instance,
+DriveDreamer [91] and GenAD [92] adopt GRU-based dy-
+namics over grid or instance-centric tokens to predict mo-
+tion and decode trajectories. In contrast, DriveWorld [87]
+and Raw2Drive [155] instantiate RSSM dynamics on BEV
+
+
+7
+tokens. DriveWorld conditions on tokens and actions for joint
+prediction, while Raw2Drive adopts a dual-stream design for
+spatiotemporal learning.
+Numerous studies focus on autoregressively predicting future
+3D occupancy representations to enable motion planning
+for autonomous driving. One strand discretizes scenes into
+occupancy tokens for sequential prediction, exemplified by
+OccWorld [93] and RenderWorld [156]. Another strand di-
+rectly forecasts volumetric features or embeddings, as in
+Drive-OccWorld [157] and PreWorld [158]. Self-supervised
+variants predict future representations from current cues. For
+example, LAW [159] conditions on current representations
+and trajectories, SSR [160] compresses scenes into sparse
+BEV tokens for future BEV features, and NeMo [161]
+voxelizes multi-frame images and predicts occupancy to support
+imitation-based planning. Building on these representations,
+FASTopoWM [162] employs a unified decoder to align fast
+and slow systems from vehicle poses, enabling lane-topology
+reasoning, and WoTE [107] simulates candidate trajectories in
+BEV and selects among them with a reward model. Extending
+the paradigm, OccLLaMA [18] unifies occupancy, actions, and
+text within a single token vocabulary and employs a LLaMA
+for next token forecasting, planning, and question answering.
+Beyond autonomous driving, similar formulations have been
+extended to broader domains of robotics. WMNav [163]
+leverages a VLM to maintain a curiosity-driven value map
+and adopts phased decision making to enable zero-shot,
+object-driven navigation. RoboOccWorld [164] targets indoor
+robotics by predicting fine-grained 3D occupancy with a pose-
+conditioned autoregressive Transformer, thereby supporting
+exploration and decision making. To achieve high-fidelity dy-
+namics, EnerVerse [34] applies chunk-wise autoregressive video
+diffusion with a sparse memory mechanism to produce 4D
+latent dynamics and integrates 4DGS to mitigate the S2R gap in
+robotic execution. For manipulation, ParticleFormer [165] fore-
+casts future point clouds with a Transformer-based particletized
+dynamics model, enabling robust handling of multi-object and
+multi-material interactions. At the representation level, DINO-
+WM [70] learns dynamics in the DINOv2 feature space and
+predicts future states to support zero-shot planning.
+Decomposed Rendering Representation.
+This paradigm
+represents scenes with explicit renderable primitives such as
+NeRFs and 3DGS, updating them to simulate dynamics and
+render future observations. It provides view-consistent forecasts,
+object-level compositionality, and seamless integration with
+physics priors and digital twins, thereby supporting long-
+horizon rollouts.
+Building on 3DGS, GAF [74] augments splats with learnable
+motion attributes to forecast future states and refines initial
+actions with diffusion. ManiGaussian [53] predicts per-point
+variations to generate future Gaussian scenes for manipulation
+under current states and actions, and ManiGaussian++ [80] adds
+a hierarchical leader-follower design with task-oriented splats
+to model primitive deformations for multi-body and bimanual
+skills. Within simulation and digital twin coupling, DreMa [60]
+integrates GS with a physics simulator to build twins for
+data synthesis in imitation learning, Abou-Chakra et al. [166]
+introduced a dual Gaussian–Particle representation where
+Gaussian points are attached to particles driven by visual loss
+forces, DexSim2Real2 [167] builds twins of articulated objects
+with generative models and uses sampling based planning
+for precise manipulation, PIN-WM [168] combines 3DGS
+with differentiable physics to estimate physical parameters
+from limited observations and generates digital cousins for
+zero-shot S2R policy learning, and PWTF [169] constructs an
+interactive twin that simulates candidate action outcomes and
+uses VLMs for evaluation and selection. At the representation
+level, DTT [98] adopts a triplane representation with multiscale
+Transformers to autoregressively capture incremental changes,
+forming a 4D world model for prediction and planning.
+2) Global Difference Prediction: Token Feature Sequence.
+The compact Global Latent Vector representation discards fine-
+grained spatiotemporal detail and is therefore rarely used for
+global prediction. In contrast, Token Feature Sequences predict
+the future sequence in parallel, reducing error accumulation
+while enabling multimodal diversity.
+On the representation side, TOKEN [95] tokenizes scenes
+into object-level tokens, aligning world representations with
+reasoning and leveraging LLMs to predict full future trajec-
+tories for long-tail scenarios. GeoDrive [170] extracts 3D
+representations, renders trajectory-conditioned views, and edits
+the position of vehicles to guide DiT in producing editable
+generations. For control, FLARE [171] aligns diffusion policies
+with latent future representations, avoiding pixel-space video
+generation and learning effectively from action-free videos. In
+a related vein, LaDi-WM [172] predicts future states through
+interactive diffusion in a latent space aligned with visual
+foundation models, integrating geometric and semantic features
+while iteratively refining the diffusion policy to improve
+performance and generalization. villa-X [76] and VidMan [55]
+both couple diffusion-based models with IDM for control. villa-
+X infers latent actions, aligns them with ego-centric forward
+dynamics, and maps them via joint diffusion, while VidMan
+adapts a pretrained video-diffusion model into an IDM using
+a self-attention adapter for accurate action prediction.
+Spatial Latent Grid.
+Spatial grid models parallel-forecast
+BEV or voxel maps from ego-stabilized views, preserving
+locality and uncertainty while producing planner-ready maps
+for fast control.
+Diffusion-based world models are commonly used for paral-
+lel generation. EmbodiedDreamer [173] couples differentiable
+physics with video diffusion to render photorealistic and
+physically consistent futures. TesserAct [78] reconstructs 4D
+spatiotemporal consistent scenes by jointly generating RGB,
+depth, and normal videos for IDM-based action learning.
+DFIT-OccWorld [174] reformulates prediction as decoupled
+voxel warping and adopts image-assisted single-stage train-
+ing for reliable and efficient dynamic scene modeling. For
+instruction-conditioned control, RoboDreamer [49] decomposes
+instructions into low-level primitives that steer video diffusion,
+synthesizing novel compositional scenes beyond the training
+distribution while grounding execution via an IDM, and
+ManipDreamer [175] extends this design with an action-tree
+prior together with depth and semantic guidance to improve
+
+
+8
+instruction following and temporal consistency.
+On the planning side, 3DFlowAction [176] employs a
+pretrained 3D optical flow world model to treat future motion
+as a unified action cue, enabling label-free and cross-robot
+manipulation through closed-loop optimization. Imagine-2-
+Drive [177] integrates video diffusion with a multimodal diffu-
+sion policy to accelerate policy learning. Drive-WM [88] uses
+multi-view diffusion with image-based rewards to select safer
+trajectories, while World4Drive [178] leverages vision-based
+priors to construct intent-aware world models that support self-
+supervised multi-intent imagination. COMBO [179] composes
+multi-agent actions with diffusion, leverages VLMs to infer
+purposes, and integrates tree search for online cooperative
+planning.
+B. General-Purpose World Models
+1) Sequential Simulation and Inference: Token Feature
+Sequence.
+General-purpose models pretrain task-agnostic
+dynamics to capture environmental physics and generate future
+scenes, prioritizing transferability over specific tasks.
+Some general world models increasingly pretrain on un-
+labeled video and use tokenized latent space for robust
+forecasting and generation. iVideoGPT [56] was pretrained
+on large-scale interaction videos for action-free forecasting
+and later adapted to downstream control. Genie [50] learned
+discrete latent actions and spatiotemporal tokens, enabling
+user-controllable interactive environments via autoregressive
+dynamics. RoboScape [180] jointly learned video generation
+with temporal depth and keypoint dynamics to improve physical
+realism. PACT [181] tokenized multimodal perception and
+action and trained a causal Transformer to obtain a unified
+representation for diverse tasks, and DINO-world [182] learns
+generalizable dynamics by predicting the temporal evolution
+of DINOv2 features from large-scale unlabeled video corpora.
+Building on language priors, EVA [71] introduced a Reflection-
+of-Generation (RoG) policy that used a VLM for iterative
+self-correction, strengthening long-horizon anticipation. In the
+same vein, Owl-1 [183] employs a VLM to forecast world
+dynamics conditioned on current states and generated fragments,
+explicitly guiding the subsequent fragments and enabling
+coherent long-horizon video synthesis, while World4Omni [68]
+employs a reflective world model, where a VLM refines subgoal
+images from an image generator, and integrates them with
+pretrained modules for zero-shot robotic manipulation.
+Recent work adapts video diffusion models into controllable
+world models that autoregressively imagine future scenes.
+AdaWorld [72] introduced an action-aware pretraining scheme
+that extracted self-supervised latent actions between adjacent
+frames to condition diffusion, enabling efficient transfer with
+minimal interaction. Vid2World [184] adapts pretrained video
+diffusion models into autoregressive interactive world models
+via causalization and a causal action-guidance mechanism.
+GenAD [90] employs a two-stage strategy to adapt diffusion
+into a general video-prediction model conditioned on text and
+actions, enabling large-scale driving simulation and planning.
+Pandora [47] uses an instruction-tuned LLM to autoregressively
+steer a separate video-diffusion generator for explicit, goal-
+directed control, while Yume [75] quantized camera motions
+into text tokens to guide a masked Video DiT, enabling
+autoregressive synthesis of dynamic 3D exploratory worlds.
+To maintain geometric fidelity and long-horizon stability,
+recent methods couple explicit 3D priors with temporal-
+consistency modules in diffusion-based world models. At
+the geometric level, Geometry Forcing [185] aligns latent
+features with a geometric foundation model to inject explicit 3D
+priors, improving geometric consistency, while DeepVerse [64]
+integrates visual and geometric prediction targets and introduces
+a geometry-aware memory to sustain consistent long-horizon
+generation. For temporal stability, VRAG [186] proposed
+a Video Retrieval-Augmented Generation (RAG) framework
+that retrieves historical frames conditioned on a global state
+to stabilize autoregressive rollouts, StateSpaceDiffuser [63]
+combines Mamba with diffusion to alleviate long-term memory
+loss and content drift under short context windows, and Infinity-
+Drive [187] injects memory and adopts an adaptive loss within
+DiT, producing minute-scale driving videos with high fidelity,
+temporal consistency, and diverse content. Complementing
+these designs, LongDWM [188] mitigates error accumulation
+in long-horizon video generation through distillation—where a
+fine-grained DiT learns continuous motion to guide a coarse
+model, whereas MiLA [189] adopts a coarse-to-fine strategy
+that predicts sparse anchor frames and refines them during
+interpolation to improve temporal consistency and long-term
+fidelity. Finally, for dynamics and conditioning, Orbis [190]
+employs a continuous-space flow-matching formulation that
+demonstrates greater robustness than discrete-token schemes for
+long-horizon rollouts, and DriVerse [109] leverages multimodal
+trajectory prompts with latent motion alignment to synthesize
+long-horizon driving videos from a single image and navigation
+trajectories.
+Sequential world models increasingly act as learned simula-
+tors, providing action-conditioned rollouts for policy evaluation
+and training. WorldGym [191] and WorldEval [192] generate
+action-conditioned rollouts and use VLM-based critics for
+evaluation, while WorldEval further leverages latent action rep-
+resentations to drive a DiT-based synthesizer. RLVR-World [62]
+fine-tunes world models with RL with Verifiable Rewards
+(RLVR), using explicit metrics to close the pretraining–task
+objective gap. For safety risk prediction, Guan et al. [193] pre-
+sented a framework for autonomous driving accident prediction
+that augments data with a domain-informed world model and
+enhances spatiotemporal reasoning using graph and temporal
+convolutions.
+Beyond diffusion, sequence models broadened the capacity
+for long-range consistency. Po et al. [194] integrated block-wise
+state space models for long-term memory with local attention
+for short-term coherence, enabling video generation with sus-
+tained memory and consistent dynamics. S2-SSM [61] employs
+a Mamba layer to model the independent evolution of object
+slots and a sparsity-regularized cross-attention mechanism to
+capture their causal interactions, enabling causal reasoning over
+the environment.
+Spatial Latent Grid.
+Pretraining geometry-aligned spatial
+maps with self-supervised spatiotemporal objectives, the spatial
+latent grid paradigm preserves locality and enables efficient
+
+
+9
+rollouts, multimodal fusion, and transferable planner-ready
+maps.
+Building on this paradigm, structured-grid and physics-
+informed methods encode geometry and dynamics for con-
+trollable rollouts. PhyDNet [195] disentangles physical pri-
+ors expressed as partial differential equations from visual
+factors, improving prediction. ViDAR [89] unifies semantics,
+geometry, and dynamics through a pre-training task of point
+cloud forecasting and a latent rendering operator, enabling a
+scalable foundation for downstream autonomous driving tasks.
+FOLIAGE [196] models dynamics with an Accretive Graph
+Network and a Transformer-based predictor, executing rollouts
+on simulated data. Complementing these grid and physics lines,
+MindJourney [73] couples VLMs with a controllable world
+model to render egocentric rollouts along planned camera
+trajectories, enabling multi-view reasoning.
+Building on grid-based representations, diffusion-based fore-
+casting has become dominant for stable long-horizon generation.
+Within grid-centric predictors, DOME [94] encodes observa-
+tions into a continuous latent space and applies a spatiotemporal
+DiT for scene forecasting, Copilot4D [82] tokenizes point
+clouds and couples a spatiotemporal Transformer with discrete
+diffusion to improve fidelity and coherence, and LidarDM [100]
+generates layout-conditioned static scenes, composes them with
+dynamic objects, integrating LiDAR simulation to produce
+controllable videos. For long-video generation, Vista [96]
+adopts a two-stage large-scale training regime to produce
+controllable, high-fidelity, driving videos, and Delphi [86]
+enforces long-horizon multiview consistency through shared
+noise and feature alignment and a failure-driven framework to
+synthesize targeted data for improved planning. To strengthen
+long-horizon stability, GEM [102] achieves controllable ego-
+vision generation through large-scale training and fine-grained
+control over motion, dynamics, and posture, Zhou et al. [197]
+maintains a persistent RGB-D 3D memory map to guide
+subsequent frames, and STAGE [198] introduced hierarchical
+temporal feature transfer with multi-stage training.
+Decomposed Rendering Representation.
+Scenes are decom-
+posed into explicit primitives to synthesize view-consistent, sim-
+ulatable trajectories over long horizons. Within this paradigm,
+GaussianWorld [103] models scene evolution as ego-motion,
+object dynamics, and newly observed regions, iteratively
+updating 3D Gaussian primitives to enable accurate and
+efficient dynamic perception. InfiniCube [22] introduced a
+hybrid pipeline that combines voxel-based generation, video
+synthesis, and dynamic Gaussian reconstruction, enabling large-
+scale dynamic 3D driving scenes conditioned on HDmaps,
+bounding boxes, and text. Complementarily, Wu et al. [199]
+augmented a video world model with long-term spatial memory
+grounded in reconstructed geometry and an episodic memory,
+which together condition sequential generation for long-range
+consistency.
+2) Global Difference Prediction: Token Feature Sequence.
+For general-purpose world models, tokenized feature sequences
+support global prediction via masked and generative modeling,
+enabling parallel long-horizon rollouts with global constraints
+and multimodal conditioning.
+Within
+Joint-Embedding
+Predictive
+Architecture
+(JEPA) [200], V-JEPA [51] extends this architecture to
+video by predicting latent features of occluded spatiotemporal
+regions, learning generalizable representations for both
+appearance and motion without pixel reconstruction or
+contrastive learning. Building on this, V-JEPA 2 [14] scales
+pretraining to large-scale Internet videos with larger models
+and incorporates limited robot interaction data for post-training,
+transferring to robotic planning. AD-L-JEPA [201] adapts
+JEPA to BEV LiDAR, predicting masked embeddings in
+a self-supervised manner. Beyond JEPA-style prediction,
+WorldDreamer [45] frames world modeling as masked
+visual sequence prediction to learn physics and motion for
+diverse video generation and editing, while MaskGWM [104]
+combines diffusion with masked feature reconstruction and
+a dual-branch masking strategy to improve long-horizon
+consistency and generalization.
+In parallel, diffusion-based methods have become central
+to global-difference modeling. Sora [13] represents video
+as unified spacetime patches and uses a DiT to generate
+long, coherent sequences at scale. ForeDiff [202] decou-
+ples conditioning from denoising by adding a deterministic
+predictive stream and employing a pretrained predictor to
+guide generation, improving accuracy and consistency. For
+domain-specific synthesis, AirScape [203] introduces an aerial
+video–intention dataset, applies supervised fine-tuning for
+controllability, and leverages VLMs to impose spatiotemporal
+constraints; MarsGen [204] builds a multimodal Mars dataset
+from NASA’s sparse rover stereo imagery using geometric
+foundation models, then trains a controllable generator to
+produce visually realistic, geometry-consistent Martian videos.
+In clinical guidance, EchoWorld [205] proposes a motion-aware
+world model for echocardiography probe control, pretraining
+on region- and motion-outcome prediction and fine-tuning
+attention to fuse visual and motion cues for precise guidance.
+Spatial Latent Grid.
+Spatial-grid models forecast voxel
+grids in parallel and fuse multi-view visual features into a
+unified map, learning a general-purpose world model.
+Recent work converges on unified scene understanding and
+future prediction. UniFuture [206] couples Dual Latent Sharing
+with multi-scale latent interaction to jointly model appearance
+and depth in future driving scenes, and HERMES [108]
+integrates multiview BEV features into an LLM with world
+queries that link scene understanding to future prediction within
+a single framework. BEVWorld [207] maps images and LiDAR
+into a compact BEV latent space through a unified tokenizer
+and applies a latent BEV diffusion model for synchronized mul-
+timodal forecasting. Progress in grid and occupancy forecasting
+includes differentiable raycasting with a proxy reformulation for
+sensor agnostic motion learning by Khurana et al. [208], [209]
+and LiDAR to range images 3D spatiotemporal convolutions
+by Mersch et al. [210]. Cam4DOcc [211] established the first
+vision-only benchmark with an E2E 3D CNN baseline, and
+Liu et al. [212] enhanced cross-task transfer through high-ratio
+compression and latent flow matching.
+On the generative front, tokenized 4D representations enable
+controllable scene synthesis. OccSora [85] uses a 4D tokenizer
+
+
+10
+to derive compact representations for trajectory conditioned
+diffusion, and DynamicCity [99] encodes 4D occupancy
+as HexPlanes representations with a VAE and employs a
+conditional DiT for high fidelity controllable dynamics. Fidelity
+and consistency improve through decoupling ego-motion with
+scene evolution in COME [213], physics-informed constraints
+in DrivePhysica [214], cross-view point map alignment in
+Liu et al. [215], and photometric warping-based supervision in
+PosePilot [216]. For controllable conditioning, DriveDreamer
+2 [97] translates prompts into agent trajectories and HDMaps
+for customizable video generation, EOT-WM [217] encodes
+ego and surrounding trajectories as trajectory videos for
+trajectory consistent synthesis, and ORV [65] uses 4D semantic
+occupancy sequences to guide action conditioned video with
+S2R transfer. AETHER [77] unifies dynamic 4D reconstruction,
+action-conditioned video prediction, and vision-based planning
+under training on synthetic 4D data and achieves zero-shot
+generalization to real-world scenarios.
+Decomposed Rendering Representation.
+This paradigm
+performs global prediction by combining explicit 3D structure
+with video generative priors.
+A trend is combining video generation with Gaussian
+Splatting. DriveDreamer4D [105] exploits complex driving
+trajectories such as lane changes to guide video synthesis
+and optimize a 4DGS model, which enhances reconstruction
+fidelity and spatiotemporal coherence from novel viewpoints.
+ReconDreamer [106] introduces an online restoration module
+together with progressive data reuse to correct artifacts in
+Gaussian-rendered views and enables reliable reconstruction
+of large-scale trajectories. MagicDrive3D [84] generates multi-
+view street scenes conditioned on BEV maps, 3D boxes, and
+text, and further converts the outputs into full 3D environ-
+ments through fault-tolerant GS. In contrast, implicit-field
+methods replace GS with continuous neural representations.
+UnO [17] leverages future point clouds to learn a NeRF-style
+4D occupancy field, which allows annotation-free prediction
+and achieves strong transfer performance beyond supervised
+baselines in point-cloud forecasting.
+IV. DATA RESOURCES & METRICS
+World models in embodied AI are required to address diverse
+tasks spanning manipulation, navigation, and autonomous driv-
+ing, requiring heterogeneous resources and rigorous evaluation.
+Accordingly, we present Data Resources in §IV-A and Metrics
+in §IV-B, focusing on the most widely adopted platforms and
+evaluation measures as a unified foundation for cross-domain
+assessment.
+A. Data Resources
+To meet the diverse demands of embodied AI, we categorize
+data resources into four categories: Simulation Platforms,
+Interactive Benchmarks, Offline Datasets, and Real-world
+Robot Platforms, as detailed in the following subsections.
+Tab. III provides a comprehensive overview of these resources.
+1) Simulation Platforms: Simulation platforms provide
+controllable and scalable virtual environments for training and
+evaluating world models.
+• MuJoCo [218] is a customizable physics engine widely
+adopted for its efficient robotic simulation of articulated
+systems and contact dynamics in robotics and control
+research.
+• NVIDIA Isaac is an E2E, GPU-accelerated simulation
+stack that comprises Isaac Sim, Isaac Gym [221], and Isaac
+Lab [222]. It offers photorealistic rendering and large-scale
+RL capabilities.
+• CARLA [219] is an open-source simulator based on Unreal
+Engine for urban autonomous driving, providing realistic
+rendering, diverse sensors, and closed-loop evaluation proto-
+cols.
+• Habitat [220] is a high-performance simulator for embodied
+AI, specializing in photorealistic 3D indoor navigation.
+2) Interactive Benchmarks: Interactive benchmarks offer
+standardized task suites and protocols for reproducible closed-
+loop evaluation of world models.
+• DeepMind Control (DMC) [224] is a standard MuJoCo-
+based suite for control tasks, offering a consistent basis
+for comparing agents that learn from state or pixel-based
+observations.
+• Atari [223] is a suite of pixel-based, discrete-action games
+for evaluating agent performance. The Atari100k [239]
+specifically assesses sample efficiency by limiting interaction
+to 100k steps.
+• Meta-World [225] is a benchmark for multi-task and meta-
+RL, featuring 50 diverse robotic manipulation tasks with
+a Sawyer arm in MuJoCo under standardized evaluation
+protocols.
+• RLBench [226] offers 100 simulated tabletop manipulation
+tasks with sparse rewards and rich, multi-modal observations,
+designed to test complex skills and rapid adaptation.
+• LIBERO [228] is a benchmark for lifelong robotic manipula-
+tion, providing 130 procedurally generated tasks and human
+demonstrations to evaluate sample-efficient and continual
+learning.
+• nuPlan [227] is a planning benchmark for autonomous
+driving, using a lightweight closed-loop simulator and over
+1 500 h of real-world driving logs to evaluate long-horizon
+performance.
+3) Offline Datasets: Offline datasets are large-scale, pre-
+collected trajectories that eliminate interactive rollouts and
+provide a foundation for reproducible evaluation and data-
+efficient pretraining of world models.
+• RT-1 [233] is a real-world dataset for robot learning,
+collected over 17 months with 13 Everyday Robots mobile
+manipulators. It contains 130 000 demonstrations spanning
+more than 700 tasks, pairing language instructions and image
+observations with discretized 11-DoF actions for the arm
+and mobile base.
+• Open X-Embodiment (OXE) [235] is a corpus aggregating
+60 sources from 21 institutions, spanning 22 robot embod-
+iments, 527 skills, and over one million trajectories in a
+unified format for cross-embodiment training. Models trained
+
+
+11
+TABLE III
+AN OVERVIEW OF DATA RESOURCES FOR TRAINING AND EVALUATING EMBODIED WORLD MODELS.
+Category
+Name
+Year
+Task
+Input
+Domain
+Scale
+Protocol1
+Platform
+MuJoCo [218]
+2012
+Continuous control
+Proprio.
+Sim
+-
+-
+CARLA [219]
+2017
+Driving simulation
+RGB-D/Seg/LiDAR/Radar/GPS/IMU
+Sim
+-
+✓
+Habitat [220]
+2019
+Embodied navigation
+RGB-D/Seg/GPS/Compass
+Sim
+-
+✓
+Isaac Gym [221]
+2021
+continuous control
+Proprio.
+Sim
+-
+-
+Isaac Lab [222]
+2023
+Robot learning suites
+RGB-D/Seg/LiDAR/Proprio.
+Sim
+-
+-
+Benchmark
+Atari [223]
+2013
+Discrete-action game
+RGB/State
+Sim
+55+ Games
+✓
+DMC [224]
+2018
+Continuous control
+RGB/Proprio.
+Sim
+30+ Tasks
+✓
+Meta-World [225]
+2019
+Multi-task manipulation
+RGB/Proprio.
+Sim
+50 tasks
+✓
+RLBench [226]
+2020
+Robotic manipulation
+RGB-D/Seg/Proprio.
+Sim
+100 tasks
+✓
+nuPlan [227]
+2021
+Driving planning
+RGB/LiDAR/Map/Proprio.
+Real
+1.5k hours
+✓
+LIBERO [228]
+2023
+Lifelong manipulation
+RGB/Text/Proprio.
+Sim
+130 tasks
+✓
+Dataset
+SSv2 [229]
+2018
+Video-action understanding
+RGB/Text
+Real
+220k videos
+169k/24k/27k
+nuScenes [230]
+2020
+Driving perception
+RGB/LiDAR/Radar/GPS/IMU
+Real
+1k scenes
+700/150/150
+Waymo [231]
+2020
+Driving perception
+RGB/LiDAR
+Real
+1.15k scenes
+798/202/150
+HM3D [232]
+2021
+Indoor navigation
+RGB-D
+Real
+1k scenes
+800/100/100
+RT-1 [233]
+2022
+Real-robot manipulation
+RGB/Text
+Real
+130k+ trajectories
+-
+Occ3D [234]
+2023
+3D occupancy
+RGB/LiDAR
+Real
+1.9k scenes
+600/150/150; 798/202/-
+OXE [235]
+2024
+Cross-embodiment pretraining
+RGB-D/LiDAR/Text
+Real
+1M+ trajectories
+-
+OpenDV [90]
+2024
+Driving video pretraining
+RGB/Text
+Real
+2k+ hours
+-
+VideoMix22M [14]
+2025
+Video pretraining
+RGB
+Real
+22M+ samples
+-
+Robot
+Franka Emika [236]
+2022
+Manipulation
+Proprio.
+Real
+-
+-
+Unitree Go1 [237]
+2021
+Quadruped locomotion
+RGB-D/LiDAR/Proprio.
+Real
+-
+-
+Unitree G1 [238]
+2024
+Humanoid manipulation
+RGB-D/LiDAR/Proprio./Audio
+Real
+-
+-
+1 Protocol: For interactive benchmarks, a check mark (✓) indicates available evaluation protocols. For datasets, it indicates official data splits are provided.
+on OXE demonstrate strong transfer beyond single-robot
+baselines, underscoring the effectiveness of cross-platform
+data sharing.
+• Habitat-Matterport 3D (HM3D) [232] is a large-scale
+dataset of 1 000 indoor reconstructions with 112 500 m2 nav-
+igable area, substantially expanding the scope and diversity of
+embodied AI simulation. Released for the Habitat platform,
+it provides the necessary metadata and resources for seamless
+use.
+• nuScenes [230] is a large-scale multimodal driving dataset
+with a 360-degree sensor suite comprising six cameras, five
+radars, one LiDAR, and GPS/IMU. It contains 1 000 twenty-
+second scenes collected in Boston and Singapore with dense
+3D annotations for 23 classes and HDMaps, providing a
+core benchmark for multimodal fusion and long-horizon
+prediction.
+• Waymo [231] is a multimodal autonomous driving bench-
+mark with 1 150 twenty-second scenes at 10 Hz from San
+Francisco, Phoenix, and Mountain View. It includes five
+LiDARs and five cameras, with about 12 million 3D and 2D
+annotations, making it a large-scale resource for modeling
+traffic dynamics.
+• Occ3D [234] defines 3D occupancy prediction from surround-
+view images, providing voxel labels that distinguish free,
+occupied, and unobserved states. Occ3D-nuScenes contains
+about 40 000 frames at 0.4 m resolution, while Occ3D-
+Waymo offers about 200 000 frames at 0.05 m. This voxel-
+level supervision enables holistic scene understanding beyond
+bounding boxes.
+• Something-Something v2 (SSv2) [229] is a video dataset
+for fine-grained action understanding. It contains 220 847
+clips across 174 categories, collected from crowd workers
+following textual prompts (e.g., Putting something into
+something) with splits of 168 913 train, 24 777 val, and
+27 157 test videos.
+• OpenDV [90] is the largest large-scale video-text dataset for
+autonomous driving, proposed by GenAD, which supports
+video prediction and world-model pretraining. It contains
+2 059 hours and 65.1 million frames from YouTube and
+seven public datasets, covering over 40 countries and 244
+cities. The dataset provides command and context annotations
+to enable language- and action-conditioned prediction and
+planning.
+• VideoMix22M [14] is a large-scale dataset introduced with
+V-JEPA 2 for self-supervised pretraining. It scales from 2
+million to 22 million samples, drawn from YT-Temporal-
+1B [240], HowTo100M [241], Kinetics [242], SSv2, and
+ImageNet [243]. The largest source, YT-Temporal-1B, is
+curated with retrieval-based filtering to suppress noise, while
+ImageNet images are converted into static video clips for
+consistency.
+4) Real-world Robot Platforms: Real-world robot platforms
+provide physical embodiments for interaction, enabling closed-
+loop evaluation, high-fidelity data collection, and S2R valida-
+tion under real-world constraints.
+• Franka Emika [236] is a 7-DoF collaborative robot arm
+with joint torque sensors for precise force control. Through
+the control interface, it supports 1 kHz torque control for
+contact-rich tasks, while its ROS integration makes it a
+versatile platform.
+• Unitree Go1 [237] is a cost-effective and widely adopted
+quadrupedal robot equipped with a panoramic depth-sensing
+suite, onboard computing of 1.5 TFLOPS, and a maximum
+speed of 4.7 m/s, establishing it as a standard platform for
+locomotion and embodied-AI research.
+• Unitree G1 [238] is a compact humanoid robot for research,
+
+
+12
+offering up to 43-DoF and knee torques of 120 N·m, with
+integrated 3D LiDAR and depth cameras. With multimodal
+sensing, onboard compute, ROS support, and swappable
+batteries, this low-cost platform provides a practical real-
+robot testbed for training and evaluating embodied world
+models.
+B. Metrics
+Metrics evaluate the capability of world models to capture
+dynamics, generalize to unseen scenarios, and scale with
+additional resources. We organize them into three abstraction
+levels: §IV-B1 Pixel Prediction Quality, §IV-B2 State-level
+Understanding, and §IV-B3 Task Performance, representing
+a progression from low-level signal fidelity to high-level goal
+attainment.
+1) Pixel Generation Quality: At the most fundamental level,
+world models are evaluated by their ability to reconstruct
+sensory inputs and generate realistic sequences. Metrics assess
+image fidelity, temporal consistency, and perceptual similarity,
+providing quantitative measures of the extent to which models
+capture raw environmental dynamics.
+Fréchet Inception Distance (FID) [244].
+FID is a metric
+for assessing the realism and diversity of generated images. It
+compares real and generated image distributions in the feature
+space of an ImageNet-pretrained Inception-v3 [245], modeling
+embeddings as Gaussians with means µx, µy and covariances
+Σx, Σy. Defined as
+FID(x, y) = ∥µx −µy∥2
+2 + Tr
+
+Σx + Σy −2(ΣxΣy)1/2
+,
+(6)
+a lower FID denotes a closer alignment between real and
+generated distributions. By comparing the first and second
+moments, it penalizes fidelity loss (mean shift) and mode
+collapse (covariance mismatch), offering a holistic measure of
+generative performance.
+Fréchet Video Distance (FVD) [246].
+FVD extends FID
+to videos, evaluating both per-frame quality and temporal
+consistency. It replaces the image-based Inception network with
+an I3D [247] pretrained on Kinetics-400 [248]. Using the same
+Fréchet distance as Eq. (6) on motion-aware features, FVD
+yields a holistic video quality score. A lower value indicates a
+closer alignment of distributions in appearance and dynamics
+while penalizing temporal artifacts like unnatural motion or
+flickering.
+Structural Similarity Index Measure (SSIM) [249].
+SSIM
+is a perceptual metric for image quality that compares lumi-
+nance, contrast, and structure between a generated image and
+its reference. For two patches x and y with means µx, µy,
+variances Σ2
+x, Σ2
+y, and covariance Σxy, SSIM is defined as
+SSIM(x, y) =
+(2µxµy + C1)(2Σxy + C2)
+(µ2x + µ2y + C1)(Σ2x + Σ2y + C2).
+(7)
+The final score is obtained by averaging SSIM over sliding
+windows, and values closer to 1 indicate higher similarity.
+Peak Signal-to-Noise Ratio (PSNR) [250].
+PSNR measures
+pixel-wise distortion between a reconstruction and its reference.
+Let the mean-squared error (MSE) over N pixels be
+MSE = 1
+N
+N
+X
+i=1
+(xi −yi)2 ,
+(8)
+and let MAX denote the maximum possible pixel value(e.g.,
+255 for RGB or 1 for normalized images). Then
+PSNR(x, y) = 10 · log10
+MAX2
+MSE
+
+.
+(9)
+Higher PSNR values indicate lower distortion and greater
+fidelity.
+Learned Perceptual Image Patch Similarity (LPIPS) [251].
+LPIPS is a metric that correlates with human judgments by
+comparing features extracted from pretrained networks. Let ˆf l
+x
+and ˆf l
+y denote the unit-normalized activations at layer l for
+inputs x and y, and wl the channel-wise weights. LPIPS is
+defined as
+LPIPS(x, y) =
+X
+l
+1
+HlWl
+X
+h,w
+wl ⊙
+  ˆf l
+h,w,x −ˆf l
+h,w,y
+
+2
+2 .
+(10)
+Lower LPIPS values imply greater similarity, offering enhanced
+fidelity compared to pixel-based metrics and robustness against
+distortions.
+VBench [252].
+VBench is a comprehensive benchmark
+for video generation that assesses performance across 16
+dimensions grouped into two categories: Video Quality (e.g.,
+subject consistency, motion smoothness) and Video-Condition
+Consistency (e.g., object class, human action). It provides care-
+fully curated prompt suites and large-scale human preference
+annotations to ensure strong perceptual alignment, thereby
+enabling fine-grained evaluation of model capabilities and
+limitations.
+2) State-level Understanding: Beyond pixel fidelity, state-
+level understanding assesses whether models capture objects,
+layouts, and semantics, and can predict their evolution. Met-
+rics span semantic, BEV, and 3D segmentation, detection,
+occupancy, geometry, and trajectory accuracy, emphasizing
+structural understanding beyond appearance.
+mean Intersection over Union (mIoU).
+mIoU evaluates
+semantic segmentation by averaging the Intersection over Union
+(IoU) across classes. For class c,
+IoU =
+TP
+TP + FP + FN,
+(11)
+where TP, FP, and FN denote the true positives, false positives,
+and false negatives. IoU quantifies overlap with the ground
+truth while penalizing segmentation errors. The dataset-level
+score is
+mIoU =
+1
+|C|
+X
+c∈C
+IoUc .
+(12)
+A higher mIoU reflects more precise semantic scene under-
+standing.
+mean Average Precision (mAP).
+mAP evaluates detection
+and instance segmentation by averaging per-class Average
+
+
+13
+Precision (AP). For a class c at IoU threshold τ, predictions
+are ranked by confidence and matched one-to-one with ground
+truths when IoU ≥τ with unmatched predictions counted as
+FP and unmatched ground truths as FN. Precision and recall
+are
+Precision =
+TP
+TP + FP,
+Recall =
+TP
+TP + FN.
+(13)
+Let Pc,τ(r) denote the precision-recall envelope obtained via
+monotonic interpolation. The AP for class c at threshold τ is
+APc,τ =
+Z 1
+0
+Pc,τ(r)dr.
+(14)
+mAP averages AP across classes and thresholds T:
+mAP =
+1
+|C|
+X
+c∈C
+ 
+1
+|T|
+X
+τ∈T
+APc,τ
+!
+.
+(15)
+A higher mAP indicates better instance recognition, more
+accurate localization, and more calibrated confidence estimates.
+Displacement Error.
+Displacement error metrics assess state-
+level understanding by measuring spatial accuracy for keypoints,
+object centers, and trajectory waypoints. The L2 trajectory
+error computes the Euclidean distance between predicted and
+ground-truth waypoints. Common variants include Average
+Displacement Error (ADE), which calculates the average
+displacement, and Final Displacement Error (FDE), which
+measures the displacement at the final step. Lower values
+indicate more accurate localization.
+Chamfer Distance (CD) [253].
+CD quantifies geometric
+similarity between a prediction S1 and ground truth S2 by
+summing squared nearest-neighbor distances across the two
+sets:
+CD(S1, S2) =
+X
+x∈S1
+min
+y∈S2 ∥x −y∥2
+2 +
+X
+y∈S2
+min
+x∈S1 ∥x −y∥2
+2 .
+(16)
+Unlike pixel-level metrics, CD captures surfaces, occupancy,
+BEV, and 3D structures, and its differentiability enables use as
+both a training loss and an evaluation metric that complements
+IoU.
+3) Task Performance: Ultimately, the value of a world model
+lies in supporting effective decision-making, with task-level
+metrics assessing goal achievement under safety and efficiency
+constraints in embodied settings.
+Success Rate (SR).
+SR quantifies performance as the
+fraction of evaluation episodes that satisfy a predefined success
+condition. In navigation and manipulation, the condition is
+typically binary, such as reaching a target or placing an
+object correctly. In autonomous driving, the requirement is
+stricter, demanding route completion without collisions or major
+violations. The final SR is reported as the average of binary
+outcomes across all test episodes.
+Sample Efficiency (SE).
+SE quantifies the samples needed
+to reach target performance. It is evaluated by fixed-budget
+benchmarks (e.g., Atari-100k), data–performance curves, or
+in robotics by the demonstrations required to achieve a given
+success rate.
+TABLE IV
+PERFORMANCE COMPARISON OF VIDEO GENERATION ON THE
+NUSCENES.
+Method
+Pub.
+Resolution
+FID↓
+FVD↓
+MagicDrive3D [84]
+arXiv’24
+224 × 400
+20.7
+164.7
+Delphi [86]
+arXiv’24
+512 × 512
+15.1
+113.5
+Drive-WM [88]
+CVPR’24
+192 × 384
+15.8
+122.7
+GenAD [90]
+CVPR’24
+256 × 448
+15.4
+184.0
+DriveDreamer [91]
+ECCV’24
+128 × 192
+52.6
+452.0
+Vista [96]
+NeurIPS’24
+576 × 1024
+6.9
+89.4
+DrivePhysica [214]
+arXiv’24
+256 × 448
+4.0
+38.1
+DrivingWorld [133]
+arXiv’24
+512 × 1024
+7.4
+90.9
+DriveDreamer-2 [97]
+AAAI’25
+256 × 448
+11.2
+55.7
+UniFuture [206]
+arXiv’25
+320 × 576
+11.8
+99.9
+MiLA [189]
+arXiv’25
+360 × 640
+4.1
+14.9
+GeoDrive [170]
+arXiv’25
+480 × 720
+4.1
+61.6
+LongDWM [188]
+arXiv’25
+480 × 720
+12.3
+102.9
+MaskGWM [104]
+CVPR’25
+288 × 512
+8.9
+65.4
+GEM [102]
+CVPR’25
+576 × 1024
+10.5
+158.5
+Epona [148]
+ICCV’25
+512 × 1024
+7.5
+82.8
+STAGE [198]
+IROS’25
+512 × 768
+11.0
+242.8
+DriVerse [109]
+ACMMM’25
+480 × 832
+18.2
+95.2
+Reward.
+In RL, the reward is a signal rt at timestep
+t. The goal is to maximize the discounted return Gt =
+P∞
+k=0 γkrt+k+1. Results are reported as cumulative reward
+or average return, often with normalization for cross-task
+comparison.
+Collision.
+Safety is evaluated with collision-based metrics.
+The primary measure, collision rate, is the proportion of
+evaluation episodes with at least one collision and is common in
+indoor navigation. In autonomous driving, exposure-normalized
+variants are used, such as collisions per kilometer or collisions
+per hour.
+V. PERFORMANCE COMPARISON
+Given the proliferation of world-model variants and hetero-
+geneous metrics, we organize comparisons by task objectives
+and rely on standardized benchmarks, reporting concise tables
+that highlight each method’s strengths and limitations.
+A. Pixel Generation
+Generation on nuScenes.
+Driving video generation is
+treated as a world-modeling task that synthesizes plausible
+scene dynamics in fixed-length clips. Typical protocols produce
+short sequences and evaluate quality with FID for appearance
+fidelity and FVD for temporal consistency. For a fair com-
+parison on the nuScenes validation split, recent approaches
+have achieved remarkable progress, as shown in Tab. IV.
+DrivePhysica delivers the best visual fidelity, while MiLA
+achieves the strongest temporal coherence, together establishing
+new state-of-the-art performance.
+B. Scene Understanding
+4D Occupancy Forecasting on Occ3D-nuScenes.
+4D
+occupancy forecasting is treated as a representative world
+modeling task. Given 2 s of past 3D occupancy, models predict
+the subsequent 3 s of scene dynamics. Evaluation follows the
+
+
+14
+Occ3D-nuScenes protocol and reports mIoU and per horizon
+IoU. As summarized in Tab. V, we compare methods by input
+modality, auxiliary supervision, and ego trajectory usage to
+reveal design choices for spatiotemporal forecasting. Methods
+using occupancy inputs outperform camera-only variants, and
+adding auxiliary supervision with a GT ego trajectory further
+mitigates performance decay at 2–3 s. Among all methods,
+COME (with GT ego) achieves the best average mIoU and
+per-horizon IoU.
+C. Control Tasks
+Evaluation on DMC.
+Most studies probe the capacity
+of world models to learn control-relevant dynamics, typically
+adopting a pixel-based setting with 64×64×3 observations. The
+primary metric is Episode Return, defined as the cumulative
+reward over 1 000 steps, with a theoretical maximum of 1 000
+given rt ∈[0, 1]. For comparability, Tab. VI reports the step
+budget and summarizes performance by task score and task
+count. The results indicate improved data efficiency, with recent
+models reaching strong performance in far fewer training steps.
+However, inconsistent evaluation protocols and task subsets
+impede a fair assessment of generalization, and building a
+broadly transferable model across tasks, modalities, and datasets
+remains an open challenge.
+Evaluation on RLBench.
+RLBench evaluates manipulation
+with a 7-DoF simulated Franka arm and is widely used to
+assess whether world models capture task-relevant dynamics
+and support conditioned action generation. The primary metric
+is Success Rate, defined as the fraction of episodes that reach
+the goal within the step limit. As summarized in Tab. VII,
+implementations differ in episode budgets, resolution, and
+modalities, which complicates like-for-like comparison. Despite
+this heterogeneity, several trends are evident. Recent methods
+increasingly leverage multimodal inputs and adopt stronger
+backbones such as 3DGS and DiT. VidMan achieves a high
+average success rate on the broadest task, revealing IDM as a
+promising architectural direction.
+Planning on nuScenes.
+Open-loop planning is treated as a
+world modeling task on the nuScenes validation split, where
+models predict ego motion from a limited history. Methods
+observe 2 s of past trajectories and forecast the next 3 s as 2D
+BEV waypoints. Evaluation reports L2 error and collision rate
+at multiple horizons, and Tab. VIII summarizes results by input
+modality, auxiliary supervision, and metric settings. Under this
+shared protocol, a clear tradeoff emerges. UniAD+DriveWorld
+achieves the lowest L2 with extensive auxiliary supervision,
+whereas SSR attains the best collision rate with competitive L2
+without extra supervision. Camera-based methods now surpass
+models that use privileged occupancy, reflecting the growing
+maturity of E2E planning.
+VI. CHALLENGES AND TRENDS
+This section reviews the open challenges and emerging
+directions for world models in embodied AI. We discuss them
+across three dimensions: §VI-A Data & Evaluation, §VI-B
+Computational Efficiency, and §VI-C Modeling Strategies.
+A. Data & Evaluation
+Challenges.
+From a data perspective, the central challenge
+lies in the scarcity and heterogeneity of existing corpora. Al-
+though embodied AI spans diverse domains such as navigation,
+manipulation, and autonomous driving, a unified large-scale
+dataset remains lacking. This fragmentation constrains the
+capacity of world models and substantially hinders their ability
+to generalize.
+Evaluation practices face similar limitations. Metrics such as
+FID and FVD emphasize pixel fidelity while ignoring physical
+consistency, dynamics, and causality. Recent benchmarks, such
+as EWM-Bench [255], introduce new measures but remain
+task-specific and lack cross-domain standards.
+Future Directions.
+Recent initiatives such as OpenDV-
+2K [90] and VideoMix22M [14] highlight the growing focus
+on large-scale pretraining and broader modality coverage, yet
+resources remain fragmented and domain specific. Future work
+should prioritize constructing unified multimodal, cross-domain
+datasets to enable transferable pretraining, while advancing
+evaluation frameworks that move beyond perceptual realism to
+assess physical consistency, causal reasoning, and long-horizon
+dynamics.
+B. Computational Efficiency
+Challenges.
+Embodied AI tasks encounter significant
+challenges in computational efficiency, particularly in real-
+time applications. Although models such as Transformers and
+Diffusion networks exhibit strong performance, their high
+inference costs conflict with the real-time control demands of
+robotic systems. Consequently, traditional methods like RNNs
+and global latent vectors remain widely employed, as they
+offer greater computational efficiency, despite limitations in
+capturing long-term dependencies.
+Future Directions.
+To address this challenge, future re-
+search should focus on optimizing model architectures using
+techniques like quantization, pruning, and sparse computation
+to reduce inference latency without compromising performance.
+Additionally, exploring novel temporal methods, such as SSMs,
+could enhance long-range reasoning while maintaining real-
+time efficiency, offering a promising solution for robotic
+systems.
+C. Modeling Strategy
+Challenges.
+Despite rapid progress, world models still
+struggle with long-horizon temporal dynamics and efficient
+spatial representations. The main difficulty lies in balancing
+recurrent simulation and global prediction: autoregressive
+designs are compact and sample-efficient but accumulate errors
+over time, whereas global prediction improves multi-step
+coherence at the cost of heavy computation and weaker closed-
+loop interactivity. On the spatial side, efficiency remains a bot-
+tleneck. Latent vectors, token sequences, and spatial grids each
+present trade-offs between efficiency and expressiveness, while
+decomposed rendering approaches (e.g.., NeRF and 3DGS)
+offer high fidelity yet scale poorly in dynamic scenes. Taken
+
+
+15
+TABLE V
+PERFORMANCE COMPARISON OF 4D OCCUPANCY FORECASTING ON THE OCC3D-NUSCENES BENCHMARK1.
+Input
+Aux. Sup
+Ego traj.
+mIoU (%) ↑
+IoU (%) ↑
+Method
+Recon.
+1s
+2s
+3s
+Avg.
+Recon.
+1s
+2s
+3s
+Avg.
+Copy & Paste2
+Occ
+None
+Pred.
+66.38
+14.91
+10.54
+8.52
+11.33
+62.29
+24.47
+19.77
+17.31
+20.52
+OccWorld-O [93]
+Occ
+None
+Pred.
+66.38
+25.78
+15.14
+10.51
+17.14
+62.29
+34.63
+25.07
+20.18
+26.63
+OccLLaMA-O [18]
+Occ
+None
+Pred.
+75.20
+25.05
+19.49
+15.26
+19.93
+63.76
+34.56
+28.53
+24.41
+29.17
+RenderWorld-O [156]
+Occ
+None
+Pred.
+-
+28.69
+18.89
+14.83
+20.80
+-
+37.74
+28.41
+24.08
+30.08
+DTT-O [98]
+Occ
+None
+Pred.
+85.50
+37.69
+29.77
+25.10
+30.85
+92.07
+76.60
+74.44
+72.71
+74.58
+DFIT-OccWorld-O [174]
+Occ
+None
+Pred.
+-
+31.68
+21.29
+15.18
+22.71
+-
+40.28
+31.24
+25.29
+32.27
+COME-O [213]
+Occ
+None
+Pred.
+-
+30.57
+19.91
+13.38
+21.29
+-
+36.96
+28.26
+21.86
+29.03
+DOME-O [94]
+Occ
+None
+GT
+83.08
+35.11
+25.89
+20.29
+27.10
+77.25
+43.99
+35.36
+29.74
+36.36
+COME-O [213]
+Occ
+None
+GT
+-
+42.75
+32.97
+26.98
+34.23
+-
+50.57
+43.47
+38.36
+44.13
+OccWorld-T [93]
+Camera
+Semantic LiDAR
+Pred.
+7.21
+4.68
+3.36
+2.63
+3.56
+10.66
+9.32
+8.23
+7.47
+8.34
+OccWorld-S [93]
+Camera
+None
+Pred.
+0.27
+0.28
+0.26
+0.24
+0.26
+4.32
+5.05
+5.01
+4.95
+5.00
+RenderWorld-S [156]
+Camera
+None
+Pred.
+-
+2.83
+2.55
+2.37
+2.58
+-
+14.61
+13.61
+12.98
+13.73
+COME-S [213]
+Camera
+None
+Pred.
+-
+25.57
+18.35
+13.41
+19.11
+-
+45.36
+37.06
+30.46
+37.63
+OccWorld-D [93]
+Camera
+Occ
+Pred.
+18.63
+11.55
+8.10
+6.22
+8.62
+22.88
+18.90
+16.26
+14.43
+16.53
+OccWorld-F [93]
+Camera
+Occ
+Pred.
+20.09
+8.03
+6.91
+3.54
+6.16
+35.61
+23.62
+18.13
+15.22
+18.99
+OccLLaMA-F [18]
+Camera
+Occ
+Pred.
+37.38
+10.34
+8.66
+6.98
+8.66
+38.92
+25.81
+23.19
+19.97
+22.99
+DFIT-OccWorld-F [174]
+Camera
+Occ
+Pred.
+-
+13.38
+10.16
+7.96
+10.50
+-
+19.18
+16.85
+15.02
+17.02
+DTT-F [98]
+Camera
+Occ
+Pred.
+43.52
+24.87
+18.30
+15.63
+19.60
+54.31
+38.98
+37.45
+31.89
+36.11
+DOME-F [94]
+Camera
+Occ
+GT
+75.00
+24.12
+17.41
+13.24
+18.25
+74.31
+35.18
+27.90
+23.44
+28.84
+COME-F [213]
+Camera
+Occ
+GT
+-
+26.56
+21.73
+18.49
+22.26
+-
+48.08
+43.84
+40.28
+44.07
+1 Note: Method variants are denoted by their input source: O for ground-truth; camera-based variants include D (TPVFormer), F (FBOCC), T (TPVFormer with semantic LiDAR), and S (self-supervised TPVFormer).
+2 Copy & Paste: A naive baseline that repeats the final input frame for all future predictions.
+TABLE VI
+PERFORMANCE COMPARISON ON THE DMC BENCHMARK.1.
+Episode Return↑
+Method
+Step
+Reacher Easy
+Cheetah Run
+Finger Spin
+Walker Walk
+Avg. / Total
+PlaNet [38]
+5M
+469
+496
+495
+945
+333/20
+Dreamer [10]
+5M
+935
+895
+499
+962
+823/20
+Dreaming [110]
+500k
+905
+566
+762
+469
+610/12
+TransDreamer [28]
+2M
+-
+865
+-
+933
+893/4
+DreamerPro [111]
+1M
+873
+897
+811
+-
+857/6
+MWM [41]
+1M
+-
+670
+-
+690/7
+HRSSM [25]
+500k
+910
+-
+960
+-
+938/3
+DisWM [112]
+1M
+960
+820
+-
+920
+879/5
+1 Note: Performance comparison on the DMC. Underlined entries indicate scores approximated from
+their respective reward curves. Average scores (Avg.) are provided as a coarse indicator, given the varying
+difficulty across tasks.
+TABLE VII
+PERFORMANCE COMPARISON FOR MANIPULATION TASKS ON RLBENCH.
+Methods
+Criteria
+VidMan [55]
+ManiGaussian [53]
+ManiGaussian++ [80]
+DreMa [60]
+TesserAct [78]
+Setting
+Episode
+125
+25
+25
+250
+100
+Pixel
+224
+128
+256
+128
+512
+Depth
+✓
+✓
+✓
+✓
+Language
+✓
+✓
+✓
+✓
+Proprioception
+✓
+✓
+✓
+Characteristic
+IDM
+GS
+Bimanual
+GS
+DiT
+Success Rate (%)
+Stack Blocks
+48
+12
+-
+12
+-
+Close Jar
+88
+28
+-
+51
+44
+Open Drawer
+94
+76
+-
+-
+80
+Sweep to Dustpan
+93
+64
+92
+-
+56
+Slide Block
+98
+24
+-
+62
+-
+Avg.1 / Total
+67/18
+45/10
+35/10
+25/9
+63/10
+1 Avg.: Average scores are reported only as a coarse indicator, given varying task difficulty.
+together, temporal and spatial modeling are still constrained
+by structural trade-offs that limit scalability and adaptability.
+Future Directions.
+Several promising avenues have emerged
+to address current bottlenecks. SSMs (e.g., Mamba), aligned
+with autoregressive modeling, offer linear-time scalability and
+strong potential for long-horizon reasoning. In contrast, masked
+approaches (e.g., JEPA), closer to global prediction, improve
+representation learning and efficiency, though their integration
+into closed-loop control remains challenging. Furthermore,
+a promising approach lies in integrating the strengths of
+both autoregressive and global prediction methods. Explicit
+memory or hierarchical planning can enhance long-horizon
+prediction stability, while task decomposition inspired by
+CoT can improve temporal consistency through intermediate
+goal setting. Future frameworks should prioritize optimizing
+long-range reasoning, computational efficiency, and generative
+fidelity, while seamlessly integrating temporal and spatial
+modeling into unified architectures that strike an effective
+balance between efficiency, fidelity, and interactivity.
+VII. CONCLUSION
+This survey organizes world models in embodied AI using a
+novel three-part framework: functionality, temporal modeling,
+and spatial representation. Based on this, we review existing
+research, datasets, and metrics to establish a standard for
+comparison. However, significant challenges remain, including
+a lack of unified datasets and evaluation methods that overlook
+physical causality. A core modeling challenge involves recon-
+ciling the trade-off between efficient autoregressive approaches
+and robust global prediction paradigms. Future work should
+address these gaps by creating unified, physically-grounded
+benchmarks and exploring efficient architectures. Developing
+hybrid methods that balance fidelity, efficiency, and interactivity
+is key, as world models form the foundation for the next
+generation of embodied AI by unifying perception, prediction,
+and decision-making.
+REFERENCES
+[1] D. Batra, A. X. Chang, S. Chernova, A. J. Davison, J. Deng, V. Koltun,
+S. Levine, J. Malik, I. Mordatch, R. Mottaghi et al., “Rearrangement:
+A challenge for embodied AI,” arXiv preprint arXiv:2011.01975, 2020.
+1
+
+
+16
+TABLE VIII
+PERFORMANCE COMPARISON FOR OPEN-LOOP PLANNING ON THE NUSCENES VALIDATION SPLIT1.
+Input
+Aux. Sup.2
+L2 (m) ↓
+Collision Rate (%) ↓
+Method
+1s
+2s
+3s
+Avg.
+1s
+2s
+3s
+Avg.
+UniAD [254]
+Camera
+Map & Box & Motion & Tracklets & Occ
+0.48
+0.96
+1.65
+1.03
+0.05
+0.17
+0.71
+0.31
+UniAD+DriveWorld [87]
+Camera
+Map & Box & Motion & Tracklets & Occ
+0.34
+0.67
+1.07
+0.69
+0.04
+0.12
+0.41
+0.19
+GenAD [92]
+Camera
+Map & Box & Motion
+0.36
+0.83
+1.55
+0.91
+0.06
+0.23
+1.00
+0.43
+FSDrive [101]
+Camera
+Map & Box & QA
+0.40
+0.89
+1.60
+0.96
+0.07
+0.12
+1.02
+0.40
+OccWorld-T [93]
+Camera
+Semantic LiDAR
+0.54
+1.36
+2.66
+1.52
+0.12
+0.40
+1.59
+0.70
+Doe-1 [134]
+Camera
+QA
+0.50
+1.18
+2.11
+1.26
+0.04
+0.37
+1.19
+0.53
+SSR [160]
+Camera
+None
+0.24
+0.65
+1.36
+0.75
+0.00
+0.10
+0.36
+0.15
+OccWorld-S [93]
+Camera
+None
+0.67
+1.69
+3.13
+1.83
+0.19
+1.28
+4.59
+2.02
+Epona [148]
+Camera
+None
+0.61
+1.17
+1.98
+1.25
+0.01
+0.22
+0.85
+0.36
+RenderWorld [156]
+Camera
+None
+0.48
+1.30
+2.67
+1.48
+0.14
+0.55
+2.23
+0.97
+Drive-OccWorld [157]
+Camera
+None
+0.32
+0.75
+1.49
+0.85
+0.05
+0.17
+0.64
+0.29
+OccWorld-D [93]
+Camera
+Occ
+0.52
+1.27
+2.41
+1.40
+0.12
+0.40
+2.08
+0.87
+OccWorld-F [93]
+Camera
+Occ
+0.45
+1.33
+2.25
+1.34
+0.08
+0.42
+1.71
+0.73
+OccLLaMA-F [18]
+Camera
+Occ
+0.38
+1.07
+2.15
+1.20
+0.06
+0.39
+1.65
+0.70
+DTT-F [98]
+Camera
+Occ
+0.35
+1.01
+1.89
+1.08
+0.08
+0.33
+0.91
+0.44
+DFIT-OccWorld-V [174]
+Camera
+Occ
+0.42
+1.14
+2.19
+1.25
+0.09
+0.19
+1.37
+0.55
+NeMo [161]
+Camera
+Occ
+0.39
+0.74
+1.39
+0.84
+0.00
+0.09
+0.82
+0.30
+OccWorld-O [93]
+Occ
+None
+0.43
+1.08
+1.99
+1.17
+0.07
+0.38
+1.35
+0.60
+OccLLaMA-O [18]
+Occ
+None
+0.37
+1.02
+2.03
+1.14
+0.04
+0.24
+1.20
+0.49
+RenderWorld-O [156]
+Occ
+None
+0.35
+0.91
+1.84
+1.03
+0.05
+0.40
+1.39
+0.61
+DTT-O [98]
+Occ
+None
+0.32
+0.91
+1.76
+1.00
+0.08
+0.32
+0.51
+0.30
+DFIT-OccWorld-O [174]
+Occ
+None
+0.38
+0.96
+1.73
+1.02
+0.07
+0.39
+0.90
+0.45
+1 Note: Results are reported following the UniAD [254] protocol. Method variants are denoted by their input source: O (ground-truth), V (camera-predicted), D (TPVFormer), F (FBOCC), etc.
+2 Aux. Sup.: Abbreviation for auxiliary supervision, which refers to additional training signals beyond ground-truth trajectories.
+[2] T. Gupta, W. Gong, C. Ma, N. Pawlowski, A. Hilmkil, M. Scetbon,
+M. Rigter, A. Famoti, A. J. Llorens, J. Gao et al., “The essential role of
+causality in foundation world models for embodied AI,” arXiv preprint
+arXiv:2402.06665, 2024. 1
+[3] Y. Liu, W. Chen, Y. Bai, X. Liang, G. Li, W. Gao, and L. Lin, “Aligning
+cyber space with physical world: A comprehensive survey on embodied
+AI,” IEEE/ASME Transactions on Mechatronics, pp. 1–28, 2025. 1
+[4] J. Ding, Y. Zhang, Y. Shang, Y. Zhang, Z. Zong, J. Feng, Y. Yuan,
+H. Su, N. Li, N. Sukiennik et al., “Understanding world or predicting
+future? S comprehensive survey of world models,” ACM Computing
+Surveys, 2024. 1
+[5] A. Clark, Being there: Putting brain, body, and world together again.
+MIT press, 1998. 1
+[6] L. W. Barsalou, “Perceptions of perceptual symbols,” Behavioral and
+brain sciences, vol. 22, no. 4, pp. 637–660, 1999. 1
+[7] K. Friston, “The free-energy principle: a unified brain theory?” Nature
+reviews neuroscience, vol. 11, no. 2, pp. 127–138, 2010. 1
+[8] P. Fung, Y. Bachrach, A. Celikyilmaz, K. Chaudhuri, D. Chen, W. Chung,
+E. Dupoux, H. Jégou, A. Lazaric, A. Majumdar et al., “Embodied AI
+agents: Modeling the world,” arXiv preprint arXiv:2506.22355, 2025. 1
+[9] D. Ha and J. Schmidhuber, “Recurrent world models facilitate policy
+evolution,” in Annu. Conf. Neur. Inform. Process. Syst., 2018, pp. 2455–
+2467. 1, 3
+[10] D. Hafner, T. Lillicrap, J. Ba, and M. Norouzi, “Dream to Control:
+Learning behaviors by latent imagination,” in Int. Conf. Learn. Repre-
+sent., 2020, pp. 1–13. 1, 3, 4, 15
+[11] D. Hafner, T. P. Lillicrap, M. Norouzi, and J. Ba, “Mastering atari with
+discrete world models,” in Int. Conf. Learn. Represent., 2021, pp. 1–15.
+1, 3, 4
+[12] D. Hafner, J. Pasukonis, J. Ba, and T. Lillicrap, “Mastering diverse
+control tasks through world models,” Nature, vol. 640, no. 8059, pp.
+647–653, 2025. 1, 3, 4
+[13] OpenAI, “Video generation models as world simulators,” 2024,
+accessed: 2025-09-14. [Online]. Available: https://openai.com/index/
+video-generation-models-as-world-simulators/ 1, 9
+[14] M. Assran, A. Bardes, D. Fan, Q. Garrido, R. Howes, M. Muckley,
+A. Rizvi, C. Roberts, K. Sinha, A. Zholus et al., “V-JEPA 2: Self-
+supervised video models enable understanding, prediction and planning,”
+arXiv preprint arXiv:2506.09985, 2025. 1, 3, 4, 9, 11, 14
+[15] A. Venkatraman, M. Hebert, and J. Bagnell, “Improving multi-step
+prediction of learned time series models,” in AAAI Conf. Artif. Intell.,
+vol. 29, no. 1, 2015. 1
+[16] K. Asadi, D. Misra, and M. Littman, “Lipschitz continuity in model-
+based reinforcement learning,” in Int. Conf. Mach. Learn., 2018, pp.
+264–273. 1
+[17] B. Agro, Q. Sykora, S. Casas, T. Gilles, and R. Urtasun, “UnO:
+Unsupervised occupancy fields for perception and forecasting,” in IEEE
+Conf. Comput. Vis. Pattern Recog., 2024, pp. 14 487–14 496. 1, 10
+[18] J. Wei, S. Yuan, P. Li, Q. Hu, Z. Gan, and W. Ding, “OccLLaMA:
+An occupancy-language-action generative world model for autonomous
+driving,” arXiv preprint arXiv:2409.03272, 2024. 1, 5, 7, 15, 16
+[19] Z. Zhu, X. Wang, W. Zhao, C. Min, N. Deng, M. Dou, Y. Wang,
+B. Shi, K. Wang, C. Zhang et al., “Is Sora a World Simulator? A
+comprehensive survey on general world models and beyond,” arXiv
+preprint arXiv:2405.03520, 2024. 1
+[20] Y. Guan, H. Liao, Z. Li, J. Hu, R. Yuan, G. Zhang, and C. Xu, “World
+models for autonomous driving: An initial survey,” IEEE Transactions
+on Intelligent Vehicles, pp. 1–17, 2024. 1
+[21] T. Feng, W. Wang, and Y. Yang, “A survey of world models for
+autonomous driving,” arXiv preprint arXiv:2501.11260, 2025. 1
+[22] Y. Lu, X. Ren, J. Yang, T. Shen, Z. Wu, J. Gao, Y. Wang, S. Chen,
+M. Chen, S. Fidler et al., “InfiniCube: Unbounded and controllable
+dynamic 3D driving scene generation with world-guided video models,”
+in Int. Conf. Comput. Vis., 2025. 3, 5, 9
+[23] Y. Chen, Y. Wang, and Z. Zhang, “DrivingGPT: Unifying driving world
+modeling and planning with multi-modal autoregressive transformers,”
+arXiv preprint arXiv:2412.18607, 2024. 3, 6
+[24] R. D. Smallwood and E. J. Sondik, “The optimal control of partially
+observable Markov processes over a finite horizon,” Operations research,
+vol. 21, no. 5, pp. 1071–1088, 1973. 2
+[25] R. Sun, H. Zang, X. Li, and R. Islam, “Learning latent dynamic robust
+representations for world models,” in Int. Conf. Mach. Learn., 2024,
+pp. 47 234–47 260. 2, 3, 15
+[26] G. Zhai, X. Zhang, and N. Navab, “Recurrent world model with
+tokenized latent states,” in Int. Conf. Learn. Represent. Worksh., 2025,
+pp. 1–7. 2
+[27] E. Aljalbout, M. Krinner, A. Romero, and D. Scaramuzza, “Accelerating
+model-based reinforcement learning with state-space world models,” in
+Int. Conf. Learn. Represent. Worksh., 2025. 2
+[28] C. Chen, Y.-F. Wu, J. Yoon, and S. Ahn, “TransDreamer: Rein-
+forcement learning with transformer world models,” arXiv preprint
+arXiv:2202.09481, 2022. 2, 4, 5, 15
+[29] J. Robine, M. Höftmann, T. Uelwer, and S. Harmeling, “Transformer-
+based world models are happy with 100k interactions,” in Int. Conf.
+Learn. Represent., 2023, pp. 1–13. 2, 4, 6
+[30] W. Zhang, G. Wang, J. Sun, Y. Yuan, and G. Huang, “STORM: Efficient
+stochastic transformer based world models for reinforcement learning,”
+in Annu. Conf. Neur. Inform. Process. Syst., 2023, pp. 27 147–27 166. 2
+[31] C. Zhu, R. Yu, S. Feng, B. Burchfiel, P. Shah, and A. Gupta, “Unified
+
+
+17
+World Models: Coupling video and action diffusion for pretraining on
+large robotic datasets,” in Robotics: Science and Systems, 2025. 2
+[32] H. Qi, H. Yin, A. Zhu, Y. Du, and H. Yang, “Strengthening generative
+robot policies through predictive world modeling,” arXiv preprint
+arXiv:2502.00622, 2025. 2
+[33] J. Guo, X. Ma, Y. Wang, M. Yang, H. Liu, and Q. Li, “FlowDreamer: A
+RGB-D world model with flow-based motion representations for robot
+manipulation,” arXiv preprint arXiv:2505.10075, 2025. 2
+[34] S. Huang, L. Chen, P. Zhou, S. Chen, Z. Jiang, Y. Hu, Y. Liao, P. Gao,
+H. Li, M. Yao et al., “EnerVerse: Envisioning embodied future space
+for robotics manipulation,” arXiv preprint arXiv:2501.01895, 2025. 2,
+4, 7
+[35] H. A. Alhaija, J. Alvarez, M. Bala, T. Cai, T. Cao, L. Cha, J. Chen,
+M. Chen, F. Ferroni, S. Fidler et al., “Cosmos-Transfer1: Conditional
+world generation with adaptive multimodal control,” arXiv preprint
+arXiv:2503.14492, 2025. 2
+[36] B. Kerbl, G. Kopanas, T. Leimkühler, and G. Drettakis, “3D Gaussian
+Splatting for real-time radiance field rendering,” ACM Transactions on
+Graphics, vol. 42, no. 4, pp. 1–14, 2023. 3
+[37] B. Mildenhall, P. P. Srinivasan, M. Tancik, J. T. Barron, R. Ramamoorthi,
+and R. Ng, “NeRF: Representing scenes as Neural Radiance Fields for
+view synthesis,” in Eur. Conf. Comput. Vis., 2020, pp. 405–421. 3
+[38] D. Hafner, T. Lillicrap, I. Fischer, R. Villegas, D. Ha, H. Lee, and
+J. Davidson, “Learning latent dynamics for planning from pixels,” in
+Int. Conf. Mach. Learn., 2019, pp. 2555–2565. 3, 4, 15
+[39] K. Paster, S. A. McIlraith, and J. Ba, “Planning from pixels using
+inverse dynamics models,” in Int. Conf. Learn. Represent., 2021, pp.
+1–12. 4, 5
+[40] M. Pan, X. Zhu, Y. Wang, and X. Yang, “Iso-Dream: Isolating and
+leveraging noncontrollable visual dynamics in world models,” in Annu.
+Conf. Neur. Inform. Process. Syst., 2022, pp. 23 178–23 191. 4, 5
+[41] Y. Seo, D. Hafner, H. Liu, F. Liu, S. James, K. Lee, and P. Abbeel,
+“Masked world models for visual control,” in Conf. Robot. Learn., 2023,
+pp. 1332–1344. 4, 6, 15
+[42] W. Huang, F. Xia, T. Xiao, H. Chan, J. Liang, P. Florence, A. Zeng,
+J. Tompson, I. Mordatch, Y. Chebotar et al., “Inner Monologue:
+Embodied reasoning through planning with language models,” in Conf.
+Robot. Learn., 2023, pp. 1769–1782. 4, 6
+[43] P. Wu, A. Escontrela, D. Hafner, P. Abbeel, and K. Goldberg,
+“DayDreamer: World models for physical robot learning,” in Conf.
+Robot. Learn., 2023, pp. 2226–2240. 4
+[44] V. Micheli, E. Alonso, and F. Fleuret, “Transformers are sample-efficient
+world models,” in Int. Conf. Learn. Represent., 2023, pp. 1–14. 4, 6
+[45] X. Wang, Z. Zhu, G. Huang, B. Wang, X. Chen, and J. Lu, “World-
+Dreamer: Towards general world models for video generation via
+predicting masked tokens,” arXiv preprint arXiv:2401.09985, 2024.
+4, 9
+[46] T. Yoneda, J. Fang, P. Li, H. Zhang, T. Jiang, S. Lin, B. Picker, D. Yunis,
+H. Mei, and M. R. Walter, “Statler: State-maintaining language models
+for embodied reasoning,” in IEEE Int. Conf. Robot. Autom., 2024, pp.
+15 083–15 091. 4, 6
+[47] J. Xiang, G. Liu, Y. Gu, Q. Gao, Y. Ning, Y. Zha, Z. Feng, T. Tao, S. Hao,
+Y. Shi et al., “Pandora: Towards general world model with natural
+language actions and video states,” arXiv preprint arXiv:2406.09455,
+2024. 4, 8
+[48] X. Gu, Y.-J. Wang, X. Zhu, C. Shi, Y. Guo, Y. Liu, and J. Chen,
+“Advancing Humanoid Locomotion: Mastering challenging terrains with
+denoising world model learning,” in Robotics: Science and Systems,
+2024. 4, 5
+[49] S. Zhou, Y. Du, J. Chen, Y. Li, D.-Y. Yeung, and C. Gan, “RoboDreamer:
+Learning compositional world models for robot imagination,” in Int.
+Conf. Mach. Learn., 2024, pp. 61 885–61 896. 4, 7
+[50] J. Bruce, M. D. Dennis, A. Edwards, J. Parker-Holder, Y. Shi, E. Hughes,
+M. Lai, A. Mavalankar, R. Steigerwald, C. Apps et al., “Genie:
+Generative interactive environments,” in Int. Conf. Mach. Learn., 2024,
+pp. 4603–4623. 4, 8
+[51] A. Bardes, Q. Garrido, J. Ponce, X. Chen, M. Rabbat, Y. LeCun,
+M. Assran, and N. Ballas, “Revisiting feature prediction for learning
+visual representations from video,” Trans. Mach. Learn. Res., vol. 2024,
+pp. 1–14, 2024. 4, 9
+[52] L. Zhang, M. Kan, S. Shan, and X. Chen, “PreLAR: World model
+pre-training with learnable action representation,” in Eur. Conf. Comput.
+Vis., 2024, pp. 185–201. 3, 4
+[53] G. Lu, S. Zhang, Z. Wang, C. Liu, J. Lu, and Y. Tang, “ManiGaussian:
+Dynamic gaussian splatting for multi-task robotic manipulation,” in Eur.
+Conf. Comput. Vis., 2024, pp. 349–366. 4, 7, 15
+[54] M. Zawalski, W. Chen, K. Pertsch, O. Mees, C. Finn, and S. Levine,
+“Robotic control via embodied Chain-of-Thought reasoning,” in Conf.
+Robot. Learn., 2025, pp. 3157–3181. 4, 6
+[55] Y. Wen, J. Lin, Y. Zhu, J. Han, H. Xu, S. Zhao, and X. Liang, “VidMan:
+Exploiting implicit dynamics from video diffusion model for effective
+robot manipulation,” in Annu. Conf. Neur. Inform. Process. Syst., 2024,
+pp. 41 051–41 075. 4, 7, 15
+[56] J. Wu, S. Yin, N. Feng, X. He, D. Li, J. Hao, and M. Long, “iVideoGPT:
+Interactive videoGPTs are scalable world models,” in Annu. Conf. Neur.
+Inform. Process. Syst., 2024, pp. 68 082–68 119. 4, 8
+[57] Q. He, W. Liang, C. Hao, G. Sun, and J. Tian, “GLAM: Global-local
+variation awareness in mamba-based world model,” in AAAI Conf. Artif.
+Intell., 2025, pp. 17 105–17 113. 4, 5
+[58] B. Lin, Y. Nie, Z. Wei, J. Chen, S. Ma, J. Han, H. Xu, X. Chang,
+and X. Liang, “NavCot: Boosting LLM-based Vision-and-Language
+navigation via learning disentangled reasoning,” IEEE Trans. Pattern
+Anal. Mach. Intell., vol. 47, no. 7, pp. 5945–5945, 2025. 4, 6
+[59] J. Guo, Y. Ye, T. He, H. Wu, Y. Jiang, T. Pearce, and J. Bian,
+“MineWorld: A real-time and open-source interactive world model
+on minecraft,” arXiv preprint arXiv:2504.08388, 2025. 4, 6
+[60] L. Barcellona, A. Zadaianchuk, D. Allegro, S. Papa, S. Ghidoni,
+and E. Gavves, “Dream to Manipulate: Compositional world models
+empowering robot imitation learning with imagination,” in Int. Conf.
+Learn. Represent., 2025. 4, 7, 15
+[61] F. Petri, L. Asprino, and A. Gangemi, “Learning local causal
+world models with state space models and attention,” arXiv preprint
+arXiv:2505.02074, 2025. 4, 8
+[62] J. Wu, S. Yin, N. Feng, and M. Long, “RLVR-World: Training world
+models with reinforcement learning,” arXiv preprint arXiv:2505.13934,
+2025. 4, 8
+[63] N. Savov, N. Kazemi, D. Zhang, D. P. Paudel, X. Wang, and L. Van Gool,
+“StateSpaceDiffuser: Bringing long context to diffusion world models,”
+arXiv preprint arXiv:2505.22246, 2025. 4, 8
+[64] J. Chen, H. Zhu, X. He, Y. Wang, J. Zhou, W. Chang, Y. Zhou, Z. Li,
+Z. Fu, J. Pang et al., “DeepVerse: 4D autoregressive video generation
+as a world model,” arXiv preprint arXiv:2506.01103, 2025. 4, 8
+[65] X. Yang, B. Li, S. Xu, N. Wang, C. Ye, Z. Chen, M. Qin, Y. Ding, X. Jin,
+H. Zhao et al., “ORV: 4D occupancy-centric robot video generation,”
+arXiv preprint arXiv:2506.03079, 2025. 4, 10
+[66] A. Bar, G. Zhou, D. Tran, T. Darrell, and Y. LeCun, “Navigation
+world models,” in IEEE Conf. Comput. Vis. Pattern Recog., 2025, pp.
+15 791–15 801. 4, 6
+[67] J. Cen, C. Yu, H. Yuan, Y. Jiang, S. Huang, J. Guo, X. Li, Y. Song,
+H. Luo, F. Wang et al., “WorldVLA: Towards autoregressive action
+world model,” arXiv preprint arXiv:2506.21539, 2025. 4, 6
+[68] H. Chen, B. Wang, J. Guo, T. Zhang, Y. Hou, X. Huang, C. Tie, and
+L. Shao, “World4Omni: A zero-shot framework from image generation
+world model to robotic manipulation,” arXiv preprint arXiv:2506.23919,
+2025. 4, 8
+[69] Z. Wang, K. Wang, L. Zhao, P. Stone, and J. Bian, “Dyn-O: Building
+structured world models with object-centric representations,” arXiv
+preprint arXiv:2507.03298, 2025. 4, 6
+[70] G. Zhou, H. Pan, Y. LeCun, and L. Pinto, “DINO-WM: World models
+on pre-trained visual features enable zero-shot planning,” in Int. Conf.
+Mach. Learn., 2025. 4, 7
+[71] X. Chi, C.-K. Fan, H. Zhang, X. Qi, R. Zhang, A. Chen, C.-M. Chan,
+W. Xue, Q. Liu, S. Zhang et al., “Empowering world models with
+reflection for embodied video prediction,” in Int. Conf. Mach. Learn.,
+2025. 4, 8
+[72] S. Gao, S. Zhou, Y. Du, J. Zhang, and C. Gan, “AdaWorld: Learning
+adaptable world models with latent actions,” in Int. Conf. Mach. Learn.,
+2025. 4, 8
+[73] Y. Yang, J. Liu, Z. Zhang, S. Zhou, R. Tan, J. Yang, Y. Du, and
+C. Gan, “MindJourney: Test-time scaling with world models for spatial
+reasoning,” arXiv preprint arXiv:2507.12508, 2025. 4, 9
+[74] Y. Chai, L. Deng, R. Shao, J. Zhang, L. Xing, H. Zhang, and Y. Liu,
+“GAF: Gaussian action field as a dvnamic world model for robotic
+mlanipulation,” arXiv preprint arXiv:2506.14135, 2025. 4, 7
+[75] X. Mao, S. Lin, Z. Li, C. Li, W. Peng, T. He, J. Pang, M. Chi, Y. Qiao,
+and K. Zhang, “Yume: An interactive world generation model,” arXiv
+preprint arXiv:2507.17744, 2025. 4, 8
+[76] X. Chen, H. Wei, P. Zhang, C. Zhang, K. Wang, Y. Guo, R. Yang,
+Y. Wang, X. Xiao, L. Zhao et al., “villa-X: Enhancing latent ac-
+tion modeling in Vision-Language-Action models,” arXiv preprint
+arXiv:2507.23682, 2025. 4, 7
+
+
+18
+[77] A. Team, H. Zhu, Y. Wang, J. Zhou, W. Chang, Y. Zhou, Z. Li,
+J. Chen, C. Shen, J. Pang et al., “Aether: Geometric-aware unified
+world modeling,” in Int. Conf. Comput. Vis., 2025. 4, 10
+[78] H. Zhen, Q. Sun, H. Zhang, J. Li, S. Zhou, Y. Du, and C. Gan,
+“TesserAct: Learning 4D embodied world models,” in Int. Conf. Comput.
+Vis., 2025. 4, 7, 15
+[79] E. Zhou, Y. Qin, Z. Yin, Y. Huang, R. Zhang, L. Sheng, Y. Qiao, and
+J. Shao, “MineDreamer: Learning to follow instructions via Chain-of-
+Imagination for simulated-world control,” in Int. Conf. Intell. Robot.
+Syst., 2025. 4, 6
+[80] T. Yu, G. Lu, Z. Yang, H. Deng, S. S. Chen, J. Lu, W. Ding, G. Hu,
+Y. Tang, and Z. Wang, “ManiGaussian++: General robotic bimanual
+manipulation with hierarchical gaussian world model,” in Int. Conf.
+Intell. Robot. Syst., 2025. 4, 7, 15
+[81] A. Hu, G. Corrado, N. Griffiths, Z. Murez, C. Gurau, H. Yeo, A. Kendall,
+R. Cipolla, and J. Shotton, “Model-based imitation learning for urban
+driving,” in Annu. Conf. Neur. Inform. Process. Syst., 2022, pp. 20 703–
+20 716. 4, 5
+[82] L. Zhang, Y. Xiong, Z. Yang, S. Casas, R. Hu, and R. Urtasun,
+“Copilot4D: Learning unsupervised world models for autonomous
+driving via discrete diffusion,” in Int. Conf. Learn. Represent., 2024. 5,
+9
+[83] Z. Gao, Y. Mu, C. Chen, J. Duan, P. Luo, Y. Lu, and S. E. Li, “Enhance
+sample efficiency and robustness of End-to-End urban autonomous
+driving via semantic masked world model,” IEEE Trans. Intell. Transp.
+Syst., vol. 25, no. 10, pp. 13 067–13 079, 2024. 4, 5
+[84] R. Gao, K. Chen, Z. Li, L. Hong, Z. Li, and Q. Xu, “MagicDrive3D:
+Controllable 3D generation for any-view rendering in street scenes,”
+arXiv preprint arXiv:2405.14475, 2024. 5, 10, 13
+[85] L. Wang, W. Zheng, Y. Ren, H. Jiang, Z. Cui, H. Yu, and J. Lu,
+“OccSora: 4D occupancy generation models as world simulators for
+autonomous driving,” arXiv preprint arXiv:2405.20337, 2024. 5, 9
+[86] E. Ma, L. Zhou, T. Tang, Z. Zhang, D. Han, J. Jiang, K. Zhan, P. Jia,
+X. Lang, H. Sun et al., “Unleashing generalization of End-to-End
+autonomous driving with controllable long video generation,” arXiv
+preprint arXiv:2406.01349, 2024. 5, 9, 13
+[87] C. Min, D. Zhao, L. Xiao, J. Zhao, X. Xu, Z. Zhu, L. Jin, J. Li, Y. Guo,
+J. Xing et al., “DriveWorld: 4D pre-trained scene understanding via
+world models for autonomous driving,” in IEEE Conf. Comput. Vis.
+Pattern Recog., 2024, pp. 15 522–15 533. 5, 6, 16
+[88] Y. Wang, J. He, L. Fan, H. Li, Y. Chen, and Z. Zhang, “Driving into the
+Future: Multiview visual forecasting and planning with world model
+for autonomous driving,” in IEEE Conf. Comput. Vis. Pattern Recog.,
+2024, pp. 14 749–14 759. 5, 8, 13
+[89] Z. Yang, L. Chen, Y. Sun, and H. Li, “Visual point cloud forecasting
+enables scalable autonomous driving,” in IEEE Conf. Comput. Vis.
+Pattern Recog., 2024, pp. 14 673–14 684. 5, 9
+[90] J. Yang, S. Gao, Y. Qiu, L. Chen, T. Li, B. Dai, K. Chitta, P. Wu, J. Zeng,
+P. Luo et al., “Generalized predictive model for autonomous driving,”
+in IEEE Conf. Comput. Vis. Pattern Recog., 2024, pp. 14 662–14 672.
+5, 8, 11, 13, 14
+[91] X. Wang, Z. Zhu, G. Huang, X. Chen, J. Zhu, and J. Lu, “DriveDreamer:
+Towards real-world-drive world models for autonomous driving,” in
+Eur. Conf. Comput. Vis., 2024, pp. 55–72. 5, 6, 13
+[92] W. Zheng, R. Song, X. Guo, C. Zhang, and L. Chen, “GenAD:
+Generative End-to-End autonomous driving,” in Eur. Conf. Comput.
+Vis., 2024, pp. 87–104. 5, 6, 16
+[93] W. Zheng, W. Chen, Y. Huang, B. Zhang, Y. Duan, and J. Lu, “OccWorld:
+Learning a 3D occupancy world model for autonomous driving,” in
+Eur. Conf. Comput. Vis., 2024, pp. 55–72. 5, 7, 15, 16
+[94] S. Gu, W. Yin, B. Jin, X. Guo, J. Wang, H. Li, Q. Zhang, and
+X. Long, “DOME: Taming diffusion model into high-fidelity controllable
+occupancy world model,” arXiv preprint arXiv:2410.10429, 2024. 5, 9,
+15
+[95] R. Tian, B. Li, X. Weng, Y. Chen, E. Schmerling, Y. Wang, B. Ivanovic,
+and M. Pavone, “Tokenize the world into object-level knowledge to
+address long-tail events in autonomous driving,” in Conf. Robot. Learn.,
+2025, pp. 3656–3673. 5, 7
+[96] S. Gao, J. Yang, L. Chen, K. Chitta, Y. Qiu, A. Geiger, J. Zhang, and
+H. Li, “Vista: A generalizable driving world model with high fidelity
+and versatile controllability,” in Annu. Conf. Neur. Inform. Process.
+Syst., 2024, pp. 91 560–91 596. 5, 9, 13
+[97] G. Zhao, X. Wang, Z. Zhu, X. Chen, G. Huang, X. Bao, and X. Wang,
+“DriveDreamer-2: LLM-enhanced world models for diverse driving video
+generation,” in AAAI Conf. Artif. Intell., 2025, pp. 10 412–10 420. 5,
+10, 13
+[98] H. Xu, P. Peng, G. Tan, Y. Chang, Y. Zhao, and Y. Tian, “Delta-
+Triplane transformers as occupancy world models,” arXiv preprint
+arXiv:2503.07338, 2025. 5, 7, 15, 16
+[99] H. Bian, L. Kong, H. Xie, L. Pan, Y. Qiao, and Z. Liu, “DynamicCity:
+Large-scale 4D occupancy generation from dynamic scenes,” in Int.
+Conf. Learn. Represent., 2025, pp. 1–14. 5, 10
+[100] V. Zyrianov, H. Che, Z. Liu, and S. Wang, “LidarDM: Generative
+LiDAR simulation in a generated world,” in IEEE Int. Conf. Robot.
+Autom., 2025. 5, 9
+[101] S. Zeng, X. Chang, M. Xie, X. Liu, Y. Bai, Z. Pan, M. Xu, and
+X. Wei, “FutureSightDrive: Thinking visually with spatio-temporal CoT
+for autonomous driving,” arXiv preprint arXiv:2505.17685, 2025. 5, 6,
+16
+[102] M. Hassan, S. Stapf, A. Rahimi, P. Rezende, Y. Haghighi, D. Brügge-
+mann, I. Katircioglu, L. Zhang, X. Chen, S. Saha et al., “GEM: A
+generalizable ego-vision multimodal world model for fine-grained ego-
+motion, object dynamics, and scene composition control,” in IEEE Conf.
+Comput. Vis. Pattern Recog., 2025, pp. 22 404–22 415. 5, 9, 13
+[103] S. Zuo, W. Zheng, Y. Huang, J. Zhou, and J. Lu, “GaussianWorld:
+Gaussian world model for streaming 3D occupancy prediction,” in IEEE
+Conf. Comput. Vis. Pattern Recog., 2025, pp. 6772–6781. 5, 9
+[104] J. Ni, Y. Guo, Y. Liu, R. Chen, L. Lu, and Z. Wu, “MaskGWM: A
+generalizable driving world model with video mask reconstruction,” in
+IEEE Conf. Comput. Vis. Pattern Recog., 2025, pp. 22 381–22 391. 5,
+9, 13
+[105] G. Zhao, C. Ni, X. Wang, Z. Zhu, X. Zhang, Y. Wang, G. Huang,
+X. Chen, B. Wang, Y. Zhang et al., “DriveDreamer4D: World models
+are effective data machines for 4D driving scene representation,” in
+IEEE Conf. Comput. Vis. Pattern Recog., 2025, pp. 12 015–12 026. 5,
+10
+[106] C. Ni, G. Zhao, X. Wang, Z. Zhu, W. Qin, G. Huang, C. Liu, Y. Chen,
+Y. Wang, X. Zhang et al., “ReconDreamer: Crafting world models
+for driving scene reconstruction via online restoration,” in IEEE Conf.
+Comput. Vis. Pattern Recog., 2025, pp. 1559–1569. 5, 10
+[107] Y. Li, Y. Wang, Y. Liu, J. He, L. Fan, and Z. Zhang, “End-to-End
+driving with online trajectory evaluation via BEV world model,” in Int.
+Conf. Comput. Vis., 2025. 5, 7
+[108] X. Zhou, D. Liang, S. Tu, X. Chen, Y. Ding, D. Zhang, F. Tan,
+H. Zhao, and X. Bai, “HERMES: A unified self-driving world model
+for simultaneous 3D scene understanding and generation,” in Int. Conf.
+Comput. Vis., 2025. 5, 9
+[109] X. Li, C. Wu, Z. Yang, Z. Xu, D. Liang, Y. Zhang, J. Wan, and
+J. Wang, “DriVerse: Navigation world model for driving simulation via
+multimodal trajectory prompting and motion alignment,” in ACM Int.
+Conf. Multimedia, 2025. 5, 8, 13
+[110] M. Okada and T. Taniguchi, “Dreaming: Model-based reinforcement
+learning by latent imagination without reconstruction,” in IEEE Int.
+Conf. Robot. Autom., 2021, pp. 4209–4215. 3, 15
+[111] F. Deng, I. Jang, and S. Ahn, “DreamerPro: Reconstruction-free model-
+based reinforcement learning with prototypical representations,” in Int.
+Conf. Mach. Learn., 2022, pp. 4956–4975. 3, 15
+[112] Q. Wang, Z. Zhang, B. Xie, X. Jin, Y. Wang, S. Wang, L. Zheng,
+X. Yang, and W. Zeng, “Disentangled world models: Learning to transfer
+semantic knowledge from distracting videos for reinforcement learning,”
+in Int. Conf. Comput. Vis., 2025. 3, 15
+[113] Y. Wang, M. Verghese, and J. Schneider, “Latent policy steering
+with embodiment-agnostic pretrained world models,” arXiv preprint
+arXiv:2507.13340, 2025. 3
+[114] C. Sancaktar, C. Gumbsch, A. Zadaianchuk, P. Kolev, and G. Martius,
+“SENSEI: Semantic exploration guided by foundation models to learn
+versatile world models,” in Int. Conf. Mach. Learn., 2025. 4
+[115] V. D. Nguyen, Z. Yang, C. L. Buckley, and A. Ororbia, “SR-AIF:
+Solving sparse-reward robotic tasks from pixels with active inference
+and world models,” in IEEE Int. Conf. Robot. Autom., 2025, pp. 6510–
+6518. 4
+[116] J. Lanier, K. Kim, A. Karamzade, Y. Liu, A. Sinha, K. He, D. Corsi, and
+R. Fox, “Adapting world models with latent-state dynamics residuals,”
+arXiv preprint arXiv:2504.02252, 2025. 4
+[117] H. Wang, X. Ye, F. Tao, C. Pan, A. Mallik, B. Yaman, L. Ren,
+and J. Zhang, “AdaWM: Adaptive world model based planning for
+autonomous driving,” in Int. Conf. Learn. Represent., 2025, pp. 1–13. 4
+[118] H. Lai, J. Cao, J. Xu, H. Wu, Y. Lin, T. Kong, Y. Yu, and W. Zhang,
+“World model-based perception for visual legged locomotion,” in IEEE
+Int. Conf. Robot. Autom., 2025. 4
+[119] Y. Wang, R. Yu, S. Wan, L. Gan, and D.-C. Zhan, “FOUNDER:
+Grounding foundation models in world models for open-ended embodied
+decision making,” in Int. Conf. Mach. Learn., 2025. 4
+
+
+19
+[120] I. Nematollahi, B. DeMoss, A. L. Chandra, N. Hawes, W. Burgard,
+and I. Posner, “LUMOS: Language-conditioned imitation learning with
+world models,” in IEEE Int. Conf. Robot. Autom., 2025. 4
+[121] A. Popov, A. Degirmenci, D. Wehr, S. Hegde, R. Oldja, A. Kamenev,
+B. Douillard, D. Nistér, U. Muller, R. Bhargava et al., “Mitigating
+covariate shift in imitation learning for autonomous vehicles using latent
+space generative world models,” in IEEE Int. Conf. Robot. Autom., 2025.
+4
+[122] Y. Qu, Z. Huang, Z. Sheng, J. Chen, S. Chen, and S. Labi, “VL-SAFE:
+Vision-Language guided safety-aware reinforcement learning with world
+models for autonomous driving,” arXiv preprint arXiv:2505.16377, 2025.
+5
+[123] H. Wang, D. Gao, and J. Zhang, “Ego-centric learning of communicative
+world models for autonomous driving,” arXiv preprint arXiv:2506.08149,
+2025. 5
+[124] R. G. Goswami, P. Krishnamurthy, Y. LeCun, and F. Khorrami, “OSVI-
+WM: One-shot visual imitation for unseen tasks using world-model-
+guided trajectory generation,” arXiv preprint arXiv:2505.20425, 2025.
+5
+[125] C. Li, A. Krause, and M. Hutter, “Robotic world model: A neural
+network simulator for robust policy optimization in robotics,” arXiv
+preprint arXiv:2501.10100, 2025. 5
+[126] W. Liu, H. Zhao, C. Li, J. Biswas, B. Okal, P. Goyal, Y. Chang, and
+S. Pouya, “X-MOBILITY: End-to-end generalizable navigation via
+world modeling,” in IEEE Int. Conf. Robot. Autom., 2025. 5
+[127] W. Sun, L. Chen, Y. Su, B. Cao, Y. Liu, and Z. Xie, “Learning
+humanoid locomotion with world model reconstruction,” arXiv preprint
+arXiv:2502.16230, 2025. 5
+[128] P. Agrawal, A. V. Nair, P. Abbeel, J. Malik, and S. Levine, “Learning
+to Poke by Poking: Experiential learning of intuitive physics,” in Annu.
+Conf. Neur. Inform. Process. Syst., 2016. 5
+[129] X. Yao, J. Gao, and C. Xu, “NavMorph: A self-evolving world model
+for vision-and-language navigation in continuous environments,” in Int.
+Conf. Comput. Vis., 2025. 6
+[130] M. Burchi and R. Timofte, “Learning transformer-based world models
+with contrastive predictive coding,” in Int. Conf. Learn. Represent.,
+2025, pp. 1–14. 6
+[131] T. Feng, X. Wang, Z. Zhou, R. Wang, Y. Zhan, G. Li, Q. Li, and
+W. Zhu, “EvoAgent: Agent autonomous evolution with continual world
+model for long-horizon tasks,” arXiv preprint arXiv:2502.05907, 2025.
+6
+[132] Z. Chen, J. Huo, Y. Chen, and Y. Gao, “RoboHorizon: An LLM-assisted
+multi-view world model for long-horizon robotic manipulation,” arXiv
+preprint arXiv:2501.06605, 2025. 6
+[133] X. Hu, W. Yin, M. Jia, J. Deng, X. Guo, Q. Zhang, X. Long, and P. Tan,
+“DrivingWorld: Constructing world model for autonomous driving via
+video gpt,” arXiv preprint arXiv:2412.19505, 2024. 6, 13
+[134] W. Zheng, Z. Xia, Y. Huang, S. Zuo, J. Zhou, and J. Lu, “Doe-1:
+Closed-loop autonomous driving with large world model,” arXiv preprint
+arXiv:2412.09627, 2024. 6, 16
+[135] L. Xiao, J.-J. Liu, S. Yang, X. Li, X. Ye, W. Yang, and J. Wang,
+“Learning multiple probabilistic decisions from latent world model in
+autonomous driving,” in IEEE Int. Conf. Robot. Autom., 2025. 6
+[136] A. B. Vasudevan, N. Peri, J. Schneider, and D. Ramanan, “Planning
+with adaptive world models for autonomous driving,” in IEEE Int. Conf.
+Robot. Autom., 2025, pp. 14 938–14 945. 6
+[137] A. Dedieu, J. Ortiz, X. Lou, C. Wendelken, J. S. Guntupalli, W. Lehrach,
+M. Lazaro-Gredilla, and K. P. Murphy, “Improving transformer world
+models for data-efficient RL,” in Int. Conf. Mach. Learn., 2025. 6
+[138] J. Lyu, Z. Li, X. Shi, C. Xu, Y. Wang, and H. Wang, “DyWA:
+Dynamics-adaptive world action model for generalizable non-prehensile
+manipulation,” in Int. Conf. Comput. Vis., 2025. 6
+[139] L. Chen, Y. Wang, S. Tang, Q. Ma, T. He, W. Ouyang, X. Zhou, H. Bao,
+and S. Peng, “EgoAgent: A joint predictive agent model in egocentric
+worlds,” in Int. Conf. Comput. Vis., 2025. 6
+[140] A. Scannell, M. Nakhaeinezhadfard, K. Kujanpää, Y. Zhao, K. S.
+Luck, A. Solin, and J. Pajarinen, “Discrete codebook world models for
+continuous control,” in Int. Conf. Learn. Represent., 2025, pp. 1–16. 6
+[141] S. Yin, J. Wu, S. Huang, X. Su, X. He, J. HAO, and M. Long, “Trajectory
+world models for heterogeneous environments,” in Int. Conf. Mach.
+Learn., 2025. 6
+[142] S. Hamdan and F. Güney, “CarFormer: Self-driving with learned object-
+centric representations,” in Eur. Conf. Comput. Vis., 2024, pp. 177–193.
+6
+[143] Y. Jeong, J. Chun, S. Cha, and T. Kim, “Object-centric world model for
+language-guided manipulation,” in Int. Conf. Learn. Represent. Worksh.,
+2025, pp. 1–13. 6
+[144] V. Micheli, E. Alonso, and F. Fleuret, “Efficient world models with
+context-aware tokenization,” in Int. Conf. Mach. Learn., 2024, pp.
+35 623–35 638. 6
+[145] S. Wang, Z. Fei, Q. Cheng, S. Zhang, P. Cai, J. Fu, and X. Qiu, “World
+Modeling Makes a Better Planner: Dual preference optimization for
+embodied task planning,” in Annu. Meet. Assoc. Comput. Linguistics,
+2025. 6
+[146] K. Zhang, P. Ren, B. Lin, J. Lin, S. Ma, H. Xu, and X. Liang, “PIVOT-R:
+Primitive-driven waypoint-aware world model for robotic manipulation,”
+in Annu. Conf. Neur. Inform. Process. Syst., 2024, pp. 54 105–54 136. 6
+[147] Y. Chen, J. Wei, C. Xu, B. Li, M. Tomizuka, A. Bajcsy, and R. Tian,
+“Reimagination with Test-time Observation Interventions: Distractor-
+robust world model predictions for visual model predictive control,” in
+Robotics: Science and Systems Worksh., 2025. 6
+[148] K. Zhang, Z. Tang, X. Hu, X. Pan, X. Guo, Y. Liu, J. Huang, L. Yuan,
+Q. Zhang, X.-X. Long et al., “Epona: Autoregressive diffusion world
+model for autonomous driving,” in Int. Conf. Comput. Vis., 2025. 6,
+13, 16
+[149] M. Goff, G. Hogan, G. Hotz, A. du Parc Locmaria, K. Raczy, H. Schäfer,
+A. Shihadeh, W. Zhang, and Y. Yousfi, “Learning to drive from a world
+model,” in IEEE Conf. Comput. Vis. Pattern Recog. Worksh., 2025, pp.
+1964–1973. 6
+[150] S. Tan, J. Lambert, H. Jeon, S. Kulshrestha, Y. Bai, J. Luo, D. Anguelov,
+M. Tan, and C. M. Jiang, “SceneDiffuser++: City-scale traffic simulation
+via a generative world model,” in IEEE Conf. Comput. Vis. Pattern
+Recog., 2025, pp. 1570–1580. 6
+[151] X. Yu, B. Peng, R. Xu, M. Galley, H. Cheng, S. Nath, J. Gao, and
+Z. Yu, “Dyna-Think: Synergizing reasoning, acting, and world model
+simulation in AI agents,” arXiv preprint arXiv:2506.00320, 2025. 6
+[152] Z. Zhao, W. Zhang, H. Huang, K. Liu, J. Gao, G. Wang, and K. Chen,
+“RIG: Synergizing reasoning and imagination in End-to-End generalist
+policy,” arXiv preprint arXiv:2503.24388, 2025. 6
+[153] J. Gkountouras, M. Lindemann, P. Lippe, E. Gavves, and I. Titov,
+“Language agents meet causality–bridging llms and causal world models,”
+in Int. Conf. Learn. Represent., 2025, pp. 1–15. 6
+[154] T. Yin, Z. Mei, T. Sun, L. Zha, E. Zhou, J. Bao, M. Yamane, O. Sho, and
+A. Majumdar, “WoMAP: World models for embodied open-vocabulary
+object localization,” in Robotics: Science and Systems Worksh., 2025. 6
+[155] Z. Yang, X. Jia, Q. Li, X. Yang, M. Yao, and J. Yan, “Raw2Drive:
+Reinforcement learning with aligned world models for End-to-End
+autonomous driving (in CARLA v2),” arXiv preprint arXiv:2505.16394,
+2025. 6
+[156] Z. Yan, W. Dong, Y. Shao, Y. Lu, L. Haiyang, J. Liu, H. Wang, Z. Wang,
+Y. Wang, F. Remondino et al., “RenderWorld: World model with self-
+supervised 3D label,” in IEEE Int. Conf. Robot. Autom., 2025. 7, 15,
+16
+[157] Y. Yang, J. Mei, Y. Ma, S. Du, W. Chen, Y. Qian, Y. Feng, and
+Y. Liu, “Driving in the Occupancy World: Vision-Centric 4D occupancy
+forecasting and planning via world models for autonomous driving,” in
+AAAI Conf. Artif. Intell., 2025, pp. 9327–9335. 7, 16
+[158] X. Li, P. Li, Y. Zheng, W. Sun, Y. Wang, and Y. Chen, “Semi-supervised
+vision-centric 3D occupancy world model for autonomous driving,” in
+Int. Conf. Learn. Represent., 2025, pp. 1–13. 7
+[159] Y. Li, L. Fan, J. He, Y. Wang, Y. Chen, Z. Zhang, and T. Tan, “Enhancing
+End-to-End autonomous driving with latent world model,” in Int. Conf.
+Learn. Represent., 2025, pp. 1–14. 7
+[160] P. Li and D. Cui, “Navigation-guided sparse scene representation for
+End-to-End autonomous driving,” in Int. Conf. Learn. Represent., 2024,
+pp. 1–13. 7, 16
+[161] Z. Huang, J. Zhang, and E. Ohn-Bar, “Neural volumetric world models
+for autonomous driving,” in Eur. Conf. Comput. Vis., 2024, pp. 195–213.
+7, 16
+[162] Y. Yang, H. Lin, Y. Luo, S. Fu, C. Zheng, X. Yan, S. Mei, K. Tang,
+S. Cui, and Z. Li, “FASTopoWM: Fast-slow lane segment topology
+reasoning with latent world models,” arXiv preprint arXiv:2507.23325,
+2025. 7
+[163] D. Nie, X. Guo, Y. Duan, R. Zhang, and L. Chen, “WMNav: Integrating
+vision-language models into world models for object goal navigation,”
+in Int. Conf. Intell. Robot. Syst., 2025. 7
+[164] Z. Zhang, Q. Zhang, W. Cui, S. Shi, Y. Guo, G. Han, W. Zhao, J. Sun,
+J. Cao, J. Wang et al., “Occupancy world model for robots,” arXiv
+preprint arXiv:2505.05512, 2025. 7
+[165] S. Huang, Q. Chen, X. Zhang, J. Sun, and M. Schwager, “ParticleFormer:
+A 3D point cloud world model for multi-object, multi-material robotic
+manipulation,” in Conf. Robot. Learn., 2025. 7
+
+
+20
+[166] J. Abou-Chakra, K. Rana, F. Dayoub, and N. Sünderhauf, “Physically
+Embodied Gaussian Splatting: A realtime correctable world model for
+robotics,” in Conf. Robot. Learn., 2025, pp. 513–530. 7
+[167] T. Jiang, Y. Guan, L. Ma, J. Xu, J. Meng, W. Chen, Z. Zeng, L. Li,
+D. Wu, and R. Chen, “DexSim2Real2: Building explicit world model for
+precise articulated object dexterous manipulation,” IEEE Trans. Robot.,
+vol. 41, pp. 4360–4379, 2025. 7
+[168] W. Li, H. Zhao, Z. Yu, Y. Du, Q. Zou, R. Hu, and K. Xu, “PIN-
+WM: Learning physics-informed world models for non-prehensile
+manipulation,” in Robotics: Science and Systems, 2025. 7
+[169] C. Ning, K. Fang, and W.-C. Ma, “Prompting with the Future: Open-
+world model predictive control with interactive digital twins,” in
+Robotics: Science and Systems, 2025. 7
+[170] A. Chen, W. Zheng, Y. Wang, X. Zhang, K. Zhan, P. Jia, K. Keutzer,
+and S. Zhang, “GeoDrive: 3D geometry-informed driving world model
+with precise action control,” arXiv preprint arXiv:2505.22421, 2025. 7,
+13
+[171] R. Zheng, J. Wang, S. Reed, J. Bjorck, Y. Fang, F. Hu, J. Jang,
+K. Kundalia, Z. Lin, L. Magne et al., “FLARE: Robot learning with
+implicit world modeling,” in Robotics: Science and Systems, 2025. 7
+[172] Y. Huang, J. Zhang, S. Zou, X. Liu, R. Hu, and K. Xu, “LaDi-WM:
+A latent diffusion-based world model for predictive manipulation,” in
+Conf. Robot. Learn., 2025. 7
+[173] B. Wang, X. Meng, X. Wang, Z. Zhu, A. Ye, Y. Wang, Z. Yang, C. Ni,
+G. Huang, and X. Wang, “EmbodieDreamer: Advancing real2sim2real
+transfer for policy training via embodied world modeling,” arXiv preprint
+arXiv:2507.05198, 2025. 7
+[174] H. Zhang, Y. Xue, X. Yan, J. Zhang, W. Qiu, D. Bai, B. Liu, S. Cui,
+and Z. Li, “An efficient occupancy world model via decoupled dynamic
+flow and image-assisted training,” arXiv preprint arXiv:2412.13772,
+2024. 7, 15, 16
+[175] Y. Li, X. Wei, X. Chi, Y. Li, Z. Zhao, H. Wang, N. Ma, M. Lu, and
+S. Zhang, “ManipDreamer: Boosting robotic manipulation world model
+with action tree and visual guidance,” arXiv preprint arXiv:2504.16464,
+2025. 7
+[176] H. Zhi, P. Chen, S. Zhou, Y. Dong, Q. Wu, L. Han, and M. Tan,
+“3DFlowAction: Learning cross-embodiment manipulation from 3D
+flow world model,” arXiv preprint arXiv:2506.06199, 2025. 8
+[177] A. Garg and K. Madhava Krishna, “Imagine-2-Drive: High-fidelity
+world modeling in carla for autonomous vehicles,” in Int. Conf. Intell.
+Robot. Syst., 2025. 8
+[178] Y. Zheng, P. Yang, Z. Xing, Q. Zhang, Y. Zheng, Y. Gao, P. Li, T. Zhang,
+Z. Xia, P. Jia et al., “World4Drive: End-to-End autonomous driving
+via intention-aware physical latent world model,” in Int. Conf. Comput.
+Vis., 2025. 8
+[179] H. Zhang, Z. Wang, Q. Lyu, Z. Zhang, S. Chen, T. Shu, B. Dariush,
+K. Lee, Y. Du, and C. Gan, “COMBO: Compositional world models
+for embodied multi-agent cooperation,” in Int. Conf. Learn. Represent.,
+2025, pp. 1–16. 8
+[180] Y. Shang, X. Zhang, Y. Tang, L. Jin, C. Gao, W. Wu, and Y. Li,
+“RoboScape: Physics-informed embodied world model,” arXiv preprint
+arXiv:2506.23135, 2025. 8
+[181] R. Bonatti, S. Vemprala, S. Ma, F. Frujeri, S. Chen, and A. Kapoor,
+“PACT: Perception-action causal transformer for autoregressive robotics
+pre-training,” in Int. Conf. Intell. Robot. Syst., 2023, pp. 3621–3627. 8
+[182] F. Baldassarre, M. Szafraniec, B. Terver, V. Khalidov, F. Massa,
+Y. LeCun, P. Labatut, M. Seitzer, and P. Bojanowski, “Back to the
+Features: DINO as a foundation for video world models,” arXiv preprint
+arXiv:2507.19468, 2025. 8
+[183] Y. Huang, W. Zheng, Y. Gao, X. Tao, P. Wan, D. Zhang, J. Zhou, and
+J. Lu, “Owl-1: Omni world model for consistent long video generation,”
+arXiv preprint arXiv:2412.09600, 2024. 8
+[184] S. Huang, J. Wu, Q. Zhou, S. Miao, and M. Long, “Vid2World: Crafting
+video diffusion models to interactive world models,” arXiv preprint
+arXiv:2505.14357, 2025. 8
+[185] H. Wu, D. Wu, T. He, J. Guo, Y. Ye, Y. Duan, and J. Bian, “Geometry
+Forcing: Marrying video diffusion and 3D representation for consistent
+world modeling,” arXiv preprint arXiv:2507.07982, 2025. 8
+[186] T. Chen, X. Hu, Z. Ding, and C. Jin, “Learning world models for
+interactive video generation,” arXiv preprint arXiv:2505.21996, 2025.
+8
+[187] X. Guo, C. Ding, H. Dou, X. Zhang, W. Tang, and W. Wu, “Infinity-
+Drive: Breaking time limits in driving world models,” arXiv preprint
+arXiv:2412.01522, 2024. 8
+[188] X. Wang, Z. Wu, and P. Peng, “Longdwm: Cross-granularity distil-
+lation for building a long-term driving world model,” arXiv preprint
+arXiv:2506.01546, 2025. 8, 13
+[189] H. Wang, D. Liu, H. Xie, H. Liu, E. Ma, K. Yu, L. Wang, and B. Wang,
+“MiLA: Multi-view intensive-fidelity long-term video generation world
+model for autonomous driving,” arXiv preprint arXiv:2503.15875, 2025.
+8, 13
+[190] A. Mousakhan, S. Mittal, S. Galesso, K. Farid, and T. Brox, “Orbis:
+Overcoming challenges of long-horizon prediction in driving world
+models,” arXiv preprint arXiv:2507.13162, 2025. 8
+[191] J. Quevedo, S. Ansh Kumar, Y. Sun, V. Suryavanshi, P. Liang, and
+S. Yang, “WorldGym: World model as an environment for policy
+evaluation,” arXiv preprint arXiv:2506.00613, 2025. 8
+[192] Y. Li, Y. Zhu, J. Wen, C. Shen, and Y. Xu, “WorldEval: World model as
+real-world robot policies evaluator,” arXiv preprint arXiv:2505.19017,
+2025. 8
+[193] Y. Guan, H. Liao, C. Wang, X. Liu, J. Zhang, and Z. Li, “World
+model-based End-to-End scene generation for accident anticipation in
+autonomous driving,” Communications Engineering, vol. 4, no. 1, p.
+144, 2025. 8
+[194] R. Po, Y. Nitzan, R. Zhang, B. Chen, T. Dao, E. Shechtman, G. Wet-
+zstein, and X. Huang, “Long-Context State-Space video world models,”
+in Int. Conf. Comput. Vis., 2025. 8
+[195] V. L. Guen and N. Thome, “Disentangling physical dynamics from
+unknown factors for unsupervised video prediction,” in IEEE Conf.
+Comput. Vis. Pattern Recog., 2020, pp. 11 474–11 484. 9
+[196] X. Liu and H. Tang, “FOLIAGE: Towards physical intelligence
+world models via unbounded surface evolution,” arXiv preprint
+arXiv:2506.03173, 2025. 9
+[197] S. Zhou, Y. Du, Y. Yang, L. Han, P. Chen, D.-Y. Yeung, and C. Gan,
+“Learning 3D persistent embodied world models,” arXiv preprint
+arXiv:2505.05495, 2025. 9
+[198] J. Wang, Y. Yao, X. Feng, H. Wu, Y. Wang, Q. Huang, Y. Ma, and
+X. Zhu, “STAGE: A stream-centric generative world model for long-
+horizon driving-scene simulation,” in Int. Conf. Intell. Robot. Syst.,
+2025. 9, 13
+[199] T. Wu, S. Yang, R. Po, Y. Xu, Z. Liu, D. Lin, and G. Wetzstein,
+“Video world models with long-term spatial memory,” arXiv preprint
+arXiv:2506.05284, 2025. 9
+[200] Y. LeCun, “A path towards autonomous machine intelligence,”
+2022, version 0.9.2, 2022-06-27. Position paper. [Online]. Available:
+https://openreview.net/pdf?id=BZ5a1r-kVsf 9
+[201] H. Zhu, Z. Dong, K. Topollai, and A. Choromanska, “AD-L-JEPA:
+Self-supervised spatial world models with joint embedding predictive
+architecture for autonomous driving with LiDAR data,” arXiv preprint
+arXiv:2501.04969, 2025. 9
+[202] Y. Zhang, X. Guo, H. Xu, and M. Long, “Consistent world models via
+foresight diffusion,” arXiv preprint arXiv:2505.16474, 2025. 9
+[203] B. Zhao, R. Tang, M. Jia, Z. Wang, F. Man, X. Zhang, Y. Shang,
+W. Zhang, C. Gao, W. Wu et al., “AirScape: An aerial generative world
+model with motion controllability,” arXiv preprint arXiv:2507.08885,
+2025. 9
+[204] L. Li, Z. Fan, W. Cong, X. Liu, Y. Yin, M. Foutter, P. Pan, C. You,
+Y. Wang, Z. Wang et al., “Martian World Models: Controllable video
+synthesis with physically accurate 3D reconstructions,” arXiv preprint
+arXiv:2507.07978, 2025. 9
+[205] Y. Yue, Y. Wang, H. Jiang, P. Liu, S. Song, and G. Huang, “EchoWorld:
+Learning motion-aware world models for echocardiography probe
+guidance,” in IEEE Conf. Comput. Vis. Pattern Recog., 2025, pp. 25 993–
+26 003. 9
+[206] D. Liang, D. Zhang, X. Zhou, S. Tu, T. Feng, X. Li, Y. Zhang, M. Du,
+X. Tan, and X. Bai, “Seeing the Future, Perceiving the Future: A
+unified driving world model for future generation and perception,” arXiv
+preprint arXiv:2503.13587, 2025. 9, 13
+[207] Y. Zhang, S. Gong, K. Xiong, X. Ye, X. Tan, F. Wang, J. Huang, H. Wu,
+and H. Wang, “BEVWorld: A multimodal world model for autonomous
+driving via unified BEV latent space,” arXiv e-prints, pp. arXiv–2407,
+2024. 9
+[208] T. Khurana, P. Hu, A. Dave, J. Ziglar, D. Held, and D. Ramanan,
+“Differentiable raycasting for self-supervised occupancy forecasting,” in
+Eur. Conf. Comput. Vis., 2022, pp. 353–369. 9
+[209] T. Khurana, P. Hu, D. Held, and D. Ramanan, “Point cloud forecasting
+as a proxy for 4D occupancy forecasting,” in IEEE Conf. Comput. Vis.
+Pattern Recog., 2023, pp. 1116–1124. 9
+[210] B. Mersch, X. Chen, J. Behley, and C. Stachniss, “Self-supervised point
+cloud prediction using 3D spatio-temporal convolutional networks,” in
+Conf. Robot. Learn., 2022, pp. 1444–1454. 9
+[211] J. Ma, X. Chen, J. Huang, J. Xu, Z. Luo, J. Xu, W. Gu, R. Ai, and
+H. Wang, “Cam4DOcc: Benchmark for camera-only 4D occupancy
+
+
+21
+forecasting in autonomous driving applications,” in IEEE Conf. Comput.
+Vis. Pattern Recog., 2024, pp. 21 486–21 495. 9
+[212] T. Liu, S. Zhao, and N. Rhinehart, “Towards foundational LiDAR
+world models with efficient latent flow matching,” arXiv preprint
+arXiv:2506.23434, 2025. 9
+[213] Y. Shi, K. Jiang, Q. Meng, K. Wang, J. Wang, W. Sun, T. Wen, M. Yang,
+and D. Yang, “COME: Adding scene-centric forecasting control to
+occupancy world model,” arXiv preprint arXiv:2506.13260, 2025. 10,
+15
+[214] Z. Yang, X. Guo, C. Ding, C. Wang, and W. Wu, “Physical informed
+driving world model,” arXiv preprint arXiv:2412.08410, 2024. 10, 13
+[215] Z. Liu, S. Li, E. Cousineau, S. Feng, B. Burchfiel, and S. Song,
+“Geometry-aware 4D video generation for robot manipulation,” arXiv
+preprint arXiv:2507.01099, 2025. 10
+[216] B. Jin, W. Li, B. Yang, Z. Zhu, J. Jiang, H.-a. Gao, H. Sun, K. Zhan,
+H. Hu, X. Zhang et al., “PosePilot: Steering camera pose for generative
+world models with self-supervised depth,” in Int. Conf. Intell. Robot.
+Syst., 2025. 10
+[217] J. Zhu, Z. Jia, T. Gao, J. Deng, S. Li, F. Liu, P. Jia, X. Lang, and
+X. Sun, “Other Vehicle Trajectories Are Also Needed: A driving world
+model unifies ego-other vehicle trajectories in video latent space,” arXiv
+preprint arXiv:2503.09215, 2025. 10
+[218] E. Todorov, T. Erez, and Y. Tassa, “MuJoCo: A physics engine for
+model-based control,” in Int. Conf. Intell. Robot. Syst., 2012, pp. 5026–
+5033. 10, 11
+[219] A. Dosovitskiy, G. Ros, F. Codevilla, A. Lopez, and V. Koltun, “CARLA:
+An open urban driving simulator,” in Conf. Robot. Learn., 2017. 10, 11
+[220] M. Savva, A. Kadian, O. Maksymets, Y. Zhao, E. Wijmans, B. Jain,
+J. Straub, J. Liu, V. Koltun, J. Malik et al., “Habitat: A platform for
+embodied AI research,” in Int. Conf. Comput. Vis., 2019, pp. 9339–9347.
+10, 11
+[221] V. Makoviychuk, L. Wawrzyniak, Y. Guo, M. Lu, K. Storey, M. Macklin,
+D. Hoeller, N. Rudin, A. Allshire, A. Handa, and G. State, “Isaac Gym:
+High performance GPU based physics simulation for robot learning,”
+in Annu. Conf. Neur. Inform. Process. Syst. Worksh., 2021. 10, 11
+[222] M. Mittal, C. Yu, Q. Yu, J. Liu, N. Rudin, D. Hoeller, J. L. Yuan,
+R. Singh, Y. Guo, H. Mazhar et al., “Orbit: A unified simulation
+framework for interactive robot learning environments,” IEEE Robot.
+Autom. Lett., vol. 8, no. 6, pp. 3740–3747, 2023. 10, 11
+[223] M. G. Bellemare, Y. Naddaf, J. Veness, and M. Bowling, “The arcade
+learning environment: An evaluation platform for general agents,”
+Journal of artificial intelligence research, vol. 47, pp. 253–279, 2013.
+10, 11
+[224] Y. Tassa, Y. Doron, A. Muldal, T. Erez, Y. Li, D. d. L. Casas, D. Budden,
+A. Abdolmaleki, J. Merel, A. Lefrancq et al., “Deepmind control suite,”
+arXiv preprint arXiv:1801.00690, 2018. 10, 11
+[225] T. Yu, D. Quillen, Z. He, R. Julian, K. Hausman, C. Finn, and S. Levine,
+“Meta-World: A benchmark and evaluation for multi-task and meta
+reinforcement learning,” in Conf. Robot. Learn., 2020, pp. 1094–1100.
+10, 11
+[226] S. James, Z. Ma, D. R. Arrojo, and A. J. Davison, “RLBench: The
+robot learning benchmark & learning environment,” IEEE Robot. Autom.
+Lett., vol. 5, no. 2, pp. 3019–3026, 2020. 10, 11
+[227] H. Caesar, J. Kabzan, K. S. Tan, W. K. Fong, E. Wolff, A. Lang,
+L. Fletcher, O. Beijbom, and S. Omari, “NuPlan: A closed-loop ML-
+based planning benchmark for autonomous vehicles,” arXiv preprint
+arXiv:2106.11810, 2021. 10, 11
+[228] B. Liu, Y. Zhu, C. Gao, Y. Feng, Q. Liu, Y. Zhu, and P. Stone, “LIBERO:
+Benchmarking knowledge transfer for lifelong robot learning,” in Annu.
+Conf. Neur. Inform. Process. Syst., 2023, pp. 44 776–44 791. 10, 11
+[229] R. Goyal, S. Ebrahimi Kahou, V. Michalski, J. Materzynska, S. Westphal,
+H. Kim, V. Haenel, I. Fruend, P. Yianilos, M. Mueller-Freitag et al.,
+“The "Something Something" video database for learning and evaluating
+visual common sense,” in Int. Conf. Comput. Vis., 2017, pp. 5842–5850.
+11
+[230] H. Caesar, V. Bankiti, A. H. Lang, S. Vora, V. E. Liong, Q. Xu,
+A. Krishnan, Y. Pan, G. Baldan, and O. Beijbom, “nuScenes: A
+multimodal dataset for autonomous driving,” in IEEE Conf. Comput.
+Vis. Pattern Recog., 2020, pp. 11 621–11 631. 11
+[231] P. Sun, H. Kretzschmar, X. Dotiwalla, A. Chouard, V. Patnaik, P. Tsui,
+J. Guo, Y. Zhou, Y. Chai, B. Caine et al., “Scalability in Perception for
+Autonomous Driving: Waymo Open Dataset,” in IEEE Conf. Comput.
+Vis. Pattern Recog., 2020, pp. 2446–2454. 11
+[232] S. K. Ramakrishnan, A. Gokaslan, E. Wijmans, O. Maksymets, A. Clegg,
+J. M. Turner, E. Undersander, W. Galuba, A. Westbury, A. X. Chang,
+M. Savva, Y. Zhao, and D. Batra, “Habitat-Matterport 3D Dataset
+(HM3D): 1000 large-scale 3D environments for embodied AI,” in Annu.
+Conf. Neur. Inform. Process. Syst. Worksh., 2021. 11
+[233] A. Brohan, N. Brown, J. Carbajal, Y. Chebotar, J. Dabis, C. Finn,
+K. Gopalakrishnan, K. Hausman, A. Herzog, J. Hsu et al., “RT-1:
+Robotics transformer for real-world control at scale,” arXiv preprint
+arXiv:2212.06817, 2022. 10, 11
+[234] X. Tian, T. Jiang, L. Yun, Y. Mao, H. Yang, Y. Wang, Y. Wang, and
+H. Zhao, “Occ3D: A large-scale 3D occupancy prediction benchmark
+for autonomous driving,” in Annu. Conf. Neur. Inform. Process. Syst.,
+2023, pp. 64 318–64 330. 11
+[235] A. O’Neill, A. Rehman, A. Maddukuri, A. Gupta, A. Padalkar, A. Lee,
+A. Pooley, A. Gupta, A. Mandlekar, A. Jain et al., “Open X-Embodiment:
+Robotic learning datasets and RT-X models : Open X-embodiment
+collaboration,” in IEEE Int. Conf. Robot. Autom., 2024, pp. 6892–6903.
+10, 11
+[236] S. Haddadin, S. Parusel, L. Johannsmeier, S. Golz, S. Gabl, F. Walch,
+M. Sabaghian, C. Jähne, L. Hausperger, and S. Haddadin, “The Franka
+Emika Robot: A reference platform for robotics research and education,”
+IEEE Robotics & Automation Magazine, vol. 29, no. 2, pp. 46–64, 2022.
+11
+[237] Unitree Robotics, “Unitree Go1,” 2021, accessed: 2025-09-25. [Online].
+Available: https://www.unitree.com/cn/go1 11
+[238] ——, “Unitree G1,” 2024, accessed: 2025-09-25. [Online]. Available:
+https://www.unitree.com/cn/g1 11
+[239] Ł. Kaiser, M. Babaeizadeh, P. Miłos, B. Osi´nski, R. H. Campbell,
+K. Czechowski, D. Erhan, C. Finn, P. Kozakowski, S. Levine et al.,
+“Model based reinforcement learning for atari,” in Int. Conf. Learn.
+Represent., 2020, pp. 1–14. 10
+[240] R. Zellers, J. Lu, X. Lu, Y. Yu, Y. Zhao, M. Salehi, A. Kusupati,
+J. Hessel, A. Farhadi, and Y. Choi, “MERLOT Reserve: Neural script
+knowledge through vision and language and sound,” in IEEE Conf.
+Comput. Vis. Pattern Recog., 2022, pp. 16 375–16 387. 11
+[241] A. Miech, D. Zhukov, J.-B. Alayrac, M. Tapaswi, I. Laptev, and J. Sivic,
+“HowTo100M: Learning a text-video embedding by watching hundred
+million narrated video clips,” in Int. Conf. Comput. Vis., 2019, pp.
+2630–2640. 11
+[242] J. Carreira, E. Noland, C. Hillier, and A. Zisserman, “A short note on the
+kinetics-700 human action dataset,” arXiv preprint arXiv:1907.06987,
+2019. 11
+[243] J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei, “ImageNet:
+A large-scale hierarchical image database,” in IEEE Conf. Comput. Vis.
+Pattern Recog., 2009, pp. 248–255. 11
+[244] M. Heusel, H. Ramsauer, T. Unterthiner, B. Nessler, and S. Hochreiter,
+“GANs trained by a two time-scale update rule converge to a local nash
+equilibrium,” in Annu. Conf. Neur. Inform. Process. Syst., 2017. 12
+[245] C. Szegedy, V. Vanhoucke, S. Ioffe, J. Shlens, and Z. Wojna, “Rethinking
+the inception architecture for computer vision,” in IEEE Conf. Comput.
+Vis. Pattern Recog., 2016, pp. 2818–2826. 12
+[246] T. Unterthiner, S. Van Steenkiste, K. Kurach, R. Marinier, M. Michalski,
+and S. Gelly, “Towards Accurate Generative Models of Video: A new
+metric & challenges,” arXiv preprint arXiv:1812.01717, 2018. 12
+[247] J. Carreira and A. Zisserman, “Quo Vadis, Action Recognition? A new
+model and the kinetics dataset,” in IEEE Conf. Comput. Vis. Pattern
+Recog., 2017, pp. 6299–6308. 12
+[248] W. Kay, J. Carreira, K. Simonyan, B. Zhang, C. Hillier, S. Vijaya-
+narasimhan, F. Viola, T. Green, T. Back, P. Natsev et al., “The Kinetics
+human action video dataset,” arXiv preprint arXiv:1705.06950, 2017.
+12
+[249] Z. Wang, A. C. Bovik, H. R. Sheikh, and E. P. Simoncelli, “Image
+quality assessment: from error visibility to structural similarity,” IEEE
+Trans. Image Process., vol. 13, no. 4, pp. 600–612, 2004. 12
+[250] A. Hore and D. Ziou, “Image quality metrics: PSNR vs. SSIM,” in Int.
+Conf. Pattern Recog., 2010, pp. 2366–2369. 12
+[251] R. Zhang, P. Isola, A. A. Efros, E. Shechtman, and O. Wang, “The
+unreasonable effectiveness of deep features as a perceptual metric,” in
+IEEE Conf. Comput. Vis. Pattern Recog., 2018, pp. 586–595. 12
+[252] Z. Huang, Y. He, J. Yu, F. Zhang, C. Si, Y. Jiang, Y. Zhang, T. Wu,
+Q. Jin, N. Chanpaisit et al., “VBench: Comprehensive benchmark suite
+for video generative models,” in IEEE Conf. Comput. Vis. Pattern
+Recog., 2024, pp. 21 807–21 818. 12
+[253] H. Fan, H. Su, and L. J. Guibas, “A point set generation network for
+3D object reconstruction from a single image,” in IEEE Conf. Comput.
+Vis. Pattern Recog., 2017, pp. 605–613. 13
+[254] Y. Hu, J. Yang, L. Chen, K. Li, C. Sima, X. Zhu, S. Chai, S. Du, T. Lin,
+W. Wang et al., “Planning-Oriented autonomous driving,” in CVPR,
+2023, pp. 17 853–17 862. 16
+
+
+22
+[255] H. Yue, S. Huang, Y. Liao, S. Chen, P. Zhou, L. Chen, M. Yao, and
+G. Ren, “EWMBench: Evaluating scene, motion, and semantic quality
+in embodied world models,” arXiv preprint arXiv:2505.09694, 2025.
+14

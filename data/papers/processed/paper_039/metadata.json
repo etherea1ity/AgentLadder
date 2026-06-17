@@ -1,0 +1,75 @@
+{
+  "paper_id": "paper_039",
+  "title": "A Comprehensive Survey of Deep Research: Systems, Methodologies, and Applications",
+  "authors": [
+    "Renjun Xu"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2506.12594",
+  "pdf_url": "https://arxiv.org/pdf/2506.12594.pdf",
+  "arxiv_id": "2506.12594",
+  "doi": null,
+  "domains": [
+    "deep-research",
+    "survey"
+  ],
+  "method_tags": [
+    "survey",
+    "deep-research",
+    "four-dimension-taxonomy",
+    "80+systems"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_039.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 583,
+    "visual_count": 0,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_039.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 583,
+      "visual_count": 0,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 95,
+      "total_chars": 343510,
+      "total_words": 39563,
+      "sections_found": 347,
+      "chunks_generated": 583,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

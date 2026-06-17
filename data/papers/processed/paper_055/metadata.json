@@ -1,0 +1,77 @@
+{
+  "paper_id": "paper_055",
+  "title": "Language Models are Few-Shot Learners (GPT-3)",
+  "authors": [
+    "Tom B. Brown",
+    "Benjamin Mann",
+    "Nick Ryder",
+    "Melanie Subbiah",
+    "Jared Kaplan",
+    "Prafulla Dhariwal",
+    "Arvind Neelakantan",
+    "Pranav Shyam",
+    "Girish Sastry",
+    "Amanda Askell",
+    "Sandhini Agarwal",
+    "Ariel Herbert-Voss",
+    "Gretchen Krueger",
+    "Tom Henighan",
+    "Rewon Child",
+    "Aditya Ramesh",
+    "Daniel M. Ziegler",
+    "Jeffrey Wu",
+    "Clemens Winter",
+    "Christopher Hesse",
+    "Mark Chen",
+    "Eric Sigler",
+    "Mateusz Litwin",
+    "Scott Gray",
+    "Benjamin Chess",
+    "Jack Clark",
+    "Christopher Berner",
+    "Sam McCandlish",
+    "Alec Radford",
+    "Ilya Sutskever",
+    "Dario Amodei"
+  ],
+  "year": 2020,
+  "venue": "NeurIPS 2020",
+  "url": "https://arxiv.org/abs/2005.14165",
+  "pdf_url": "https://arxiv.org/pdf/2005.14165.pdf",
+  "arxiv_id": "2005.14165",
+  "doi": null,
+  "domains": [
+    "llm",
+    "nlp",
+    "few-shot"
+  ],
+  "method_tags": [
+    "GPT-3",
+    "few-shot-learning",
+    "in-context-learning",
+    "scaling"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_055.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2005.14165",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

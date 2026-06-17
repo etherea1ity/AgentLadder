@@ -1,0 +1,45 @@
+{
+  "paper_id": "paper_043",
+  "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+  "authors": [
+    "Sergey Ioffe",
+    "Christian Szegedy"
+  ],
+  "year": 2015,
+  "venue": "ICML 2015",
+  "url": "https://arxiv.org/abs/1502.03167",
+  "pdf_url": "https://arxiv.org/pdf/1502.03167.pdf",
+  "arxiv_id": "1502.03167",
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "training"
+  ],
+  "method_tags": [
+    "BatchNorm",
+    "normalization"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_043.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1502.03167",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

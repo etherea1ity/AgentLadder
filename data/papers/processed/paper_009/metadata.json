@@ -1,0 +1,82 @@
+{
+  "paper_id": "paper_009",
+  "title": "Tree of Thoughts: Deliberate Problem Solving with Large Language Models",
+  "authors": [
+    "Shunyu Yao",
+    "Dian Yu",
+    "Jeffrey Zhao",
+    "Izhak Shafran",
+    "Thomas L. Griffiths",
+    "Yuan Cao",
+    "Karthik Narasimhan"
+  ],
+  "year": 2023,
+  "venue": "NeurIPS 2023",
+  "url": "https://arxiv.org/abs/2305.10601",
+  "pdf_url": "https://arxiv.org/pdf/2305.10601.pdf",
+  "arxiv_id": "2305.10601",
+  "doi": null,
+  "domains": [
+    "reasoning",
+    "planning"
+  ],
+  "method_tags": [
+    "tree-search",
+    "planning",
+    "deliberate-reasoning",
+    "BFS",
+    "DFS"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_009.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 57,
+    "visual_count": 5,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_009.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 57,
+      "visual_count": 5,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 14,
+      "total_chars": 54865,
+      "total_words": 8316,
+      "sections_found": 21,
+      "chunks_generated": 57,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

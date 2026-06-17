@@ -1,0 +1,50 @@
+{
+  "paper_id": "paper_093",
+  "title": "Prompt Injection Attacks and Defenses in LLM-Integrated Applications",
+  "authors": [
+    "Jingwei Yi",
+    "Yueqi Xie",
+    "Bin Zhu",
+    "Emre Kiciman",
+    "Guangzhong Sun",
+    "Xing Xie",
+    "Fangzhao Wu"
+  ],
+  "year": 2023,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2310.12815",
+  "pdf_url": "https://arxiv.org/pdf/2310.12815.pdf",
+  "arxiv_id": "2310.12815",
+  "doi": null,
+  "domains": [
+    "eval",
+    "safety",
+    "security"
+  ],
+  "method_tags": [
+    "prompt-injection",
+    "security",
+    "adversarial"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_093.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2310.12815",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

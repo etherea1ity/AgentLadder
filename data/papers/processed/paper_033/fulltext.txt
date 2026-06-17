@@ -1,0 +1,1804 @@
+Scene-LLM: Extending Language Model for
+3D Visual Understanding and Reasoning
+Rao Fu1⋆, Jingyu Liu2⋆⋆, Xilun Chen3, Yixin Nie3, and Wenhan Xiong3
+1 Brown University
+2 ETH Zurich
+3 Meta AI
+Abstract. This paper introduces Scene-LLM, a 3D-visual-language model
+that enhances embodied agents’ abilities in interactive 3D indoor en-
+vironments by integrating the reasoning strengths of Large Language
+Models (LLMs). Scene-LLM adopts a hybrid 3D visual feature represen-
+tation, that incorporates dense spatial information and supports scene
+state updates. The model employs a projection layer to efficiently project
+these features in the pre-trained textual embedding space, enabling effec-
+tive interpretation of 3D visual information. Unique to our approach is
+the integration of both scene-level and egocentric 3D information. This
+combination is pivotal for interactive planning, where scene-level data
+supports global planning and egocentric data is important for localiza-
+tion. Notably, we use egocentric 3D frame features for feature alignment,
+an efficient technique that incorporates the model with fine-grained con-
+cepts. Our experiments with Scene-LLM demonstrate its strong capabil-
+ities in dense captioning, question answering, and interactive planning.
+We believe Scene-LLM advances the field of 3D visual understanding and
+reasoning, offering new possibilities for sophisticated agent interactions
+in indoor settings.
+1
+Introduction
+3D visual information is important for a wide range of tasks in indoor scenes,
+encompassing both egocentric tasks such as object interaction [27] and embodied
+question answering [40], and broader scene-level tasks like navigation [6] and
+long-horizon planning [59]. While existing visual-language models (VLMs) [5,15,
+32] have made strides in 2D visual-language understanding, their limited grasp
+of persistent 3D spatial information often renders them less effective compared
+to those using 3D representations for indoor scene tasks [40]. Recent efforts
+[19, 40, 84] to bridge 3D visual information with textual and other modalities
+[17] show potential in 3D visual understanding and reasoning. However, they
+primarily handle static 3D scenes, which is less adaptable for interactive planning
+involving scene changes. In this paper, we introduce Scene-LLM, a 3D-visual-
+language model (3D-VLM) with large language models (LLMs) as it’s backbone,
+to address a spectrum of 3D visual understanding and reasoning tasks within
+⋆Work done as an intern at Meta AI.
+⋆⋆Work done as an AI resident at Meta AI.
+arXiv:2403.11401v2  [cs.CV]  22 Mar 2024
+
+
+2
+R. Fu et al.
+I saw: desk with 
+a computer … 
+bookshelf with 
+books … clock … 
+stool with 
+footrest… lamp 
+…
+I saw: desk with 
+computer …chair 
+… bookshelf 
+with books … 
+plant … lamp 
+with a shade 
+and a cord…
+I saw: lamp… 
+plant…bookshelf 
+… door … 
+computer …
+This is a small, cozy bedroom. As 
+you enter, a bed with a red 
+blanket is to the right, and a 
+window lets in light on the left. In 
+front of the window, there's a 
+computer desk and a blue chair. 
+Another part of the room 
+features an additional desk with a 
+bookshelf, making it feel compact 
+yet personal, with items like a 
+computer and books adding a 
+lived-in touch. 
+Dense Captioning
+The bed appears to be a single 
+bed with a simple, flat design. The 
+bed frame is made of a light-
+colored wood…
+Object Captioning
+Examine the alarm clock under 
+the light of the desk lamp
+GotoLocation desklamp
+GotoLocation desk
+Interactive Planning
+ToggleObject desklamp
+Describe the bed in the scene.
+1. Move towards the computer 
+desk. 2. Select a book from the 
+bookshelf. 3. Sit on the nearby 
+computer chair. 4. Turn on the 
+lamp for adequate lighting. 5. 
+Open the book and begin 
+reading.
+Task Decomposition
+Read a book. 
+If the room serves multiple 
+functions, use a room divider or 
+curtain to separate the sleeping 
+area from the work area …
+Functionality Enhancement
+What design changes could 
+enhance the room's utility?
+Yes, there are two blue 
+computer chairs in the 
+room, one at each 
+computer desk.
+Question Answering
+Is there any chairs in 
+the scene?
+Sure, the desk with the 
+bookshelf is ideal. Shall I 
+prepare it for you?
+Human-Robot Dialogue
+I need to complete my 
+essay but everything's a 
+mess. Can you help me 
+get a workspace ready?
+Alright, I'll organize the 
+books and clear the desk.
+Yes, please clear it first.
+PickupObject alarmclock
+I saw: desk lamp 
+with a round 
+base and a shade 
+that provides 
+soft, diffused 
+light. computer 
+… plant … stack 
+of books…
+NoOP
+𝒕𝟎
+𝒕𝟏,𝒕𝟐
+𝒕𝟑,𝒕𝟒
+timestep
+𝒕𝟎
+𝒕𝟏
+𝒕𝟑
+𝒕𝟒
+𝒕𝟐
+3D Scene
+At this coordinates, you'll 
+find a wooden-framed bed.
+What is located at 
+coordinate [6.8, 1.2, 0.5]?
+Fig. 1: An interactive 3D indoor scene example from an iThor [1] setup.
+Scene-LLM is a 3D-visual-language model that can process both ego-centric and
+scene-level 3D visual data. We showcase some applications, including describing
+scene details (dense captioning), identifying and describing objects (object caption-
+ing), breaking down complex tasks into simpler steps (task decomposition), enhanc-
+ing safety/utility/comfort (functionality enhancement), question-answering, generating
+human-robot dialogues, and interactive planning.
+interactive scenes, ranging from dense captioning to interactive planning, as
+illustrated in Figure 1.
+For 3D scene tasks, we recognize the importance of both egocentric and
+comprehensive scene-level information. Egocentric information is crucial for im-
+mediate updates during object interactions and for localizing the agent within
+the scene. Conversely, scene-level information provides temporal persistent and
+multi-view consistent details of the entire 3D scene. This is essential for map-
+reliant tasks such as navigation and long-horizontal planning. Current mod-
+els [15,19,40] typically focus on one of these aspects, hindering their effectiveness
+in tasks like interactive indoor planning that require both. To overcome this, we
+propose integrating both types of 3D visual information in Scene-LLM. For ego-
+centric information representation, previous works have employed images [15],
+or agent coordinates [40] necessitating multiple modality encoders. In contrast,
+we employ 3D point sets as a uniform feature representation, capable of en-
+
+
+Scene-LLM
+3
+compassing 2D egocentric information by projecting depth images to 3D frames
+and representing scene-level information by aggregating 3D frames or sampling
+points on the 3D scene’s surface. Instilling these data allows for the interpre-
+tation of both information sources during interactive planning, as depicted in
+Figure 1.
+Another key issue is aligning the dense 3D visual information with the textual
+embedding space of a pre-trained LLM. While previous studies have explored
+using patchy visual features [36] and query tokens [32] for downsampling visual
+features, 3D point sets pose a unique problem due to their continuous coordinate
+system and the need for a representation that can adapt to changes in scene state.
+To address this, we employed a hybrid representation that spatially downsamples
+the 3D point set using resolution-fixed voxel grids. This method not only retains
+dense spatial information but also facilitates interactive updates. This varied
+length prepresentation has proved effective across various tasks, indicating the
+model is able to understand spatial coordinates effectively.
+In aligning textual and visual features, we followed a two-stage strategy
+similar to previous studies [36]. We used an image caption model [12] and a
+LLM [65] to generate conceptual and instructional following annotations. Ini-
+tially, we trained the projection layer using the conceptual annotations while
+keeping the LLM frozen, and then fine-tuned it with instructional following an-
+notations alongside the LLM. During the training of the projection layer, we
+noted that relying solely on generated scene caption data could cause the model
+to miss small object details. Rather than incorporating additional object datasets
+as done in previous work [19], we directly used 3D frame data in two coordinate
+systems, camera and world, to fine-tune the projection layer. This data includes
+numerous concepts relating to small-scale objects, and the frame features them-
+selves contain more fine-grained details. Empirically, we found that training with
+3D frame data led to faster convergence than using scene captions or instruc-
+tional following data.
+Empirical evaluations demonstrate that Scene-LLM excels in a wide range of
+3D scene reasoning tasks, achieving state-of-the-art results on the ScanQA [7]
+and SQA3D benchmarks [40] without additional fine-tuning. Thanks to its ca-
+pability of understanding egocentric and scene-level information, Scene-LLM
+effectively handles scene changes, enabling interactive planning in dynamic en-
+vironments. When fine-tuned for specific tasks, Scene-LLM outperforms other
+LLM-based models on the Alfred benchmark [59]. In summary, our primary
+contributions are:
+– We introduce Scene-LLM, a 3D-VLM that connecting 3D visual information
+with LLM and sets new state-of-the-art on 3D-VQA and interactive planning
+benchmarks;
+– We propose an effective 3D visual representation that captures fine-grained
+3D information and support state change by design. This representation can
+be easily incorporated into LLMs with a light-weighted projector;
+
+
+4
+R. Fu et al.
+– We create a large-scale dataset which is useful for 3D and text feature align-
+ment, which includes 190k 3D-visual-language pairs from an egocentric view-
+point and about 500k pairs of scene-level data.
+2
+Related Works
+2.1
+3D Scene and Language Benchmarks.
+Various benchmarks have been developed to explore the intersection of 3D scenes
+and language. These include tasks like text-guided scene synthesis [24,64], cap-
+tion and description generation [2,13], object grounding and reference [2,11,16,
+21,80], 3D visual question answering (3D-VQA) [7,18,19,40,75,84], interactive
+indoor planning [48, 59, 60], and Visual-Language Navigation (VLN) [6, 20, 29].
+Our work is focused on integrating 3D scene understanding and reasoning with
+linguistic modalities, a key element for developing indoor scene agents and har-
+nessing the reasoning capabilities of pre-trained LLMs. We concentrate on bench-
+marks involving textual outputs such as captioning, 3D-VQA, and high-level
+indoor planning tasks. Scene-LLM demonstrates an understanding of spatial co-
+ordinates through bootstrap training with spatial data. However, for this stage,
+we defer coordinate-level spatial understanding and planning to specialized, ex-
+isting models [8].
+2.2
+Interactive Indoor Planning.
+Interactive indoor planning involves agents navigating and performing tasks
+within interactive indoor environments, based on language instructions. While
+multi-modality models mapping language to actions have shown promise [44,63],
+they often lag behind hierarchical planning approaches [8, 43, 78], which seg-
+ment tasks into high-level strategy and low-level execution. Recent advance-
+ments leverage LLMs for planning, employing them for concept generation [58],
+as direct planners [4, 9, 22, 34, 37, 39, 54, 61, 62, 71, 82], or through fine-tuning
+with embodied data [70]. However, these models typically require supplemen-
+tary visual understanding modules. Some approaches [15, 27, 55] treat visual
+features as textual tokens for LLMs but are limited to current state informa-
+tion, lacking a comprehensive environmental perspective. Other methods [20,23]
+utilize dynamic visual-language semantic maps (VLMs) in 2D or 3D to enhance
+LLM planning capabilities. Scene-LLM employs 3D scene-level visual features
+as VLMs, along with 3D frame features for updated visual inputs, which are
+directly fed into the LLM. This process instills dense 3D visual information in
+the LLM and streamlines the planning process.
+2.3
+3D Scene Representation.
+3D scene representation is broadly classified into three categories. The first is
+object-centric representation, including bounding boxes [49], object category
+
+
+Scene-LLM
+5
+names, and object features [57]. These representations are intuitive and compu-
+tationally efficient, but require additional design to track objects in interactive
+environments and often overlook dense information. Another category involves
+dynamic graphs [3, 30, 33]. These are memory-efficient and adept at tracking
+changes in interactive scenes. The challenge lies in their complex topology, which
+makes intuitive integration with LLMs difficult. The third category is dense rep-
+resentation, which includes spatial maps [8,10,20], voxel grids [38,56,68], point-
+wise [25], and field-like formats [18, 28, 41, 42]. Some approaches [26, 50, 67, 81]
+enhance effectiveness by grouping or tokenizing scenes, although this often de-
+pends heavily on task-specific supervision. In our work, Scene-LLM employs a
+point-wise representation to preserve dense information effectively. We incorpo-
+rate voxelized spatial downsampling [38] to manage computational demands and
+facilitate visual feature updates.
+2.4
+Visual-Language Models (VLMs).
+The development of general 2D VLMs has gained significant momentum [5,
+15, 32, 66]. These models integrate pretrained vision models with pretrained
+LLMs using extensive datasets. Some studies [36,74,83] create text-visual data
+pairs by prompting other LLMs or VLMs, broadening language applications
+to instruction-specific formats. Recent works [12, 47, 69, 76] also demonstrate
+VLMs’ capability in spatial understanding, either by designing spatial tokens or
+augmenting text with spatial descriptions. There is also a growing interest de-
+veloping 3D-VLM [17,19,84], with approaches like point resampling [19], LLM
+adaptors [17], and multi-modality transformers [84] to bridge 3D and textual
+modality. Unlike these methods, our work, Scene-LLM, diverges in its focus
+on interactive scene tasks. We employ distinct feature representations, model
+structures, alignment data, and tuning strategies tailored to interactive 3D en-
+vironments.
+3
+3D-Visual-Language Data Generation
+To align 3D visual information with LLMs, we first prepare paired 3D-visual-
+language data. Our dataset comprises about 9, 000 indoor scenes from three
+sources: real indoor scans [14], single rooms from the Habitat-Matterport 3D
+dataset (hm3d) [52], and expert-designed scenes from iThor [1]. Recognizing
+the importance of egocentric and scene-level information in interactive plan-
+ning tasks, we generated two types of data: 3D frames paired with language
+annotations for egocentric understanding, and 3D scenes paired with language
+annotations for scene-level understanding.
+3.1
+Frame Data Generation.
+To generate 3D frame data, we render scenes from multiple camera perspectives,
+capturing RGB frames and ground truth depths. Each frame’s pixels are pro-
+jected into spatial coordinates, forming a 3D point set – referred to as a 3D frame.
+
+
+6
+R. Fu et al.
+Point 
+Fusion
+3D scene
+t
+scene feature
+3D frame
+frame feature
+frame data
+Stage 1: Frame Data Generation
+Scene-LLM
+Stage 2: Scene Data Generation
+…
+Caption: A close-up of 
+a desktop computer 
+setup. On the floor 
+next to the computer is 
+a small white and brown 
+bookshelf. Behind the 
+bookshelf is a …
+𝑇𝑖𝑛𝑠𝑡
+…
+…
+Projection ψ
+Pre-train Language Model Φ
+𝑇𝑎𝑛𝑠
+…
+𝑧
+𝑝
+Q: What is the … A:
+The bed is … working.
+3D feature
+…
+Caption: A cozy and 
+cluttered small bedroom 
+with a twin-sized bed 
+at its center. The room 
+contains a wooden 
+dresser to the left of 
+the bed, and a 
+bookshelf above the  
+bed, a chair …
+Caption: A close-up of 
+a living room with a 
+sectional sofa and a 
+coffee table in the 
+center of the room. The 
+furniture, appearing 
+old-fashioned and well-
+loved …
+scene data
+Q: What is the 
+position of the bed … 
+A: The bed is 
+situated next …
+Please answer the 
+question in a word or 
+a phrase. 
+Q: What is the color 
+of the bed sheet?
+A: Blue.
+Caption: The living 
+room contains a large 
+L-shaped gray couch, 
+a blue …
+Task description: 
+Arrange the chair and 
+table in the room. 
+Step-by-step 
+instructions: 1. Move 
+to the location of 
+the …
+…
+…
+image frame
+Frame Caption: 
+this is a 
+recreation 
+center …
+Object Bounding 
+Boxes: chair [-
+4.83, 0.53, 
+Object Caption: 
+a gray computer 
+chair next …
+Object Entity: 
+chair, chair, 
+desk, bed,
+guitar,  …
+3D context
+t
+2D VLM
+LLM
+Feature
+Fusion
+t
+feature extractor
+feature update
+concatenation
+input/output
+lift to 3D
+Fig. 2: Overview of the data generation process and Scene-LLM’s archi-
+tecture. The data generation comprises two stages: a 3D frame-language generation
+stage, which uses image frames and a 2D VLM to generate frame descriptions, and a
+3D scene-language data generation stage, which uses 3D context data and LLM to gen-
+erate scene instruction-following data. Scene-LLM bridge takes tokenized 3D semantic
+features concatenated with 3D coordinates as input. It bridges 3D visual features with
+textual feature space with a simple projection layer.
+We have amassed approximately 100k 3D frames from our dataset. For paired
+language annotations, we utilize MiniGPT-V2 [12], capable of generating cap-
+tions and object descriptions from images by using caption and grounded caption
+identifiers. We have collected around 190k 3D-frame-language pairs, essential for
+instilling fine-grained concept understanding and egocentric awareness in Scene-
+LLM. Details on the data generation process are provided in the supplementary
+material.
+3.2
+Scene Data Generation.
+For Scene-LLM to comprehend scene-level information, we produce paired 3D-
+scene-language data. This data includes a broader perspective of the scene and
+diverse instructional types to equip Scene-LLM with various capabilities. 3D
+scene data is reconstructed by aggregating 3D frames based on their camera
+poses, ensuring visual feature consistency with the frame data. Language anno-
+tations for scenes are generated using Llama-2-chat-70B [65], prompted with a
+mix of context data including generated frame captions, frame object descrip-
+tions, annotated object lists, and annotated bounding boxes. These prompts
+lead to diverse instruction-following data types like dense caption, object cap-
+tion, task decomposition, functionality enhancement, question-answering, and
+human-robot dialogues. Acknowledging the potential noise in generated data,
+we apply a self-checking method [83] to refine data quality. Approximately 500k
+instruction-following data pairs are generated. The prompts and instructional
+data distributions are provided in the supplementary material. Importantly, as
+we use bounding box information as scene context, some captions and QA data
+
+
+Scene-LLM
+7
+include spatial coordinates. We intentionally retain these data to partially imbue
+Scene-LLM with spatial coordinate understanding.
+4
+Scene-LLM
+Scene-LLM is a 3D Visual Language Model (VLM) with a simple yet effective
+architecture designed to comprehend both egocentric and scene-level 3D visual
+information, enabling it to successfully perform interactive planning tasks. This
+section outlines the 3D visual feature extraction process, our model’s architec-
+ture, the alignment of 3D visual information with our dataset, and the use of
+Scene-LLM for inference.
+4.1
+3D Visual Feature
+In aligning visual and language modalities, dual-modality semantic features
+have proven effective. Following prior research [32,35,53,83], we employ visual-
+language semantic features [51] to represent 3D visual semantics. This involves
+first extracting pixel-wise CLIP features from each image and then aggregat-
+ing these into a 3D point set, as inspired by ConceptFusion [25]. This process
+transforms pixel-wise features into point-wise features, capturing the semantic
+nuances of 3D visual data. Each point in our 3D frame data corresponds to a
+pixel-wise feature, and each point in the 3D scene data corresponds to a point-
+wise feature within this aggregated set, ensuring consistency between the frame
+and scene features.
+To tokenize these 3D visual features for compatibility with LLM input, we
+adopt a hybrid point-voxel representation [38], balancing the need for dense
+3D visual information, support for interactive updates, and manageable token
+lengths for the LLM. For each set of 3D visual data(from either 3D frames or
+scenes), we first divide the space into a fixed-resolution voxel grid with dimen-
+sions X × Y × Z, where X, Y, Z represent the voxel counts along respective
+axes. The number of voxels varies across different scenes due to this fixed resolu-
+tion. Secondly, for each voxel, we cluster any contained points using a K-Nearest
+Neighbors (KNN) approach. Each point’s features include semantic attributes
+and spatial coordinates. We then compute the average of the largest cluster’s fea-
+tures within each voxel, yielding a voxel grid of features F V ox ∈RX×Y ×Z×(D+3),
+where D is the dimension of the semantic feature z and 3 is the dimension of the
+spatial coordinates p. Lastly, A visibility map V ∈{0, 1}X×Y ×Z is computed,
+indicating the presence(1) or absence(0) of points in each voxel. Only features
+from visible voxels are used as visual tokens, which means Scene-LLM takes a
+variable number of tokens for different scenes.
+This hybrid representation retains dense spatial information by uniformly
+downsampling the point set while facilitating feature updates akin to map rep-
+resentations [8,20]. To update scene features FV ox
+t
+at state t to state t + 1, we
+first render a 3D frame from the current camera view. This frame’s semantic
+features f are projected to a 3D point-wise feature map ˆF and voxelized into
+
+
+8
+R. Fu et al.
+ˆF
+V ox with a corresponding visibility map ˆV . The scene semantic feature is then
+updated using:
+  \l
+abe l  { eq
+u
+a ti o n: u p da
+t e}  \t extbf {F}^{Vox}_{t+1} = \textbf {F}^{Vox}_{t} \times (1 - \hat {V}) + \hat {\textbf {F}}^{Vox} \times \hat {V}, 
+(1)
+ensuring that the semantic representation of the 3D scene remains synchronized
+with any scene state changes.
+4.2
+3D-Visual-Language Alignment
+Model Architecture Building on the concept of visual instruction tuning [35],
+we have developed a unified 3D visual-language model that effectively aligns 3D
+visual information with an LLM. Our framework utilizes Llama-2-7b [65] as the
+foundational LLM backbone, denoted by Φ. To bridge 3D visual tokens(F) with
+the LLM’s tokenized space, we introduce a linear projection layer(ψ), transform-
+ing F into aligned 3D visual tokens(T3D = ψ(Z)), where T3D ∈RH aligns with
+the LLM’s feature dimension (H).
+Stage 1: Pretraining for Feature Alignment In the initial pretraining phase,
+we exclusively use 3D frame-language data. We utilize 3D frame data under two
+coordinate systems—camera and world coordinates—to ensure that Scene-LLM
+comprehends both egocentric and scene-centric perspectives. This dual coordi-
+nate system aids in grasping fine-grained visual details and more textual con-
+cepts, respectively. Notably, training with frame data under these two coordinate
+systems proved as effective as using scene caption data, with faster convergence
+observed. The paired 3D-frame-language data are then processed with special
+tokens [3D] and [/3D] demarcating the modalities. At this stage, only the pro-
+jection layer is trained, allowing efficient alignment of 3D visual features with
+textual features, while keeping the LLM parameters (Φ) unchanged.
+Stage 2: Finetuning In the finetuning phase, Scene-LLM is optimized to re-
+spond accurately to user instructions. We incorporate both 3D frame-language
+and 3D scene-language data, using the identifier token "I saw" to preface all 3D
+frame-language data. Textual descriptions are bifurcated into instructions(Tinst)
+and their corresponding responses(Tans). Leveraging the transformed 3D visual
+token(T3D) and the instruction token(Tinst), our goal is to fine-tune the LLM(Φ)
+to autoregressively generate Tans:
+  p(\te xtit  {T}_{ a
+n
+s
+}; 
+\textit {T }_{3D} , \textit {T}_{inst}) = \prod _{i=1}^{L}p_{\theta }(t_i | \textit {T}_{3D}, \textit {T}_{inst}, \textit {T}_{ans, <i}), 
+(2)
+where L represents the total token length, ti is the ith token, and θ denotes the
+tunable parameters. Here, we jointly fine-tune both the projection layer and the
+LLM, indicated by θ = {ψ, Φ}.
+4.3
+Inference
+During inference, for non-interactive tasks, Scene-LLM processes the 3D visual
+data and user instructions to autoregressively generate responses. For interac-
+tive tasks, we adopt a two-step inference approach, including an egocentric and
+
+
+Scene-LLM
+9
+Table 1: Performance on ScanQA benchmark validation set. Metric reported include
+Exact Match, BLEU, ROUGE-L, METEOR, and CIDEr. The ‘*’ symbol indicates task-
+specific fine-tuning. The bold text highlights the best results. Scene-LLM performs the
+best among most metrics. Scene-LLM performs the best among most of the metrics.
+Method
+EM@1 B-1
+B-2
+B-3
+B-4 METEOR ROUGE-L CIDEr
+VoteNet+MCAN [77]
+17.3
+28.0 16.7 10.8
+6.2
+11.4
+29.8
+54.7
+ScanRefer+MCAN [77]
+18.6
+26.9 16.6 11.6
+7.9
+11.5
+30
+55.4
+ScanQA [7]
+21.0
+30.2 20.4 15.1 10.1
+13.1
+33.3
+64.9
+3D-LLM [19]
+20.5
+39.3 25.2 18.4 12.0
+14.5
+35.7
+69.4
+Scene-LLM
+25.6
+42.2 26.4 18.7 11.7
+15.8
+35.9
+80.0
+Scene-LLM*
+27.2
+43.6 26.8 19.1 12.0
+16.6
+40.0
+80.0
+Table 2: Exact Match Metric on SQA3D test set. Metric is reported under 6 for dif-
+ferent question types. The ‘*’ symbol indicates task-specific fine-tuning. The bold text
+highlights the best results. Scene-LLM performs the best among most of the metrics.
+Method
+Test set
+Avg.
+What
+Is
+How
+Can
+Which
+Other
+GPT-3
+39.7
+46.0
+40.5
+45.6
+36.1
+38.4
+41.0
+ClipBERT [31]
+30.2
+60.1
+38.7
+63.3
+42.5
+42.7
+43.3
+SQA3D [40]
+31.6
+63.8
+46.0
+69.5
+43.9
+45.3
+46.6
+3D-Vista [84]
+34.8
+63.3
+45.4
+69.8
+47.2
+48.1
+48.5
+Scene-LLM
+40.0
+69.2
+42.8
+70.8
+46.6
+52.5
+53.6
+Scene-LLM*
+40.9
+69.1
+45.0
+70.8
+47.2
+52.3
+54.2
+a scene-level update step. At the egocentric step, 3D frame data and a egocentric
+instruction are first input to Scene-LLM to describe the current state. The ego-
+centric instruction is an “I saw” identifier. Then, the 3D scene feature is updated
+as per Equation 1. The updated scene feature, along with the state description
+and user instructions, are fed into Scene-LLM to yield the corresponding re-
+sponse. The instruction is composed of the current frame description, task
+description, completed steps, and the “Next-step:” identifier, with bold parts
+being updated per timestep. These updates are vital for observation collection,
+agent grounding, and replanning.
+5
+Experiments
+In this section, we detail our benchmark results and provide examples to illus-
+trate Scene-LLM’s capabilities in 3D visual understanding and reasoning. We
+conducted ablation studies to demonstrate the effectiveness of our 3D visual
+representation, the effectiveness of frame data, and the impact of our training
+strategies. Additionally, we observed that increasing spatial resolution enhances
+performance, suggesting further improvement direction.
+
+
+10
+R. Fu et al.
+It is a kitchen. The chairs are neatly 
+placed around the table. On one side, 
+a black TV hangs on the wall above a 
+table. A big painting is also on the 
+wall. The kitchen counter is. Next to 
+the counter, a fridge stands. Nearby, a 
+gray trash can is placed. 
+Describe the scene in detail.
+The TV in the scene is a black square 
+unit mounted on the wall of the 
+kitchen, situated above a narrow wood 
+console table, integrating modern 
+technology with the room's traditional 
+aesthetic.
+Describe the TV in the scene.
+1. Move any items from the counter to 
+the cabinets. 2. Take a clean cloth from 
+the drawer. 3. Wet the cloth slightly.
+Wipe the counter thoroughly from left 
+to right. 4. Dry the counter with a dry 
+towel. 5. Place the items back on the 
+counter.
+Task Description: Clean the kitchen 
+counter. Step-by-Step Instruction:
+The brown recliner is the most 
+comfortable due to its design for 
+relaxation.
+Q: Which chair is the most comfortable 
+in the scene? A: 
+Yes, there are windows.
+Q: Are there windows in the scene? A:
+Yes, there is a brown armchair.
+Q: Is there a chair at [14.3, 0.7, 0.3]?A:
+There are two chalkboards in the 
+scene.
+Q: How many chalkboards are there in 
+the scene? A: 
+To enhance safety, consider laying 
+down anti-slip mats by the sink and in 
+any zones where spills are likely to 
+happen.
+How can the room be improved?
+A brown chair
+Q: What is at the back of the room 
+where the chalk boards meet? A:
+left
+Answer the question using a word or a 
+phrase. Q: I am washing my hands, 
+they just got dirty by the smelly 
+food in the fridge. Is the paper towel 
+roll on my left or right? A:
+You'll pass by tables and chairs, and 
+potentially other room items and 
+occupants, before reaching the 
+window.
+Q: From the brown recliner at the 
+intersection of two chalkboards, what 
+will I pass to open the window? A: 
+Robot: In the cabinet above the 
+dishwasher, third from the sink. 
+Human: Where are the glasses kept? 
+Robot: Sure, use the wooden cabinet 
+beside the fridge for dry goods. 
+Human: Can you assist with storing 
+groceries? 
+Robot: Put it on the refrigerator's 
+bottom shelf or leave it on the counter. 
+Human: Where do I put this soda 
+pack? 
+Robot: Place it on a plate and use the 
+corner microwave.
+Human: How to heat the pizza? 
+Robot: Will do. I'm placing the towel 
+on the stove and cleaning the counter.
+Human: Prepare the kitchen for 
+dinner? 
+Next-step: GotoLocation
+countertop
+Next-step: PickupObject
+knife
+Next-step: PickupObject
+bowl
+Next-step: GotoLocation
+sidetable
+PutObject bowl, sidetable
+Instruction: 
+Put a knife 
+in a blue 
+container 
+onto the 
+black table 
+in the 
+corner.
+Next-step: NoOP
+I saw a 
+sink … A 
+cabinet … 
+Dishwasher
+…a knife on 
+the counter.
+Next-step: GotoLocation
+bowl
+I saw a 
+sink … A 
+medicine 
+cabinet … 
+Dishwasher 
+…
+Next-step: PutObject knife, 
+bowl
+I saw a flat,  
+wooden 
+table … A 
+long knife … 
+A round 
+bowl …
+I saw… a 
+knife placed 
+horizontally 
+… A sharp 
+cutting 
+knife …
+I saw a 
+door with a  
+rectangular 
+shape and a 
+brown 
+finish.
+I saw… 
+Knife (in the 
+bowl on the 
+side 
+table) …
+I saw a 
+small 
+table … 
+Apple … 
+knife … 
+bread …
+timestep
+𝒕𝟎
+𝒕𝟏, 𝒕𝟐𝒕𝟑, 𝒕𝟒
+𝒕𝟓, 𝒕𝟔, 𝒕𝟕
+𝒕𝟎
+𝒕𝟏
+𝒕𝟑
+𝒕𝟒
+𝒕𝟐
+𝒕𝟓, 𝒕𝟔
+𝒕𝟕
+Fig. 3: Examples using Scene-LLM for non-interactive and interactive tasks. On the
+right of the static scenes are visualization of input scene features. Bold texts are
+task-specific identifiers. Yellow boxes are the results from the ScanQA/SQA3D/Alfred
+benchmark. Responses for the top 3 non-interactive scenes are generated without task-
+specific finetuning, and those for the bottom interactive scene are generated with fine-
+tuning. Examples show that Scene-LLM can fulfill multiple tasks and is equipped with
+3D visual understanding and reasoning abilities.
+5.1
+Results and Benchmark Evaluation
+Benchmarks and Metrics. To evaluate Scene-LLM in tasks related to 3D
+scene reasoning and planning, we utilized three primary datasets for bench-
+
+
+Scene-LLM
+11
+Table 3: Result on Alfred dataset on test unseen/seen set and valid unseen/seen set.
+The metrics reported include success rate (SR), goal-conditioned success rate(GC), and
+high-level planning accuracy(HLP). The notation "(step)" denotes textual inputs that
+include step-by-step instructions. Scene-LLM performs the best among methods using
+goal instruction only. Its HLP performs the best among all methods.
+Model
+Test Unseen Test Seen
+Valid Unseen
+Valid Seen
+SR
+GC
+SR
+GC
+SR
+GC
+HLP
+SR
+GC
+HLP
+HiTUT [79]
+11.12 17.89 13.63 21.11 10.23 20.71
+—
+18.41 25.27
+—
+HLSM [8]
+20.27 27.24 25.11 35.79 18.28 31.24 70.17 29.63 38.74 77.64
+LLM-Planner [62]
+13.41 22.89 15.33 24.57 12.92 25.35 55.85 13.53 28.28 54.33
+E.T.(step) [45]
+8.57
+18.56 38.42 45.44 7.32 20.87
+–
+46.59 52.92
+–
+FILM(step) [43]
+27.80 38.52 28.83 39.55
+–
+–
+54.93
+–
+–
+60.86
+LLM-Planner(step) [62] 16.42 23.37 18.20 26.77 15.36 29.88 68.31 16.45 30.11 71.84
+Scene-LLM
+25.15 33.75 26.52 37.09 22.35 38.86 79.63 35.56 45.04 82.78
+marking. ScanQA [7]. This benchmark tests a model’s ability to understand
+3D scenes using question-answering tasks using ScanNet dataset [14]. Answers
+are typically short phrases. SQA3D [40]. This benchmark assesses a model’s
+3D scene understanding and reasoning through situated QA tasks using ScanNet
+scenes [14]. The answers are generally one-word or one-phrase. ALFRED [59].
+It measures the ability to create precise and robust plans from a high-level goal
+in 3D interactive environments from iTHOR [1]. Results on more benchmarks
+are included in the Supplementary Material.
+Performance on 3D-VQA benchmarks. Our evaluation of Scene-LLM on
+3D visual question answering (3D-VQA) benchmarks is summarized in Table 1
+for ScanQA and Table 2 for SQA3D, comparing it against other baseline meth-
+ods. We present results both with and without task-specific finetuning for a
+comprehensive analysis.
+On the ScanQA Benchmark: Scene-LLM demonstrates superior performance
+over other methods in most metrics, even without task-specific finetuning. This
+highlights its robust understanding of 3D scenes and efficient reasoning capabil-
+ities.
+For SQA3D: By incorporating the identifier "Answer the question using one
+word or one phrase," Scene-LLM aligns well with the SQA3D’s output format
+from the outset. It excels in most metrics compared to competing methods.
+An exception is observed in "How"-type questions, particularly counting tasks,
+where 3D-Vista [84] shows an edge due to its object-centric representation, which
+is inherently advantageous for such queries. Nevertheless, Scene-LLM, with its
+dense representation approach, holds a strong overall performance.
+Task-Specific Finetuning: Our model shows strong generalizability even prior
+to fine-tuning. Average performance improved across benchmarks post-tuning,
+although minor decreases were observed in 2 question types in SQA3D [40],
+echoing variability seen in [40, 84]. According to [40] Sec.4.2, ‘Is’ type is more
+
+
+12
+R. Fu et al.
+guess-prone, while ‘What’&‘Which’ types, where our model shows strength, bet-
+ter evaluate visual understanding. This suggests that the model’s effectiveness
+is further amplified when tailored to specific task requirements, demonstrating
+its adaptability and potential for refinement.
+Performance on Interactive Planning Benchmark
+Fig. 3 compares the
+performance of Scene-LLM with other methods. We finetune Scene-LLM with
+only 2k steps to align its output with Alfred’s high-level command format. As
+we only focus on the interactive high-level planning ability, which orthogonal to
+low-level controlling we directly adopt the low-level controller from [8] follow-
+ing [62]. Specifically, we replace the high-level controller of HLSM with Scene-
+LLM’s output. The inference process follows section 4.3. We report success
+rate(SR) [59], goal-conditioned success rate(GC) [59], and high-level planning
+accuracy(HLP) [62]. Comparing the all metrics between HLSM [8] and Scene-
+LLM, replacing the high-level controller with Scene-LLM brings performance
+boost among all metrics, which proves the excel of Scene-LLM in high-level con-
+trolling. Our advantage in high-level task decomposition is evident in the HLP
+metric, surpassing recent high-level planning works [62], which uses extra visual
+feature extractor for egocentric visual feature extraction. This proves our multi-
+modal method achieves faithful visual feature extraction without the need for a
+specialized general visual feature extractor. Notably, our methodology employs
+only goal instructions, yet achieves performance comparable to methods that uti-
+lize step-by-step instructions (step). This underscores the exceptional capability
+of Scene-LLM in task decomposition.
+Qualitative Results. Figure 3 showcases examples of Scene-LLM’s perfor-
+mance on three static scenes from the ScanNet dataset [14] and one interac-
+tive scene from the iThor environment [1]. In these examples, we also provide
+visualizations of the 3D visual features used by Scene-LLM. These features are
+reduced to three dimensions via Principal Component Analysis (PCA) and color-
+coded based on their PCA components for clarity. The selected examples high-
+light the wide range of capabilities of Scene-LLM: common sense understanding,
+concept understanding, spatial relationship understanding, coordinate under-
+standing, counting, task decomposition, functionality enhancement, embodied
+reasoning, and navigation skills. The interactive scene example shows Scene-
+LLM understanding both egocentric and scene-level information and can plan
+interactively in the scene without any extra visual information extractors.
+5.2
+Ablation Studies and Discussions.
+We evaluate and discuss the major design choices with ScanQA and SQA3D
+in this section. Detailed ablations including modality comparisons, fine-tuning
+efficiency with frame data, and contrasts between frame and scene data, and
+more are available in the Supplementary Material.
+3D Visual Features. We ablate different 3D representations, including object
+aligned bounding boxes (a) and class labels detected by VoteNet [49], object-
+centric point clouds features following 3D-Vista [84] (b), point clouds down-
+sampled (c) with farthest point sampling, point clouds queried (d) with a fine-
+
+
+Scene-LLM
+13
+Table 4: Ablation Studies comparing different input modalities, 3D representation,
+pertaining strategy, and data augmentation on ScanQA and SQA3D benchmarks.
+#Param reports the number of parameter of different feature extractors.
+Mod.
+Rep.
+Pre.
+Aug.
+#Param
+ScanQA
+SQA3D
+(a)
+3D
+obb
+x
+x
+–
+25.3
+53.1
+(b)
+3D
+tok-pc
+x
+x
+24M
+24.9
+52.7
+(c)
+3D
+ds-pc
+x
+x
+–
+25.0
+52.9
+(d)
+3D
+Q-pc
+x
+x
+105M
+24.9
+52.6
+(e)
+3D
+voxel
+x
+x
+1.4M
+25.0
+52.8
+(f)
+3D
+voxel
+✓
+x
+1.4M
+25.6
+53.2
+(g)
+3D
+voxel
+✓
+✓
+1.4M
+25.6
+53.6
+Table 5: High-level planning accuracy(HLP) on Alfred dataset valid unseen/seen set
+with different inference strategy. Full model outperform strategies without egocentric
+and scene state updates.
+Model
+Valid Unseen
+Valid Seen
+w/o egocentric
+72.64
+81.20
+w/o scene
+77.22
+82.11
+Scene-LLM
+79.63
+82.78
+tuned Q-Former [32] and point clouds down-sampled (e) with voxel-grid. The
+findings reveal that our approach for 3D visual features either matches or sur-
+passes other representations in performance with with reduced parameters. In-
+terestingly, object-centric methods (a&b) demonstrate similar effectiveness to
+spatial down-sampling techniques (c&e). This could be due to most textual data
+in ScanQA and SQA3D being annotated based on object bounding boxes. While
+Q-Former is a robust down-sampling technique, it exhibits slightly lower perfor-
+mance compared to direct spatial down-sampling in our benchmarks, aligning
+with findings from [36].
+Training Strategy. In our study, we evaluated Scene-LLM’s performance across
+different training strategies: (1) With pretraining (f) versus without pretraining
+(e); (2) Using frame data (g) versus scene data (f) during pretraining. The re-
+sults indicate a significant performance boost when pretraining is implemented,
+emphasizing the importance of concept alignment in the initial training phase.
+Interestingly, using frame data either matched or slightly exceeded the effective-
+ness of scene data. We ascribe this to the richer conceptual content found in
+frame data. Detailed statistics are available in the supplementary material.
+Inference Strategy. We evaluate the importance of egocentric and scene-level
+information update during interactive planning. As our method is orthogonal to
+low-level controller, the high-level planning accuracy (HLP) on Alfred serves as
+a direct indicator of our planning proficiency. Table. 5 demonstrates the impact
+of excluding updates from current frame description (w/o egocentric) and scene
+features (w/o scene). The absence of egocentric updates leads to a significant
+
+
+14
+R. Fu et al.
+(a) ScanQA-Resolution
+(b) SQA3D-Resolution
+(c) SQA3D-#views
+Fig. 4: EM scores on the Y-axis with decreasing voxel grid intervals (X-axis), indicating
+higher resolution leads to better performance. EM score slightly increases with number
+of views increases.
+decline in HLP. This decline highlights the dual role of egocentric information:
+it not only provides a snapshot of the current state but also anchors the agent’s
+understanding of that state. Similarly, excluding scene state updates results in a
+modest decrease in HLP, emphasizing that information updates play a valuable
+part in interactive planning.
+Voxel Grid Resolution. Due to the max token length of LLama2 is 4096,
+we use a fixed voxel downsample resolution 0.18 in our experiment. However,
+in Fig. 4 (a)(b), we show that increasing the resolution result into performance
+boost on QA benchmarks. This suggest that Scene-LLM might be further im-
+proved by incorporating LLMs that process longer text tokens [72,73] to process
+dense information more effectively.
+Number of views. During 3D visual feature extracting process, we randomly
+sample views from input 3D scenes. Fig. 4 (c) reports the Exact Match (EM)
+score on SQA3D using different number of views. Figure shows the EM score
+has minor increment with the number of views increases, comparing with the
+change of voxel resolution. This further shows the main bottleneck for scene
+feature extraction is the voxel resolution, which is limited by the max token
+length of LLama2.
+6
+Conclusion
+We introduces Scene-LLM, a 3D-visual-language model designed for understand-
+ing and reasoning in interactive 3D scenes. The model enhances LLMs with both
+egocentric and geo-centric 3D spatial understanding, leading to top-tier perfor-
+mance in 3D VQA and interactive planning. Our hybrid feature representation
+effectively captures comprehensive spatial information and facilitates dynamic
+state updates. We also present our 3D-visual-language dataset, highlighting the
+beneficial use of frame data in concept alignment. However, Scene-LLM faces
+limitations such as LLM input token length, challenges in processing dynamic
+scenes without a state detector, lacking geometry feature, and language hallu-
+cinations. Despite these challenges, Scene-LLM represents an advancement in
+
+
+Scene-LLM
+15
+3D visual understanding, paving the way for more complex agent interactions in
+indoor settings.
+References
+1. AI2-THOR:
+An
+Interactive
+3D
+Environment
+for
+Visual
+AI.
+ArXiv
+abs/1712.05474 (2017) 2, 5, 11, 12, 25
+2. Achlioptas, P., Abdelreheem, A., Xia, F., Elhoseiny, M., Guibas, L.: Referit3d:
+Neural listeners for fine-grained 3d object identification in real-world scenes. In:
+Computer Vision–ECCV 2020: 16th European Conference, Glasgow, UK, August
+23–28, 2020, Proceedings, Part I 16. pp. 422–440. Springer (2020) 4
+3. Agia, C., Jatavallabhula, K.M., Khodeir, M., Miksik, O., Vineet, V., Mukadam,
+M., Paull, L., Shkurti, F.: Taskography: Evaluating robot task planning over large
+3d scene graphs. In: Conference on Robot Learning. pp. 46–58. PMLR (2022) 5
+4. Ahn, M., Brohan, A., Brown, N., Chebotar, Y., Cortes, O., David, B., Finn, C., Fu,
+C., Gopalakrishnan, K., Hausman, K., et al.: Do as i can, not as i say: Grounding
+language in robotic affordances. arXiv preprint arXiv:2204.01691 (2022) 4
+5. Alayrac, J.B., Donahue, J., Luc, P., Miech, A., Barr, I., Hasson, Y., Lenc, K., Men-
+sch, A., Millican, K., Reynolds, M., et al.: Flamingo: a visual language model for
+few-shot learning. Advances in Neural Information Processing Systems 35, 23716–
+23736 (2022) 1, 5
+6. Anderson, P., Wu, Q., Teney, D., Bruce, J., Johnson, M., Sünderhauf, N., Reid,
+I., Gould, S., Van Den Hengel, A.: Vision-and-language navigation: Interpreting
+visually-grounded navigation instructions in real environments. In: Proceedings of
+the IEEE conference on computer vision and pattern recognition. pp. 3674–3683
+(2018) 1, 4
+7. Azuma, D., Miyanishi, T., Kurita, S., Kawanabe, M.: Scanqa: 3d question answer-
+ing for spatial scene understanding. In: proceedings of the IEEE/CVF conference
+on computer vision and pattern recognition. pp. 19129–19139 (2022) 3, 4, 9, 11,
+22
+8. Blukis, V., Paxton, C., Fox, D., Garg, A., Artzi, Y.: A persistent spatial semantic
+representation for high-level natural language instruction execution. In: Conference
+on Robot Learning. pp. 706–717. PMLR (2022) 4, 5, 7, 11, 12
+9. Chalvatzaki, G., Younes, A., Nandha, D., Le, A., Ribeiro, L.F., Gurevych, I.: Learn-
+ing to reason over scene graphs: A case study of finetuning gpt-2 into a robot lan-
+guage model for grounded task planning. arXiv preprint arXiv:2305.07716 (2023)
+4
+10. Chen, B., Xia, F., Ichter, B., Rao, K., Gopalakrishnan, K., Ryoo, M.S., Stone,
+A., Kappler, D.: Open-vocabulary queryable scene representations for real world
+planning. In: 2023 IEEE International Conference on Robotics and Automation
+(ICRA). pp. 11509–11522. IEEE (2023) 5
+11. Chen, D.Z., Chang, A.X., Nießner, M.: Scanrefer: 3d object localization in rgb-d
+scans using natural language. In: European conference on computer vision. pp.
+202–221. Springer (2020) 4
+12. Chen, J., Zhu, D., Shen, X., Li, X., Liu, Z., Zhang, P., Krishnamoorthi, R., Chan-
+dra, V., Xiong, Y., Elhoseiny, M.: Minigpt-v2: large language model as a unified
+interface for vision-language multi-task learning. arXiv preprint arXiv:2310.09478
+(2023) 3, 5, 6, 25
+
+
+16
+R. Fu et al.
+13. Chen, Z., Gholami, A., Nießner, M., Chang, A.X.: Scan2cap: Context-aware dense
+captioning in rgb-d scans. In: Proceedings of the IEEE/CVF conference on com-
+puter vision and pattern recognition. pp. 3193–3203 (2021) 4, 24
+14. Dai, A., Chang, A.X., Savva, M., Halber, M., Funkhouser, T., Niessner, M.: Scan-
+net: Richly-annotated 3d reconstructions of indoor scenes. In: Proceedings of the
+IEEE Conference on Computer Vision and Pattern Recognition (CVPR) (July
+2017) 5, 11, 12, 23, 25
+15. Driess, D., Xia, F., Sajjadi, M.S., Lynch, C., Chowdhery, A., Ichter, B., Wahid, A.,
+Tompson, J., Vuong, Q., Yu, T., et al.: Palm-e: An embodied multimodal language
+model. arXiv preprint arXiv:2303.03378 (2023) 1, 2, 4, 5
+16. Feng, M., Li, Z., Li, Q., Zhang, L., Zhang, X., Zhu, G., Zhang, H., Wang, Y., Mian,
+A.: Free-form description guided 3d visual graph network for object grounding
+in point cloud. In: Proceedings of the IEEE/CVF International Conference on
+Computer Vision. pp. 3722–3731 (2021) 4
+17. Guo, Z., Zhang, R., Zhu, X., Tang, Y., Ma, X., Han, J., Chen, K., Gao,
+P., Li, X., Li, H., et al.: Point-bind & point-llm: Aligning point cloud with
+multi-modality for 3d understanding, generation, and instruction following. arXiv
+preprint arXiv:2309.00615 (2023) 1, 5
+18. Hong, Y., Lin, C., Du, Y., Chen, Z., Tenenbaum, J.B., Gan, C.: 3d concept learning
+and reasoning from multi-view images. In: Proceedings of the IEEE/CVF Confer-
+ence on Computer Vision and Pattern Recognition. pp. 9202–9212 (2023) 4, 5
+19. Hong, Y., Zhen, H., Chen, P., Zheng, S., Du, Y., Chen, Z., Gan, C.: 3d-llm: Injecting
+the 3d world into large language models. arXiv preprint arXiv:2307.12981 (2023)
+1, 2, 3, 4, 5, 9, 24, 25
+20. Huang, C., Mees, O., Zeng, A., Burgard, W.: Visual language maps for robot
+navigation. In: 2023 IEEE International Conference on Robotics and Automation
+(ICRA). pp. 10608–10615. IEEE (2023) 4, 5, 7
+21. Huang, P.H., Lee, H.H., Chen, H.T., Liu, T.L.: Text-guided graph neural networks
+for referring 3d instance segmentation. In: Proceedings of the AAAI Conference on
+Artificial Intelligence. vol. 35, pp. 1610–1618 (2021) 4
+22. Huang, W., Abbeel, P., Pathak, D., Mordatch, I.: Language models as zero-shot
+planners: Extracting actionable knowledge for embodied agents. In: International
+Conference on Machine Learning. pp. 9118–9147. PMLR (2022) 4
+23. Huang, W., Wang, C., Zhang, R., Li, Y., Wu, J., Fei-Fei, L.: Voxposer: Composable
+3d value maps for robotic manipulation with language models. arXiv preprint
+arXiv:2307.05973 (2023) 4
+24. Hwang, I., Kim, H., Kim, Y.M.: Text2scene: Text-driven indoor scene stylization
+with part-aware details. In: Proceedings of the IEEE/CVF Conference on Com-
+puter Vision and Pattern Recognition. pp. 1890–1899 (2023) 4
+25. Jatavallabhula, K.M., Kuwajerwala, A., Gu, Q., Omama, M., Chen, T., Li, S., Iyer,
+G., Saryazdi, S., Keetha, N., Tewari, A., et al.: Conceptfusion: Open-set multimodal
+3d mapping. arXiv preprint arXiv:2302.07241 (2023) 5, 7
+26. Jiang, L., Zhao, H., Shi, S., Liu, S., Fu, C.W., Jia, J.: Pointgroup: Dual-set point
+grouping for 3d instance segmentation. In: Proceedings of the IEEE/CVF confer-
+ence on computer vision and Pattern recognition. pp. 4867–4876 (2020) 5
+27. Jiang, Y., Gupta, A., Zhang, Z., Wang, G., Dou, Y., Chen, Y., Fei-Fei, L., Anand-
+kumar, A., Zhu, Y., Fan, L.: Vima: General robot manipulation with multimodal
+prompts. arXiv preprint arXiv:2210.03094 (2022) 1, 4
+28. Kerr, J., Kim, C.M., Goldberg, K., Kanazawa, A., Tancik, M.: Lerf: Language em-
+bedded radiance fields. In: Proceedings of the IEEE/CVF International Conference
+on Computer Vision. pp. 19729–19739 (2023) 5
+
+
+Scene-LLM
+17
+29. Krantz, J., Wijmans, E., Majumdar, A., Batra, D., Lee, S.: Beyond the nav-graph:
+Vision-and-language navigation in continuous environments. In: Computer Vision–
+ECCV 2020: 16th European Conference, Glasgow, UK, August 23–28, 2020, Pro-
+ceedings, Part XXVIII 16. pp. 104–120. Springer (2020) 4
+30. Kurenkov, A., Lingelbach, M., Agarwal, T., Jin, E., Li, C., Zhang, R., Fei-Fei,
+L., Wu, J., Savarese, S., Martın-Martın, R.: Modeling dynamic environments with
+scene graph memory. In: International Conference on Machine Learning. pp. 17976–
+17993. PMLR (2023) 5
+31. Lei, J., Li, L., Zhou, L., Gan, Z., Berg, T.L., Bansal, M., Liu, J.: Less is more:
+Clipbert for video-and-language learning via sparse sampling. In: Proceedings of
+the IEEE/CVF conference on computer vision and pattern recognition. pp. 7331–
+7341 (2021) 9
+32. Li, J., Li, D., Savarese, S., Hoi, S.: Blip-2: Bootstrapping language-image pre-
+training with frozen image encoders and large language models. arXiv preprint
+arXiv:2301.12597 (2023) 1, 3, 5, 7, 13
+33. Li, S., Puig, X., Paxton, C., Du, Y., Wang, C., Fan, L., Chen, T., Huang, D.A.,
+Akyürek, E., Anandkumar, A., et al.: Pre-trained language models for interactive
+decision-making. Advances in Neural Information Processing Systems 35, 31199–
+31212 (2022) 5
+34. Liu, A.Z., Logeswaran, L., Sohn, S., Lee, H.: A picture is worth a thousand words:
+Language models plan from pixels. arXiv preprint arXiv:2303.09031 (2023) 4
+35. Liu, H., Lee, L., Lee, K., Abbeel, P.: Instruction-following agents with jointly pre-
+trained vision-language models. arXiv preprint arXiv:2210.13431 (2022) 7, 8
+36. Liu, H., Li, C., Wu, Q., Lee, Y.J.: Visual instruction tuning. arXiv preprint
+arXiv:2304.08485 (2023) 3, 5, 13
+37. Liu, Z., Bahety, A., Song, S.: Reflect: Summarizing robot experiences for failure
+explanation and correction. arXiv preprint arXiv:2306.15724 (2023) 4
+38. Liu, Z., Tang, H., Lin, Y., Han, S.: Point-voxel cnn for efficient 3d deep learning.
+Advances in Neural Information Processing Systems 32 (2019) 5, 7
+39. Lu, Y., Feng, W., Zhu, W., Xu, W., Wang, X.E., Eckstein, M., Wang, W.Y.:
+Neuro-symbolic procedural planning with commonsense prompting. arXiv preprint
+arXiv:2206.02928 (2022) 4
+40. Ma, X., Yong, S., Zheng, Z., Li, Q., Liang, Y., Zhu, S.C., Huang, S.: Sqa3d: Situated
+question answering in 3d scenes. arXiv preprint arXiv:2210.07474 (2022) 1, 2, 3,
+4, 9, 11, 22
+41. Mescheder, L., Oechsle, M., Niemeyer, M., Nowozin, S., Geiger, A.: Occupancy
+networks: Learning 3d reconstruction in function space. In: Proceedings of the
+IEEE/CVF conference on computer vision and pattern recognition. pp. 4460–4470
+(2019) 5
+42. Mildenhall, B., Srinivasan, P.P., Tancik, M., Barron, J.T., Ramamoorthi, R., Ng,
+R.: Nerf: Representing scenes as neural radiance fields for view synthesis. Commu-
+nications of the ACM 65(1), 99–106 (2021) 5
+43. Min, S.Y., Chaplot, D.S., Ravikumar, P.K., Bisk, Y., Salakhutdinov, R.: FILM:
+Following instructions in language with modular methods. In: International Con-
+ference on Learning Representations (2022), https://openreview.net/forum?id=
+qI4542Y2s1D 4, 11
+44. Misra, D., Langford, J., Artzi, Y.: Mapping instructions and visual observations
+to actions with reinforcement learning. arXiv preprint arXiv:1704.08795 (2017) 4
+45. Pashevich, A., Schmid, C., Sun, C.: Episodic Transformer for Vision-and-Language
+Navigation. In: ICCV (2021) 11
+
+
+18
+R. Fu et al.
+46. Paszke, A., Chaurasia, A., Kim, S., Culurciello, E.: Enet: A deep neural network
+architecture for real-time semantic segmentation. arXiv preprint arXiv:1606.02147
+(2016) 25
+47. Peng, Z., Wang, W., Dong, L., Hao, Y., Huang, S., Ma, S., Wei, F.: Kosmos-
+2: Grounding multimodal large language models to the world. arXiv preprint
+arXiv:2306.14824 (2023) 5
+48. Puig, X., Ra, K., Boben, M., Li, J., Wang, T., Fidler, S., Torralba, A.: Virtual-
+home: Simulating household activities via programs. In: Proceedings of the IEEE
+Conference on Computer Vision and Pattern Recognition. pp. 8494–8502 (2018) 4
+49. Qi, C.R., Litany, O., He, K., Guibas, L.J.: Deep hough voting for 3d object detec-
+tion in point clouds. In: proceedings of the IEEE/CVF International Conference
+on Computer Vision. pp. 9277–9286 (2019) 4, 12
+50. Qi, C.R., Su, H., Mo, K., Guibas, L.J.: Pointnet: Deep learning on point sets
+for 3d classification and segmentation. In: Proceedings of the IEEE conference on
+computer vision and pattern recognition. pp. 652–660 (2017) 5
+51. Radford, A., Kim, J.W., Hallacy, C., Ramesh, A., Goh, G., Agarwal, S., Sastry, G.,
+Askell, A., Mishkin, P., Clark, J., et al.: Learning transferable visual models from
+natural language supervision. In: International conference on machine learning. pp.
+8748–8763. PMLR (2021) 7
+52. Ramakrishnan, S.K., Gokaslan, A., Wijmans, E., Maksymets, O., Clegg, A.,
+Turner, J., Undersander, E., Galuba, W., Westbury, A., Chang, A.X., et al.:
+Habitat-matterport 3d dataset (hm3d): 1000 large-scale 3d environments for em-
+bodied ai. arXiv preprint arXiv:2109.08238 (2021) 5, 25
+53. Ramesh, A., Dhariwal, P., Nichol, A., Chu, C., Chen, M.: Hierarchical text-
+conditional image generation with clip latents. arXiv preprint arXiv:2204.06125
+1(2), 3 (2022) 7
+54. Rana, K., Haviland, J., Garg, S., Abou-Chakra, J., Reid, I., Suenderhauf, N.: Say-
+plan: Grounding large language models using 3d scene graphs for scalable task
+planning. arXiv preprint arXiv:2307.06135 (2023) 4
+55. Reed, S., Zolna, K., Parisotto, E., Colmenarejo, S.G., Novikov, A., Barth-Maron,
+G., Gimenez, M., Sulsky, Y., Kay, J., Springenberg, J.T., et al.: A generalist agent.
+arXiv preprint arXiv:2205.06175 (2022) 4
+56. Riegler, G., Osman Ulusoy, A., Geiger, A.: Octnet: Learning deep 3d represen-
+tations at high resolutions. In: Proceedings of the IEEE conference on computer
+vision and pattern recognition. pp. 3577–3586 (2017) 5
+57. Sajjadi, M.S., Duckworth, D., Mahendran, A., van Steenkiste, S., Pavetic, F., Lucic,
+M., Guibas, L.J., Greff, K., Kipf, T.: Object scene representation transformer.
+Advances in Neural Information Processing Systems 35, 9512–9524 (2022) 5
+58. Shah, D., Osiński, B., Levine, S., et al.: Lm-nav: Robotic navigation with large pre-
+trained models of language, vision, and action. In: Conference on Robot Learning.
+pp. 492–504. PMLR (2023) 4
+59. Shridhar, M., Thomason, J., Gordon, D., Bisk, Y., Han, W., Mottaghi, R., Zettle-
+moyer, L., Fox, D.: Alfred: A benchmark for interpreting grounded instructions for
+everyday tasks. In: Proceedings of the IEEE/CVF conference on computer vision
+and pattern recognition. pp. 10740–10749 (2020) 1, 3, 4, 11, 12
+60. Shridhar, M., Yuan, X., Côté, M.A., Bisk, Y., Trischler, A., Hausknecht, M.: Alf-
+world: Aligning text and embodied environments for interactive learning. arXiv
+preprint arXiv:2010.03768 (2020) 4
+61. Singh, I., Blukis, V., Mousavian, A., Goyal, A., Xu, D., Tremblay, J., Fox, D.,
+Thomason, J., Garg, A.: Progprompt: Generating situated robot task plans using
+
+
+Scene-LLM
+19
+large language models. In: 2023 IEEE International Conference on Robotics and
+Automation (ICRA). pp. 11523–11530. IEEE (2023) 4
+62. Song, C.H., Wu, J., Washington, C., Sadler, B.M., Chao, W.L., Su, Y.: Llm-
+planner: Few-shot grounded planning for embodied agents with large language
+models. arXiv preprint arXiv:2212.04088 (2022) 4, 11, 12
+63. Suglia, A., Gao, Q., Thomason, J., Thattai, G., Sukhatme, G.: Embodied bert: A
+transformer model for embodied, language-guided visual task completion. arXiv
+preprint arXiv:2108.04927 (2021) 4
+64. Tan, F., Feng, S., Ordonez, V.: Text2scene: Generating compositional scenes from
+textual descriptions. In: Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition. pp. 6710–6719 (2019) 4
+65. Touvron, H., Martin, L., Stone, K., Albert, P., Almahairi, A., Babaei, Y., Bash-
+lykov, N., Batra, S., Bhargava, P., Bhosale, S., et al.: Llama 2: Open foundation
+and fine-tuned chat models. arXiv preprint arXiv:2307.09288 (2023) 3, 6, 8, 22,
+23, 28
+66. Tsimpoukelli, M., Menick, J.L., Cabi, S., Eslami, S., Vinyals, O., Hill, F.: Multi-
+modal few-shot learning with frozen language models. Advances in Neural Infor-
+mation Processing Systems 34, 200–212 (2021) 5
+67. Wang, P.S.: Octformer: Octree-based transformers for 3d point clouds. arXiv
+preprint arXiv:2305.03045 (2023) 5
+68. Wang, P.S., Liu, Y., Guo, Y.X., Sun, C.Y., Tong, X.: O-cnn: Octree-based con-
+volutional neural networks for 3d shape analysis. ACM Transactions On Graphics
+(TOG) 36(4), 1–11 (2017) 5
+69. Wang, W., Chen, Z., Chen, X., Wu, J., Zhu, X., Zeng, G., Luo, P., Lu, T., Zhou,
+J., Qiao, Y., et al.: Visionllm: Large language model is also an open-ended decoder
+for vision-centric tasks. arXiv preprint arXiv:2305.11175 (2023) 5
+70. Xiang, J., Tao, T., Gu, Y., Shu, T., Wang, Z., Yang, Z., Hu, Z.: Language mod-
+els meet world models: Embodied experiences enhance language models. arXiv
+preprint arXiv:2305.10626 (2023) 4
+71. Xie, Y., Yu, C., Zhu, T., Bai, J., Gong, Z., Soh, H.: Translating natural language to
+planning goals with large-language models. arXiv preprint arXiv:2302.05128 (2023)
+4
+72. Xiong, W., Gupta, A., Toshniwal, S., Mehdad, Y., Yih, W.t.: Adapting pretrained
+text-to-text models for long text sequences. arXiv preprint arXiv:2209.10052 (2022)
+14
+73. Xiong, W., Liu, J., Molybog, I., Zhang, H., Bhargava, P., Hou, R., Martin, L.,
+Rungta, R., Sankararaman, K.A., Oguz, B., Khabsa, M., Fang, H., Mehdad, Y.,
+Narang, S., Malik, K., Fan, A., Bhosale, S., Edunov, S., Lewis, M., Wang, S., Ma,
+H.: Effective long-context scaling of foundation models (2023) 14
+74. Yang, Z., Li, L., Wang, J., Lin, K., Azarnasab, E., Ahmed, F., Liu, Z., Liu, C.,
+Zeng, M., Wang, L.: Mm-react: Prompting chatgpt for multimodal reasoning and
+action. arXiv preprint arXiv:2303.11381 (2023) 5
+75. Ye, S., Chen, D., Han, S., Liao, J.: 3d question answering. IEEE Transactions on
+Visualization and Computer Graphics (2022) 4
+76. You, H., Zhang, H., Gan, Z., Du, X., Zhang, B., Wang, Z., Cao, L., Chang, S.F.,
+Yang, Y.: Ferret: Refer and ground anything anywhere at any granularity. arXiv
+preprint arXiv:2310.07704 (2023) 5
+77. Yu, Z., Yu, J., Cui, Y., Tao, D., Tian, Q.: Deep modular co-attention networks
+for visual question answering. In: Proceedings of the IEEE/CVF conference on
+computer vision and pattern recognition. pp. 6281–6290 (2019) 9
+
+
+20
+R. Fu et al.
+78. Zhang, Y., Chai, J.: Hierarchical task learning from language instructions with
+unified transformers and self-monitoring. arXiv preprint arXiv:2106.03427 (2021)
+4
+79. Zhang, Y., Chai, J.: Hierarchical task learning from language instructions with
+unified transformers and self-monitoring. In: Findings of the Association for Com-
+putational Linguistics: ACL-IJCNLP 2021. pp. 4202–4213. Association for Com-
+putational Linguistics, Online (Aug 2021). https://doi.org/10.18653/v1/2021.
+findings-acl.368, https://aclanthology.org/2021.findings-acl.368 11
+80. Zhang, Y., Gong, Z., Chang, A.X.: Multi3drefer: Grounding text description to
+multiple 3d objects. In: Proceedings of the IEEE/CVF International Conference
+on Computer Vision. pp. 15225–15236 (2023) 4
+81. Zhao, H., Jiang, L., Jia, J., Torr, P.H., Koltun, V.: Point transformer. In: Proceed-
+ings of the IEEE/CVF international conference on computer vision. pp. 16259–
+16268 (2021) 5
+82. Zheng, K., Zhou, K., Gu, J., Fan, Y., Wang, J., Di, Z., He, X., Wang, X.E.: Jarvis:
+A neuro-symbolic commonsense reasoning framework for conversational embodied
+agents. arXiv preprint arXiv:2208.13266 (2022) 4
+83. Zhu, D., Chen, J., Shen, X., Li, X., Elhoseiny, M.: Minigpt-4: Enhancing vision-
+language understanding with advanced large language models. arXiv preprint
+arXiv:2304.10592 (2023) 5, 6, 7
+84. Zhu, Z., Ma, X., Chen, Y., Deng, Z., Huang, S., Li, Q.: 3d-vista: Pre-trained trans-
+former for 3d vision and text alignment. arXiv preprint arXiv:2308.04352 (2023)
+1, 4, 5, 9, 11, 12
+
+
+Scene-LLM
+21
+Supplementary for Scene-LLM
+This document serves as the supplementary material for Scene-LLM: Extending
+Language Models for 3D Visual Understanding and Reasoning. Due to space con-
+straints in the main paper, this supplementary section provides additional exper-
+imental results. It includes extended examples of interactive planning, detailed
+benchmark results for dense caption generation, and further ablation studies
+that explore various modalities and the impact of using frame data. Addition-
+ally, we present comprehensive information on the generation of frame data and
+scene data, encompassing prompts, post-processing steps, and data distribution
+specifics. Finally, detailed explanations of the training and inference methodolo-
+gies as outlined in the main paper are also included for thorough understanding.
+
+
+22
+R. Fu et al.
+7
+Ablation Studies comparing different modalities.
+Table 6: Ablation Studies comparing different input modalities. Including textual
+zero-shot, textual fine-tuned, and textual tasks-specific-tuned, video, bird-eye views,
+and 3D point sets.
+Mod.
+Tune.
+ScanQA
+SQA3D
+(a)
+text
+Zero-Shot
+13.1
+34.1
+(b)
+text
+Finetune
+17.9
+48.9
+(c)
+text
+Task Tune
+18.0
+49.5
+(d)
+Video
+Task Tune
+18.9
+48.2
+(e)
+BEV
+Task Tune
+19.2
+48.4
+(f)
+3D
+Finetune
+25.0
+52.8
+Our study evaluates performance on the ScanQA [7] and SQA3D [40] bench-
+marks across various modalities, including text, video, Bird’s Eye View (BEV),
+and 3D. In the text modality, we employ the Llama-2-7b [65] backbone, while
+video and BEV modalities share identical network architectures and training
+strategies as Scene-LLM. Within the text modality, we compared object bound-
+ing boxes and object entities, finding the latter more effective.
+We conducted experiments (a-c) using the text modality, encompassing zero-
+shot inference, fine-tuning with scene data, and additional task-specific tuning.
+Experiments (d-f) explored video, BEV, and 3D modalities. Our findings reveal
+that video and BEV modalities outperform the text modality in the ScanQA
+benchmark but underperform in SQA3D. Both methods underperform 3D data
+on both benchmarks. This suggests that spatial downsampling methods may not
+be ideal for processing video and image patches, underscoring the value of 3D
+information in preserving spatial knowledge more effectively.
+8
+Ablation Studies comparing concept numbers.
+Fig. 5 presents a detailed analysis comparing the richness of vocabulary and
+conceptual variety between scene data and frame data, as well as their impact
+on model training. The analysis focuses on two key metrics: the number of unique
+words and the number of unique nouns found in the captions of both datasets,
+excluding stopwords. The scene data, consisting of 200,000 captions, is compared
+with frame data, which contains 190,000 captions.
+In terms of unique words, the metric refers to the total count of distinct
+words across the dataset, providing insight into the lexical diversity. Similarly,
+the count of unique nouns, excluding stopwords, gives an indication of the variety
+and specificity of concepts covered in the data. The figure reveals that frame
+data exhibits a higher count of both unique words and nouns, suggesting a more
+diverse and conceptually rich dataset.
+
+
+Scene-LLM
+23
+Fig. 5: Comparing the number of unique words and nouns in the scene dataset and
+frame dataset. Comparing the number of unique words and nouns inferred by training
+with the model with scene data and frame data.
+Furthermore, the figure also compares the output when the model is trained
+on these two datasets, using 142 validation scenes from the ScanNet V2 dataset
+[14]. Notably, the model trained with frame data generates a greater number of
+nouns during inference, indicating that frame data effectively imparts a broader
+range of fine-grained concepts to the model. This enhanced conceptual diver-
+sity likely contributes to more robust and nuanced model performance in tasks
+requiring detailed understanding and reasoning.
+9
+Ablation Studies comparing convergence speed.
+Fig. 6: Loss curves for training the projection layer at the first 6k iterations. Using
+frame data converges faster than using scene data.
+Fig. 6 displays a comparative analysis of the training loss trajectories during
+the first 6,000 steps of the pretraining phase, as specified in [65]. This phase em-
+phasizes concept alignment, leveraging two distinct datasets: frame data, which
+
+
+24
+R. Fu et al.
+is accompanied by 190,000 textual annotations, and scene data, with 200,000
+textual annotations.
+The graph clearly shows a quicker reduction in training loss for the model
+utilizing frame data as opposed to scene data. This quicker convergence when
+using frame data suggests that the frame dataset provides a richer and more di-
+verse set of concepts for the model to learn. This diversity likely facilitates more
+efficient learning and understanding, enabling the model to more rapidly adjust
+its parameters for optimal performance. Additionally, the swifter convergence
+with frame data could be linked to the nature of the 3D data itself. Frame point
+set typically contains more detailed and precise information that aligns closely
+with its accompanying annotations. In contrast, the scene point set, being a
+downsampled representation, may not align as closely with its textual annota-
+tions. This misalignment could lead to slower learning as the model struggles
+to correlate the visual data with its textual descriptions, thereby explaining the
+observed difference in convergence rates.
+10
+Result on Dense Caption Generation.
+Table 7: Result on 3D Dense Caption Benchmark Scan2Cap [13].
+CIDEr
+BLEU-4
+METEOR
+ROUGE
+Scan2Cap [13]
+35.2
+22.4
+21.4
+43.5
+3D-LLM [19]
+–
+8.1
+13.1
+33.2
+Scene-LLM
+37.9
+24.1
+21.8
+45.6
+We detail our investigation into dense caption generation on the Scan2Cap
+benchmark [13], using task-specific fine-tuning. This benchmark evaluates the
+ability of models to generate detailed captions for objects within a 3D scene,
+based on their bounding box inputs. Similar to the 3D-LLM [19], the model re-
+ceives the center and dimensions of an object’s bounding box as input, formatted
+as [position x, position y, position z, length x, length y, length z],
+with each dimension represented as a two-digit floating-point number.
+In our study, Scene-LLM is compared against both a modular method out-
+lined in [13] and another 3D-visual-language model from [19]. The results demon-
+strate that Scene-LLM outperforms the other methods across all evaluated met-
+rics, indicating Scene-LLM’s proficiency in comprehending 3D scenes and accu-
+rately understanding spatial coordinates when fine-tuned for specific tasks. The
+result indicates that when Scene-LLM is combined with 3D grounding methods,
+it holds the potential to tackle a wide array of complex tasks.
+
+
+Scene-LLM
+25
+Table 8: Result on 3DMV-VQA(single room only) Benchmark.
+Concept
+Counting
+Relation
+Comparison
+Overall
+Scene-LLM(zs)
+69.9
+31.2
+62.0
+73.5
+59.6
+Scene-LLM(tt)
+70.2
+33.5
+62.4
+75.1
+61.3
+11
+Result on 3DMV-VQA.
+We evaluated the performance of Scene-LLM on the 3DMV-VQA benchmark
+[19], a benchmark specifically designed for testing a model’s ability to understand
+and reason about 3D scenes, using data from the Habitat Matterport 3D Dataset
+[52].
+For our evaluation, we selected a subset of the 3DMV-VQA benchmark that
+aligns with our model’s focus on single-room scenarios. This subset, sourced
+from the benchmark’s open-source codebase, comprises a total of 1, 212 scenes.
+Notably, the answers in this benchmark are generally concise, typically con-
+sisting of one word or a short phrase. To align with this format, we employed
+the identifier "Answer the question using one word or one phrase" in our
+zero-shot (zs) evaluation setup.
+We assessed Scene-LLM under two distinct settings: zero-shot and task-
+specific tuning. In the zero-shot setting, where no additional fine-tuning was ap-
+plied, Scene-LLM demonstrated reasonable performance, indicating an inherent
+capability to understand and respond to queries related to 3D scenes. However,
+when further optimized through task-specific tuning, the model’s performance
+showed a notable improvement.
+12
+3D Dataset
+Our 3D scene dataset is composed of three parts: we collect 564 training scenes
+from ScanNet-V2 [14], 1212 scenes from HM3D [52] dataset, and 7075 randomly
+configued scenes from iThor [1] dataset. There are in total of 8851 scenes. For
+the 3D frame, we use Habitat simulator and Ai2Thor simulator to collect frame
+data. We also use the multi-view images from ENet [46] for ScanNet frame data.
+For each scene, we collect 20 frames from multiple views.
+13
+Frame Data Generation Details.
+13.1
+Prompts
+We use MiniGPT-V2 [12] for frame data generation. We use the identifier [grounding]
+as we found it can effectively reduce hallucination in the generated texts. Here
+are the prompts we use:
+1. [grounding] Describe this image in detail. Give as many details
+as possible. Say everything you see.
+
+
+26
+R. Fu et al.
+2. [grounding] Describe the objects in this image.
+The first prompt generates dense captions, and the second prompt generates
+object-centric descriptions. We filtered out outputs with meaningless characters,
+and a total of around 190k textual descriptions are collected.
+14
+Scene Data Generation Details.
+14.1
+Prompts
+In the section, we provide the prompts used for scene data generation. The
+prompts we provided are composed of two parts Pcontext and Pinstruction, where
+Pcontext introduces the scene context used for data generation and Pinstruction
+indicates which type of instructional data to generate.
+For the scene context, we include four types of context. Here are the context
+types and the corresponding Pcontext:
+1. Dense Caption: Given a script starting with "Scripts:", where a
+person describes objects in an indoor scene ...
+2. Object Caption: Based on a script beginning with "Scripts:" detailing
+objects in an indoor scene ...
+3. Object Entites: Using the "OBJECT LIST:", which describes objects
+and their bounding boxes in an indoor environment in the format:
+object [position x, position y, position z, length x, length y,
+length z] ...
+4. Object bounding boxes: Provided is a list titled "OBJECT LIST:",
+which details objects and their bounding boxes in an indoor setting,
+formatted as: object [position x, position y, position z, length
+x, length y, length z] ...
+We generate 12 types of instruction following annotations. In order to reduce
+hallucination, we only use some types of contexts for each type of data genera-
+tion. Here are the annotation types, the corresponding Pinstruction and the used
+context types.:
+1. Scene Caption: provide a summarization starting with "Summary:".
+The summary should detail the objects, their positions, appearances,
+and the function of the room. Scripts: Used contexts: scene caption,
+object entities, object bounding boxes.
+2. Object Caption: provide a summarization starting with "Summary:".
+The summary should detail the objects, their positions, appearances,
+and the function of the room. Scripts: Used contexts: object caption.
+3. General Question Answering:
+visualize a scenario with a Human
+and a robot assistant present. Construct a Question-Answer pair,
+where the Human asks and the robot answers. Format as follows: Q:
+[Human’s question based on the script details] A: [Robot’s answer
+based on the script]. Used contexts: scene caption, object caption, ob-
+ject entities, object bounding boxes.
+
+
+Scene-LLM
+27
+4. Question Answering(Concept): Produce question-answer pairs wherein
+the human inquires about the existence of the objects. Q: [Human’s
+question about the existence of objects] A: [Robot’s response based
+on the script details]. Used contexts: scene caption, object entities, ob-
+ject bounding boxes.
+5. Question Answering(Concept-Negation): Generate question-answer
+pairs where the human asks about objects that are not present in
+the given list. The answers should confirm the absence of these
+objects. Q: [Human’s question about the existence of objects] A:
+[Robot’s response based on the script details]. Used contexts: scene
+caption, object entities, object bounding boxes.
+6. Question Answering(Counting): Produce question-answer pairs wherein
+the human inquires about the number of the objects. Q: [Human’s
+question about the number of objects] A: [Robot’s response based
+on the script details]. Used contexts: object entities, object bounding
+boxes.
+7. Question Answering(Spatial): picture a setting with a Human and
+a robot assistant. Create question-answer pairs wherein the Human
+inquires about the location of specific objects. Frame your dialogue
+in this manner: Q: [Human’s question about an object’s position.
+A: [Robot’s answer referring to the object list]. Used contexts: scene
+caption, object bounding boxes.
+8. Question Answering(Comparison): Produce question-answer pairs
+wherein the human inquires about differentiating aspects of the
+objects. The queries should compare the number of the objects./The
+queries should compare the size of the objects./The queries should
+compare the functionalities of the objects./The queries should emphasize
+the distinctions between the objects. Please structure the dialogue
+as follows: Q: [Human’s question distinguishing the objects from
+the script] A: [Robot’s response based on the script details]. Used
+contexts: scene caption, object captions, object entities, object bounding
+boxes.
+9. Question Answering(Navigation): envisage a scenario where a robot
+navigates the area based on human instructions. Generate question-answer
+pairs that relate to navigating within the scene. The robot may
+inquire about directions, routes, and objects encountered along
+the way. Please adhere to the following format: Q: [Robot’s question
+about navigation relative to the objects in the script] A: [Human’s
+answer guiding the robot, using information from the script]. Used
+contexts: scene caption, object bounding boxes.
+10. Human-robot Dialogue:
+envision a scenario with a Human and a
+robot assistant interacting. Create a multi-round dialogue between
+them. Begin the human’s lines with "Human:" and the robot’s lines
+with "Robot:"." Used contexts: scene caption, object entities, object bound-
+ing boxes.
+
+
+28
+R. Fu et al.
+11. Task Decomposition:
+suggest daily tasks or chores relevant to
+the described environment. Each task should include a concise description
+and a step-by-step guide on how to complete it using only objects
+mentioned in the scene. Answer using this format: Task: [Brief description
+of the task Step-by-step instruction: 1.[First step] 2.[Second step]
+3.[Third step]. Used contexts: scene caption, object entities, object bound-
+ing boxes.
+12. Functionality Improvement:
+suggest ways to enhance the functionality
+of the environment. Your recommendation should focus on improvements
+like better lighting for reading. Provide your answer in the given
+format: Function: [Aspect of the environment to enhance] Method:
+[Suggestion for improvement based on the described scene]. Used
+contexts: scene caption, object entities, object bounding boxes.
+14.2
+Data Post-processing
+To process the instructional data generated from stage 2, we use LLama-2-
+chat-70b [65] to remove any redundant and inaccurate information. Here is the
+prompt we use at this stage: Correct errors in the provided paragraph.
+Eliminate repeated sentences, meaningless characters, and non-English
+phrases. Remove unnecessary repetition. Complete incomplete sentences.
+Provide the corrected answer directly without additional explanation.
+14.3
+Instruction-type Distribution
+Fig. 7: Distribution of the scene data by each type of instruction.
+Fig. 7 shows the distribution of each type of instructional-following annota-
+tions, including question answering(QA), object caption, tasks decomposition,
+dense caption, human-robot dialogue and function improvement.
+
+
+Scene-LLM
+29
+15
+Training Detail
+15.1
+Projection Layer Structure.
+The feature of each point is a concatenation of CLIP-H/14 feature, point color,
+and point position, which is of 1030 dimension. The input dimension to the LLM
+is 768 dimension. The projection layer is composed of a fully connected layer of
+a matrix shape [1030, 768], followed by a GELU activation layer, and then is a
+fully connected layer of a matrix shape [768, 768].
+15.2
+Pre-training Projection Layer.
+We use 32× NVIDIA A100 GPU to train the projection layer. The total batch
+size is 64 at this stage. We use AdamW as the optimizer, and a learning rate
+of 1e −5 to train the projection layer. The training starts with 1000 steps of
+warmup with a warmup learning rate of 1e −6. The training takes a total of 5
+hours.
+15.3
+Finetuning the Projection Layer with the LLM.
+We use 32× NVIDIA A100 GPU to finetune the projection layer with the LLM.
+The total batch size is 64 at this stage. We use AdamW as the optimizer, and
+a learning rate of 2e −5 to finetune the model. The training starts with 2000
+steps of warmup with a warmup learning rate of 1e −6. The fine-tuning takes a
+total of 8 hours.
+15.4
+Task-specific Finetuning.
+We use the same setting for all benchmarks for task-specific tuning. We use 32×
+NVIDIA A100 GPU to finetune the projection layer with the LLM. The total
+batch size is 64 at this stage. We use AdamW as the optimizer, and a learning
+rate of 2e−5. For the tuning steps, we report the result of 1, 500 step for ScanQA
+and SQA3D, 3, 500 step for Alfred, 6, 000 step for Scan2Cap, and 5, 000 step for
+3DMV-VQA.

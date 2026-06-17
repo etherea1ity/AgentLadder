@@ -1,0 +1,76 @@
+{
+  "paper_id": "paper_017",
+  "title": "AgentNet: Decentralized Evolutionary Coordination for LLM-Based Multi-Agent Systems",
+  "authors": [
+    "Yingxuan Yang"
+  ],
+  "year": 2025,
+  "venue": "NeurIPS 2025",
+  "url": "https://arxiv.org/abs/2504.00587",
+  "pdf_url": "https://arxiv.org/pdf/2504.00587.pdf",
+  "arxiv_id": "2504.00587",
+  "doi": null,
+  "domains": [
+    "agent-architecture",
+    "multi-agent"
+  ],
+  "method_tags": [
+    "decentralized",
+    "DAG-topology",
+    "multi-agent",
+    "evolutionary-coordination",
+    "retrieval-augmented-memory"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_017.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 121,
+    "visual_count": 7,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_017.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 121,
+      "visual_count": 7,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 16,
+      "total_chars": 62184,
+      "total_words": 8762,
+      "sections_found": 35,
+      "chunks_generated": 121,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

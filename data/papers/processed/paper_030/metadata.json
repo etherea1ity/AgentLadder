@@ -1,0 +1,76 @@
+{
+  "paper_id": "paper_030",
+  "title": "A Comprehensive Survey on World Models for Embodied AI",
+  "authors": [
+    "et al."
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2510.16732",
+  "pdf_url": "https://arxiv.org/pdf/2510.16732.pdf",
+  "arxiv_id": "2510.16732",
+  "doi": null,
+  "domains": [
+    "world-models",
+    "embodied",
+    "survey"
+  ],
+  "method_tags": [
+    "survey",
+    "world-model-taxonomy",
+    "embodied-AI",
+    "functionality-temporal-spatial"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_030.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 609,
+    "visual_count": 50,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_030.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 609,
+      "visual_count": 50,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 22,
+      "total_chars": 139546,
+      "total_words": 21184,
+      "sections_found": 177,
+      "chunks_generated": 609,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

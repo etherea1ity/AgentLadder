@@ -1,0 +1,9 @@
+{
+  "input_path": "data/papers/论文",
+  "exists": false,
+  "file_count_by_extension": {},
+  "detected_paper_candidates": [],
+  "ignored_files": [],
+  "possible_duplicate_papers": [],
+  "note": "input path does not exist; existing data/papers/processed corpus should be treated as already migrated source"
+}

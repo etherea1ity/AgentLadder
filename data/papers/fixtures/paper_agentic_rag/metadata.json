@@ -1,0 +1,10 @@
+{
+  "paper_id": "paper_agentic_rag",
+  "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+  "authors": ["Akari Asai", "Zexuan Zhong", "Danqi Chen"],
+  "year": 2023,
+  "venue": "ICLR",
+  "domain": "agentic_rag",
+  "method_tags": ["retrieval", "critique", "self-reflection", "rag"],
+  "abstract": "A fixture summary of Self-RAG-style retrieval, generation, and critique control tokens."
+}

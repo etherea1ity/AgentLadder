@@ -1,0 +1,77 @@
+{
+  "paper_id": "paper_037",
+  "title": "A Survey of LLM-based Deep Search Agents: Paradigm, Optimization, Evaluation, and Challenges",
+  "authors": [
+    "Yunjia Xi",
+    "Jianghao Lin"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2508.05668",
+  "pdf_url": "https://arxiv.org/pdf/2508.05668.pdf",
+  "arxiv_id": "2508.05668",
+  "doi": null,
+  "domains": [
+    "deep-research",
+    "survey"
+  ],
+  "method_tags": [
+    "survey",
+    "search-agent",
+    "deep-search",
+    "multi-turn-retrieval",
+    "information-synthesis"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_037.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 815,
+    "visual_count": 36,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_037.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 815,
+      "visual_count": 36,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 35,
+      "total_chars": 128305,
+      "total_words": 18367,
+      "sections_found": 522,
+      "chunks_generated": 815,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

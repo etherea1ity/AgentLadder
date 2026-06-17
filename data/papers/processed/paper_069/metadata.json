@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_069",
+  "title": "Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning by Large Language Models",
+  "authors": [
+    "Lei Wang",
+    "Wanyu Xu",
+    "Yihuai Lan",
+    "Zhiqiang Hu",
+    "Yunshi Lan",
+    "Roy Ka-Wei Lee",
+    "Ee-Peng Lim"
+  ],
+  "year": 2023,
+  "venue": "ACL 2023",
+  "url": "https://arxiv.org/abs/2305.04091",
+  "pdf_url": "https://arxiv.org/pdf/2305.04091.pdf",
+  "arxiv_id": "2305.04091",
+  "doi": null,
+  "domains": [
+    "reasoning",
+    "prompting"
+  ],
+  "method_tags": [
+    "Plan-and-Solve",
+    "zero-shot-CoT",
+    "planning"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_069.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2305.04091",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

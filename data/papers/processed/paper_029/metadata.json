@@ -1,0 +1,76 @@
+{
+  "paper_id": "paper_029",
+  "title": "Predicting vs. Acting: A Trade-off Between World Modeling & Agent Modeling",
+  "authors": [
+    "Margaret Li"
+  ],
+  "year": 2024,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2407.02446",
+  "pdf_url": "https://arxiv.org/pdf/2407.02446.pdf",
+  "arxiv_id": "2407.02446",
+  "doi": null,
+  "domains": [
+    "world-models",
+    "RLHF"
+  ],
+  "method_tags": [
+    "prediction-action-tradeoff",
+    "RLHF",
+    "world-modeling",
+    "agent-modeling",
+    "alignment-cost"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_029.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 130,
+    "visual_count": 35,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_029.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 130,
+      "visual_count": 35,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 22,
+      "total_chars": 53935,
+      "total_words": 8597,
+      "sections_found": 77,
+      "chunks_generated": 130,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "paper_id": "paper_049",
+  "title": "Attention Is All You Need",
+  "authors": [
+    "Ashish Vaswani",
+    "Noam Shazeer",
+    "Niki Parmar",
+    "Jakob Uszkoreit",
+    "Llion Jones",
+    "Aidan N. Gomez",
+    "Lukasz Kaiser",
+    "Illia Polosukhin"
+  ],
+  "year": 2017,
+  "venue": "NeurIPS 2017",
+  "url": "https://arxiv.org/abs/1706.03762",
+  "pdf_url": "https://arxiv.org/pdf/1706.03762.pdf",
+  "arxiv_id": "1706.03762",
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "nlp",
+    "transformer",
+    "attention"
+  ],
+  "method_tags": [
+    "Transformer",
+    "self-attention",
+    "encoder-decoder"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_049.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1706.03762",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

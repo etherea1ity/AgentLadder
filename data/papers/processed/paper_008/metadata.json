@@ -1,0 +1,82 @@
+{
+  "paper_id": "paper_008",
+  "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+  "authors": [
+    "Jason Wei",
+    "Xuezhi Wang",
+    "Dale Schuurmans",
+    "Maarten Bosma",
+    "Brian Ichter",
+    "Fei Xia",
+    "Ed Chi",
+    "Quoc Le",
+    "Denny Zhou"
+  ],
+  "year": 2022,
+  "venue": "NeurIPS 2022",
+  "url": "https://arxiv.org/abs/2201.11903",
+  "pdf_url": "https://arxiv.org/pdf/2201.11903.pdf",
+  "arxiv_id": "2201.11903",
+  "doi": null,
+  "domains": [
+    "reasoning",
+    "prompting"
+  ],
+  "method_tags": [
+    "chain-of-thought",
+    "few-shot-prompting",
+    "reasoning"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_008.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 189,
+    "visual_count": 2,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_008.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 189,
+      "visual_count": 2,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 43,
+      "total_chars": 135670,
+      "total_words": 22641,
+      "sections_found": 92,
+      "chunks_generated": 189,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

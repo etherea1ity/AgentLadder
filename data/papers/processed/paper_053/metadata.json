@@ -1,0 +1,50 @@
+{
+  "paper_id": "paper_053",
+  "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+  "authors": [
+    "Jacob Devlin",
+    "Ming-Wei Chang",
+    "Kenton Lee",
+    "Kristina Toutanova"
+  ],
+  "year": 2018,
+  "venue": "NAACL 2019",
+  "url": "https://arxiv.org/abs/1810.04805",
+  "pdf_url": "https://arxiv.org/pdf/1810.04805.pdf",
+  "arxiv_id": "1810.04805",
+  "doi": null,
+  "domains": [
+    "llm",
+    "nlp",
+    "transformer"
+  ],
+  "method_tags": [
+    "BERT",
+    "bidirectional",
+    "masked-language-model",
+    "pre-training"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_053.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1810.04805",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

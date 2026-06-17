@@ -30,3 +30,25 @@ data/traces/*.jsonl
 apps/web/.vite/
 # Local generated RAG indexes
 data/rag/index/*.jsonl
+# Local paper corpus heavy assets
+data/papers/raw/*.pdf
+data/papers/fixtures/raw/*.pdf
+data/papers/indexes/*.json
+data/papers/processed/*/pages/*.png
+data/papers/processed/*/pages/*.jpg
+data/papers/processed/*/pages/*.jpeg
+data/papers/processed/*/figures/*.png
+data/papers/processed/*/figures/*.jpg
+data/papers/processed/*/figures/*.jpeg
+data/papers/processed/*/tables/*.png
+data/papers/processed/*/tables/*.jpg
+data/papers/processed/*/tables/*.jpeg
+data/papers/fixtures/processed/*/pages/*.png
+data/papers/fixtures/processed/*/pages/*.jpg
+data/papers/fixtures/processed/*/pages/*.jpeg
+data/papers/fixtures/processed/*/figures/*.png
+data/papers/fixtures/processed/*/figures/*.jpg
+data/papers/fixtures/processed/*/figures/*.jpeg
+data/papers/fixtures/processed/*/tables/*.png
+data/papers/fixtures/processed/*/tables/*.jpg
+data/papers/fixtures/processed/*/tables/*.jpeg

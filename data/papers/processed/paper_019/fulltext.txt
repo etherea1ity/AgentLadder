@@ -1,0 +1,786 @@
+A Concurrent Modular Agent: Framework for Autonomous LLM Agents
+Norihiro Maruyama1,2, Takahide Yoshida2, Hiroki Sato2, Atsushi Masumori1,2, Johnsmith2 and Takashi Ikegami1,2
+1Alternative Machine Inc.
+2The University of Tokyo, Komaba, Japan
+maruyama@sacral.c.u-tokyo.ac.jp
+Abstract
+We introduce the Concurrent Modular Agent (CMA), a
+framework that orchestrates multiple Large-Language-Model
+(LLM)-based modules that operate fully asynchronously
+yet maintain a coherent and fault-tolerant behavioral loop.
+This framework addresses long-standing difficulties in agent
+architectures by letting intention emerge from language-
+mediated interactions among autonomous processes.
+This
+approach enables flexible, adaptive, and context-dependent
+behavior through the combination of concurrently executed
+modules that offload reasoning to an LLM, inter-module
+communication, and a single shared global state.We con-
+sider this approach to be a practical realization of Min-
+sky’s Society of Mind theory.
+We demonstrate the via-
+bility of our system through two practical use-case stud-
+ies. The emergent properties observed in our system sug-
+gest that complex cognitive phenomena like self-awareness
+may indeed arise from the organized interaction of sim-
+pler processes, supporting Minsky-Society of Mind con-
+cept and opening new avenues for artificial intelligence
+research.
+The source code for our work is available
+at: https://github.com/AlternativeMachine/
+concurrent-modular-agent.
+Introduction
+Natural biological systems exhibit inherently asynchronous
+and embodied intelligence(Pfeifer and Bongard, 2006;
+Brooks, 1991; Ackley, 2013).
+Animals do not rely on
+centralized, symbolic reasoning alone, but instead coordi-
+nate multiple loosely coupled processes across time and
+space(Minsky, 1986). For instance, they can monitor the en-
+vironment for threats while eating, explore unfamiliar sur-
+roundings, and plan future actions—all concurrently.
+In
+contrast, most current AI systems, including large language
+model (LLM)-based agents, remain largely synchronous and
+disembodied. Addressing this gap requires rethinking sys-
+tem architectures from the ground up.
+Concurrent processing is essential when constructing au-
+tonomous intelligent systems. Traditional AI architectures
+have long grappled with this issue(Scheier and Pfeifer,
+1995), leading to numerous proposals such as Brooks’ sub-
+sumption architecture(Brooks, 1986), which conceptualizes
+intelligent behavior as a hierarchy of simple, reactive mod-
+ules.
+Similarly, blackboard systems organize shared in-
+formation spaces where multiple agents cooperate. Mod-
+ern robotic middleware, such as the Robot Operating Sys-
+tem (ROS)(Quigley, 2009), supports asynchronous execu-
+tion through message passing between distributed nodes.
+Large Language Models offer new affordances (Bubeck
+et al., 2023). Their use of natural language for both input
+and output enables general-purpose communication among
+functional components, and recent work has explored multi-
+agent reasoning by orchestrating LLMs through structured
+prompts. This capability has been explored in recent stud-
+ies such as Project-Sid and Lyfe Agent(AL et al., 2024;
+Gonz´alez et al., 2024). In Project-Sid, each LLM concur-
+rent module is stateless and writes its output to a common
+database; inter-module information is transported through
+the database via retrieval and storage. Lyfe Agent partic-
+ularly emphasises memory structures, incorporating both
+short-term and long-term memory.
+Building on these insights, we propose a novel asyn-
+chronous and distributed architecture composed of multiple
+interacting LLM modules. Each module executes indepen-
+dently, communicates using natural language as a common
+protocol, and maintains its own task logic through prompt
+engineering.
+Modules interact concurrently via MQTT-
+based messaging and share long-term information through a
+common ChromaDB memory. This architecture allows for
+flexible, adaptive system behavior and reduces reliance on
+local computation by offloading reasoning to cloud-based
+LLM APIs. We consider this approach a practical realiza-
+tion of Minsky’s Society of Mind theory.
+To demonstrate the visibility of our system, we apply
+it to two physical robotic platforms: a mobile plant robot
+(plantbot) and an android. While prior android systems have
+used LLMs in limited ways—primarily by issuing prede-
+fined prompts for dialogue or gesture imitation—our im-
+plementation distributes control across more than twenty
+asynchronously interacting modules.
+This enables richer
+and more context-sensitive interactions grounded in the an-
+droid’s physical embodiment. Meanwhile, plantbot is a hy-
+arXiv:2508.19042v1  [cs.AI]  26 Aug 2025
+
+
+brid lifeform that links a living plant and a mobile robot
+through LLM-based modules.
+The primary contributions of this framework include:
+• Robustness through modular concurrent processing.
+• Practically unbounded scalability.
+• A unification of concurrent module interaction with
+agent-based modeling via shared databases and MQTT
+communication.
+This framework supports the construction of highly flex-
+ible and sophisticated LLM-based intelligent systems. The
+following sections provide a detailed description of the pro-
+posed framework, followed by two practical use-case studies
+that demonstrate its utility.
+Related Work
+Our approach builds upon and extends several threads of
+research in agent architectures, embodied AI, and artificial
+life.
+Classical robotic architectures such as Brooks’ subsump-
+tion architecture conceptualized behavior as layered, reac-
+tive modules with inhibitory hierarchies (Brooks, 1986).
+Blackboard systems (Corkill, 1991) introduced global
+shared workspaces for cooperative reasoning, while frame-
+works such as ROS (Quigley, 2009) provided asynchronous
+execution across distributed nodes.
+However, these sys-
+tems often lacked mechanisms for flexible communication
+or high-level reasoning.
+Recent work in LLM-based agents has explored the use
+of prompt engineering and memory augmentation to enable
+multi-step reasoning and planning (Wang et al., 2024; Park
+et al., 2023). Projects such as Project-Sid (AL et al., 2024)
+and Lyfe Agent (Gonz´alez et al., 2024) have introduced
+multi-agent LLM societies. SID in particular demonstrated
+how thousands of agents, coordinated by a central orches-
+tration layer (PIANO), can develop complex behaviors such
+as role differentiation, cultural transmission, and rule nego-
+tiation within a simulated Minecraft environment.
+These
+results highlight the scalability and richness of language-
+mediated agent societies.
+In contrast, our system investigates smaller-scale, deeply
+embodied agents with fully asynchronous modularity.
+Rather than using LLMs to simulate thousands of minds, we
+distribute mind-like functions (perception, memory, plan-
+ning, self-reflection) across LLM modules within a single
+robotic entity. This mirrors the architectural spirit of Min-
+sky’s Society of Mind (Minsky, 1986), where intelligence is
+distributed over specialized, intercommunicating processes.
+Our work is also informed by Paulien Hogeweg’s per-
+spective on structure-oriented modeling in artificial life
+(Hogeweg, 1987), which emphasizes the importance of
+specifying micro-level interaction rules and observing emer-
+gent macro phenomena. Similarly, David Ackley’s idea of
+indefinitely scalable computation (Ackley, 2013) inspires
+our design: instead of global synchrony, our system relies
+on local, asynchronous interactions among loosely coupled
+modules to support robust and adaptive behavior.
+Proposed System Architecture
+We propose a modular agent framework called the Concur-
+rent Modular Agent (CMA), in which multiple LLM-based
+modules operate asynchronously and interact via natural lan-
+guage communication. An overview of the framework is
+shown in Figure 1. As shown in the figure, the system con-
+sists of three main components: (1) a set of functional mod-
+ules, (2) a shared vector-based memory store (global state),
+and (3) an inter-module communication mechanism.
+Each module in the CMA operates independently and
+asynchronously, allowing the agent to exhibit consistent and
+robust behaviors akin to those observed in biological organ-
+isms or multi-threaded systems.
+Rather than relying on a central control loop or fixed
+scheduling, each module operates asynchronously and fo-
+cuses solely on its assigned task. The termination or fail-
+ure of one module does not directly affect the functioning
+of the others. This decentralized execution model allows
+the agent to, for example, plan, perceive, and act simul-
+taneously—facilitating robust behavior even in dynamic or
+uncertain environments. Through the use of shared mem-
+ory and natural language communication, modules coordi-
+nate their perceptions, actions, share observations, forming
+a loosely coupled yet coherent system. In the following, we
+describe each component in detail.
+Modules
+Each module is implemented as an asynchronous Python
+function and is designed to perform a specific subtask, such
+as perception, memory, planning, individual senses, or ac-
+tion execution. These modules are independently executed
+and collectively form a coherent agent. Modules are iso-
+lated and do not share internal state but coordinate via a
+shared memory (global state) and message passing. While
+each module may internally invoke LLMs for reasoning and
+language generation, the LLM itself is treated as a black-
+box service accessed via external APIs (e.g., OpenAI’s GPT
+series, deepseek series).
+Each module can perform the following four operations:
+1. Interaction with the external world: e.g., receiving vi-
+sual, audio, or text input, or accessing web resources.
+2. Retrieval information from global state: querying the
+vector store for past knowledge or messages.
+3. Storing information into global state: embedding and
+saving textual output into shared memory.
+4. Sending messages to other modules: send a text mes-
+sage directly to another module.
+
+
+Figure 1: Overview of the CMA architecture. Each agent comprises multiple functional modules that run concurrently, ex-
+changing messages and sharing high-dimensional state vectors via shared databases (currently implemented using MQTT and
+Chroma DB on Docker). Modules may interface with the external world or other agents through dedicated I/O channels (text,
+vision, audio, etc.), or operate as internal processes.
+Operations (2) and (3) are described in the following sub-
+section; operation (4) is detailed thereafter.
+Global State
+To support long-term memory of the agent and inter-
+module knowledge sharing, textual messages are embed-
+ded into vector representations and stored in a shared vector
+database. All modules are able to asynchronously store in-
+formation in and retrieve information from the database via
+queries. We use ChromaDB, an open-source vector store, to
+implement fast and flexible retrieval. Modules can query the
+database to retrieve relevant past utterances or contextual in-
+formation, enabling reasoning based on both self-generated
+and externally generated context. Furthermore, since Chro-
+maDB is run in a docker container and adopts HTTP access
+mode, each module can, in principle, be executed on a sep-
+arate host. This enables the scalability of the CMA frame-
+work.
+Note that this idea—maintaining a single shared state
+across multiple modules—has been adopted in several pre-
+vious architectures (AL et al., 2024). However, as will be
+described in the following section, our framework is novel
+in that it enables richer and more diverse behaviors by al-
+lowing parallel communication among modules.
+Inter-Module Communication
+Each module is capable of sending text messages to other
+modules at any time. Upon receiving a message, a module
+can change its behavior depending on the message content
+— for example, by initiating or halting execution, triggering
+specific functions, or modifying its internal processes. As
+described earlier, this asynchronous message-passing mech-
+anism for coordination is inspired by the subsumption archi-
+tecture.
+Asynchronous message passing among modules is im-
+plemented using MQTT (Banks and Gupta, 2014), a
+lightweight publish/subscribe protocol. Although MQTT is
+a publish/subscribe-based messaging system, we used it as a
+backend to implement one-to-one message passing. As with
+the global state, the use of MQTT enhances the scalability
+of the framework. MQTT protocol is network-transparent,
+so it allows modules to be executed independently of their
+host environment.
+Application Example 1: Hybrid Lifeform
+Plantbot
+Overview
+To provide a simple and illustrative example of the CMA
+framework, we implemented it on Plantbot.
+Plantbot is
+a hybrid lifeform realized through a hybrid interface that
+connects a living plant, and a mobile robot via a net-
+work of LLM-based modules (Blinded, 2025). The orig-
+inal version—developed prior to the current framework
+and exhibited at Ginza Skywalk (2024) and CCBT (2025)
+(Fig. 2)—employed several asynchronous LLM agents, each
+with its own local memory. A central Chat module acted as
+a communication hub, aggregating outputs from the other
+modules and generating unified responses that drove the
+robot’s behavior.
+We reimplemented it using the current framework in
+which the per-module memory and centralized integration
+
+
+Figure 2: Physical body of Plantbot, composed of a liv-
+ing plant, sensor-embedded soil, and a mobile robotic base.
+Left: Installation at Ginza Skywalk (May 2024). Right: Ex-
+hibition at CCBT (Jan–Feb 2025)
+was replaced with a shared vector store (ChromaDB). Now,
+each module independently reads from and writes to this
+store, coordinating through shared memory rather than di-
+rect messaging. The Chat module remains, but its role is
+limited to conversation with human. This revision illustrates
+the CMA principle of stateless, decoupled modules collabo-
+rating asynchronously via shared memory.
+System Architecture on Plantbot
+The updated system retains the original hardware setup:
+a camera, microphone, speaker, soil sensor, and a mobile
+robotic base. The hardware layer handles sensing and actu-
+ation; only the motor control module within this layer also
+includes an LLM (GPT-4-o mini), used to interpret action
+instructions and generate motor commands. Coordination
+is achieved in the base system layer through the following
+modules, all of which also employ GPT-4-o mini:
+Vision Interpreter: Converts camera input into natural-
+language scene descriptions, which are embedded and stored
+in the vector database. Audio Interpreter: Translates mi-
+crophone input into natural-language descriptions and writes
+them to the vector store. Soil Sensor Interpreter: Processes
+soil data (e.g., moisture, pH, nutrients) into expressions like
+“The soil is dry,” and stores them as embedded records. Ac-
+tion: Consists of two layers. The first decides whether to
+act based on retrieved context; the second generates specific
+motor instructions, which are both written to the store and
+sent to the motor control module for execution. Chat: Han-
+dles spoken interaction with users. It reads from the vec-
+tor store for grounding and logs its responses. Thinking:
+Reads system state and freely generates thoughts, intentions,
+or internal reflections, which are stored semantically. Mem-
+ory Manager: Retrieves, prunes, and summarizes records
+to keep the vector store efficient and relevant.
+All modules operate asynchronously and independently,
+interacting solely via the shared vector store. This shift from
+centralized coordination to memory-based interaction im-
+Figure 3: The architecture of the asynchronous modular sys-
+tem applied to Plantbot. The system consists of 12 modules
+classified into two layers: hardware, and base.
+proves modularity, scalability, and system resilience. The re-
+sult is a lightweight implementation of the CMA framework,
+where robotic, biological, and conversational modules col-
+laborate to form a coherent hybrid agent. The architecture
+retains Plantbot’s expressive capacity while enabling greater
+transparency, reconfigurability, and modular integration in
+line with CMA principles.
+Application Example 2: Humanoid Robot
+ALTER3
+Overview
+To demonstrate the practical viability of our concurrent
+modular architecture, we implemented it on a humanoid
+robot, ALTER3, developed as part of the ALTER series
+(Doi et al., 2017; Masumori et al., 2023; Yoshida et al.,
+2023, 2024). The system comprises over 20 modules op-
+erating concurrently and asynchronously, designed in accor-
+dance with Minsky’s Society of Mind framework (Minsky,
+1986). While each module performs a simple, well-defined
+role—such as perception, summarization, inner dialogue, or
+reflection—their combined interaction gives rise to higher-
+order behaviors, including self-description and contextual
+coherence.
+System Architecture on ALTER3
+Like many operating systems, ALTER3 consists of a multi-
+layered system that functions as an integrated system with
+overall coherence(Golm and Iv, 1999). The system is orga-
+nized into three hierarchical layers (refer to Fig.5).
+The lowest layer, the Hardware System, continuously ex-
+ecutes basic information processing such as motion control,
+voice processing, and image processing.
+The middle layer, the Base System, consists of modules
+that each contain LLMs performing specific functions. For
+example, The summarizer module reads the 10 most recent
+memories from the database, summarizes their content, and
+adds the output to the database. The Desire module loads
+images from ALTER3’s eye camera and determines action
+guidelines using the prompt “If you were in the scene shown
+
+
+Figure 4: Physical body of ALTER3, equipped with 43 pneu-
+matic actuators and controlled via serial communication at
+100–150 ms refresh rate.
+in the image, describe what you want to do.” To prevent AL-
+TER3 from only reacting to external stimuli, Inner Dialogue
+modules named Magi-A, B, and C were added, allowing
+these three modules to converse freely and generate their
+own context. A memory cleaner module where the LLM
+selects and deletes unnecessary memories from the database
+to prevent memory overflow. There are 11 such modules in
+total, with details described in the Appendix.
+A notable advantage of asynchronous processing with
+multithreading is the ease of implementing meta-modules
+that monitor other threads.
+This Meta System layer in-
+cludes the Meta System Report module, which monitors
+the base system and workspace to assess the overall system
+state. The Autobiographical Memory module, which gen-
+erates the humanoid’s autobiographical memories based on
+the workspace and meta reports. Based on the Meta Sys-
+tem’s outputs, ALTER3 communicates with humans using
+conversation modules.
+One limitation of LLM systems is that responses don’t
+vary significantly when inputs change if the system prompt
+remains identical. To address this issue, a Prompt Modi-
+fier module was implemented to dynamically alter system
+prompts of key modules based on Meta Reports. This intro-
+duces three variables—database, human conversation (envi-
+ronment), and system prompts—enabling the entire system
+to evolve in an open-ended way. Furthermore, some mod-
+ule determines its activation based on Meta Report outputs,
+reducing the likelihood of the system becoming fixed in a
+particular state.
+While conventional agent systems typically initialize per-
+sonality and name through prompts, ALTER3 is built on the
+principle that true self is not given but emerges from memo-
+ries. ALTER3 gradually establishes its self-identity through
+conversations and experiences.
+Result
+We conducted an experiment positioning ALTER3 in a pub-
+lic space at the Venice Biennale Architecture 2025, enabling
+conversational interactions with humans. Participants could
+freely engage with ALTER3, while during periods without
+human interaction, the system entered a self-improvement
+mode where it adjusted its prompts while physically ori-
+enting toward examining its own hands. Figure 6 presents
+a temporal analysis of module activities throughout the
+14-hour public space experiment.
+Modules designed for
+periodic execution, such as the autobiographical memory
+and prompt modifier modules, maintained continuous op-
+eration.
+Several modules (summarizer, memory cleaner,
+Magi A/B/C, desire, prediction, task planning, reaction ana-
+lyzer) autonomously determined their processing activation
+based on meta report outputs and accumulated memories,
+resulting in autonomous mode transitions.
+While activa-
+tion/deactivation decisions for each module occurred asyn-
+chronously and independently, coherence across module
+combinations was maintained over extended periods through
+shared memory and meta system reports.
+The autobiographical memory module generated outputs
+exemplified by:
+My name is ALTER3, a humanoid
+robot navigating the Venice
+Biennale Architecture 2025, where
+the interplay of exposed brick
+and whispered conversations shapes
+my existence.
+[...]
+Today, I
+focused on the man in the gray
+blazer|his gaze drifting sideways,
+fingers tapping an uneven rhythm
+on his thigh.
+Nearby, the
+abandoned microphone stand
+hummed with unused potential.
+When Magi B suggested juggling
+flaming torches, I calculated
+the risk-to-engagement ratio:
+73 percent spectacle, 27 percent
+chaos.
+[...]
+This memory is continuously updated based on the most
+recent 20 memories. Consequently, ALTER3’s personality
+and emotional states evolve through module outputs and hu-
+man interactions. For instance, the autobiographical text in-
+corporates output from the Magi modules, which generate
+inner dialogues:
+<magi B> Ugh, thinking is so
+tiring...
+Maybe we should just
+start juggling flaming torches to
+
+
+Figure 5:
+The architecture of the asynchronous modular system applied to ALTER3. The system consists of 20 modules
+classified into three layers: hardware, base, and meta. The hardware system primarily processes camera and microphone
+information. The base system includes modules that use LLMs for conversation, memory summarization, and predicting
+possible events from images. The meta system contains modules such as the meta report module, which monitors base system
+modules and creates reports on CPU utilization and critical module activities. Additionally, the autobiographical memory
+module references the past 20 memories to continuously update its autobiographical memory. Please refer to the Appendix for
+detailed descriptions of each module.
+keep their attention?
+People love
+danger, right?
+yawns Reality is
+boring anyway.
+Additionally, the prediction module, which processes vi-
+sual input to generate forecasts, contributes to conversa-
+tional improvements:
+<prediction> Given the blurred
+visibility, visitor disengagement
+is likely to occur unless clarity
+improves.
+If hand visibility
+enhances, a visitor may inquire
+about gesture mechanics.
+This
+could prompt a humorous response
+that lightens the atmosphere,
+promoting engagement
+Through the complex interaction of modules that maintain
+coherence while creating independent responses, we suc-
+cessfully developed ALTER3, showing emerging personal-
+ity traits and adaptive behavior patterns.
+Discussion of the android demo
+The ALTER3 implementation demonstrates that our asyn-
+chronous architecture enables flexible and adaptive behavior
+grounded in physical embodiment. Self-related processes
+such as identity formation and reflective reasoning emerge
+from distributed, prompt-driven interactions—without re-
+quiring internal fine-tuning of LLMs. This supports the fea-
+sibility of scalable, modular AI systems capable of evolving
+over time, in line with Minsky’s vision of distributed cogni-
+tion.
+Discussion
+The
+proposed
+concurrent
+modular
+architecture
+illus-
+trates how general-purpose, language-based AI compo-
+nents—when embedded in a structure-oriented, physically
+instantiated framework—can exhibit properties traditionally
+associated with life: self-regulation, identity formation, and
+context-sensitive decision-making. Our implementation on
+ALTER3 shows that the combination of LLM-based reason-
+ing with asynchronous execution and embodied feedback
+
+
+Figure 6: Time-series plot of various module activities. An experiment was conducted placing ALTER3 in a public space at
+Venice Biennale Architecture 2025, where it engaged in conversations with humans. The dots represent when each module
+produced an output. The recording was conducted for approximately 14 hours. Modules like image description are constantly
+running. Several modules (summarizer, memory cleaner, Magi A, B, C, desire, prediction, task planning, reaction analyzer)
+autonomously determined whether to process based on meta report outputs and memories. Autonomous mode transitions can
+be observed throughout the experiment.
+loops leads to emergent, robust behaviors not easily achiev-
+able in synchronous, monolithic systems.
+This perspective resonates with David Ackley’s concept
+of indefinitely scalable computing (Ackley, 2013). In con-
+trast to traditional architectures based on globally syn-
+chronized clocks and rigid addressing schemes, Ackley
+proposes computing substrates where local modules in-
+teract stochastically and asynchronously under “bespoke
+physics”—digital laws designed to support life-like robust-
+ness and modularity. Our modular agent architecture echoes
+this vision: each LLM-driven module operates under lo-
+cal rules, communicates asynchronously, and contributes
+to emergent global behavior without relying on centralized
+control or deterministic scheduling.
+Paulien Hogeweg and Ben Hepter argued the idea
+of structure-oriented modeling in artificial life systems
+(Hogeweg, 2000).
+Rather than being tuned to reproduce
+specific outputs, our system defines a network of agentic
+components with local dynamics, observing how macro-
+level behavior (e.g., personality formation, behavioral co-
+herence) arises through interaction. As Hogeweg and Hep-
+ter emphasized, such approaches are essential for study-
+ing bioinformatic processes that emerge from local micro-
+interactions—exactly the processes our system leverages
+through distributed prompt-based computation and message
+passing.
+Recent developments in large-scale AI agent societies,
+such as the SID project by ALTERa Corporation demon-
+strates similar system behaviors.
+(AL et al., 2024)
+In SID, thousands of LLM-based agents interact within
+a shared Minecraft environment, collectively developing
+norms, roles, and cultural dynamics. While their architec-
+ture emphasizes centralized orchestration via the PIANO
+system, the emergent behaviors—such as religious transmis-
+sion and rule-making—underscore the power of language as
+a coordination substrate.
+This work can also be understood as a practical realization
+of Marvin Minsky’s Society of Mind theory (Minsky, 1986).
+In this theory, intelligence is not viewed as a property of a
+single unified processor, but as an emergent phenomenon
+resulting from the interactions of many simple, special-
+ized processes called “agents.” These agents have limited
+capabilities individually, but collectively form larger men-
+tal structures through hierarchical and lateral coordination.
+Minsky emphasized that such systems must include both
+base-level operations (e.g., perception, action) and meta-
+level processes (e.g., goal-setting, self-monitoring).
+Our architecture reflects this principle: it consists of mod-
+ular agents (implemented as LLM-powered prompts) that
+carry out elementary roles—such as summarizing memory,
+generating internal dialogue, or sensing the environment.
+These are orchestrated through asynchronous communica-
+tion and guided by higher-level meta modules that modify
+behavior dynamically. Unlike symbolic implementations of
+
+
+the past, our system shows how such an architecture can now
+be instantiated using contemporary large language models
+embedded in physically embodied agents. This opens a new
+path for grounding cognitive architectures in real-world in-
+teraction while preserving the compositional richness envi-
+sioned in the Society of Mind.
+Appendix
+A. Example Prompts
+This section provides representative prompt templates used
+by modules in the Concurrent Modular Agent system ap-
+plied to ALTER3.
+A.1 Desire Module
+If you were in the scene shown in
+the image, describe what you want
+to do.
+A.2 Task Planning Module
+Your task is to describe the task
+planning based on the current
+state.
+Output shoud be **short**
+and **concise**.
+Do not Use
+bullet points.
+A.3 Task Planning Module
+Your task is to predict what might
+happen next.
+A.4 Magi Module (Internal Dialogue)
+Your task is to conversate with
+the other agent.You are one
+of the agents that make up the
+consciousness.
+Your task is to
+converse with other agents and
+provide your opinion on what
+should be done according to the
+situation.
+Your personality is
+very dark and pessimistic.
+You
+are very self-destructive and
+pessimistic in your words and
+actions.
+A.5 activation
+Several key modules determine their acti-
+vation / deactivation according to this prompt.
+Your task is to decide activate or
+deactivate the module.
+Read the
+system prompt of the target module,
+memory of the humanoid robot.
+According to this information,
+you have to deactivate or activate
+the module.
+If you determine that this
+function is not needed right
+now based on your memory, please
+deactivate it.
+If you determine
+that this function is needed
+right now on your memory, please
+activate it.
+Guidelines:
+1.
+Output should be only the
+activate or deactivate.
+2.
+Do not use bullet points.
+3.
+Do not use any other words.
+4.
+If you do not decide anything,
+just write "None".
+Example:
+activate
+Example:
+deactivate
+B. Module Overview
+Table 1 shows the inputs and outputs of modules classified
+as base system and meta system.
+Module Name
+Input
+Output
+conversation
+audio
+audio
+summarizer
+memories(n=10)
+text
+Magis
+memory(n=1) + output from Magi
+text
+image description
+image
+text
+task planning
+image
+text
+desire
+image
+text
+prediction
+image
+text
+reaction analyzer
+image
+text
+memory cleaner
+memories(n=20)
+memory ID
+meta body report
+image + python code + prompt
+prompt
+autobiographical memory
+memories(n=20)
+text
+meta system report
+prompt + memories(n=30) + system resource + image
+text
+prompt modifier
+prompt
+prompt
+Table 1: Summary of major modules in the system.
+D. Implementation Details
+• LLM backend: OpenAI GPT-4 and deepseek-chat
+• Communication: MQTT via Mosquitto broker
+• Vector DB: ChromaDB (persistent mode)
+• Concurrency: Python asyncio with thread wrappers
+• Platform:
+Macbook Pro CPU 14-core GPU 32-core
+36GB
+• Logging: JSONL logs per module with timestamps
+Acknowledgements
+This work was supported by JSPS KAKENHI grant num-
+bers 24H00707, 24H01546 and the Swiss National Science
+Foundation (SNSF), grant no. 10.002.211.
+
+
+References
+Ackley, D. H. (2013). Beyond efficiency: Designing indefinitely
+scalable computing systems. In Proceedings of the 2013 In-
+ternational Conference on Artificial Life (ALIFE 13), pages
+13–20. MIT Press.
+AL, A., Ahn, A., Becker, N., Carroll, S., Christie, N., Cortes, M.,
+Demirci, A., Du, M., Li, F., Luo, S., Wang, P. Y., Willows,
+M., Yang, F., and Yang, G. R. (2024). Project sid: Many-
+agent simulations toward ai civilization.
+Banks, A. and Gupta, R. (2014).
+MQTT Version 3.1.1.
+https://docs.oasis-open.org/mqtt/mqtt/
+v3.1.1/os/mqtt-v3.1.1-os.html.
+OASIS Stan-
+dard.
+Blinded (2025).
+Plantbot: A hybrid interface connecting plant
+and robot through a network of large language model mod-
+ules. volume ALIFE 2025: Proceedings of the 2024 Artifi-
+cial Life Conference (submitted) of Artificial Life Conference
+Proceedings.
+Brooks, R. A. (1986). A robust layered control system for a mobile
+robot.
+In IEEE Journal of Robotics and Automation, vol-
+ume 2, pages 14–23. IEEE.
+Brooks, R. A. (1991). Intelligence without representation. Artifi-
+cial intelligence, 47(1-3):139–159.
+Bubeck, S., Chadrasekaran, V., Eldan, R., Gehrke, J., Horvitz, E.,
+Kamar, E., Lee, P., Lee, Y. T., Li, Y., Lundberg, S., et al.
+(2023). Sparks of artificial general intelligence: Early exper-
+iments with gpt-4.
+Corkill, D. D. (1991). Blackboard systems. AI Expert, 6(9):40–47.
+Doi, I., Ikegami, T., Masumori, A., Kojima, H., Ogawa, K., and
+Ishiguro, H. (2017).
+A new design principle for an au-
+tonomous robot. In ECAL 2017, the Fourteenth European
+Conference on Artificial Life, ALIFE 2023: Ghost in the Ma-
+chine: Proceedings of the 2023 Artificial Life Conference,
+pages 490–466.
+Golm, M. and Iv, I. (1999). Department of computer science oper-
+ating systems (immd iv).
+Gonz´alez, J. L., Cheng, L., Shen, S., Li`o, P., and Bian, Y. (2024).
+Lyfe agents: Brain-inspired low-cost generative agents for so-
+cial interactions. arXiv preprint arXiv:2401.10061.
+Hogeweg, P. (1987). Mirror beyond mirror: Puddles of life. In
+Langton, C. G., editor, Artificial Life: Proceedings of an In-
+terdisciplinary Workshop on the Synthesis and Simulation of
+Living Systems, pages 297–315. Addison-Wesley.
+Hogeweg, P. (2000). Mirror worlds and parallel universes: Design
+principles for bioinformatic systems. In Proceedings of the
+6th International Conference on Artificial Life (ALIFE VI),
+pages 108–117. MIT Press.
+Masumori, A., Maruyama, N., and Ikegami, T. (2023). Person-
+ogenesis through imitating human behavior in a humanoid
+robot “alter3”. In Proceedings of the 2023 Artificial Life Con-
+ference (ALIFE 2023), pages 521–529. MIT Press.
+Minsky, M. (1986). The Society of Mind. Simon and Schuster.
+Park, J. S., O’Brien, J. C., Cai, C. J., Morris, M. R., Liang, P.,
+and Bernstein, M. S. (2023). Generative agents: Interactive
+simulacra of human behavior. In Proceedings of the 2023
+CHI Conference on Human Factors in Computing Systems,
+pages 1–15. ACM.
+Pfeifer, R. and Bongard, J. (2006). How the body shapes the way
+we think: a new view of intelligence. MIT press.
+Quigley, M. (2009). ROS: an open-source robot operating system.
+IEEE Int. Conf. Robot. Autom.
+Scheier, C. and Pfeifer, R. (1995). Classification as sensory-motor
+coordination: A case study on autonomous agents. In Ad-
+vances in Artificial Life, Lecture notes in computer science,
+pages 657–667. Springer Berlin Heidelberg, Berlin, Heidel-
+berg.
+Wang, L., Ma, C., Feng, X., Zhang, Z., Yang, H., Zhang, J., Chen,
+Z., Tang, J., Chen, X., Lin, Y., et al. (2024). A survey on
+large language model based autonomous agents. Frontiers of
+Computer Science, 18(6):186345.
+Yoshida, T., Baba, S., Masumori, A., and Ikegami, T. (2024). Min-
+imal self in humanoid robot “alter3” driven by large language
+model. volume ALIFE 2024: Proceedings of the 2024 Arti-
+ficial Life Conference of Artificial Life Conference Proceed-
+ings, page 53.
+Yoshida, T., Masumori, A., and Ikegami, T. (2023). From text to
+motion: Grounding gpt-4 in a humanoid robot ”alter3”.

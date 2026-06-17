@@ -1,0 +1,67 @@
+{
+  "paper_id": "paper_091",
+  "title": "AgentBench: Evaluating LLMs as Agents",
+  "authors": [
+    "Xiao Liu",
+    "Hao Yu",
+    "Hanchen Zhang",
+    "Yifan Xu",
+    "Xuanyu Lei",
+    "Hanyu Lai",
+    "Yu Gu",
+    "Hangliang Ding",
+    "Kaiwen Men",
+    "Kejuan Yang",
+    "Shudan Zhang",
+    "Xiang Deng",
+    "Aohan Zeng",
+    "Zhengxiao Du",
+    "Chenhui Zhang",
+    "Sheng Shen",
+    "Tianjun Zhang",
+    "Yu Su",
+    "Huan Sun",
+    "Minlie Huang",
+    "Yuxiao Dong",
+    "Jie Tang"
+  ],
+  "year": 2023,
+  "venue": "ICLR 2024",
+  "url": "https://arxiv.org/abs/2308.03688",
+  "pdf_url": "https://arxiv.org/pdf/2308.03688.pdf",
+  "arxiv_id": "2308.03688",
+  "doi": null,
+  "domains": [
+    "eval",
+    "benchmark",
+    "agent"
+  ],
+  "method_tags": [
+    "AgentBench",
+    "agent-evaluation",
+    "multi-environment"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_091.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2308.03688",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

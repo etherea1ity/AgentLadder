@@ -1,0 +1,79 @@
+{
+  "paper_id": "paper_012",
+  "title": "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection",
+  "authors": [
+    "Akari Asai",
+    "Zeqiu Wu",
+    "Yizhong Wang",
+    "Avirup Sil",
+    "Hannaneh Hajishirzi"
+  ],
+  "year": 2023,
+  "venue": "ICLR 2024",
+  "url": "https://arxiv.org/abs/2310.11511",
+  "pdf_url": "https://arxiv.org/pdf/2310.11511.pdf",
+  "arxiv_id": "2310.11511",
+  "doi": null,
+  "domains": [
+    "agentic-rag",
+    "self-reflection"
+  ],
+  "method_tags": [
+    "self-reflection",
+    "on-demand-retrieval",
+    "critique-token",
+    "adaptive-retrieval"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_012.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 231,
+    "visual_count": 9,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_012.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 231,
+      "visual_count": 9,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 30,
+      "total_chars": 105720,
+      "total_words": 16131,
+      "sections_found": 100,
+      "chunks_generated": 231,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

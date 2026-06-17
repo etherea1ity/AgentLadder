@@ -1,0 +1,78 @@
+{
+  "paper_id": "paper_006",
+  "title": "Beyond Pipelines: A Survey of the Paradigm Shift toward Model-Native Agentic AI",
+  "authors": [
+    "Jitao Sang",
+    "Jinlin Xiao",
+    "Jiarun Han"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2510.16720",
+  "pdf_url": "https://arxiv.org/pdf/2510.16720.pdf",
+  "arxiv_id": "2510.16720",
+  "doi": null,
+  "domains": [
+    "agent-basic-paradigms",
+    "survey"
+  ],
+  "method_tags": [
+    "survey",
+    "model-native",
+    "RL-driven",
+    "paradigm-shift",
+    "pipeline-to-model"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_006.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 485,
+    "visual_count": 12,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_006.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 485,
+      "visual_count": 12,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 78,
+      "total_chars": 307678,
+      "total_words": 43079,
+      "sections_found": 332,
+      "chunks_generated": 485,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

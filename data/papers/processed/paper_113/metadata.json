@@ -1,0 +1,47 @@
+{
+  "paper_id": "paper_113",
+  "title": "Proximal Policy Optimization Algorithms (PPO)",
+  "authors": [
+    "John Schulman",
+    "Filip Wolski",
+    "Prafulla Dhariwal",
+    "Alec Radford",
+    "Oleg Klimov"
+  ],
+  "year": 2017,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/1707.06347",
+  "pdf_url": "https://arxiv.org/pdf/1707.06347.pdf",
+  "arxiv_id": "1707.06347",
+  "doi": null,
+  "domains": [
+    "rl",
+    "policy-gradient"
+  ],
+  "method_tags": [
+    "PPO",
+    "policy-gradient",
+    "RL"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_113.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1707.06347",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

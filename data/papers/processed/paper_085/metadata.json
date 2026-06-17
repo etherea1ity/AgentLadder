@@ -1,0 +1,62 @@
+{
+  "paper_id": "paper_085",
+  "title": "OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments",
+  "authors": [
+    "Tianbao Xie",
+    "Danyang Zhang",
+    "Jixuan Chen",
+    "Xiaochuan Li",
+    "Siheng Zhao",
+    "Ruijia Cao",
+    "Toh Jing Hua",
+    "Zhoujun Cheng",
+    "Dongchan Shin",
+    "Fangyu Lei",
+    "Yitao Liu",
+    "Yiheng Xu",
+    "Shuangyue Li",
+    "Rui Zhang",
+    "Qing Li",
+    "Zhiyuan Liu",
+    "Maosong Sun"
+  ],
+  "year": 2024,
+  "venue": "NeurIPS 2024",
+  "url": "https://arxiv.org/abs/2404.07972",
+  "pdf_url": "https://arxiv.org/pdf/2404.07972.pdf",
+  "arxiv_id": "2404.07972",
+  "doi": null,
+  "domains": [
+    "tool-use",
+    "benchmark",
+    "multimodal"
+  ],
+  "method_tags": [
+    "OSWorld",
+    "computer-agent",
+    "multimodal"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_085.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2404.07972",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

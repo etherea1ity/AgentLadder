@@ -1,0 +1,75 @@
+{
+  "paper_id": "paper_018",
+  "title": "AGORA: Unifying Language Agent Algorithms with Graph-based Orchestration Engine",
+  "authors": [
+    "Haozhan Shen"
+  ],
+  "year": 2025,
+  "venue": "ACL 2025",
+  "url": "https://arxiv.org/abs/2505.24354",
+  "pdf_url": "https://arxiv.org/pdf/2505.24354.pdf",
+  "arxiv_id": "2505.24354",
+  "doi": null,
+  "domains": [
+    "agent-architecture",
+    "orchestration"
+  ],
+  "method_tags": [
+    "graph-orchestration",
+    "modular",
+    "workflow-engine",
+    "evaluation-framework"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_018.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 147,
+    "visual_count": 12,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_018.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 147,
+      "visual_count": 12,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 11,
+      "total_chars": 42450,
+      "total_words": 6077,
+      "sections_found": 69,
+      "chunks_generated": 147,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

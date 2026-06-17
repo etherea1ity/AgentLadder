@@ -1,0 +1,77 @@
+{
+  "paper_id": "paper_040",
+  "title": "Reinforcement Learning Foundations for Deep Research Systems: A Survey",
+  "authors": [
+    "et al."
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2509.06733",
+  "pdf_url": "https://arxiv.org/pdf/2509.06733.pdf",
+  "arxiv_id": "2509.06733",
+  "doi": null,
+  "domains": [
+    "deep-research",
+    "reinforcement-learning",
+    "survey"
+  ],
+  "method_tags": [
+    "RL-survey",
+    "GRPO",
+    "data-synthesis",
+    "reward-design",
+    "long-context-RL"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_040.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 327,
+    "visual_count": 3,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_040.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 327,
+      "visual_count": 3,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 39,
+      "total_chars": 146279,
+      "total_words": 20870,
+      "sections_found": 116,
+      "chunks_generated": 327,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

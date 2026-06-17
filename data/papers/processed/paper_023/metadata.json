@@ -1,0 +1,76 @@
+{
+  "paper_id": "paper_023",
+  "title": "Memento-II: Learning by Stateful Reflective Memory",
+  "authors": [
+    "Jun Wang"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2512.22716",
+  "pdf_url": "https://arxiv.org/pdf/2512.22716.pdf",
+  "arxiv_id": "2512.22716",
+  "doi": null,
+  "domains": [
+    "memory",
+    "reflection",
+    "reinforcement-learning"
+  ],
+  "method_tags": [
+    "stateful-reflective-memory",
+    "reflection-as-learning",
+    "policy-iteration",
+    "convergence-guarantee"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_023.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 87,
+    "visual_count": 0,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_023.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 87,
+      "visual_count": 0,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 35,
+      "total_chars": 100365,
+      "total_words": 15732,
+      "sections_found": 52,
+      "chunks_generated": 87,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

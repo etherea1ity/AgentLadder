@@ -1,0 +1,51 @@
+{
+  "paper_id": "paper_109",
+  "title": "ColPali: Efficient Document Retrieval with Vision Language Models",
+  "authors": [
+    "Manuel Faysse",
+    "Hugues Sibille",
+    "Tony Wu",
+    "Gautier Viaud",
+    "Celine Hudelot",
+    "Pierre Colombo"
+  ],
+  "year": 2024,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2407.01449",
+  "pdf_url": "https://arxiv.org/pdf/2407.01449.pdf",
+  "arxiv_id": "2407.01449",
+  "doi": null,
+  "domains": [
+    "multimodal",
+    "vlm",
+    "retrieval"
+  ],
+  "method_tags": [
+    "ColPali",
+    "visual-document-retrieval",
+    "late-interaction"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_109.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2407.01449",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

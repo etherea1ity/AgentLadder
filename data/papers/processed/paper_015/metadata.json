@@ -1,0 +1,86 @@
+{
+  "paper_id": "paper_015",
+  "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+  "authors": [
+    "Patrick Lewis",
+    "Ethan Perez",
+    "Aleksandra Piktus",
+    "Fabio Petroni",
+    "Vladimir Karpukhin",
+    "Naman Goyal",
+    "Heinrich Küttler",
+    "Mike Lewis",
+    "Wen-tau Yih",
+    "Tim Rocktäschel",
+    "Sebastian Riedel",
+    "Douwe Kiela"
+  ],
+  "year": 2020,
+  "venue": "NeurIPS 2020",
+  "url": "https://arxiv.org/abs/2005.11401",
+  "pdf_url": "https://arxiv.org/pdf/2005.11401.pdf",
+  "arxiv_id": "2005.11401",
+  "doi": null,
+  "domains": [
+    "agentic-rag",
+    "foundation"
+  ],
+  "method_tags": [
+    "RAG",
+    "retrieval-augmented",
+    "parametric-memory",
+    "non-parametric-memory"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_015.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 183,
+    "visual_count": 2,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_015.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 183,
+      "visual_count": 2,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 19,
+      "total_chars": 69078,
+      "total_words": 9886,
+      "sections_found": 78,
+      "chunks_generated": 183,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

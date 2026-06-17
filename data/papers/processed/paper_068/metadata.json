@@ -1,0 +1,56 @@
+{
+  "paper_id": "paper_068",
+  "title": "Graph of Thoughts: Solving Elaborate Problems with Large Language Models",
+  "authors": [
+    "Maciej Besta",
+    "Nils Blach",
+    "Ales Kubicek",
+    "Robert Gerstenberger",
+    "Michal Podstawski",
+    "Lukas Gianinazzi",
+    "Joanna Gajda",
+    "Tomasz Lehmann",
+    "Hubert Niewiadomski",
+    "Piotr Nyczyk",
+    "Torsten Hoefler"
+  ],
+  "year": 2023,
+  "venue": "AAAI 2024",
+  "url": "https://arxiv.org/abs/2308.09687",
+  "pdf_url": "https://arxiv.org/pdf/2308.09687.pdf",
+  "arxiv_id": "2308.09687",
+  "doi": null,
+  "domains": [
+    "reasoning",
+    "prompting",
+    "graph"
+  ],
+  "method_tags": [
+    "GoT",
+    "graph-of-thoughts",
+    "graph-reasoning"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_068.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2308.09687",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

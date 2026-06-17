@@ -1,0 +1,53 @@
+{
+  "paper_id": "paper_088",
+  "title": "Holistic Evaluation of Language Models (HELM)",
+  "authors": [
+    "Percy Liang",
+    "Rishi Bommasani",
+    "Tony Lee",
+    "Dimitris Tsipras",
+    "Dilara Soylu",
+    "Michihiro Yasunaga",
+    "Yian Zhang",
+    "Deepak Narayanan",
+    "Yuhuai Wu",
+    "Ananya Kumar"
+  ],
+  "year": 2022,
+  "venue": "TMLR 2023",
+  "url": "https://arxiv.org/abs/2211.09110",
+  "pdf_url": "https://arxiv.org/pdf/2211.09110.pdf",
+  "arxiv_id": "2211.09110",
+  "doi": null,
+  "domains": [
+    "eval",
+    "benchmark",
+    "llm"
+  ],
+  "method_tags": [
+    "HELM",
+    "holistic-evaluation",
+    "standardized"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_088.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2211.09110",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

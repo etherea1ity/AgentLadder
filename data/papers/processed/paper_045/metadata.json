@@ -1,0 +1,46 @@
+{
+  "paper_id": "paper_045",
+  "title": "Adam: A Method for Stochastic Optimization",
+  "authors": [
+    "Diederik P. Kingma",
+    "Jimmy Ba"
+  ],
+  "year": 2014,
+  "venue": "ICLR 2015",
+  "url": "https://arxiv.org/abs/1412.6980",
+  "pdf_url": "https://arxiv.org/pdf/1412.6980.pdf",
+  "arxiv_id": "1412.6980",
+  "doi": null,
+  "domains": [
+    "deep-learning",
+    "optimization"
+  ],
+  "method_tags": [
+    "Adam",
+    "optimizer",
+    "stochastic-optimization"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_045.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 1412.6980",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": [
+      "PDF extraction pending; chunks and visuals not yet generated"
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "paper_id": "paper_115",
+  "title": "MRKL Systems: A modular, neuro-symbolic architecture that combines large language models, external knowledge sources and discrete reasoning",
+  "authors": [
+    "Ehud Karpas",
+    "Omri Abend",
+    "Yonatan Belinkov",
+    "Barak Lenz",
+    "Opher Lieber",
+    "Nir Ratner",
+    "Yoav Shoham"
+  ],
+  "year": 2022,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2205.00445",
+  "pdf_url": "https://arxiv.org/pdf/2205.00445.pdf",
+  "arxiv_id": "2205.00445",
+  "doi": null,
+  "domains": [
+    "agent-architecture",
+    "modular",
+    "neuro-symbolic"
+  ],
+  "method_tags": [
+    "MRKL",
+    "modular",
+    "neuro-symbolic"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_115.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2205.00445",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}

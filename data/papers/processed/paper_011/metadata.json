@@ -1,0 +1,78 @@
+{
+  "paper_id": "paper_011",
+  "title": "Corrective Retrieval Augmented Generation",
+  "authors": [
+    "Shi-Qi Yan",
+    "Jia-Chen Gu",
+    "Yun Zhu",
+    "Zhen-Hua Ling"
+  ],
+  "year": 2024,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2401.15884",
+  "pdf_url": "https://arxiv.org/pdf/2401.15884.pdf",
+  "arxiv_id": "2401.15884",
+  "doi": null,
+  "domains": [
+    "agentic-rag",
+    "retrieval"
+  ],
+  "method_tags": [
+    "corrective-retrieval",
+    "retrieval-evaluator",
+    "web-search-fallback",
+    "knowledge-refinement"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_011.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 293,
+    "visual_count": 4,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_011.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 293,
+      "visual_count": 4,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 16,
+      "total_chars": 61276,
+      "total_words": 9076,
+      "sections_found": 128,
+      "chunks_generated": 293,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

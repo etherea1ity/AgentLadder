@@ -1,0 +1,75 @@
+{
+  "paper_id": "paper_034",
+  "title": "MM-Spatial: Exploring 3D Spatial Understanding in Multimodal LLMs",
+  "authors": [
+    "Erik Daxberger"
+  ],
+  "year": 2025,
+  "venue": "arXiv",
+  "url": "https://arxiv.org/abs/2503.13111",
+  "pdf_url": "https://arxiv.org/pdf/2503.13111.pdf",
+  "arxiv_id": "2503.13111",
+  "doi": null,
+  "domains": [
+    "3d-spatial-world",
+    "MLLM"
+  ],
+  "method_tags": [
+    "3D-spatial-understanding",
+    "depth-perception",
+    "multi-view",
+    "MLLM"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/论文",
+  "local_pdf_path": "data/papers/raw/paper_034.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv (verified, 200)",
+  "language": "en",
+  "processing": {
+    "text_extracted": true,
+    "overview_generated": true,
+    "chunks_generated": true,
+    "visuals_generated": true,
+    "figure_assets_extracted": true,
+    "table_assets_extracted": true
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 237,
+    "visual_count": 8,
+    "warnings": []
+  },
+  "extraction": {
+    "doi": null,
+    "source_input_path": "data/papers/论文",
+    "local_pdf_path": "data/papers/raw/paper_034.pdf",
+    "access_status": "open_access",
+    "access_note": "arXiv (verified, 200)",
+    "language": "en",
+    "processing": {
+      "text_extracted": true,
+      "overview_generated": true,
+      "chunks_generated": true,
+      "visuals_generated": true,
+      "figure_assets_extracted": true,
+      "table_assets_extracted": true
+    },
+    "quality": {
+      "metadata_complete": true,
+      "overview_complete": true,
+      "chunk_count": 237,
+      "visual_count": 8,
+      "warnings": []
+    },
+    "extraction": {
+      "total_pages": 20,
+      "total_chars": 82955,
+      "total_words": 13234,
+      "sections_found": 75,
+      "chunks_generated": 237,
+      "extraction_method": "pymupdf"
+    }
+  }
+}

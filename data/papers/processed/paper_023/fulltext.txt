@@ -1,0 +1,2315 @@
+Memento 2: Learning by Stateful Reflective Memory
+Jun Wang
+UCL Centre for Artificial Intelligence
+jun.wang@ucl.ac.uk
+Abstract
+We present a theoretical study of continual and experiential learning in Large Language
+Model (LLM) agents that integrate episodic memory with reinforcement learning. We identify
+reflection, the ability of an LLM to leverage past experience to inform future actions, as
+the key mechanism enabling continual adaptation without fine-tuning model parameters.
+Empirical results on Memento [64] and Case-Based Reasoning LLMs [24, 23] show that
+episodic, experience-driven reflection supports generalised adaptation in a wide range of
+open-ended, long-horizon tasks, implying that efficient learning can occur during deployment
+and blurring the traditional separation between training and testing in machine learning.
+Motivated by this observation, we introduce the Stateful Reflective Decision Process (SRDP),
+a formal abstraction of reflective memory dynamics, where an agent maintains episodic
+memory and performs two key operations: writing, which stores interaction outcomes and
+corresponds to policy evaluation, and reading, which retrieves relevant cases to make informed
+reflective decisions and corresponds to policy improvement. This frames reflective memory as a
+control-theoretic object amenable to classical reinforcement learning analysis. We instantiate
+this Read–Write Reflective Learning by integrating retrieval into soft policy iteration, with
+guaranteed convergence. We formally show that as memory expands and covers the state
+space more densely, the composite policy converges to the optimal solution. This theoretical
+framework unifies heuristic approaches such as case-based reasoning and retrieval-augmented
+generation with principled reinforcement learning and provides a rigorous mathematical basis
+for building reflective, memory-embedded LLM agents capable of continual general-purpose
+learning.
+Figure 1: Learning by Stateful Reflection with Memory realises continual learning without fine-
+tuning LLMs by iteratively reading from (policy improvement) and writing to (policy evaluation)
+an evolving episodic memory that drives the agent’s online adaptation. Empirically, this Read-
+Write Learning paradigm has shown strong effectiveness across diverse domains, including
+software testing [24], automated data science [23], and deep research agents [64], demonstrating
+that memory-driven reflection can endow LLM agents with genuine self-improving capabilities.
+1
+arXiv:2512.22716v3  [cs.AI]  29 Jan 2026
+
+
+1
+Introduction
+Modern machine learning is about learning from experience [51, 47]; both supervised learning
+and reinforcement learning can be viewed as processes of optimising a parameterised model
+through experience, either from human-labelled examples or data-driven feedback. The objective
+is to learn a mapping from inputs to outputs, or in the case of reinforcement learning, from
+states to actions, such that the resulting function generalises effectively to new, unseen situations
+[46, 52]. Formally, the learner assumes that the target function is constrained by a family of
+parameterised models, for instance, neural networks, where the parameters determine the precise
+form of the mapping.
+In supervised learning, these parameters are typically adjusted by minimising a loss function
+defined over labelled examples, whereas in reinforcement learning (RL), the supervision signal is
+indirect: instead of labelled outputs, the agent interacts with an environment, receives rewards,
+and adjusts its parameters to maximise the expected cumulative return [49]. In both cases,
+the parameters are updated by backpropagation, a gradient-based optimisation algorithm that
+propagates errors through the network to refine the model [43].
+Despite their substantial empirical successes, current machine learning paradigms suffer from
+fundamental inefficiencies in sample complexity. Learning via backpropagation and gradient-
+based optimisation typically requires an enormous number of training examples, whether labelled
+data in supervised learning or interaction trajectories in reinforcement learning, before competent
+behaviour emerges [20, 22]. From a theoretical perspective, this reflects the difficulty of identifying
+generalisable structure in high-dimensional, non-linear hypothesis classes when learning is driven
+almost entirely by statistical correlations [46]. In the absence of explicit access to semantic
+abstractions, compositional structure, or task-level meaning, learning algorithms must recover
+regularities indirectly through averaging over large numbers of samples, leading to intrinsically
+high sample complexity.
+The training of large language models continuously exemplifies this frustration. Although
+massive pre-training endows them with broad linguistic and reasoning abilities, adapting them
+to specific tasks or domains still has to resort to additional fine-tuning, such as supervised
+fine-tuning (SFT) or reinforcement learning with human feedback (RLHF) [37], each demanding
+further large quantities of curated data or human annotations [32].
+In contrast, humans leverage semantic representations, episodic memory, and reflective
+reuse of experience to adapt with far fewer examples [19]. This contrast suggests that learning
+mechanisms beyond purely statistical optimisation, based on stateful memory and semantic
+reflection, may offer a principled path to lower complexity learning without large-scale gradient
+updates.
+Interestingly, despite remaining data hungry and inefficient to train, current LLMs exhibit
+early signs of human like cognitive abilities that support iterative generalisation to unseen tasks
+from only a small number of examples. These emerging abilities can be broadly categorised into
+three forms of what we term generalised reflection, as illustrated in Figure 2:
+1. In-context learning. As early as GPT-3, researchers observed that LLMs could learn from
+a few human-provided examples directly within a prompt, a process known as in-context
+learning, where a few labelled examples guide behaviour on new tasks [14] (Figure 2 (a)). For
+instance, given a few examples of English-to-French translations in the prompt, GPT-3 can
+correctly translate a new English sentence into French without any parameter updates.
+2. Feedback-driven reflection. Subsequent studies showed that given a specific unknown
+task, LLMs could refine their outputs through interaction with the environment, adjusting
+responses based on external feedback [59] (Figure 2 (b)). For instance, in code generation,
+the LLM proposes a function, runs tests to observe errors or runtime feedback, and iteratively
+refines the code to reach a correct solution.
+2
+
+
+(a) In-context learning
+(b) Feedback-driven reflection
+(c) Chain-of-thought
+Figure 2: Three modes of generalised reflection in LLM agents, where reflection broadly refers
+to information gathering or internal computation conducted before an answer is produced: (a)
+in-context learning where few-shot exemplars in the prompt steer behaviour on new tasks; (b)
+post-output reflection via environmental feedback; (c) internal chain-of-thought and planning
+before emitting an answer.
+3. Internal reasoning. More recently, LLM models have displayed the ability to perform
+internal reasoning via chain-of-thought processes before generating final outputs [57] (Figure 2
+(c)). For instance, when solving a math word problem, the model explicitly writes intermediate
+reasoning steps (e.g., decomposing a problem into smaller parts) before computing the final
+numerical answer.
+Although these mechanisms vary in complexity from human-guided examples (Figure 2 (a))
+to environment-driven feedback (Figure 2 (b)) to purely internal reasoning (Figure 2 (c)), they
+share a common principle: each relies on intermediate reflection such as information gathering
+or internal computation to enable adaptation and generalisation beyond the training data.
+Such generalised reflection has been observed not only in pre-trained large language models
+(LLMs) [14, 22], but also in multimodal LLMs [17] and non-language transformers [28, 61].
+In our earlier empirical work [23, 24, 64], we investigated whether reflection through memory
+could enable learning without parameter updates. We first introduced this paradigm with case-
+based reasoning LLM agents [23], where adaptation arises from updating memory rather than
+fine-tuning model weights. Building on this foundation, Memento [64] formalised the idea within
+a Memory-Augmented Markov Decision Process (M-MDP) framework. Across domains such as
+software testing [24], automated data science [23, 21], and deep research [64], this memory-driven
+reflection paradigm has consistently shown that LLMs can achieve continual self-improvement
+through accumulated experience rather than model retraining.
+In this paper, we further provide a theoretical analysis and formalisation and leverage the
+capability of generalised reflection to develop a new paradigm for sample-efficient learning
+from experience without relying on data-intensive model training. Instead of updating model
+parameters, the proposed learning process operates through intermediate reflection, driven by
+relevant past experiences retrieved from an episodic memory [19], as shown in Fig 1. This
+framework can unify diverse sources of experience, whether originating from internal reasoning
+(e.g., chain-of-thought), interactions with the environment (e.g., ReAct [59]), or human-provided
+labelled data, under a single, memory-based learning mechanism.
+We establish a theory of redefining how learning and decision-making are modelled through
+a proposed Stateful Reflective Decision Process (SRDP). Unlike the traditional Markov Decision
+Process (MDP), our framework introduces several conceptual shifts. First, the agent’s state
+3
+
+
+now combines the current situation with its episodic memory, allowing it to incorporate past
+experiences directly while still maintaining a coherent Markov structure in this enlarged space
+(namely reflected MDP). Second, each action unfolds in two stages: the agent first recalls a
+relevant past case from memory, and then the language model produces a concrete response or
+behaviour based on that case. Third, the environment’s transitions and rewards are defined
+through the probabilistic reasoning of the language model itself, meaning that the model’s
+internal uncertainty is embedded in how the world evolves. Finally, memory evolves over time
+as the agent writes new experiences into it. This continual update makes the system dynamic
+and self-adaptive, without violating the overall Markovian formulation.
+Within this formulation, learning naturally emerges from the process of retrieval: policy
+improvement is achieved through more effective retrieval, while policy evaluation is realised
+through writing experiences back to memory. This mechanism closely mirrors the principles of
+episodic control and reinforcement learning in humans [19, 18]. Consequently, such learning can
+be efficiently implemented using retrieval-augmented generation architectures equipped with
+large-scale memory systems [10, 31].
+A key desired property is its self-learnability. With a frozen LLM1 as its reasoning and
+reflection core, the agent improves through trial and error when data is limited and later reuses
+and combines past knowledge as experience grows. It balances exploitation (using known cases),
+exploration (targeted search in uncertain areas), and discovery (seeking new ones) through
+adaptive memory operations, achieving continual learning without parameter updates.
+The paper is organised as follows. We first introduce the stateful reflective decision process
+and its Read-Write Reflective Learning. We then present theoretical results on convergence and
+analyse the model’s optimality and its properties as a continuously-learnable agent. Related
+work is reviewed next, and the paper concludes with directions for future research.
+2
+Stateful Reflection as Generalised Learning Methods
+Recent advances in reflective prompting, such as Tree of Thoughts [60] and Graph of Thoughts
+[8], have demonstrated the potential of structured reflection to enhance LLM reasoning. From a
+different perspective, we explore a new learning paradigm that enables models to learn from
+experience through reflection grounded in episodic memory, rather than through parameter
+fine-tuning [23, 24, 64]. To formalise this paradigm, we introduce the Stateful Reflective Decision
+Process (SRDP), which models continual learning as a sequence of reflective interactions with
+memory.
+We next present the core concepts, with the full mathematical formulation deferred to later
+sections. Covering the three modes of generalised reflection introduced earlier (Fig. 2), we define
+reflection in this work as follows.
+Definition 1 (Reflection). Reflection (generalised) is an iterative mechanism by which a large
+language model (LLM) agent progressively improves its effective policy through coordinated
+interaction with episodic memory, internal reasoning processes, and environmental feedback. It
+is not a single operation but a two-step procedure consisting of a read step followed by a write
+step, which together form a closed learning loop.
+Figure 1 illustrates the overall workflow of an SRDP. We begin by formally defining episodic
+memory as a structured repository of past interaction episodes, consistent with the classical
+notion of episodic memory in cognitive psychology [50].
+1While LLM parameters may evolve over time through offline updates given adequate data, such updates
+typically occur at a much slower timescale. Our approach does not rule out parameter learning, but instead
+addresses the intermediate regime in which adaptation must occur without immediate model updates.
+4
+
+
+Definition 2 (Episodic Memory). An episodic memory Mt is a finite (and growing) collection
+of memory items
+Mt = {mi}Nt
+i=1,
+mi := (si, ai, ri, s′
+i),
+where each item mi records a past interaction consisting of the environment state si ∈S, the
+executed action ai ∈A, the received reward ri ∈R, and the subsequent state s′
+i ∈S. The space
+of all finite episodic memories is denoted by M. Episodic memory evolves over time through a
+write operation
+Mt+1 = Write(Mt, st, at, rt, st+1).
+Given a task or query represented as a state s (1), the agent enters an internal reflection
+stage (2), during which the LLM performs a read operation on M to retrieve relevant episodic
+memory items or their summaries. Conditioned on this retrieved information, the LLM selects
+an external action or generates an answer a (3), which is executed in the environment (4) and
+produces evaluative feedback, including rewards, correctness signals, or task level assessments.
+Finally, the resulting feedback is incorporated into episodic memory via a write operation (5),
+which stores new interaction episodes.
+Formally, let πt denote the agent’s effective policy at iteration k, implicitly represented by
+its prompt, episodic memory contents, and internal reasoning configuration. Reflection defines
+an operator T such that
+πt+1 = T (πt) = Read
+ Write(πt)
+.
+The Read step corresponds to policy improvement: the agent conditions on retrieved episodic
+memories, contextual exemplars, or intermediate reasoning traces to construct an improved
+action distribution for the current state,
+πt ←Read(πt−1 | st, Mt),
+where st denotes the current environment state and Mt the episodic memory state. In LLM
+agents, such conditioning reshapes the effective policy directly, without parameter updates.
+The Write step corresponds to policy evaluation: the agent generates an action, plan, or
+answer under πt+1, producing trajectories
+τt := mi = (si, ai, ri, s′
+i) ∼πt,
+whose outcomes yield evaluative feedback,
+ˆV (πt+1) ←Eval(τt),
+which is subsequently stored in episodic memory for future reads,
+Mt+1 ←Write(Mt, τt ∼πt).
+As we shall show in the following sections, this alternating reflective read–write reflective
+mechanism is formally analogous to policy iteration in reinforcement learning. Policy improvement
+is realised through memory-conditioned inference, while policy evaluation is realised through
+interaction-driven feedback and experience accumulation. Under mild assumptions that reading
+yields non-decreasing policy quality with respect to accumulated feedback and that writing
+provides informative evaluation signals, the iterative reflection process converges to a fixed point
+corresponding to an optimal or self-consistent policy.
+SRDP generalises and unifies several existing learning paradigms. Compared with case
+based reasoning (CBR), which retrieves and adapts discrete past cases for problem solving
+[23, 1], SRDP embeds retrieval within a sequential decision making framework. This explicitly
+models temporal dependencies, memory evolution, and long horizon effects under a Markovian
+assumption, rather than treating cases as isolated problem instances.
+5
+
+
+In contrast to retrieval augmented generation (RAG), which conditions generation on static
+external documents or databases [10], SRDP treats memory as a dynamic and stateful component.
+Episodic memory is continually updated through interaction with the environment and grounded
+in evaluative feedback, allowing retrieval to reflect the agent’s own experience rather than
+fixed external knowledge.
+From the perspective of memory based reinforcement learning,
+SRDP replaces parameter level updates with reflective memory updates mediated by an LLM.
+Policy improvement is achieved through structured recall and reflection over episodic memory
+rather than gradient based optimisation of model parameters [42]. This shift enables continual
+adaptation while keeping the underlying LLM fixed, positioning reflection as the primary learning
+mechanism.
+This formulation is also strongly inspired by neuroscientific findings on the role of the
+hippocampus in episodic memory and reflective cognition [39, 33]. In humans and animals,
+episodic recall supports flexible reasoning and planning by replaying past experiences, an ability
+mirrored by the reflective cycles of SRDP. Thus, the Stateful Reflective Decision Process provides
+both a computational and cognitive bridge: it formalises how memory and reflection together
+enable continual, self-improving intelligence without explicit retraining.
+Experimentally, it has been demonstrated that this approach enables learning without
+fine-tuning across various agentic tasks, including data-science agents [24], software-testing
+agents [23], and deep-research agents [64].
+3
+A Model for Reflective Process over Episodic Experience
+Mathematically, the core idea is to extend the Markov Decision Process [41] with an intermediate
+reflection stage, where the agent retrieves relevant experiences from external memory before
+generating the final output, enabling continual and memory-based learning.
+3.1
+Preliminary: Markov Decision Process
+To make self-contained, we begin by reviewing the Markov Decision Process (MDP) [41], the
+standard framework for modelling decision-making in agents. An LLM agent, viewed as a
+large language model capable of reasoning and acting through interaction with its environment
+[16, 58, 54, 53], can be naturally described within this framework. Formally, an MDP is defined
+by the tuple
+D = ⟨S, A, P, R, γ⟩,
+where S is the state space, A is the action space, and P(s′ | s, a) denotes the transition kernel,
+specifying the probability of reaching state s′ after taking action a in state s; R(s, a) ∈R
+represents the expected immediate reward; and γ ∈[0, 1) is the discount factor. Here, the state s
+corresponds to the current prompt or task context. Specifically, in the context of LLM reasoning,
+states correspond to intermediate reasoning steps [54, 56], and when interacting with the external
+environment, they may take the form of textual descriptions of the environment state [16]. The
+action a is the model’s generated output or decision, and the transition describes how the
+environment or subsequent prompt evolves after the model’s response [54]. A (stochastic) policy
+π(a | s) defines a probability distribution over actions conditioned on the current state and, in
+turn, induces the value function that measures the expected return when following the policy
+from a given state
+V π
+D(s) = Eπ,P
+" ∞
+X
+t=0
+γtR(st, at)
+ s0 = s
+#
+,
+with the state–action value function
+Qπ
+D(s, a) = R(s, a) + γ Es′∼P(·|s,a)
+V π
+D(s′)
+ .
+6
+
+
+The optimal value functions are
+V ⋆
+D(s) = max
+π
+V π
+D(s),
+Q⋆
+D(s, a) = R(s, a) + γ Es′∼P(·|s,a)
+
+max
+a′
+Q⋆
+D(s′, a′)
+
+.
+For large language model (LLM) agents [16, 53, 62], the policy is typically given by the LLM
+itself, which maps input states or prompts directly to action distributions through its generative
+reasoning process:
+πLLM(a | s) ≜pLLM(a | s; θ),
+where θ denotes the (frozen in our case) parameters of the pre-trained model. Next, we extend
+the LLM’s stochastic policy by incorporating contributions from episodic memory, allowing past
+experiences to influence current decisions.
+3.2
+Stateful Reflective Decision Process
+Building on the standard Markov Decision Process (MDP) framework introduced in the previous
+section, we now present the proposed Stateful Reflective Decision Process (SRDP). The classical
+MDP ⟨S, A, P, R, γ⟩captures agent–environment interaction in its simplest form but lacks
+mechanisms for reflection and memory. To enable reflective, memory-driven behaviour, we
+extend this formulation by augmenting the agent with an episodic memory space M, a memory
+retrieval policy µ, and a stochastic LLM kernel pLLM that generates context-dependent actions
+conditioned on both the current environment state and retrieved memory, yielding the Stateful
+Reflective Decision Process (SRDP).
+3.2.1
+Definition
+Definition 3 (Stateful Reflective Decision Process (SRDP)). SRDP is a tuple
+DSRDP = ⟨S, A, P, R, γ, M, pLLM⟩
+that extends the standard MDP formalism by incorporating episodic memory and a language-
+model-based decision kernel. The components are defined as follows:
+• S: state space;
+• A: environment action space;
+• P(· | s, a): transition kernel;
+• R(s, a) ∈R: reward function;
+• γ ∈[0, 1): discount factor;
+• M: space of finite episodic memories, where each memory M ∈M is a multiset of cases
+c = (s, a, r, s′)2;
+• pLLM(a | s, c): the LLM kernel that generates an environment action conditioned on the
+current state s and a retrieved case c.
+At time t, the agent maintains episodic memory Mt = {mi}Nt
+i=1, where Nt is the number
+of cases in the current memory, and observes the current environment state st. The decision
+process unfolds in two stages:
+2In multi-state settings, r can be replaced by an estimated value Q, where Bellman or TD updates are
+propagated across memory.
+7
+
+
+s0
+M0
+c0
+a0
+r0
+s1
+M1
+c1
+a1
+r1
+st
+Mt
+ct
+at
+rt
+x0
+x1
+xt
+Environment Dynamics
+Memory Read Policy µ(c|x)
+LLM Conditioning pLLM(a|s, c)
+Memory Write Write(M, s, a, r)
+Reward Generation
+Figure 3: A graphical model of the Stateful Reflective Decision Process (SRDP) showing the
+augmented state space xt = (st, Mt), retrieval actions ct, LLM conditioning, and memory
+evolution. Dashed boxes indicate augmented states combining environment state and memory.
+1. Retrieval stage: A retrieval action ct is sampled from the current episodic memory according
+to the retrieval policy
+ct ∼µ(· | st, Mt),
+where µ may be similarity-based or learned. The action set is memory-dependent (indexer):
+for each M ∈M, C(M) := M, and each c ∈C(M) indexes a memory case used for retrieval.
+2. Action Stage: The LLM generates an action conditioned on the retrieved case:
+at ∼pLLM(· | st, ct).
+This defines a composite policy:
+πµ(at | st, Mt) =
+X
+ct∈Mt
+µ(ct | st, Mt) pLLM(at | st, ct).
+(1)
+After executing the action at, the environment changes to st+1 ∼P(· | st, at), yields a reward
+rt := R(st, at), and the memory updates to Mt+1 = Write(Mt, st, at, rt, s′
+t).
+Figure 3 depicts the graphical model of the Stateful Reflective Decision Process (SRDP),
+characterised by a dual-action structure. The agent first performs a retrieval action ct ∈Mt
+(green nodes), selecting a relevant past case from memory to guide its current decision. This
+retrieval is controlled by the policy µ(c | s, M), represented by the blue arrows connecting the
+current environment state st and memory Mt to the retrieval node ct. The policy evaluates
+both the similarity between the current state and stored experiences, and the local density of
+memory cases. Conditioned on the retrieved case, the LLM then reflects upon the retrieved
+experience and generates the environment action at ∈A (blue nodes) via its generative kernel
+pLLM(a | s, c), shown by the green arrows. Through this hierarchical process, the retrieval stage
+provides contextual grounding, while the LLM generates the final action, jointly realising stateful
+reflection, as illustrated in Figure 1.
+A key advantage of this dual-action structure is that it defines a composite policy (Eq. 1)
+that unifies classical reinforcement learning [49] with LLM-based decision-making [16], thereby
+combining the strengths of both paradigms. To illustrate, consider two limiting cases. In the
+first case, a naive LLM produces an action a ∈c directly from a retrieved case c, effectively
+treating the case as a prompt. Here, the policy reduces to a standard reinforcement learning
+or episodic control scheme [9, 40, 42], where the retrieval function µ selects the case c with the
+8
+
+
+highest Q-value, and the corresponding action is executed. In the opposite extreme, when no
+relevant experience exists in memory, the agent must rely entirely on the internal knowledge of
+the LLM to generate actions. Between these two cases lies the general setting of SRDP, where
+the agent can integrate both sources of information, the reasoning capability of the LLM and
+the experiential knowledge stored in memory, to produce more adaptive and effective decisions.
+The memory evolution mechanism forms a crucial component of the SRDP dynamics. Purple
+arrows demonstrate how memory grows through Write(M, s, a, r) operations, with experience
+tuples (st, at, rt) being incorporated into the memory at the next time step. This creates a
+directed evolution M0 →M1 →· · · →Mt where the memory size |Mt| increases over time,
+expanding the agent’s retrieval options.
+However, the introduction of memory fundamentally alters the dynamics of the system,
+making the process no longer strictly Markovian if the original state is considered. In a standard
+MDP, the next state depends only on the current state and action, i.e., the system satisfies
+P(st+1 | st, at, st−1, at−1, . . .) = P(st+1 | st, at). However, once we introduce an evolving memory
+Mt that accumulates past experience tuples (si, ai, ri), the transition to the next augmented state
+depends on the entire history through Mt. Formally, P(st+1, Mt+1 | st, at, Mt) ̸= P(st+1, Mt+1 |
+st, at) because Mt itself is a summary of all past interactions. We address this issue next by
+defining a simplified MDP that incorporates memory directly into the state representation while
+embedding the fixed LLM within the environment dynamics. This formulation enables us to
+focus on optimising the retrieval policy, with both the LLM’s behaviour and memory evolution
+captured within the new state–transition structure.
+3.2.2
+Transforming to Reflected MDP
+To recover a Markovian formulation, we redefine the state to explicitly include memory, forming
+an augmented state, i.e., at time t, the agent occupies an augmented state
+xt := (st, Mt) ∈X := S × M.
+The resulting process over {xt} is Markovian in this expanded space, even though the
+environment process over {st} alone is not.
+Each augmented state combines the current
+environment state st with the agent’s episodic memory Mt, as illustrated by the dashed rectangles
+in Figure 3. Augmenting the state with memory restores the Markov property and enables a
+well-defined control formulation, i.e., for any reflection action ct,
+Pr(xt+1 | x0:t, c0:t) = Pr(xt+1 | xt, ct),
+where the environment transition depends only on (st, at), while the memory update is a
+deterministic or stochastic function of (Mt, st, at, rt, s′
+t). Since the reflection mechanism and the
+LLM action distribution are fixed functions of (st, Mt), all sources of dependence on the past
+are captured by xt. Hence the augmented process satisfies the Markov property.
+Since our focus is on learning through memory retrieval rather than modifying the LLM
+itself, we treat the LLM as a fixed or slow-evolving component of the environment. Its action
+generation is absorbed into the environment dynamics via the effective transition and reward
+functions PLLM and RLLM. Under this view, the agent’s only controllable decision is the retrieval
+action
+ct ∼µ(· | st, Mt),
+while state transitions and rewards are determined jointly by the environment and the fixed
+LLM kernel pLLM(a | st, ct). The resulting Reflected MDP therefore treats the retrieval policy µ
+as the agent’s primary policy, with LLM mediated reasoning incorporated into the environment
+model. Specifically, we have:
+9
+
+
+Definition 4 (Reflected MDP). The Reflected MDP is a tuple
+DReMDP = ⟨X, C, PLLM, RLLM, γ⟩,
+that transforms the underlying SRDP, DSRDP = ⟨S, A, P, R, γ, M, pLLM⟩, with the components
+are defined as follows:
+• Augmented state space: X = S × M, with each state x = (s, M) consisting of the current
+environment state s and the current episodic memory M.
+• Action space: C(M) := M, consisting of retrieval actions that index and select cases from the
+current episodic memory.
+• Transition kernel: For x = (s, M) and c ∈C,
+PLLM(x′ | x, c) =
+X
+a∈A
+pLLM(a | s, c) 1{x′ = (s′, Write(M, s, a, R(s, a)))} P(s′ | s, a),
+(2)
+where Write(M, s, a, r) appends the new experience (s, a, r) to memory.
+• Reward function:
+RLLM(x, c) =
+X
+a∈A
+pLLM(a | s, c) R(s, a).
+(3)
+The Reflected MDP provides a fully Markovian formulation over the augmented state space
+X = S × M, in which transitions and rewards correspond to expected outcomes under the fixed
+LLM kernel pLLM. At each time step, the transition unfolds as follows: the agent first retrieves a
+memory case ct ∼µ(· | st, Mt); conditioned on this retrieval, the LLM generates an environment
+action at ∼pLLM(· | st, ct); the environment then transitions to st+1 ∼P(· | st, at) and produces a
+reward R(st, at); finally, episodic memory is updated according to Mt+1 = Write(Mt, st, at, rt, s′
+t).
+By absorbing the retrieval and LLM generation mechanisms into effective transition and
+reward functions over the augmented state space X, this interaction induces a simplified control
+process. A policy in the Reflected MDP is defined as a retrieval policy
+µ : X →∆(C),
+which maps augmented states x = (s, M) to probability distributions over retrieval actions.
+Environment actions are generated implicitly by the fixed LLM kernel pLLM(a | s, c) and absorbed
+into the transition dynamics. This abstraction captures the full reflective behaviour of the agent
+in a compact Markovian form that is amenable to classical reinforcement learning analysis and
+learning algorithms.
+It is worth mentioning that this augmented state admits a natural cognitive interpretation.
+The environment state st encodes the agent’s external sensory or task-level signal, while the
+episodic memory Mt represents an internal cognitive state that stores and organises past
+experiences, outcomes, and contextual information. The pair (st, Mt) therefore constitutes the
+agent’s effective decision state, integrating external observation with internal experience. This
+perspective parallels belief-state constructions in partially observable Markov decision processes,
+where internal memory summarises relevant history to support optimal control [29], and aligns
+with cognitive theories that view episodic memory as a core substrate for human decision making
+and learning [50, 19].
+The underlying MDP captures the dynamics of the environment alone, independent of the
+agent’s internal mechanisms. In contrast, the SRDP explicitly models the coupled interaction
+among the agent, its episodic memory, and the LLM during decision making. The Reflected MDP
+then provides a Markovian reformulation of this process by lifting the SRDP to an augmented
+state space, in which the combined agent–memory–LLM dynamics become Markovian. The
+10
+
+
+relationship between the underlying environment, the SRDP, and the resulting Reflected MDP
+is summarised as
+⟨S, A, P, R, γ⟩
+|
+{z
+}
+Underlying MDP
+ext.
+−−−→
+D
+S, A, P, R, γ, M, µ, pLLM
+E
+|
+{z
+}
+SRDP
+equiv.
+−−−−→
+D
+X := S × M, C, PLLM, RLLM, γ
+E
+|
+{z
+}
+Reflected MDP
+, (4)
+where a detailed comparison between the SRDP and the Reflected MDP is provided in Ap-
+pendix E.
+4
+Read–Write Reflective Learning
+Under the reflected MDP abstraction, continual learning reduces to an iterative read–write
+reflective procedure over episodic memory, which we formalise as a learning algorithm next.
+4.1
+Policy Iteration
+We now define the retrieval mechanism that underpins the learning method. The central idea is
+to use local state density to guide which past cases should be retrieved from memory. To capture
+the similarity structure in the memory bank, we employ Parzen window estimation [38, 55].
+Let K : Rd →R≥0 be a smooth kernel (e.g., Gaussian) with bandwidth h > 0, and let
+ψ : S →Rd be a state embedding. For memory M = {ci = (si, ai, ri)}N
+i=1 and query state s, the
+Parzen similarity weight for case c ∈M is:
+wparzen(s, c) =
+K (ψ(s) −ψ(s(c))/h)
+P
+c′∈M K (ψ(s) −ψ(s(c′))/h),
+(5)
+where s(c) denotes the state component of a case c. The kernel defines a probability distribution
+over memory cases that places higher weight on states similar to the current query state s. Thus,
+the Parzen prior µ0(c | x) over retrieval actions at augmented state x = (s, M) is:
+µ0(c | x) ≡wparzen(s, c).
+(6)
+In order to enable an LLM agent to act even when no relevant past cases exist in memory, we
+augment the case set C with a special void case: M ←M ∪{c∅}. The void case c∅represents the
+ability of the agent to generate an action directly from its internal world knowledge, independently
+of retrieved memory. We formulate this by modifying the prior policy µ0 that incorporates a
+state-dependent mixture between memory-based retrieval and the void case. Let K(x, c) be a
+similarity kernel for ordinary cases c ∈C, and let K∅> 0 be a constant kernel score assigned to
+the void case c∅. Then, the prior distribution µ0(· | x) becomes
+µ0(c | x) ≡
+
+
+
+K(x, c),
+c ̸= c∅,
+K∅,
+c = c∅,
+P
+c′̸=c∅K(x, c′) + K∅
+,
+(7)
+where K(x, c) := K
+ ψ(s(x))−ψ(s(c))
+h
+
+.
+It is useful to express this distribution as a mixture. Define the normalised memory-based
+distribution
+µmem(c | x) =
+K(x, c)
+P
+c′̸=c∅K(x, c′),
+c ̸= c∅,
+and let
+λ(x) =
+P
+c′̸=c∅K(x, c′)
+P
+c′̸=c∅K(x, c′) + K∅
+.
+11
+
+
+Then (7) is equivalent to the mixture representation
+µ0(c | x) = λ(x) µmem(c | x) +
+ 1 −λ(x)
+ δc∅(c),
+(8)
+where δc∅denotes the unit point mass at c∅. This mixture form shows that the agent auto-
+matically interpolates between reflection(retrieval)-driven behaviour when similarity to stored
+cases is high (λ(x) ≈1) and knowledge-driven discovery through c∅when similarity is low
+(λ(x) ≈0). This mechanism mirrors the “discovery” component in infinite-armed bandits [7],
+complementing exploitation and exploration with the capacity to act beyond the current memory.
+This mechanism ensures that the agent can always act, even in novel states, while still exploiting
+relevant past experiences when available.
+We aim for the agent’s final policy µ(· | x) to remain close to a prior policy µ0, while still
+being shaped by reward feedback from the environment. To formalise this trade-off, we define a
+KL-regularised objective in terms of the state–case value function Qµ(x, c). The KL-regularised
+Bellman evaluation operator is
+(T µ
+KLQ)(x, c) := Ea,s′,M′
+"
+r + γ
+ X
+c′
+µ(c′ | x′) Q(x′, c′) −α KL
+ µ(· | x′) ∥µ0(· | x′)
+
+!  x, c
+#
+, (9)
+where T µ
+KL : RX×C →RX×C. It is worth emphasising that all value functions Q(x, c) and V (x)
+defined on the augmented state space X of the Reflected MDP are distinct from the value
+functions QD and V D of the original MDP (see Section 3.1). The latter are defined over the
+environment state space S, whereas the former explicitly incorporate episodic memory and
+LLM-mediated action generation through the Reflected MDP dynamics. We shall show that, by
+appropriately leveraging these LLM-induced dynamics, the Reflected MDP can approximate the
+optimal value functions of the original MDP in a more sample-efficient manner.
+For any fixed µ, this operator is a γ-contraction in the sup-norm and admits a unique fixed
+point Qµ, representing the KL-regularised value of µ.
+KL-Regularised Policy Improvement Given a Q-function over retrieval actions, we
+define policy improvement as the solution to a KL-regularised optimisation problem. Namely, at
+each augmented state x, the improved retrieval policy is:
+µ+(c | x) ∈arg max
+ν∈∆(M)
+( X
+c∈M
+ν(c|x) Q(x, c) −α KL(ν(c|x)∥µ0(· | x))
+)
+,
+(10)
+where ∆(M) is the simplex over finite set, memory M, and α > 0 is the temperature parameter.
+Lemma 5 (also in [35]). The optimisation problem (10) has a unique solution:
+µ+(c | x) =
+µ0(c | x) exp(Q(x, c)/α)
+P
+c′∈M µ0(c′ | x) exp(Q(x, c′)/α).
+(11)
+The proof can be found in Appendix A. Because µ0(c∅| x) > 0 for all x, the improved
+policy µ′ always assigns nonzero probability to the void case, preserving the agent’s capacity for
+discovery.
+For the convergence analysis, we start with assumptions followed with the theorem:
+Assumption 6 (Bounded rewards and discount). |r| ≤Rmax < ∞, γ ∈[0, 1).
+Assumption 7 (Stationary memory dynamics during evaluation). Within each policy-evaluation
+phase, the memory kernel is stationary (equivalently, treat M as part of the state).
+Theorem 8 (Convergence of Parzen-KL Soft Policy Iteration). Under assumptions 6 and 7
+(bounded rewards and γ < 1 and stationary memory), the process (the reflected MDP) is an
+ordinary discounted MDP. Iterations between (9) and (11) (Algorithm 1) converge to a fixed
+point (Q⋆, µ⋆) that is optimal for the KL-regularised objective with Parzen prior.
+12
+
+
+Algorithm 1 Soft Policy Iteration with Fixed Memory under Reflected MDP
+1: Input: Temperature α > 0, kernel bandwidth h > 0
+2: Initialise: Fixed episodic memory M, reference prior µ0(· | x) (including void case c∅),
+initial policy µ0, initial Q0
+3: for t = 0, 1, 2, . . . do
+4:
+(Policy Evaluation)
+5:
+Compute the KL-regularised value function Qµt as the unique fixed point of
+Q = T µt
+KLQ,
+where (Eq. (9))
+(T µt
+KLQ)(x, c) = E
+
+r + γ
+ X
+c′∈M
+µt(c′ | x′)Q(x′, c′) −αKL(µt(· | x′)∥µ0(· | x′))
+
+
+x, c
+
+.
+6:
+(Policy Improvement)
+7:
+Update the retrieval policy by solving
+µt+1(· | x) ∈arg max
+ν∈∆(M)
+(X
+c
+ν(c | x)Qµt(x, c) −αKL(ν(· | x)∥µ0(· | x))
+)
+,
+which admits the closed-form solution (Eq. (11))
+µt+1(c | x) =
+µ0(c | x) exp(Qµt(x, c)/α)
+P
+c′ µ0(c′ | x) exp(Qµt(x, c′)/α).
+8: end for
+We refer to Appendix for the proof.
+Some discussions: It is worth mentioning that the void case c∅plays a crucial role: by
+providing a state-independent baseline probability in µ0, it ensures that policy iteration retains
+the ability to discover new behaviours beyond exploitation or exploration of existing memory.
+Unlike classical density estimation, our memory cases are not independent and identically
+distributed but are gathered sequentially through policy execution. Moreover, the finite memory
+constraint means we perform kernel smoothing over a limited and evolving set of points rather
+than relying on asymptotic density estimation. As a result, bandwidth selection plays a critical
+role in balancing local similarity against statistical robustness as the memory continues to grow.
+Several strategies can be used to choose the bandwidth h. Silverman’s rule suggests setting
+h ∝n−1/(d+4), where n = |M| is the memory size and d the embedding dimension. Another
+approach is cross-validation, which tunes h by optimising performance on held-out retrieval
+tasks. Finally, an adaptive strategy decreases h as memory grows, ensuring that neighbourhoods
+remain local and informative.
+4.2
+Two-Time-Scale Convergence with Online Memory Rewriting
+The preceding analysis assumes that episodic memory remains fixed.
+We now relax this
+assumption and allow memory to evolve on a slower time scale. Let ηt denote the step size used
+for policy evaluation and improvement, and let ρt denote the step size for memory updates. We
+assume a two time scale regime in which
+ρt
+ηt
+→0,
+∞
+X
+t=1
+ηt = ∞,
+∞
+X
+t=1
+η2
+t < ∞.
+13
+
+
+Under this separation of time scales, policy evaluation and improvement operate on a
+faster time scale, while episodic memory evolves more slowly. Formally, we make the following
+assumptions:
+Assumption 9 (Two-Time-Scale Conditions).
+(i) Step sizes: ηt > 0, ρt > 0 with:
+∞
+X
+t=0
+ηt = ∞,
+∞
+X
+t=0
+η2
+t < ∞,
+∞
+X
+t=0
+ρt = ∞,
+∞
+X
+t=0
+ρ2
+t < ∞,
+lim
+t→∞
+ρt
+ηt
+= 0.
+(ii) Martingale difference noise: ξ(Q)
+t
+and ξ(µ)
+t
+are martingale difference sequences with respect
+to the filtration Ft, information available up to time t (random variable with zero conditional
+mean) :
+E[ξ(Q)
+t
+|Ft] = 0,
+E[ξ(µ)
+t
+|Ft] = 0,
+E[(ξ(Q)
+t
+)2|Ft] ≤K,
+E[(ξ(µ)
+t
+)2|Ft] ≤K.
+(iii) Bounded iterates: The sequences {Qt}, {µt}, {Mt} remain bounded almost surely.
+(iv) Memory attractor: The memory process {Mt} has a compact attractor set M∞⊂M.
+This means memory size is bounded and the content distribution stabilises over time. In
+practice, this is achieved by: 1) Using fixed-size memory, 2) Having policies that converge
+to stationary distributions, 3) Using environments that produce stationary experience
+streams, or 4) Conservative memory update strategies.
+Theorem 10 (Two-Time-Scale Convergence for Parzen-KL Policy Iteration). Under Assump-
+tions 6 and 9, let (Qt, µt, Mt) be generated by the following sample-based recursions.
+1. Q-update (TD learning, sample form):
+Qt+1(xt, ct) = Qt(xt, ct) + ηt
+h
+δt(Qt, µ0, Mt+1)
+i
+,
+(12)
+δt(Q, µ0, M) := rt + γα log
+ X
+c′∈M
+µ0(c′|xt+1)eQ(xt+1,c′)/α
+−Q(xt, ct).
+2. Policy update (Parzen-KL improvement, sample form):
+µt+1(c|xt) = µt(c|xt) + ηt
+h
+Φt(c|xt; Qt, µ0, Mt) −µt(c|xt)
+i
+,
+(13)
+Φt(c|x; Q, µ0, M) := µ0(c|x) eQ(x,c)/α
+Zt(x)
+,
+Zt(x) :=
+X
+c′∈M
+µ0(c′|x) eQ(x,c′)/α.
+3. Memory update (experience replay):
+Mt+1 =
+(
+Mt ∪{(st, at, rt)}
+with probability ρt,
+Mt
+otherwise.
+(14)
+Define the filtration Ft := σ
+ (xk, ck, rk), Mk, Qk, µk : k ≤t
+, which collects all information
+available to the agent up to time (t), including past observations, the current memory state, and
+the value function and policy parameters. Define the mean drifts (expected operators) by
+HQ(Qt, µt, Mt)(xt, ct) := E[ δt(Qt, µ0, Mt+1) | Ft] ,
+(15)
+Hµ(Qt, µt, Mt)(c|xt) := E[ Φt(c|xt; Qt, µ0, Mt) −µt(c|xt) | Ft] .
+(16)
+14
+
+
+Then define the martingale difference noises as the residuals
+ξ(Q)
+t+1 := δt(Qt, µ0, Mt+1) −HQ(Qt, µt, Mt)(xt, ct),
+(17)
+ξ(µ)
+t+1(c|xt) :=
+
+Φt(c|xt; Qt, µ0, Mt) −µt(c|xt)
+
+−Hµ(Qt, µt, Mt)(c|xt).
+(18)
+With these definitions, the recursions can be written in stochastic approximation form:
+Qt+1(xt, ct) = Qt(xt, ct) + ηt
+h
+HQ(Qt, µt, Mt)(xt, ct) + ξ(Q)
+t+1
+i
+,
+(19)
+µt+1(c|xt) = µt(c|xt) + ηt
+h
+Hµ(Qt, µt, Mt)(c|xt) + ξ(µ)
+t+1(c|xt)
+i
+.
+(20)
+Moreover, (ξ(Q)
+t+1) and (ξ(µ)
+t+1) are martingale difference sequences w.r.t. (Ft):
+E
+h
+ξ(Q)
+t+1 | Ft
+i
+= 0,
+E
+h
+ξ(µ)
+t+1(c|xt) | Ft
+i
+= 0,
+and satisfy the conditional second-moment bounds in Assumption 9 ii.
+Finally, the conclusions (a)–(c) hold:
+(a) The fast variables (Qt, µt) track the stationary-memory soft policy-iteration fixed points:
+lim sup
+t→∞
+inf
+(Q∗
+M,µ∗
+M)∈F(Mt) ∥(Qt, µt) −(Q∗
+M, µ∗
+M)∥≤ϵ
+a.s.
+(b) The joint process converges to the limiting set:
+(Qt, µt, Mt) →{(Q∗
+M, µ∗
+M, M) : M ∈M∞, (Q∗
+M, µ∗
+M) ∈F(M)}.
+(c) If Mt →M∞a.s., then (Qt, µt) →(Q∗
+M∞, µ∗
+M∞).
+Appendix C presents the required Lipschitz properties of the memory updates, and Ap-
+pendix D provides the detailed proof of Theorem 10. The novelty lies in extending the classical
+ODE method to handle structured, state-dependent episodic memory updates and their coupling
+with fast policy dynamics under a two–time-scale regime. The key insight is that from the
+perspective of the fast variables (Qt, µt), the slow variable Mt appears quasi-static due to the
+timescale separation ρt/ηt →0. This detailed proof establishes several key properties of our
+Read–Write Learning iteration. First, it demonstrates robustness to memory updates, showing
+that the algorithm remains stable even as the memory evolves, provided that memory updates
+occur on a slower timescale than value and policy updates. Second, it guarantees tracking
+behaviour, ensuring that the value function and policy rapidly adjust to reflect changes in
+memory, remaining close to the optimal configuration for the current memory state. Third, the
+analysis confirms convergence to local optima, proving that for each fixed memory configuration
+(M), the algorithm converges to the corresponding optimal retrieval policy (µ∗
+M). Finally, the
+timescale separation result provides practical implementation guidance, indicating that memory
+should be updated less frequently than the value function and policy.
+4.3
+The Role of Reflection and Memory towards Optimal Policy
+We are now ready to present the complete Read–Write Reflective Learning pseudocode in
+Algorithm 2, consistent with the workflow illustrated in Fig. 1.
+To ensure practical feasibility, policy evaluation is implemented in an approximate form using
+feedback from the environment. Steps (2)–(4) and (5.b) constitute a fast policy iteration loop.
+The Read step performs a KL-regularised greedy update of the retrieval policy, while Step (5.b)
+approximately evaluates the resulting policy using feedback from the environment. The policy
+15
+
+
+Algorithm 2 Read–Write Reflective Learning (Fast Policy Update, Slow Memory Write)
+1: Input: Temperature α > 0, kernel bandwidth h > 0, discount γ ∈(0, 1)
+2: Stepsizes: {ηt} for policy evaluation/improvement, {ρt} for memory updates, with ρt/ηt →
+0, P∞
+t=1 ηt = ∞, P∞
+t=1 η2
+t < ∞
+3: Initialise: Memory M0, Q-function Q0, initial Parzen prior µ0,0(· | x) (incl. void case c∅)
+4: for t = 0, 1, 2, . . . do
+5:
+(1) State and Prior Construction
+6:
+Observe st and form augmented state xt = (st, Mt).
+7:
+Construct the reference prior µ0,t(· | xt) from Mt using (6) and (8).
+8:
+(2) Read: Policy Improvement (Fast Time Scale)
+9:
+Define the KL-greedy retrieval policy (Eq. 11) induced by Qt:
+µt(c | xt) =
+µ0,t(c | xt) exp(Qt(xt, c)/α)
+P
+c′ µ0,t(c′ | xt) exp(Qt(xt, c′)/α).
+10:
+Sample a retrieval action ct ∼µt(· | xt).
+11:
+(3) LLM Act
+12:
+Sample an environment action at ∼pLLM(· | st, ct) and execute it.
+13:
+(4) Environment Feedback
+14:
+Observe reward/feedback rt and next state st+1
+15:
+(5) a. Write (Slow Memory Update): update episodic memory,
+Mt+1 ←(1 −ρt)Mt + ρt Write(Mt, st, at, rt, st+1) ,
+which denotes a generic slow update consistent with the assumed Lipschitz conditions.
+16:
+Next augmented state xt+1 := (st+1, Mt+1); Next prior µ0,t+1(· | xt+1) from Mt+1
+17:
+b. Write (Fast KL-regularised Evaluation): compute the target
+yt := rt + γ
+ 
+X
+c′∈C(Mt+1)
+µt(c′ | xt+1) Qt(xt+1, c′) −α KL
+ µt(· | xt+1) ∥µ0,t+1(· | xt+1)
+
+!
+,
+and update
+Qt+1(xt, ct) ←(1 −ηt)Qt(xt, ct) + ηt yt,
+which is stored in memory in the tabular case, or updated via function approximation.
+18: end for
+improvement is monotonic because the Read step solves a KL-regularised optimisation problem
+with respect to the current value function (Lemma 5). Given a fixed reference prior, the resulting
+update maximises the regularised expected return and therefore yields a policy that is no worse
+than the previous one in terms of the KL-regularised objective. Since the subsequent evaluation
+step provides an unbiased (or consistent) estimate of the policy value under environmental
+feedback, repeated application of Steps (2)–(4) and (5.b) leads to monotonic improvement of the
+retrieval policy on the fast time scale (Theorem 19). Step (5.a) implements the slow evolution
+of episodic memory. Under the two-time-scale assumptions, Theorem 10 establishes that the
+resulting algorithm converges to the optimal policy of the reflected MDP.
+Crucially, episodic memory does not merely augment the state representation but directly
+parameterises the effective Bellman operator. Each memory update induces a new Reflected
+MDP and hence a new policy-evaluation problem. Although the Q-update takes the form
+of a standard temporal-difference step, the associated KL-evaluation operator is indexed by
+the current memory M through the induced action set C(M), the memory-conditioned prior
+µ0(· | x, M), and the memory-dependent transition x′ = (s′, Write(M, ·)).
+16
+
+
+ss
+r
+good c
+B(s, r)
+episodic memory
+retrieve c
+d
+ s, s(c)
+ ≤r
+actions
+probability
+a1
+a2
+a3
+a4
+a5
+pLLM(· | s, c)
+π⋆(· | s)
+1
+2
+P
+a |p −q| (TV)
+TV contribution
+Figure 4: The illustration of the assumption of LLM local sufficiency.
+Consequently, the read–write cycle realises a two-time-scale policy-iteration procedure: for
+fixed M, the effective MDP is stationary and the algorithm converges to the locally optimal policy
+induced by the current memory coverage, while memory growth drives successive improvements of
+the effective control problem. Since the Reflected MDP approximates the underlying environment
+MDP through LLM-mediated interaction (cf. (4)), a central question is whether a Read–Write
+Reflective Learning agent can asymptotically achieve optimal MDP performance as its episodic
+memory expands. We formalise this requirement via reflection consistency, which states that
+increasing memory coverage drives the composite policy—combining retrieval and LLM action
+selection—toward the true optimal policy.
+For an episodic memory M ⊂M, define the coverage radius
+rM := sup
+s∈S
+min
+c∈M d
+ s, s(c)
+,
+where s(c) denotes the state component of memory case c. Equivalently, the statewise coverage
+radius is rM(s) := minc∈M d
+ s, s(c)
+.
+Let the (deterministic) retrieval rule cM(s) pick any case achieving the minimum. The
+LLM-induced composite policy on the original state space is
+πM(a | s) := pLLM
+ a | s, cM(s)
+.
+Assume bounded rewards |R(s, a)| ≤Rmax and γ ∈[0, 1).
+Assumption 11 (LLM local consistency). There exists a modulus εLLM(r) →0 as r →0 such
+that for any s ∈S and any case c with d
+ s, s(c)
+ ≤r,
+TV(pLLM(· | s, c), π∗(· | s)) ≤εLLM(r),
+where TV(p, q) denotes the total variation distance:
+TV(p, q) = 1
+2
+X
+a∈A
+|p(a) −q(a)|
+(discrete case),
+or
+TV(p, q) = 1
+2
+Z
+A
+|p(a) −q(a)| da
+(continuous case).
+The function εLLM(r) characterises the local decision-making capability of the LLM and can
+be interpreted as a measure of its local optimality gap. Specifically, it quantifies how closely the
+LLM-induced action distribution pLLM(· | s, c) approximates the optimal policy π⋆(· | s) when
+the retrieved memory case c lies within a neighbourhood of radius r around the true state s.
+A small value of εLLM(r) indicates that the LLM is able to infer near-optimal actions using
+only coarse or approximate contextual information. In other words, even when the retrieved
+memory does not exactly match the current state, a strong LLM can leverage its internal
+17
+
+
+semantic representations, world knowledge, and reasoning ability to interpolate correctly within
+a local region of the state space. Consequently, a good LLM is characterised by an error function
+εLLM(r) that remains small even for relatively large values of r, reflecting robustness to imprecise
+memory retrieval and limited state coverage.
+Intuitively, εLLM(r) captures the effective “radius of competence” of the LLM: it measures
+the size of the neighbourhood within which the LLM can reliably recover near-optimal behaviour
+from local contextual cues. This property directly determines how densely episodic memory
+must cover the state space in order to achieve near-optimal performance. A smaller εLLM(r) for
+larger r implies that fewer memory cases are required, leading to improved sample efficiency and
+faster convergence of the Read–Write Reflective Learning process.
+We now examine the retrieval capability. For a given state s, define δM(s) as the probability
+that the retriever selects a case whose associated state lies outside radius rM(s), conditioned
+on the existence of at least one case within this radius, due to auxiliary retrieval errors (e.g.,
+finite-bandwidth smoothing or finite-sample density estimation):
+δM(s) := P
+ d(s, s(c)) > rM(s)
+ ∃c′ ∈M : d
+ s, s(c′)
+ ≤rM(s)
+ .
+Lemma 12 (Retrieval Capability). Under Assumption 11:
+TV(πM(· | s), π⋆(· | s)) ≤εLLM(rM(s)) + δM(s)
+.
+Proof. Let Es denote the event that the retriever selects a good case within distance rM(s) of
+state s. By construction, this event occurs with probability at least 1 −δM(s). Conditioned on
+Es, Assumption 11 implies
+TV(πM(· | s), π⋆(· | s)) ≤εLLM(rM(s)) .
+With the complementary event Ec
+s, the total variation distance is trivially bounded by
+TV(πM(· | s), π⋆(· | s)) ≤1.
+Taking expectation over the retrieval event yields
+TV(πM(· | s), π⋆(· | s)) ≤(1 −δM(s)) εLLM(rM(s)) + δM(s)
+≤εLLM(rM(s)) + δM(s),
+which completes the proof.
+Lemma 13 (Immediate reward approximation). For any s ∈S, with c∗= cM(s),
+ RLLM
+ (s, M), c∗ −
+X
+a
+π∗(a | s) R(s, a)
+ ≤2Rmax TV
+
+pLLM(· | s, c∗), π∗(· | s)
+
+.
+Proof. Write RLLM =P
+a pLLM(a | s, c∗) R(s, a) and R∗(s)=P
+a π∗(a | s) R(s, a). By Hölder’s in-
+equality and the definition of total variation,
+ P
+a(p−π∗)R
+ ≤∥R∥∞∥p−π∗∥1 ≤2Rmax TV(p, π∗).
+Theorem 14 (Value difference bound via policy TV). Let π∗be the optimal for the original
+MDP, and let πM be the composite policy defined in SRDP. Then
+V π∗−V πM 
+∞≤
+2Rmax
+(1 −γ)2 sup
+s∈S
+TV
+ πM(· | s), π∗(· | s)
+ =
+2Rmax
+(1 −γ)2 ∆M.
+18
+
+
+Proof. Consider the Bellman operators (T πV )(s) = P
+a π(a | s)
+ R(s, a)+γ E[V (s′) | s, a]
+. Since
+V π∗satisfies V π∗= T π∗V π∗,
+∥V π∗−V πM ∥∞≤
+1
+1 −γ
+(T π∗−T πM )V π∗
+∞.
+For any s,
+(T π∗−T πM )V π∗(s)
+
+=
+
+X
+a
+ π∗−πM
+(a | s) R(s, a) + γ
+X
+a
+ π∗−πM
+(a | s) E[V π∗(s′) | s, a]
+
+≤2Rmax TV(π∗, πM) + γ ∥V π∗∥∞· 2 TV(π∗, πM),
+using Lemma 13’s argument and that |EV π∗| ≤∥V π∗∥∞. Since ∥V π∗∥∞≤Rmax/(1 −γ),
+(T π∗−T πM )V π∗
+∞≤2Rmax TV(π∗, πM)
+
+1 +
+γ
+1−γ
+
+= 2Rmax
+1 −γ TV(π∗, πM).
+Divide by (1 −γ) to get the claimed bound.
+Corollary 15 (Asymptotic optimality with growing memory). Under Assumption 11 and
+Lemma 12, define
+δM := sup
+s∈S
+δM(s).
+Then
+∆M := sup
+s∈S
+TV
+ πM(· | s), π⋆(· | s)
+ ≤εLLM(rM) + δM.
+If rM →0 and δM →0, then ∆M →0 and
+sup
+s∈S
+V π⋆(s) −V πM (s)
+ ≤
+2Rmax
+(1 −γ)2 ∆M −→0.
+Hence, as memory grows, the Read–Write operation drives the agent toward optimal performance
+in the underlying MDP.
+Proof. Lemma 12 implies TV(πM(· | s), π⋆(· | s)) ≤εLLM(rM) + δM(s) for all s ∈S. Taking
+the supremum over s yields ∆M ≤εLLM(rM) + δM →0. Applying Theorem 14 completes the
+proof.
+Corollary 15 formalises the role of episodic memory in enabling asymptotically optimal
+behaviour without parameter updates. The result shows that the discrepancy between the
+memory-induced policy and the optimal policy of the underlying MDP decomposes into an LLM
+approximation error and a memory coverage error. As episodic memory grows and achieves
+sufficient coverage of the state space, in the sense that locally relevant memory cases enable the
+LLM to approximate optimal actions within neighbourhoods of each state, both error terms
+vanish. Consequently, the composite policy and its associated value function converge to the
+optimal solution. This establishes that iterative read–write reflection over expanding memory is
+sufficient to recover optimal performance in the limit.
+5
+Related Work
+Our work on reflective memory dynamics and Read-Write Reflective Learning builds upon,
+yet also departs from, several established lines of research in reinforcement learning and large
+language models (LLMs). This section situates our contribution within the broader landscape of
+memory-based RL and clarifies the key distinctions from existing approaches.
+19
+
+
+The integration of memory mechanisms into reinforcement learning has long been explored
+to address the challenges of partial observability and sample complexity. Early approaches
+often relied on recurrent neural networks (RNNs), in particular Long Short-Term Memory
+(LSTM) networks [27], to maintain hidden states that capture historical information. For
+instance, [26] extends DQN with an LSTM to summarise past observations for Q-learning under
+partial observability, providing an early neural-memory approach to POMDPs [29]. However, its
+memory is implicit and entangled in the recurrent hidden state, making long-horizon retention,
+interpretability, and revision of past information difficult.
+More recent methods have taken inspiration from cognitive neuroscience, especially the
+hippocampal processes of memory formation and retrieval in humans and animals. For instance,
+the Hippocampal-Augmented Memory Integration (HAMI) framework [39] incorporates symbolic
+indexing and hierarchical refinement based on hippocampal functions. Although HAMI shares our
+biological motivation, our Parzen-KL retrieval mechanism diverges in its probabilistic formulation
+and information-theoretic regularisation, which underpin both stability and scalability.
+From another strand of memory-based RL, episodic control methods [42] such as Model Free
+Episodic Control [9] and Neural Episodic Control [40] use memory primarily as a direct control
+mechanism, retrieving past transitions to approximate values or reuse actions via similarity
+matching. In this setting, memory effectively acts as a nonparametric policy, and generalisation
+is limited to local interpolation over stored experiences [42].
+In contrast, our Read–Write Reflective Learning uses episodic memory to enable reflection
+in large language models.
+Retrieved memory does not prescribe actions directly; instead,
+it provides local contextual grounding that allows the LLM to reason and generate actions
+within a semantically relevant neighbourhood. Memory thus serves as a substrate for reflective
+generalisation rather than as a policy itself. By combining density based similarity priors with
+KL regularised updates, our approach yields a principled, scalable retrieval mechanism that
+supports stable continual learning while exploiting the LLM’s inherent capacity for local semantic
+generalisation.
+Recent work on Stable Hadamard Memory [30] highlights the importance of stability in mem-
+ory systems, using Hadamard products to calibrate and update stored information. While com-
+plementary in spirit, our method focuses instead on retrieval optimisation through information-
+theoretic regularisation. These two perspectives, stability of storage and optimality of retrieval,
+could be integrated in future research to build more comprehensive memory architectures.
+Case-based reasoning (CBR) [1, 3] has long inspired memory-driven problem solving through
+the retrieval and adaptation of past cases. Our prior work on CBR-based LLMs [23, 24] provides
+empirical evidence, particularly in data science and coding tasks, that LLMs are highly effective
+at revising retrieved cases, enabling strong generalisation to new tasks and overcoming a critical
+bottleneck in traditional CBR systems. Within our framework, CBR-based LLMs can be viewed
+as a stateless special case, for which we provide a principled and unified treatment.
+Experience replay, a widely used mechanism in deep RL since its adoption in DQN [34],
+has evolved from uniform sampling to prioritised replay [44], where transitions are sampled
+according to temporal-difference errors. While these methods improve sample efficiency, they do
+not provide the structured, similarity-based retrieval required for generalisation across diverse
+contexts. Our approach diverges here by employing density-aware retrieval via Parzen window
+estimation, offering more nuanced and context-sensitive access to stored experiences.
+Our work also connects to broader developments in information-theoretic reinforcement
+learning. Maximum entropy RL [25] introduces entropy regularisation to encourage exploration
+and robustness, while KL constraints in algorithms such as TRPO [45] and MPO [2] ensure stable
+policy updates. The distinctive aspect of our contribution is the application of KL regularisation
+not only to the policy but also to the retrieval process itself. This dual-level regularisation
+balances the exploitation of high-value memories with the exploration of diverse experiences,
+whilst preserving consistency with the underlying similarity structure.
+20
+
+
+Finally, from a theoretical perspective, our framework extends established convergence
+results in reinforcement learning. The convergence proof for our soft policy iteration builds
+upon entropy-regularised MDPs [35] but adapts them to the context of memory-based retrieval.
+Our two-time-scale analysis further draws on stochastic approximation theory [11], extending
+it to SRDPs where value and memory are updated simultaneously.
+A central outcome is
+the formal equivalence we establish between read (retrieval) and write operations and the
+fundamental processes of policy improvement and policy evaluation. This connection makes
+retrieval-augmented LLMs provably learnable for the first time, opening the way for reinforcement
+learning theory and tools to be systematically applied in this emerging setting.
+6
+Conclusions and Future Work
+In this paper, we have established a formal theoretical foundation for continual learning in LLM
+agents through episodic memory and reflection, without requiring parameter fine-tuning. The
+core contribution is the Stateful Reflective Decision Process (SRDP), which extends the classical
+MDP framework by modeling reflection as a dual-action process: a retrieval stage that reads from
+episodic memory (policy improvement) and an action generation stage conditioned on retrieved
+cases. By augmenting the state space to include memory, we prove this system is Markovian
+and can be analysed as a Reflected MDP. We then introduce Read-Write Reflective Learning, a
+practical algorithm that integrates Parzen-window-based retrieval with KL-regularised soft policy
+iteration. Key theoretical results include: (1) guaranteed convergence of the policy iteration
+algorithm under bounded rewards, (2) two-timescale convergence when memory evolves slowly
+relative to policy updates, and (3) asymptotic optimality: as episodic memory grows to cover
+the state space, the composite policy provably converges to the optimal policy of the underlying
+MDP. This framework unifies case-based reasoning [23], retrieval-augmented generation, and
+reinforcement learning under a single mathematical formalism, providing the first rigorous
+convergence guarantees for memory-driven LLM agents.
+Beyond the theoretical advances, the analysis highlights several practical implications for the
+design of memory-augmented LLM agents. Effective performance requires density-aware retrieval
+strategies to balance exploration and exploitation. The void case c0 controls the discovery
+from the LLM itself whose parameter is required to be tuned. Stability can be enhanced by
+implementing soft, entropy-regularised improvements, while systematic memory growth helps
+expand state coverage. In addition, similarity metrics and bandwidths should adapt as the
+memory evolves to maintain efficiency and relevance.
+Despite these strengths, the framework has certain limitations. It might face computational
+challenges as memory size increases. Moreover, the impact of embedding quality on performance
+is not fully addressed.
+Looking ahead, several promising directions for future work emerge. In particular, we plan
+to internalise episodic memory within the LLM architecture itself, yielding a unified stateful
+neural machine, which we outline next.
+6.1
+Internalising Episodic Memory into the LLM Architecture
+In modern contexts, LLM agents increasingly employ explicit episodic memory systems to extend
+context and improve performance across diverse tasks [63, 15, 18]. Yet, the integration of memory
+retrieval with decision-making in LLMs still lacks a firm theoretical foundation, particularly
+regarding the conditions under which such systems converge to optimal behaviour. Our work
+addresses this gap directly.
+A natural next step is to integrate the episodic memory and read–write reflection mechanism
+of SRDP directly into the LLM architecture, yielding a single neural system whose internal
+state corresponds to the augmented state (s, M). Recent “test-time memorisation” lines of
+21
+
+
+work provide useful architectural blueprints. In particular, Titans introduces a neural long-
+term memory module that updates while the model is running, thereby supporting continual
+memorisation beyond the context window without offline retraining [4]. MIRAS further reframes
+modern sequence models as instances of associative memory with explicit choices of memory
+structure, retention, and online optimisation [5].
+Our EM-LLM work in [18] introduces a
+human-inspired episodic memory architecture that enables large language models to operate
+with effectively infinite context by selectively storing, retrieving, and reusing past experiences to
+support long-horizon reasoning and decision-making. These developments suggest a promising
+direction: replace external retrieval of SRDP over a growing case base by an internal memory
+state that is updated online, while retaining the SRDP control view in which “read” implements
+policy improvement and “write” implements policy evaluation.
+Our Read-Write loop differs from Titans-style test-time updates in a key way: SRDP performs
+stateful adaptation through experience-grounded reflection and memory evolution, rather than
+gradient-based parameter updates of the base model. A concrete research direction is to design
+a hybrid architecture in which the LLM remains fixed or slow-updated, but an internal memory
+module (or a small retrieval policy head) is updated online using environment feedback, with
+a provable two-time-scale separation between fast policy iteration and slow memory evolution.
+This would preserve the stability benefits of our reflected-MDP analysis while inheriting the
+efficiency and scalability motivations emphasised in Titans/MIRAS [4, 5] and EM-LLM [18].
+More broadly, recent work on test-time training layers and nested optimisation provides
+a conceptual bridge between architecture and learning dynamics. Test-time training (TTT)
+instantiates sequence layers whose hidden state is itself a learnable model updated during inference
+[48]. Nested Learning argues that modern deep models can be viewed as systems of nested
+optimisation problems with their own internal workflows, offering a principled lens on continual
+learning and catastrophic forgetting [6]. An important future direction is to recast SRDP
+within this nested-optimisation view: the outer loop corresponds to fixed LLM representations
+and long-term objectives, while the inner loop implements read–write reflective adaptation as
+an online optimisation over an internal memory state. Such a unification could clarify when
+reflection-based memory updates are sufficient for continual learning, when parameter adaptation
+is necessary, and how to combine both without destabilising long-horizon control.
+Another dimension worth exploring is principled memory consolidation. Recent work on
+KV-state consolidation in Transformer architectures (Bottlenecked Transformers) demonstrates
+that selectively rewriting and compressing internal memory can improve predictive efficiency
+and long-horizon reasoning without expanding context length [36]. From the perspective of
+SRDP, such mechanisms provide an architectural realisation of the write operation, transforming
+episodic experience into a compact latent state that supports future reflection. This view is
+further supported by our work on Agent K, which shows that structured cycles of interaction,
+reflection, abstraction, and consolidation enable effective experiential learning without parameter
+fine-tuning [21]. Together, these results point toward an architecture in which episodic memory
+is consolidated on a slow time scale and queried on a fast time scale, aligning architectural
+dynamics with the SRDP formalism.
+Finally, these connections open new theoretical questions. MIRAS links sequence modelling
+to online optimisation and retention mechanisms [5]; integrating SRDP into this framework may
+yield sharper characterisations of memory coverage, approximation error, and the conditions
+under which reflective memory updates guarantee monotone improvement and asymptotic
+optimality. Establishing such results for neural internal memories (rather than external case
+stores) would move SRDP toward a unified neural state machine architecture in which episodic
+experience, reflection, and control are implemented end-to-end together.
+22
+
+
+7
+Acknowledgements
+We are grateful to Xue Yan for valuable discussions on reinforcement learning and kernel methods,
+Siyuan Guo for insights into bandit algorithms and the discovery–exploration–exploitation trade-
+off, and Huichi Zhou and Yihang Chen and Yuxiang Chen for assistance with implementation
+and proof-read. We also thank collaborators who reviewed earlier versions of this manuscript
+and provided helpful feedback.
+References
+[1] Agnar Aamodt and Enric Plaza. Case-based reasoning: foundational issues, methodological variations,
+and system approaches. AI Communications, 7(1):39–59, 1994.
+[2] Abbas Abdolmaleki, Jost Tobias Springenberg, Jonas Degrave, et al. Maximum a posteriori policy
+optimisation. arXiv preprint arXiv:1806.06920, 2018.
+[3] Kevin D. Ashley. Modeling Legal Argument: Reasoning with Cases and Hypotheticals. MIT Press,
+1990.
+[4] Ali Behrouz, Peilin Zhong, and Vahab Mirrokni. Titans: Learning to memorize at test time. arXiv
+preprint arXiv:2501.00663, 2024.
+[5] Ali Behrouz, Meisam Razaviyayn, Peilin Zhong, and Vahab Mirrokni. It’s all connected: A journey
+through test-time memorization, attentional bias, retention, and online optimization. arXiv preprint
+arXiv:2504.13173, 2025.
+[6] Ali Behrouz, Meisam Razaviyayn, Peilin Zhong, and Vahab Mirrokni. Nested learning: The illusion
+of deep learning architectures. In Advances in Neural Information Processing Systems, 2025.
+[7] Donald A Berry, Robert W Chen, Alan Zame, David C Heath, and Larry A Shepp. Bandit problems
+with infinitely many arms. The Annals of Statistics, 25(5):2103–2116, 1997.
+[8] Maciej Besta, Nils Blach, Ales Kubicek, Robert Gerstenberger, Lukas Gianinazzi, Joanna Gajda,
+Tomasz Lehmann, Michał Podstawski, Hubert Niewiadomski, Piotr Nyczyk, and Torsten Hoefler.
+Graph of thoughts: Solving elaborate problems with large language models. In Proceedings of the
+Thirty-Eighth AAAI Conference on Artificial Intelligence, 2024.
+[9] Charles Blundell, Benigno Uria, Alexander Pritzel, Yazhe Li, Avraham Ruderman, Joel Z Leibo,
+Jack Rae, Daan Wierstra, and Demis Hassabis.
+Model-free episodic control.
+arXiv preprint
+arXiv:1606.04460, 2016.
+[10] Sebastian Borgeaud, Arthur Mensch, Jordan Hoffmann, Trevor Cai, Eliza Rutherford, Katie Millican,
+George Van Den Driessche, Jean-Baptiste Lespiau, Bogdan Damoc, Aidan Clark, Diego de Las Casas,
+Aurélia Guy, Jacob Menick, Roman Ring, Tom Hennigan, Saffron Huang, Loren Maggiore, Chris
+Jones, Albin Cassirer, Andy Brock, Michela Paganini, Geoffrey Irving, Oriol Vinyals, Simon Osindero,
+Karen Simonyan, Jack Rae, Erich Elsen, and Laurent Sifre. Improving language models by retrieving
+from trillions of tokens. In Proceedings of the 39th International Conference on Machine Learning
+(ICML), 2022.
+[11] Vivek S. Borkar. Stochastic Approximation: A Dynamical Systems Viewpoint. Springer, 2009.
+[12] Vivek S. Borkar and Sean P. Meyn. The ODE method for convergence of stochastic approximation
+and reinforcement learning. SIAM Journal on Control and Optimization, 38(2):447–469, 2000.
+[13] Stephen Boyd and Lieven Vandenberghe. Convex Optimization. Cambridge University Press, 2004.
+[14] Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal,
+Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. Language models are
+few-shot learners. Advances in neural information processing systems, 33:1877–1901, 2020.
+23
+
+
+[15] Prateek Chhikara, Dev Khant, Saket Aryan, Taranjeet Singh, and Deshraj Yadav. Mem0: Building
+production-ready AI agents with scalable long-term memory. arXiv preprint arXiv:2504.19413, 2025.
+[16] Filippos Christianos, Georgios Papoudakis, Matthieu Zimmer, Thomas Coste, Zhihao Wu, Jingxuan
+Chen, Khyati Khandelwal, James Doran, Xidong Feng, Jiacheng Liu, Zheng Xiong, Yicheng Luo,
+Jianye Hao, Kun Shao, Haitham Bou-Ammar, and Jun Wang. Pangu-agent: A fine-tunable generalist
+agent with structured reasoning. arXiv preprint arXiv:2312.14878, 2023.
+[17] Danny Driess, Fei Xia, Mehdi S. M. Sajjadi, Corey Lynch, Aakanksha Chowdhery, Brian Ichter,
+Ayzaan Wahid, Jonathan Tompson, Quan Vuong, Tianhe Yu, Wenlong Huang, Yevgen Chebotar,
+Pierre Sermanet, Daniel Duckworth, Sergey Levine, Vincent Vanhoucke, Karol Hausman, Marc
+Toussaint, Klaus Greff, Andy Zeng, Igor Mordatch, and Pete Florence. Palm-E: an embodied
+multimodal language model.
+In Proceedings of the 40th International Conference on Machine
+Learning, 2023.
+[18] Zafeirios Fountas, Martin A. Benfeghoul, Adnan Oomerjee, Fenia Christopoulou, Gerasimos Lam-
+pouras, Haitham Bou-Ammar, and Jun Wang. Human-like episodic memory for infinite context llms.
+arXiv preprint arXiv:2407.09450, 2024.
+[19] Samuel J. Gershman and Nathaniel D. Daw. Reinforcement learning and episodic memory in humans
+and animals: An integrative framework. Annual Review of Psychology, 68:101–128, 2017. doi:
+10.1146/annurev-psych-122414-033625.
+[20] Ian Goodfellow, Yoshua Bengio, Aaron Courville, and Yoshua Bengio. Deep learning. MIT press
+Cambridge, 2016.
+[21] Antoine Grosnit, Alexandre Max Maraval, N RefinathS, Zichao Zhao, James Doran, Giuseppe Paolo,
+Albert Thomas, Jonas Gonzalez, Abhineet Kumar, Khyati Khandelwal, Abdelhakim Benechehab,
+Hamza Cherkaoui, Youssef Attia El-Hili, Kun Shao, Jianye Hao, Jun Yao, Balázs Kégl, Haitham
+Bou-Ammar, and Jun Wang. Kolb-based experiential learning for generalist agents with human-level
+kaggle data science performance. arXiv preprint, 2025.
+[22] Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu, Qihao Zhu, Shirong
+Ma, Peiyi Wang, Xiao Bi, Xiaokang Zhang, Xingkai Yu, Yu Wu, Z. F. Wu, Zhibin Gou, Zhihong
+Shao, et al. Deepseek-R1: Incentivizing reasoning capability in LLMs via reinforcement learning.
+arXiv preprint arXiv:2501.12948, 2025.
+[23] Siyuan Guo, Cheng Deng, Ying Wen, Hechang Chen, Yi Chang, and Jun Wang. DS-Agent: Automated
+data science by empowering large language models with case-based reasoning. In International
+Conference on Machine Learning, pages 16813–16848. PMLR, 2024.
+[24] Siyuan Guo, Huiwu Liu, Xiaolong Chen, Yuming Xie, Liang Zhang, Tao Han, Hechang Chen,
+Yi Chang, and Jun Wang.
+Optimizing case-based reasoning system for functional test script
+generation with large language models. In Proceedings of the 31st ACM SIGKDD Conference on
+Knowledge Discovery and Data Mining V. 2, pages 4487–4498, 2025.
+[25] Tuomas Haarnoja, Aurick Zhou, Kristian Hartikainen, et al. Soft Actor-Critic: off-policy maximum
+entropy deep reinforcement learning with a stochastic actor. arXiv preprint arXiv:1801.01290, 2018.
+[26] Matthew J Hausknecht and Peter Stone. Deep recurrent Q-learning for partially observable mdps.
+In AAAI fall symposia, volume 45, page 141, 2015.
+[27] Sepp Hochreiter and Jürgen Schmidhuber. Long short-term memory. Neural Computation, 9(8):
+1735–1780, 1997.
+[28] Noah Hollmann, Samuel Müller, Lennart Purucker, Arjun Krishnakumar, Max Körfer, Shi Bin Hoo,
+Robin Tibor Schirrmeister, and Frank Hutter. Accurate predictions on small data with a tabular
+foundation model. Nature, 637(8045):319–326, 2025.
+[29] Leslie Pack Kaelbling, Michael L. Littman, and Anthony R. Cassandra. Planning and acting in
+partially observable stochastic domains. Artif. Intell., 1998.
+24
+
+
+[30] Hung Le, Dung Nguyen, Kien Do, Sunil Gupta, and Svetha Venkatesh. Stable hadamard memory:
+Revitalizing memory-augmented agents for reinforcement learning. In Proc. of ICLR 2025, 2025.
+[31] Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal,
+Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, et al. Retrieval-augmented generation
+for knowledge-intensive NLP tasks. In Advances in Neural Information Processing Systems (NeurIPS),
+2020.
+[32] Hunter Lightman, Vineet Kosaraju, Yuri Burda, Harrison Edwards, Bowen Baker, Teddy Lee, Jan
+Leike, John Schulman, Ilya Sutskever, and Karl Cobbe. Let’s verify step by step. In The Twelfth
+International Conference on Learning Representations, 2023.
+[33] James L. McClelland, Bruce L. McNaughton, and Randall C. O’Reilly. Why there are complementary
+learning systems in the hippocampus and neocortex: Insights from the successes and failures of
+connectionist models of learning and memory. Psychological Review, 102(3):419–457, 1995. doi:
+10.1037/0033-295X.102.3.419.
+[34] Volodymyr Mnih, Koray Kavukcuoglu, David Silver, Andrei A Rusu, Joel Veness, Marc G Bellemare,
+Alex Graves, Martin Riedmiller, Andreas K Fidjeland, Georg Ostrovski, et al. Human-level control
+through deep reinforcement learning. nature, 518(7540):529–533, 2015.
+[35] Gergely Neu, Anders Jonsson, and Vicenç Gómez. A unified view of entropy-regularized markov
+decision processes. arXiv preprint arXiv:1705.07798, 2017.
+[36] Adnan Oomerjee, Zafeirios Fountas, Zhongwei Yu, Haitham Bou-Ammar, and Jun Wang. Bot-
+tlenecked transformers: Periodic kv cache abstraction for generalised reasoning. arXiv preprint
+arXiv:2505.16950, 2025.
+[37] Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong
+Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et al. Training language models to follow
+instructions with human feedback. Advances in neural information processing systems, 35:27730–
+27744, 2022.
+[38] Emanuel Parzen.
+On estimation of a probability density function and mode.
+The Annals of
+Mathematical Statistics, 33(3):1065–1076, 1962.
+[39] H. Poursiami, A. Moshruba, K. W. Cooper, and et al. A scalable reinforcement learning framework
+inspired by hippocampal memory mechanisms for efficient contextual and sequential decision making.
+Scientific Reports, 15:25221, 2025. doi: 10.1038/s41598-025-10586-x.
+[40] Alexander Pritzel, Benigno Uria, Sriram Srinivasan, Adria Puigdomenech Badia, Oriol Vinyals,
+Demis Hassabis, Daan Wierstra, and Charles Blundell. Neural episodic control. In International
+conference on machine learning, pages 2827–2836. PMLR, 2017.
+[41] Martin L. Puterman. Markov Decision Processes: Discrete Stochastic Dynamic Programming. Wiley,
+1994.
+[42] Dhruv Ramani.
+A short survey on memory based reinforcement learning.
+arXiv preprint
+arXiv:1904.06736, 2019.
+[43] David E Rumelhart, Geoffrey E Hinton, and Ronald J Williams. Learning representations by
+back-propagating errors. nature, 323(6088):533–536, 1986.
+[44] Tom Schaul, John Quan, Ioannis Antonoglou, et al. Prioritized experience replay. arXiv preprint
+arXiv:1511.05952, 2015.
+[45] John Schulman, Sergey Levine, Pieter Abbeel, et al. Trust region policy optimization. Proceedings
+of the 32nd International Conference on Machine Learning, 2015.
+[46] Shai Shalev-Shwartz and Shai Ben-David. Understanding machine learning: From theory to algo-
+rithms. Cambridge university press, 2014.
+[47] David Silver and Richard S Sutton. Welcome to the era of experience. Google AI, 1, 2025.
+25
+
+
+[48] Yu Sun, Xinhao Li, Karan Dalal, Jiarui Xu, Arjun Vikram, Genghan Zhang, Yann Dubois, Xinlei
+Chen, Xiaolong Wang, Sanmi Koyejo, Tatsunori Hashimoto, and Carlos Guestrin. Learning to (learn
+at test time): RNNs with expressive hidden states. arXiv preprint arXiv:2407.04620, 2024.
+[49] Richard S. Sutton and Andrew G. Barto. Reinforcement Learning: An Introduction. MIT Press, 2
+edition, 2018.
+[50] Endel Tulving. Elements of Episodic Memory. Oxford University Press, Oxford, UK, 1983.
+[51] AM Turing. Intelligent machinery, a heretical theory. Philosophia Mathematica, 4(3), 1996.
+[52] Leslie G Valiant. A theory of the learnable. Communications of the ACM, 27(11):1134–1142, 1984.
+[53] Ziyu Wan, Xidong Feng, Muning Wen, Stephen Marcus Mcaleer, Ying Wen, Weinan Zhang, and
+Jun Wang. Alphazero-like tree-search can guide large language model decoding and training. In
+International Conference on Machine Learning, pages 49890–49920. PMLR, 2024.
+[54] Jun Wang. A tutorial on LLM reasoning: Relevant methods behind chatgpt o1. arXiv preprint
+arXiv:2502.10867, 2025.
+[55] Jun Wang, Arjen P De Vries, and Marcel JT Reinders. Unified relevance models for rating prediction
+in collaborative filtering. ACM Transactions on Information Systems (TOIS), 26(3):1–42, 2008.
+[56] Jun Wang, Meng Fang, Ziyu Wan, Muning Wen, Jiachen Zhu, Anjie Liu, Ziqin Gong, Yan Song,
+Lei Chen, Lionel M Ni, et al. OpenR: An open source framework for advanced reasoning with large
+language models. arXiv preprint arXiv:2410.09671, 2024.
+[57] Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, Ed H. Chi,
+Quoc V. Le, and Denny Zhou. Chain-of-thought prompting elicits reasoning in large language models.
+In Advances in Neural Information Processing Systems (NeurIPS), 2022.
+[58] Yingxuan Yang, Mulei Ma, Yuxuan Huang, Huacan Chai, Chenyu Gong, Haoran Geng, Yuanjian
+Zhou, Ying Wen, Meng Fang, Muhao Chen, Shangding Gu, Ming Jin, Costas Spanos, Yang Yang,
+Pieter Abbeel, Dawn Song, Weinan Zhang, and Jun Wang. Agentic web: Weaving the next web
+with ai agents. arXiv preprint arXiv:2507.21206, 2025.
+[59] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, and Yuan Cao.
+React: Synergizing reasoning and acting in language models. arXiv preprint arXiv:2210.03629, 2022.
+[60] Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran, Thomas L. Griffiths, Yuan Cao, and Karthik
+Narasimhan. Tree of thoughts: Deliberate problem solving with large language models. In Proceedings
+of the 37th International Conference on Neural Information Processing Systems, 2023.
+[61] Zhongwei Yu, Wannian Xia, Xue Yan, Bo Xu, Haifeng Zhang, Yali Du, and Jun Wang. Self-verifying
+reflection helps transformers with cot reasoning. arXiv preprint arXiv:2510.12157, 2025.
+[62] Yongcheng Zeng, Guoqing Liu, Weiyu Ma, Ning Yang, Haifeng Zhang, and Jun Wang. Token-level
+direct preference optimization. In International Conference on Machine Learning, pages 58348–58365.
+PMLR, 2024.
+[63] Wanjun Zhong, Lianghong Guo, Qiqi Gao, He Ye, and Yanlin Wang. Memorybank: Enhancing
+large language models with long-term memory. In Proceedings of the AAAI Conference on Artificial
+Intelligence, volume 38, pages 19724–19731, 2024.
+[64] Huichi Zhou, Yihang Chen, Siyuan Guo, Xue Yan, Kin Hei Lee, Zihan Wang, Ka Yiu Lee, Guchun
+Zhang, Kun Shao, Linyi Yang, and Jun Wang. Memento: Fine-tuning LLM agents without fine-tuning
+LLMs. Preprint, 2025.
+[65] Brian D. Ziebart. Modeling purposeful adaptive behavior with the principle of maximum causal
+entropy. PhD thesis, Carnegie Mellon University, 2010.
+26
+
+
+A
+Proof of Lemma 5
+Proof. The Lagrangian for (10) with the constraint P
+c ν(c) = 1 is
+L(ν, λ) =
+X
+c
+ν(c)Q(x, c) −α
+X
+c
+ν(c) log
+ν(c)
+µ0(c | x) −λ
+ X
+c
+ν(c) −1
+
+.
+Taking the partial derivative w.r.t. ν(c) and setting it to zero, we use
+∂
+∂ν
+h
+ν log(ν/µ0)
+i
+= log(ν/µ0) + 1,
+to obtain
+∂L
+∂ν(c) = Q(x, c) −α
+
+log
+ν(c)
+µ0(c | x) + 1
+
+−λ = 0.
+Equivalently,
+log
+ν(c)
+µ0(c | x) = Q(x, c) −λ
+α
+−1.
+Therefore,
+ν(c) = µ0(c | x) exp
+
+1
+αQ(x, c)
+
+exp
+
+−1 −λ
+α
+
+.
+Imposing P
+c ν(c) = 1 gives the normalising constant
+exp
+
+−1 −λ
+α
+
+=
+ X
+c
+µ0(c | x) exp
+
+1
+αQ(x, c)
+!−1
+.
+Substituting back yields (11).
+B
+Proof of Theorem 8
+Unlike standard soft reinforcement learning [25], our setting involves state-dependent base
+measures that vary with memory content, requiring a careful analysis of the induced operators.
+In particular, extending KL-regularised evaluation requires establishing that the associated
+log-sum-exp operations preserve contraction for both the value function and the prior distributed
+resulted from memory updates. Lemma 16 extends the log-sum-exp Lipschitz bound [13] to this
+setting with Parzen base measures and memory updates.
+B.1
+Bi-Lipschitz Properties
+Lemma 16 (Bi-Lipschitz property of log-sum-exp with base measure). Let q, q′ ∈Rn, b, b′ ∈∆n,
+and α > 0. Define
+f(b, q) := α log
+n
+X
+i=1
+bi exp(qi/α).
+Then:
+1. (Lipschitz in q) For any fixed b ∈∆n,
+|f(b, q) −f(b, q′)| ≤∥q −q′∥∞.
+2. (Lipschitz in b) If qi ∈[Qmin, Qmax] for all i and ∆Q = Qmax −Qmin, then for any fixed
+q,
+|f(b, q) −f(b′, q)| ≤αe∆Q/α ∥b −b′∥1 = 2αe∆Q/α TV(b, b′).
+27
+
+
+3. (Joint bound) Under the same boundedness condition,
+|f(b, q) −f(b′, q′)| ≤∥q −q′∥∞+ αe∆Q/α ∥b −b′∥1.
+Proof. (1) Lipschitz in q (base-measure log-sum-exp). Fix any b ∈∆n and define the
+single-argument function
+f(q) := f(b, q) = α log
+n
+X
+i=1
+bi exp
+qi
+α
+
+.
+The function f is differentiable with gradient
+∇f(q) =
+"
+bi exp(qi/α)
+Pn
+j=1 bj exp(qj/α)
+#n
+i=1
+,
+which is a probability vector (all components are nonnegative and sum to one), hence
+∥∇f(q)∥1 = 1
+for all q ∈Rn.
+By the mean value theorem for vector-valued functions (e.g., [13]), there exists ξ on the line
+segment between q and q′ such that
+f(q) −f(q′) = ∇f(ξ)⊤(q −q′).
+Therefore, by Hölder’s inequality,
+|f(b, q) −f(b, q′)| = |f(q) −f(q′)| ≤∥∇f(ξ)∥1 ∥q −q′∥∞= ∥q −q′∥∞.
+(2) Lipschitz in b. Fix any q and write f(b, q) = α log(b⊤w) with wi = eqi/α. Then
+∇bf(b, q) = α
+w
+b⊤w.
+If qi ∈[Qmin, Qmax] for all i, then
+min
+i
+wi = eQmin/α,
+max
+i
+wi = eQmax/α,
+b⊤w ≥min
+i
+wi = eQmin/α.
+Hence
+∥∇bf(b, q)∥∞≤α maxi wi
+mini wi
+= αe(Qmax−Qmin)/α = αe∆Q/α.
+Applying the mean value theorem in b and ℓ1–ℓ∞duality gives
+|f(b, q) −f(b′, q)| ≤∥∇bf(ξ, q)∥∞∥b −b′∥1 ≤αe∆Q/α ∥b −b′∥1 = 2αe∆Q/α TV(b, b′).
+(3) Joint bound. Add and subtract f(b, q′) and apply (1)–(2):
+|f(b, q) −f(b′, q′)| ≤|f(b, q) −f(b, q′)| + |f(b, q′) −f(b′, q′)| ≤∥q −q′∥∞+ αe∆Q/α ∥b −b′∥1.
+Next, we use the above to establish the contraction for the KL-regularised evaluation.
+28
+
+
+B.2
+Contraction of the KL-Regularised Evaluation Operator
+We prove Theorem 17 using a single unified Lipschitz lemma for log-sum-exp with a base measure
+(Lemma 16), which simultaneously provides (i) Lipschitz continuity in the value argument Q
+and (ii) stability with respect to perturbations of the base measure induced by memory.
+Theorem 17 (Contraction of KL-Regularised Evaluation). Fix a memory state M and a base
+measure µM
+0 (· | x) for each context x. Define the KL-regularised evaluation operator T µ,M
+KL
+acting
+on Q : X × C →R by
+(T µ,M
+KL Q)(x, c) := r(x, c) + γ α log
+ X
+c′∈C
+µM
+0 (c′ | x′) exp(Q(x′, c′)/α)
+
+,
+(21)
+where x′ denotes the next context/state (possibly random) following (x, c), and γ ∈(0, 1) is the
+discount factor. Then T µ,M
+KL
+is a γ-contraction in the ∥· ∥∞norm:
+∥T µ,M
+KL Q −T µ,M
+KL Q′∥∞≤γ∥Q −Q′∥∞.
+Consequently, T µ,M
+KL
+admits a unique fixed point Q⋆
+M.
+Proof. Fix M and let Q, Q′ be arbitrary bounded functions.
+For any (x, c), subtract (21)
+evaluated at Q and Q′:
+(T µ,M
+KL Q)(x, c) −(T µ,M
+KL Q′)(x, c)
+
+= γ
+α log
+ X
+c′
+µM
+0 (c′ | x′)eQ(x′,c′)/α
+−α log
+ X
+c′
+µM
+0 (c′ | x′)eQ′(x′,c′)/α .
+Define, for the (fixed) probability vector b = µM
+0 (· | x′),
+f(b, q) := α log
+X
+i
+bieqi/α,
+q := Q(x′, ·),
+q′ := Q′(x′, ·).
+By Lemma 16(1) (Lipschitz in q for fixed b), we have
+f(b, q) −f(b, q′)
+ ≤∥q −q′∥∞= ∥Q(x′, ·) −Q′(x′, ·)∥∞≤∥Q −Q′∥∞.
+Therefore, for all (x, c),
+(T µ,M
+KL Q)(x, c) −(T µ,M
+KL Q′)(x, c)
+ ≤γ∥Q −Q′∥∞.
+Taking the supremum over (x, c) yields
+∥T µ,M
+KL Q −T µ,M
+KL Q′∥∞≤γ∥Q −Q′∥∞,
+so T µ,M
+KL
+is a γ-contraction. Existence and uniqueness of the fixed point follow from Banach’s
+fixed-point theorem.
+Remark 18 (Stability under memory perturbations). The same Lemma 16 also provides stability
+of the evaluation operator to changes in memory-induced base measures. In particular, under
+boundedness of Q, Lemma 16(2) implies that for any M, M′,
+sup
+x′
+α log
+X
+c′
+µM
+0 (c′ | x′)eQ(x′,c′)/α −α log
+X
+c′
+µM′
+0 (c′ | x′)eQ(x′,c′)/α
+ ≤2αe∆Q/α ∥M′ −M∥.
+This perturbation bound is used later to establish the Lipschitz continuity of the moving fixed
+point Q⋆
+M and to derive the tracking recursion for two-timescale read–write learning.
+We next establish monotone improvement results for Read–Write Learning Iterations (Theo-
+rem 19).
+29
+
+
+B.3
+Monotone Improvement of Read-Write Iterations
+Our analysis relies on the Gibbs variational principle, also known as the log-sum-exp conjugate
+duality [13, Section 3.3], which connects entropy-regularised optimisation to exponential-family
+distributions. In particular, the Gibbs principle states that
+α log
+X
+i
+eqi/α = max
+ν∈∆n
+(X
+i
+νiqi −αH(ν)
+)
+,
+where H(ν) = −P
+i νi log νi denotes the Shannon entropy.
+This identity characterises the
+log-sum-exp operator as the optimal value of an entropy-regularised linear objective.
+Our setting extends this principle by incorporating a base measure through the Kullback–
+Leibler divergence KL(ν∥µ0), replacing entropy regularisation with relative entropy. This yields a
+Parzen-style exponential-family formulation and corresponds to the Bregman divergence induced
+by negative entropy [65].
+Theorem 19 (Monotone Improvement Under Parzen-KL). Let Qµ be the fixed point of T µ
+KL
+and define µ+ via (11). Then:
+V µ+(x) ≥V µ(x)
+for all x
+Proof: By the generalised Gibbs variational principle with base measure µ0:
+α log
+X
+c
+µ0(c | x)eQµ(x,c)/α
+(22)
+=
+max
+ν∈∆(M)
+(X
+c
+ν(c)Qµ(x, c) −α KL(ν∥µ0(· | x))
+)
+(23)
+The maximiser is exactly µ+ from (11). Therefore:
+V µ+(x) =
+X
+c
+µ+(c | x)Qµ(x, c) −α KL(µ+(· | x)∥µ0(· | x))
+(24)
+= α log
+X
+c
+µ0(c | x)eQµ(x,c)/α
+(25)
+≥
+X
+c
+µ(c | x)Qµ(x, c) −α KL(µ(· | x)∥µ0(· | x))
+(26)
+= V µ(x)
+(27)
+The inequality follows since µ+ maximises the objective defining V µ.
+Finally, we derive the proof of Theorem 8 for the convergence of the Read-Write Learning.
+B.4
+Convergence of Read-Write Iterations
+Proof. Let (Qt, µt) be the sequence of iterates. By Theorem 19, the soft values satisfy V µt+1(x) ≥
+V µt(x) for all x.
+Since rewards are bounded by Rmax and γ < 1, soft values are uniformly bounded:
+V µ(x) ≤Rmax
+1 −γ + α log |M|.
+The last term uses KL(ν∥µ0) ≥−log |M| for any ν ∈∆(M). Since {V µt} is bounded and
+monotone increasing, it converges pointwise to some limit ¯V . By Theorem 17, each evaluation
+stage converges to the unique Qµt. The sequence {Qµt} lies in a compact subset of bounded
+functions. Any limit point ( ¯Q, ¯µ) must satisfy:
+30
+
+
+• Bellman consistency: ¯Q = T ¯µ
+KL ¯Q
+• KL optimality: ¯µ maximizes the KL-regularised objective given ¯Q
+By continuity of the improvement mapping (11), these conditions uniquely determine the
+fixed point, so the entire sequence converges.
+C
+Lipschitz Properties of Memory Updates
+In practice, memory updates typically follow one of these patterns:
+1. Experience Replay Buffer:
+Mt+1 =
+(
+Mt ∪{(st, at, rt)}
+with probability ρt
+Mt
+otherwise
+(28)
+2. Sliding Window Memory:
+Mt+1 = (Mt \ {oldest case}) ∪{(st, at, rt)}
+with probability ρt
+(29)
+3. Importance-Weighted Memory:
+Mt+1 = Mt ∪{(st, at, rt, wt)}
+where wt = f(Qt, µt)
+(30)
+Throughout, we make explicit the role of memory as an operator-valued state rather than a
+raw set. In other words, although memory Mt is implemented as a buffer of cases, the algorithm
+accesses memory only through the induced base measure
+µM
+0 (· | x),
+used by the Parzen–KL prior and the KL-regularised evaluation operator.
+Definition 20 (Memory distance induced by base measures). Let C be a (countable) universe
+of case identifiers. Each memory buffer M ⊆C induces a memory-dependent base measure
+µM
+0 (· | x) ∈∆C,
+with µM
+0 (c | x) = 0 for all c /∈M.
+We define the memory distance between two memory buffers M and M′ at the operator level
+as
+∥M′ −M∥:= sup
+x TV
+
+µM′
+0 (· | x), µM
+0 (· | x)
+
+= 1
+2 sup
+x
+µM′
+0 (· | x) −µM
+0 (· | x)
+
+1.
+(31)
+All subsequent norms involving memory are understood in this sense.
+Assumption 21 (Bounded Q-range). For all x ∈X and c ∈C, Q(x, c) ∈[Qmin, Qmax] and
+∆Q := Qmax −Qmin.
+Lemma 22 (Lipschitz continuity of the Parzen–KL targets in memory). Assume 20–21. Fix
+any Q and define, for each x,
+GM(x; Q) := α log
+X
+c′∈C
+µM
+0 (c′ | x) exp
+ Q(x, c′)/α
+,
+and
+ΦM(c | x; Q) :=
+µM
+0 (c | x) exp(Q(x, c)/α)
+P
+c′∈C µM
+0 (c′ | x) exp(Q(x, c′)/α).
+31
+
+
+Then for any M, M′ and all x,
+GM(x; Q) −GM′(x; Q)
+ ≤αe∆Q/α ∥µM
+0 (· | x) −µM′
+0 (· | x)∥1,
+(32)
+∥ΦM(· | x; Q) −ΦM′(· | x; Q)∥1 ≤2e∆Q/α ∥µM
+0 (· | x) −µM′
+0 (· | x)∥1.
+(33)
+Consequently,
+sup
+x |GM(x; Q) −GM′(x; Q)| ≤2αe∆Q/α ∥M′ −M∥,
+sup
+x ∥ΦM(· | x; Q) −ΦM′(· | x; Q)∥1 ≤4e∆Q/α ∥M′ −M∥.
+Proof. Fix x and abbreviate b = µM
+0 (· | x), b′ = µM′
+0 (· | x), and w(c) = exp(Q(x, c)/α). By
+Assumption 21, w(c) ∈[eQmin/α, eQmax/α].
+(i) Lipschitzness of GM.
+Write GM(x; Q) = α log(b⊤w). This map is differentiable in b with
+∇b(α log(b⊤w)) = α w/(b⊤w). Since b⊤w ≥minc w(c) = eQmin/α,
+∥∇b(α log(b⊤w))∥∞≤α maxc w(c)
+minc w(c) = αe(Qmax−Qmin)/α = αe∆Q/α.
+By the mean value theorem and Hölder’s inequality,
+|GM(x; Q) −GM′(x; Q)| = |∇bG⊤
+ξ (b −b′)| ≤∥∇bGξ∥∞∥b −b′∥1 ≤αe∆Q/α∥b −b′∥1,
+which proves (32).
+(ii) Lipschitzness of ΦM.
+Let wi = eqi/α and Z(b) = b⊤w. Then ψ(b)i = biwi/Z(b). Write
+ψ(b) −ψ(b′) = b ⊙w
+Z(b) −b′ ⊙w
+Z(b′) = (b −b′) ⊙w
+Z(b)
+|
+{z
+}
+(A)
++ (b′ ⊙w)
+
+1
+Z(b) −
+1
+Z(b′)
+
+|
+{z
+}
+(B)
+,
+where ⊙is elementwise product. For (A), using Z(b) ≥mini wi = eQmin/α,
+∥(A)∥1 ≤∥(b −b′) ⊙w∥1
+Z(b)
+≤maxi wi
+mini wi
+∥b −b′∥1 = e∆Q/α∥b −b′∥1.
+For (B), note |Z(b) −Z(b′)| ≤∥b −b′∥1 maxi wi and Z(b)Z(b′) ≥(mini wi)2. Also ∥b′ ⊙w∥1 =
+Z(b′) ≤maxi wi. Thus
+∥(B)∥1 ≤∥b′ ⊙w∥1
+|Z(b) −Z(b′)|
+Z(b)Z(b′)
+≤(max w)∥b −b′∥1(max w)
+(min w)2
+= e∆Q/α∥b −b′∥1.
+Summing the two bounds yields (33). Finally, applying Definition 20 gives ∥b−b′∥1 ≤2∥M′−M∥
+uniformly over x, proving the stated consequences.
+Lemma 23 (Lipschitz continuity of FM in memory for updates (14)–(15)). Consider the
+sample-form updates:
+δt(Q, µ0, M) := rt + γ α log
+ X
+c′∈M
+µM
+0 (c′ | xt+1)eQ(xt+1,c′)/α
+−Q(xt, ct),
+Φt(c | x; Q, µ0, M) :=
+µM
+0 (c | x)eQ(x,c)/α
+P
+c′∈M µM
+0 (c′ | x)eQ(x,c′)/α .
+Let FM(Z) denote the mean-field drift of (Q, µ) induced by these targets (i.e., conditional
+expectations given the current state). Under 20–21, there exists LF < ∞such that for any fixed
+Z = (Q, µ),
+∥FM′(Z) −FM(Z)∥≤LF ∥M′ −M∥.
+In particular, one may take LF proportional to e∆Q/α.
+32
+
+
+Proof. Memory enters the TD target only through the log-sum-exp term GM(xt+1; Q), and
+enters the policy target only through ΦM(· | xt; Q). By Lemma 22, both of these are Lipschitz
+in M under the distance (20), uniformly in x. Taking conditional expectations (to pass from
+sample form to mean-field drift) preserves Lipschitz constants. Therefore the combined drift
+mapping FM(Z) is Lipschitz in memory, with constant LF depending on γ, α and the bounded
+range ∆Q, and scaling as O(e∆Q/α).
+D
+Proof of Theorem 10
+We are not ready to prove Theorem 10 using the ODE method for two-timescale stochastic
+approximation [11, 12].
+D.1
+Fast Timescale: Fixed-Memory Dynamics
+Fix a memory state M. Let Z = (Q, µ) denote the fast variables, and define the KL-regularised
+operator
+Z 7→FM(Z),
+which combines KL-regularised policy evaluation and Parzen–KL policy improvement. The
+stochastic updates (12) and (13) are stochastic approximations of the limiting ODE
+dZ
+dτ = FM(Z) −Z,
+(34)
+where τ denotes fast time.
+Assumption 24 (Uniform Contraction). There exists κ ∈(0, 1) such that for all M and all
+Z, Z′,
+∥FM(Z) −FM(Z′)∥≤κ∥Z −Z′∥.
+By Theorems 17 and 19, Assumption 24 holds and the ODE (34) admits a unique globally
+asymptotically stable equilibrium
+Z⋆
+M = (Q⋆
+M, µ⋆
+M).
+D.2
+Perturbed Contraction and Fixed-Point Lipschitz Continuity
+We next quantify how the equilibrium depends on memory.
+Lemma 25 (Lipschitz Continuity of the Fixed Point). Assume:
+1. FM is a κ-contraction uniformly in M;
+2. FM is Lipschitz in memory:
+∥FM′(Z) −FM(Z)∥≤LF ∥M′ −M∥
+∀Z.
+Then the fixed point satisfies
+∥Z⋆
+M′ −Z⋆
+M∥≤
+LF
+1 −κ ∥M′ −M∥.
+Proof. Using Z⋆
+M = FM(Z⋆
+M),
+∥Z⋆
+M′ −Z⋆
+M∥= ∥FM′(Z⋆
+M′) −FM(Z⋆
+M)∥
+≤∥FM′(Z⋆
+M′) −FM′(Z⋆
+M)∥+ ∥FM′(Z⋆
+M) −FM(Z⋆
+M)∥
+≤κ∥Z⋆
+M′ −Z⋆
+M∥+ LF ∥M′ −M∥.
+Rearranging yields the claim.
+33
+
+
+D.3
+Slow Timescale: Memory Dynamics
+Memory updates take the stochastic approximation form
+Mt+1 = Mt + ρt
+h(Mt, Zt) + ξ(M)
+t
+,
+(35)
+where Zt = (Qt, µt), h is the expected update, and ξ(M)
+t
+is a martingale difference noise term.
+The associated slow ODE is
+dM
+dς = h(M),
+(36)
+with ς denoting slow time. By Assumption 9(iv), this ODE admits a compact attractor set M∞.
+We also have ∥Mt+1−Mt∥= O(ρt), a.k.a., supt ∥Mt+1−Mt∥/ρt < ∞. Under the distance (20),
+each of the following practical update schemes induces a change of order ρt:
+1. Experience replay: a new case is added with probability ρt, changing the induced base
+measure by O(ρt).
+2. Sliding window: one case is replaced with probability ρt, yielding an O(ρt) change.
+3. Importance-weighted memory: weights are updated by a step ρt and the induced base
+measure changes Lipschitzly.
+Hence ∥Mt+1 −Mt∥= O(ρt) almost surely.
+D.4
+Tracking Lemma for Two-Timescale SA
+We now state the tracking result used in the proof.
+Lemma 26 (Tracking Lemma). Suppose:
+1. For each fixed M, the fast ODE (34) has a globally asymptotically stable equilibrium Z⋆
+M;
+2. Z⋆
+M is Lipschitz in M as in Lemma 25;
+3. The step sizes satisfy ρt/ηt →0.
+Then
+∥Zt −Z⋆
+Mt∥→0
+almost surely.
+Lemma 26 follows from standard two-timescale stochastic approximation results; see [11, 12].
+D.5
+Derivation of the Tracking Recursion
+Define the tracking error
+ϵt = ∥Zt −Z⋆
+Mt∥.
+The fast update admits the form
+Zt+1 = Zt + ηt
+ FMt+1(Zt) −Zt
+ + ηtξt,
+with martingale noise ξt. Using contraction of FM, Lipschitz continuity of Z⋆
+M, and the triangle
+inequality, we obtain
+ϵt+1 ≤(1 −ηtλ)ϵt + ηtL∥Mt+1 −Mt∥+ ηt∥ξt∥,
+(37)
+where λ = 1 −κ > 0 and L is the constant from Lemma 25. Since ∥Mt+1 −Mt∥= O(ρt) and
+ρt = o(ηt), the drift term is negligible relative to the contraction.
+34
+
+
+Concept
+Underlying MDP
+SRDP
+Reflected MDP
+Decision process
+D = ⟨S, A, P, R, γ⟩
+DSRDP
+=
+⟨S, A, P, R, γ, M, pLLM⟩
+DReMDP
+=
+⟨X, C, PLLM, RLLM, γ⟩
+State space
+s ∈S
+s ∈S (environment state)
+x = (s, M) ∈X := S × M
+Action space
+a ∈A
+Two-stage:
+retrieval c ∈
+C(M), then a ∈A
+Retrieval only: c ∈C(M)
+Memory
+None
+Episodic memory M ∈M,
+evolving via Write
+Included in state: M is part of
+x = (s, M)
+Retrieval action
+set
+N/A
+C(M) := M (memory index-
+ers)
+C(M) := M
+Policy
+π(a | s)
+Composite
+policy:
+πµ(a | s, M) =
+X
+c∈M
+µ(c |
+s, M) pLLM(a | s, c)
+Retrieval policy µ(c | x)
+LLM kernel
+N/A
+pLLM(a | s, c)
+Absorbed into PLLM, RLLM
+Transition kernel
+P(s′ | s, a)
+s′ ∼P(· | s, a),
+M ′ = Write(M, s, a, r, s′)
+PLLM(x′ | x, c) = P
+a pLLM(a |
+s, c) P(s′ | s, a)
+Reward
+R(s, a)
+r = R(s, a)
+RLLM(x, c) = P
+a pLLM(a |
+s, c)R(s, a)
+Markov property
+Markov in s
+Non-Markov in s due to
+evolving M
+Markov in augmented state
+x = (s, M)
+Learning focus
+Action selection
+Retrieval + memory growth
+Retrieval policy optimisation
+Role
+Models environment
+dynamics
+Models
+agent–memory–
+LLM interaction
+Markovian control abstraction
+of SRDP
+Table 1: Comparison of notations for the underlying MDP, Stateful Reflective Decision Process
+(SRDP), and the Reflected MDP.
+D.6
+Convergence to the Limit Set
+By Lemma 26, ϵt →0 almost surely. Since Mt →M∞, all limit points of (Zt, Mt) lie in
+L = {(Z⋆
+M, M) : M ∈M∞}.
+If Mt →M∞, then (Qt, µt) →(Q⋆
+M∞, µ⋆
+M∞) almost surely.
+This completes the proof.
+E
+Notations of MDP, SRDP, and Reflected MDP
+Table 1 summarises and contrasts the notation used for the underlying Markov Decision Process
+(MDP), the Stateful Reflective Decision Process (SRDP) (Definition 3), and its Markovian
+reformulation as the Reflected MDP (Definition 4). The underlying MDP models only the
+environment dynamics, abstracting away any internal structure of the agent. The SRDP extends
+this framework by explicitly modelling episodic memory and a two-stage decision mechanism,
+in which a retrieval action selects a memory case that conditions the LLM’s action generation.
+Since the evolving memory breaks the Markov property in the original state space, the Reflected
+MDP restores Markovianity by augmenting the state with memory and absorbing the fixed
+LLM behaviour into effective transition and reward kernels. This reformulation allows classical
+reinforcement learning analysis to be applied while preserving the full agent–memory–LLM
+interaction dynamics.
+35

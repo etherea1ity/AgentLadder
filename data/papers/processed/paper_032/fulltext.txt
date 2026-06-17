@@ -1,0 +1,2215 @@
+LAYOUTVLM: Differentiable Optimization of 3D Layout
+via Vision-Language Models
+Fan-Yun Sun*1, Weiyu Liu*1, Siyi Gu1, Dylan Lim1,
+Goutam Bhat2, Federico Tombari2, Manling Li1, Nick Haber1, Jiajun Wu1
+1Stanford University, 2Google Research
+https://ai.stanford.edu/~sunfanyun/layoutvlm/
+LayoutGPT
+out of boundary
+overlapping bookshelves
+Layout Instruction: Airy and inviting space; create a central reading area surrounded by the bookcases
+Holodeck
+no “central reading area”
+LayoutVLM
+assets that fail to satisfy constraints  
+Physical
+Semantic
+✗
+✓
+Physical
+Semantic
+✗
+✓
+Physical
+Semantic
+✓
+✓
+Figure 1. From unlabeled 3D assets and language instruction, LAYOUTVLM generates scene layouts that are physically plausible and
+semantically coherent—two criteria that existing methods often struggle to meet. Our approach addresses this by using a VLM to generate a
+scene layout representation that defines both an initial layout and spatial relations between assets for differentiable optimization.
+Abstract
+Spatial reasoning is a fundamental aspect of human cogni-
+tion, enabling intuitive understanding and manipulation of
+objects in three-dimensional space. While foundation models
+demonstrate remarkable performance on some benchmarks,
+they still struggle with 3D reasoning tasks like arranging
+objects in space according to open-ended language in-
+structions, particularly in dense and physically constrained
+environments. We introduce LAYOUTVLM, a framework
+and scene layout representation that exploits the semantic
+knowledge of Vision-Language Models (VLMs) and supports
+differentiable optimization to ensure physical plausibility.
+LAYOUTVLM employs VLMs to generate two mutually re-
+inforcing representations from visually marked images, and
+*Equal contribution.
+a self-consistent decoding process to improve VLMs spatial
+planning. Our experiments show that LAYOUTVLM ad-
+dresses the limitations of existing LLM and constraint-based
+approaches, producing physically plausible 3D layouts bet-
+ter aligned with the semantic intent of input language instruc-
+tions. We also demonstrate that fine-tuning VLMs with the
+proposed scene layout representation extracted from existing
+scene datasets can improve their reasoning performance.
+1. Introduction
+Spatial reasoning and planning involve understanding, ar-
+ranging, and manipulating objects in 3D space within the
+constraints of the physical world. These skills are essential
+for autonomous agents to navigate, plan tasks, and physi-
+cally interact with objects in complex environments. Auto-
+1
+arXiv:2412.02193v3  [cs.CV]  11 Mar 2025
+
+
+Type
+Notation
+Explanation
+Positional
+Ldistance(pi, pj, dmin, dmax)
+The distance between the two assets should fall within the range [dmin, dmax] .
+Positional
+Lon_top_of(pi, pj, bi, bj)
+Position one asset on top of another.
+Rotational
+Lalign_with(pi, pj, ϕ)
+Align two assets at a specified angle ϕ.
+Rotational
+Lpoint_towards(pi, pj, ϕ)
+Orient one asset to face another with a offset angle ϕ.
+Mix
+Lagainst_wall(pi, wj, bi)
+Place an asset again wall wj.
+Table 1. Spatial Relation Definition. We define five spatial relations that determine how objects are placed relative to each other and within
+the room. Each constraint is associated with a differentiable cost function based on the object poses, which can be used for optimization.
+Our spatial relations related to rotation do not require a fixed reference frame and instead are based on relative poses between objects.
+matically generating diverse, realistic scenes in simulation
+has become crucial for scaling up data to train autonomous
+agents with enhanced spatial reasoning abilities. In this pa-
+per, we advance this goal by addressing open-universe layout
+generation, which involves creating diverse layouts based on
+unlabeled 3D assets and free-form language instructions.
+Traditional scene synthesis and layout generation meth-
+ods are often constrained by predefined object categories
+and patterns of object placements learned from synthetic
+scene datasets [1–3], preventing them from achieving the
+diversity of scene layouts seen in the real world. Recent
+methods leverage Large Language Models (LLMs) for open-
+universe layout generation by utilizing the spatial common-
+sense embedded in language and program code. However,
+a key challenge is to achieve both physical plausibility and
+semantic coherence, as illustrated in Fig. 1. Methods that
+predict numerical object poses (e.g., LayoutGPT [4]) of-
+ten produce layouts with object collisions or out-of-bound
+placements. Other methods, such as Holodeck [5], attempt
+to improve physical plausibility by predicting spatial rela-
+tions between assets and solving a constraint optimization
+problem. However, these approaches either struggle to find
+feasible solutions for scenes with large numbers of objects
+or output layouts that lack the semantic nuances specified in
+the language instructions.
+In this paper, we introduce LAYOUTVLM, an open-
+universe layout generation method that effectively achieves
+both physical plausibility and semantic alignment. Our ap-
+proach leverages the complementary nature of numerical
+object poses and spatial relations, combining them within
+a differentiable optimization framework to enable robust
+layout generation. More specifically, LAYOUTVLM first
+predicts numerical object poses as initialization for the op-
+timization process. Then, LAYOUTVLM jointly optimizes
+for physics-based objectives and spatial relations, each with
+their corresponding differentiable objectives. The physics-
+based objectives ensure physical plausibility, while the spa-
+tial relations preserve the overall layout semantics during
+the optimization process. To improve VLM capabilities
+for spatial grounding, LAYOUTVLM uses visually marked
+images, allowing accurate estimation of object placements
+within the scene, especially when existing objects exist. We
+also introduce a self-consistency decoding process that al-
+lows LAYOUTVLM to focus on the semantically meaningful
+spatial relations during optimization. The synergy between
+numerical values and spatial relations, regulated through self-
+consistent decoding, ensures accurate and coherent scene
+layouts.
+Our contributions are as follows: first, we introduce a
+novel scene layout representation that can be combined with
+differentiable optimization to generate diverse layouts. The
+scene representation builds on two complementary repre-
+sentations—numerical pose estimates and spatial relations
+with matching differentiable objectives. Second, we show
+that we can use VLMs and a self-consistency decoding pro-
+cess to generate our scene layout representation using vi-
+sually marked scene and asset renderings. Third, through
+systematic evaluation across 11 room types, we achieved
+significant improvements when compared to the current best-
+performing method. Fourth, we show that fine-tuning open-
+source models on our scene representation with synthetic
+data yields substantial performance improvements, even for
+models that struggle with 3D layout generation.
+2. Related Work
+2.1. Layout Generation & Indoor Scene Synthesis
+Recent advances in indoor scene synthesis have explored two
+main directions. One line of work leverages the strong gener-
+ative priors of image generation models, often using Neural
+Radiance Fields (NeRFs) or Gaussian splats as the output
+representation [6–9]. However, these generated scenes lack
+separable, manipulable objects and surfaces, rendering them
+unsuitable for robotics applications where precise object in-
+teractions are required. Another line of research focuses on
+generating scenes using intermediate representations, such
+as scene graphs or scene layouts, combined with an asset
+repository [4, 5, 10–12]. The advent of Large Multimodal
+Models (LMMs) has enabled open-vocabulary 3D scene syn-
+thesis, supporting the flexible generation of scenes without
+dependence on predefined labels or categories [13, 14]. For
+example, LayoutGPT [4] prompt language models to directly
+generate 3D Layouts for indoor scenes. Holodeck [5] uses
+2
+
+
+Figure 2. Example Scene Representation. Example of our scene
+representation for a bedroom. Our scene representation consists of
+numerical estimates of object poses and spatial relations correspond-
+ing to objective functions on these poses. Having the VLMs gener-
+ate the initial estimates allows us to exploit the semantic knowledge
+in the large models, and having spatial relations amenable to opti-
+mization allows us to generate physically precise placements.
+LLMs to generate spatial scene graphs and then uses the
+specified scene graph to optimize object placements. LAY-
+OUTVLM also falls into this line of work, but instead of
+using LLMs, we generate scene layout representations from
+image and text inputs using VLMs. Additionally, we in-
+troduce a differential optimization process as opposed to
+solving a constraint satisfaction problem with search [5].
+2.2. Vision-Language Models for 3D Reasoning
+Recent works have explored the spatial reasoning capabili-
+ties of vision-language models (VLMs). Some studies have
+trained 3D visual encoders on representations like point
+clouds and meshes to improve tasks such as 3D scene under-
+standing, question answering, navigation, and planning [15–
+21]. Other research has adapted 2D VLMs for spatial rea-
+soning by fine-tuning them on visual question-answering
+datasets involving metric and qualitative spatial relations
+grounded in 3D environments [22, 23]. A related direction is
+to reconstruct the 3D scene based on 2D images by training
+on large synthetic data [24]. However, these approaches
+primarily focus on perception tasks and do not extend to gen-
+erating 3D structures. In contrast, our work uses 2D VLMs
+for the task of 3D layout generation, utilizing techniques
+originally developed for visual reasoning—such as leverag-
+ing images of a scene from different viewing angles [25] and
+visual markers [26–28]—repurposed here for spatial plan-
+ning. We also investigate fine-tuning VLMs for 3D layout
+generation tasks and observe significant improvements in
+the performance of open-source models.
+3. Problem Formulation
+The problem of open-universe 3D layout generation is to
+arrange any assets within a 3D environment based on natural
+language instructions. Formally, given a layout criterion
+ℓlayout in natural language, a space defined by four walls
+oriented along the cardinal directions {w1, . . . , w4}, and a
+set of N 3D meshes {m1, . . . , mN}, the goal is to create
+a 3D scene that faithfully represents the provided textual
+description. Following prior work [5, 14], we assume that
+the input 3D objects are upright and an off-the-shelf vision-
+language model (VLM) (i.e., GPT-4o [29]) is employed to
+determine their front-facing orientations. The VLM also
+annotates each object with a short textual description si,
+and the dimensions of its axis-aligned bounding box after
+rotating to face the +x axis will be represented as bi ∈R3.
+The target output of layout generation is each object’s pose
+pi = (xi, yi, zi, θi), including the object’s 3D position and
+rotation about the z-axis.
+4. LAYOUTVLM
+In this paper, we propose LAYOUTVLM, a method to gener-
+ate physically plausible arrangements of unlabeled 3D assets
+based on open-vocabulary natural language descriptions of
+the desired layouts outlined in Figure 3. Our approach em-
+ploys vision-language models (VLMs) to generate code for
+our proposed scene layout representation that specifies both
+an initial layout {ˆpi}N
+i=1, as well as a set of spatial relations
+between assets (and walls). This representation is then used
+3
+
+
+Current Scene w/ Visual Marks
+“Airy and Inviting Space; Create a central reading area.”
+VLM
+Language Instruction
+Asset Group
+# Center of the room on the floor
+center_position = [4.0, 2.5, 0.0]
+# Place the table at the center of the room
+table_A[0].position = [4.0, 2.5, table_A.size[2] / 2]
+# Place the rug under the central area
+rug[0].position = [4.0, 2.5, rug.size[2] / 2]
+...
+# Define the constraints for the layout
+for chair in armchair.placements:
+    solver.distance_constraint(chair, table_A[0])
+    solver.point_towards(chair, table_A[0])
+# Ensure the rug is centered
+...
+Numerical Pose Estimate
+Spatial Relations
+Scene Layout Representation
+. . .
+. . .
+Self-Consistent
+Decoding
+Rendering
+t1
+t200
+...
+Differentiable Optimization
+New 3D Scene
+Figure 3. LAYOUTVLM. We illustrate the proposed process of generating 3D scene layout with Vision-Language Models.
+to produce the final object placements through optimization:
+arg min
+{pi}N
+i=1
+(Lsemantic + Lphysics) ,
+initial solution {ˆpi}N
+i=1.
+where Lsemantic is the objective function decoded from the
+scene layout representation and Lphysics is the objective func-
+tion we employ to ensure physical plausibility.
+In the following sections, we first introduce our scene
+layout representation, explain how VLMs can reliably gen-
+erate this representation using visual marks, elaborate on
+our proposed self-consistent decoding process alongside the
+differentiable optimization process, and discuss finetuning
+VLMs to improve their understanding of our representation
+for improved performance.
+4.1. Scene Layout Representation
+To generate layouts from open-ended language instructions
+and 3D assets, a desirable representation must be semanti-
+cally expressive for diverse language specifications and phys-
+ically precise to ensure plausible 3D layouts. Our representa-
+tion includes (a) numerical estimates of object poses {ˆpi}N
+i=1
+and (b) spatial relations with differentiable objectives. Initial
+estimates provide a starting point for optimization, while
+differentiable objectives guide the process, addressing the
+challenge of directly predicting physically plausible layouts.
+The initial layout is key in the optimization process, as poor
+initialization can lead to a suboptimal layout (e.g., a table sep-
+arating the room into two halves where each chair is placed
+on opposite sides, when the language instruction instructs
+them to be placed on the same side). The spatial relations
+are crucial to ensure that the layout semantics are maintained
+while the layout is adjusted for physical plausibility. In
+Figure 2, we show an example of our scene representation.
+Differentiable Spatial Relations. The goal of these spa-
+tial relations is twofold: (a) to capture the semantics of
+the input language instruction and (b) to preserve these se-
+mantics during optimization for physical plausibility. For
+example, consider the instruction, “set up a dining table." A
+vision-language model might initially generate poses where
+the chairs overlap with the table. Our differentiable spatial
+relations are designed to adjust these poses during optimiza-
+tion—preventing overlaps—while maintaining the essential
+semantics, such as “chairs should be positioned near the
+dining table in a dining setup." To design a set of spatial
+relations that can capture a wide range of semantics for
+indoor scenes, we devise five expressive spatial relations:
+two positional objectives (i.e., distance, on_top_of), two ori-
+entational objectives (i.e., align_with, point_towards), and
+one wall-related objective (i.e., against_wall) that pertains
+to both the position and orientation of an asset. Note that
+our spatial relations do not rely on a fixed reference frame,
+unlike classic spatial relations like in_front_of and left_of.
+Each spatial relation corresponds to a differentiable objective
+4
+
+
+function with optional parameters that VLMs can choose to
+impose on object poses; for example, a distance imposes a
+higher loss if objects are outside a specified distance range,
+and the VLMs can decide the lower and upper bound for this
+function. Table 1 presents the notations and meanings of
+these spatial relations. Formally, we denote a set of spatial
+relations derived from a scene layout representation as R.
+4.2. Generating Scene Layout Representation with
+Vision-Language Models
+Our approach utilizes the generalization and commonsense
+reasoning abilities of Vision-Language Models (VLMs) to
+generate the scene representation outlined above based on the
+objects, 3D scene, and language instructions. To improve the
+accuracy of the generated scene representation, we employ
+two techniques: visual prompting with coordinates and self-
+consistent decoding.
+Visual Prompting. Figure 3 illustrates our VLM-based
+scene representation generation process. The VLM’s in-
+put includes rendered images of the 3D scene and individual
+asset views. Prior research has shown that visual cues can im-
+prove VLMs’ object recognition and spatial reasoning [26].
+We provide two types of visual annotations for layout gen-
+eration: coordinate points in the 3D space spaced 2 meters
+apart to help the VLM gauge dimensions and scale and visu-
+alizations of coordinate frames to maintain consistent spatial
+references. We also annotate the front-facing orientations
+of each object with directional arrows, which is essential
+for generating rotational constraints like aligned_with or
+point_towards. In practice, we first use an LLM to group the
+assets given the textual descriptions si of all the input assets
+to address context length limitations when handling many
+3D assets. Then, we place assets in groups, one group at a
+time. Before generating each group, we re-render the 3D
+scene to help the VLM identify unoccupied areas, thus fa-
+cilitating the physically valid placement of remaining assets.
+Self-Consistent Decoding. One key challenge is that VLMs
+struggle with spatial planning; while they may successfully
+generate spatial relations for pairs of objects, they tend to
+fail at accounting for overall layout coherence. We hypoth-
+esize that self-consistent spatial relations (i.e., "the spatial
+relations that are also satisfied in the estimated numerical
+poses of the objects") represent the most critical semantics
+to preserve during optimization when the object poses are
+adjusted for better physical plausibility. Thus, we introduce
+self-consistent decoding for our scene layout representation.
+Different from standard self-consistency [30], which selects
+the most consistent answer from multiple reasoning paths
+following the same format, we require the two distinct but
+mutually reinforcing representations predicted by the VLM
+to self-consistent. That is, we only retain the spatial relations
+satisfied with the predicted poses. After self-consistent de-
+coding, we can formally describe the semantic part of the
+optimization loss as:
+Lsemantic =
+X
+L∈R
+1 [Li(ˆpi, ˆpj, λ) ≤ϵ] · Li(pi, pj, λ),
+(1)
+where ˆpi and ˆpj are the initial estimated poses, λ represents
+the additional parameters in the functions (refer to Table 1),
+and ϵ is a threshold value for determining whether the differ-
+entiable spatial relation L is satisfied in the initial estimates.
+4.3. Differentiable Optimization
+To generate a scene from the estimated object poses and
+differentiable constraints, we jointly optimize all objects
+according to the specified constraints over a set number
+of iterations. In addition to the spatial relational functions
+generated by the VLM, we impose Distance-IoU loss on
+objects’ 3D oriented bounding box [31, 32] for collision
+avoidance:
+Lphysics =
+N
+X
+i=1
+N
+X
+j=1
+j̸=i
+LDIoU(pi, pj, bi, bj).
+(2)
+Eq. 1 and Eq. 2 form the final objective function for the
+optimization problem. We use projected gradient descent
+(PGD) to optimize for this objective, projecting assets within
+the physical boundary every fixed number of iterations dur-
+ing the optimization. With the objective function, we can
+confine objects within the boundary and avoid unwanted
+intersections, ensuring physically valid layouts.
+4.4. Finetuning VLMs with Scene Datasets
+Our scene representation can model a wide variety of phys-
+ically valid and semantically meaningful 3D layouts. Ad-
+ditionally, we can fine-tune VLMs to quickly adapt to this
+representation, enabling the generation of specific types of
+layouts. This scene representation can be automatically ex-
+tracted from scene layout datasets without requiring manual
+annotations. Specifically, given a set of posed objects in a
+3D scene, we apply the preprocessing procedure outlined
+in Section 3 to obtain both textual descriptions and oriented
+bounding boxes for each object. After canonicalizing the ob-
+jects, we compute cost values for our defined spatial relations
+based on the ground-truth positions and orientations of the
+objects, using heuristic thresholds to determine whether each
+spatial relation is satisfied. The resulting scene representa-
+tion includes both raw object poses and the satisfied spatial
+relations, which we then use to fine-tune VLMs to generate
+these scene representations from input objects and scene ren-
+derings. In our implementation, we use the 3D-Front dataset
+to extract training data for around 9000 rooms. Our approach
+is capable of identifying layout patterns in 3D scenes, such
+5
+
+
+Unique and educational layout; 
+position the large table 
+centrally and succulents on 
+top of it, surrounded by 
+terrariums and potting stations
+LayoutVLM
+I-Design
+Holodeck
+LayoutGPT
+Florist Shop
+Sleek and airy design; 
+center the chairs and table, 
+each chair should be 
+equidistant from the table
+  Dining Room
+Playful and ﬂexible space; 
+distribute colorful mats in a 
+circular pattern with small 
+tables interspersed, allowing 
+for easy reconﬁguration
+   Classroom
+Professional and tech-integrated 
+meeting space; center the 
+conference table with 
+computers, place the three 
+tables in such a manner it 
+forms one large longer table
+Compact yet functional 
+layout; buffet tables 
+arrangement should be 
+symmetrically arranged
+Buffet Restaurant
+Computer Room
+Instructions
+Figure 4. Qualitative Comparison. We compare with baseline methods in generating layouts based on detailed language instructions. Our
+method is able to generate layouts that closely follow the instructions and adhere to physical constraints.
+Bedroom
+Living Room
+Dining Room
+Bookstore
+Buffet Restaurant
+Children Room
+Methods
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+LayoutGPT
+100.0
+66.7
+85.7
+85.9
+52.2
+44.4
+11.1
+74.7
+64.4
+9.6
+88.9
+22.2
+76.0
+68.9
+14.8
+88.9
+55.6
+80.9
+79.4
+35.9
+100.0
+33.3
+81.2
+83.3
+26.9
+100.0
+0.0
+80.9
+82.6
+0.0
+Holodeck
+88.9
+22.2
+69.3
+67.9
+14.1
+77.8
+0.0
+66.3
+55.6
+0.0
+88.9
+0.0
+38.0
+36.6
+0.0
+55.6
+0.0
+65.7
+59.0
+0.0
+77.8
+11.1
+47.7
+42.4
+7.4
+77.8
+22.2
+72.7
+70.0
+18.7
+I-Design
+100.0
+77.8
+72.1
+65.4
+51.5
+33.3
+11.1
+62.6
+46.7
+0.0
+88.9
+66.7
+76.4
+66.4
+34.8
+66.7
+11.1
+68.1
+69.4
+5.2
+100.0
+55.6
+63.5
+57.1
+35.2
+77.8
+55.6
+78.1
+75.1
+34.8
+LAYOUTVLM
+88.9
+100.0
+82.3
+74.9
+68.8
+22.2
+77.8
+68.6
+54.4
+9.6
+88.9
+100.0
+63.4
+56.9
+51.1
+55.6
+100.0
+82.0
+82.8
+49.8
+88.9
+88.9
+74.3
+64.8
+51.5
+100.0
+100.0
+81.9
+88.2
+88.5
+Classroom
+Computer Room
+Deli
+Florist Shop
+Game Room
+Average
+Methods
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+CF
+IB
+Pos.
+Rot.
+PSA
+LayoutGPT
+88.9
+0.0
+76.3
+66.7
+0.0
+100.0
+22.2
+87.8
+85.2
+17.8
+88.9
+0.0
+77.2
+77.9
+0.0
+66.7
+33.3
+81.6
+80.2
+18.3
+55.6
+22.2
+87.0
+82.9
+6.7
+83.8
+24.2
+80.8
+78.0
+16.6
+Holodeck
+33.3
+0.0
+45.2
+38.6
+0.0
+100.0
+0.0
+66.1
+59.7
+0.0
+88.9
+33.3
+73.9
+63.7
+24.4
+63.9
+0.0
+73.2
+64.7
+0.0
+55.6
+22.2
+60.7
+58.0
+0.0
+77.8
+8.1
+62.8
+55.6
+5.6
+I-Design
+55.6
+11.1
+50.7
+47.0
+0.0
+88.9
+22.2
+74.0
+70.7
+8.9
+88.9
+22.2
+67.8
+65.9
+10.4
+77.8
+0.0
+75.5
+68.3
+0.0
+66.7
+44.4
+62.8
+58.9
+17.0
+76.8
+34.3
+68.3
+62.8
+18.0
+LAYOUTVLM
+77.8
+100.0
+74.6
+68.6
+48.3
+100.0
+88.9
+85.4
+84.5
+77.0
+100.0
+88.9
+83.4
+83.4
+74.6
+88.9
+100.0
+83.4
+76.4
+68.3
+88.9
+100.0
+73.1
+70.0
+59.5
+81.8
+94.9
+77.5
+73.2
+58.8
+Table 2. Benchmark Performance. LAYOUTVLM outperformed existing open-universe layout generation methods across 11 room types.
+as a variable number of chairs around a table, nightstands
+positioned beside a bed, or an entertainment area comprising
+a TV, coffee table, and sofa. We investigate fine-tuning two
+VLMs for the layout generation task: the closed-source GPT-
+4o [29] and the open-source LLaVA-NeXT-Interleave [33].
+5. Experiments
+In our experiments, we aim to answer the following three
+questions: Q1: Does LAYOUTVLM outperform existing
+methods on open-universe 3D layout generation? Q2: Are
+the proposed scene layout representation and VLM-based
+framework essential for generating prompt-aligned 3D
+layouts that are physically plausible? Q3: With limited data,
+can we improve upon pre-trained VLMs’ ability to generate
+6
+
+
+A fancy buffet restaurant with few tables and chairs
+One table is placed in the 
+middle of the room with all 
+the plates and bowls placed on 
+top of it; other tables are 
+placed towards the corners 
+with chairs on top of them.
+Tables are symmetrically 
+placed in the room; each table 
+should have two chairs on 
+opposite sides of the table 
+facing each other, ready for 
+dining …
+Stack the tables vertically in the 
+middle of the room. Arrange the 
+utensils in a smaller circle around 
+the tables, then position the 
+chairs in a larger circle 
+surrounding the utensils.
+Layout Instructions:
+All the tables aligned to form a 
+line, diving the room up into 
+two halves, place all the chairs 
+on one side of the line and the 
+buffets on the other side
+Figure 5. Examples of Following Detailed Instructions. We show the same set of assets arranged with different language instructions. The
+latter two examples show that LAYOUTVLM can closely follow the prompts even when the desired layouts are unconventional.
+the proposed scene layout representation?
+5.1. Experimental Setup
+Evaluation. In our evaluation, we assess models’ abilities
+in 1) open-vocabulary language instructions, 2) predicting
+layouts for objects beyond predefined categories, and 3) gen-
+erating accurate object placements within boundaries while
+avoiding collisions. We create test cases across 11 room
+types, with three rooms per type and up to 80 assets per
+room. Each test case includes human-verified, pre-processed
+3D assets sourced from Objaverse [34], language instruc-
+tions generated by GPT-4, and a floor plan defining space
+dimensions. All methods use the same pre-processed assets.
+Details on test case generation are in the appendix.
+Evaluation Metrics. We evaluate generated 3D layouts on
+physical plausibility and semantic coherence with respect
+to the provided language instructions. Physical plausibil-
+ity is measured using the Collision-Free Score (CF) and
+In-Boundary Score (IB). All assets are enforced to be placed,
+with remaining assets randomly placed if a method fails.
+Semantic coherence is assessed using Positional Coherency
+(Pos.) and Rotational Coherency (Rot.), measuring align-
+ment with the input prompt. To evaluate semantic coherence
+across layouts without groundtruth, we use GPT-4o to score
+layouts based on top-down and side-view renderings and
+the language instructions, leveraging its effectiveness as a
+human-aligned evaluator in text-to-3D generation [35]. We
+also introduce the Physically-Grounded Semantic Alignment
+Score (PSA) to assess physical plausibility and semantic
+alignment, assigning 0 if assets cannot be feasibly placed.
+PSA is calculated simply the GPT-4o rating weighted by
+physical plausibility. Scores range from 0 to 100, with higher
+scores indicating better performance.
+Baselines. We evaluate our method against the following
+baselines: LayoutGPT [4], Holodeck [5], and I-Design [13],
+7
+
+
+User
+GPT-4o
+Position
+Rotation
+PSA
+Position
+Rotation
+PSA
+LayoutGPT
+1.91
+1.86
+2.77
+2.00
+1.82
+2.83
+Holodeck
+3.44
+3.50
+3.10
+3.20
+3.43
+3.10
+I-Design
+2.86
+2.91
+2.64
+2.89
+2.86
+2.62
+LAYOUTVLM
+1.79
+1.73
+1.50
+1.91
+1.89
+1.45
+Table 3. Average ranks based on user ratings and GPT4-o scores.
+Position
+Rotation
+PSA
+Within Users
+0.51
+0.57
+0.50
+Users With GP4-o
+0.49
+0.61
+0.46
+Table 4. User-User and User-GPT4o Alignment/Agreement
+(a) LAYOUTVLM
+(b) w/o self-consistency decoding
+Figure 6. Comparison when w/ and w/o self-consistency decoding.
+representing existing methods for open-universe layout gen-
+eration.
+5.2. Benchmark Performance
+Our method achieves significantly improved performance
+over existing methods, as shown in Table 2 . Averaging over
+11 room types, it improves the PSA score by 40.8 compared
+to the best-performing baseline, I-Design. LayoutGPT gener-
+ates layouts with high semantic coherence by having LLMs
+predict precise object placements but often produces physi-
+cally infeasible layouts. Holodeck struggles to generate valid
+and accurate scenes due to its search-based approach, which
+becomes ineffective with the large number of assets and
+rigid constraints that fail to accommodate diverse language
+instructions. Notably, our approach significantly reduces
+objects placed outside room boundaries while maintaining
+high positional and rotational coherence.
+In Figure 4, we present qualitative examples of layouts
+generated by each method. Our method finds valid place-
+ments for large numbers of assets. For example, in the
+florist shop, it places over 10 plants on the central table as
+instructed. In the buffet restaurant, only our method sepa-
+rates tables, places chairs around each table, and arranges
+plates on top. Examining the baselines, LayoutGPT produces
+meaningful placements but often results in object collisions
+(e.g., a piano colliding with a chair in the dining room) and
+objects placed outside the room boundary (e.g., bookshelves
+in the classroom). Holodeck struggles to find reasonable
+placements for large asset counts. The numerical difference
+in PSA scores between our method and the best-performing
+Physics
+Semantics
+Overall Score
+CF
+IB
+Pos.
+Rot.
+PSA
+LAYOUTVLM
+81.8 ± 2.5
+94.9 ± 2.2
+77.5 ± 0.9
+73.1 ± 1.1
+58.8 ± 3.4
+Ablating the key components in LayoutVLM
+w/o Visual Image
+67.2 ± 1.1
+94.9 ± 0.8
+79.1 ± 1.3
+74.0 ± 1.2
+48.2 ± 1.5
+w/o Self-Consistency
+71.2 ± 2.5
+92.9 ± 2.2
+75.5 ± 1.1
+72.1 ± 0.7
+46.4 ± 2.4
+w/o Const.
+75.8 ± 2.5
+14.1 ± 3.0
+70.4 ± 1.3
+67.3 ± 0.9
+6.7 ± 1.6
+Ablating the two types of visual marks
+w/o Visual Asset Mark
+79.8 ± 0.6
+87.9 ± 3.9
+77.7 ± 0.6
+72.2 ± 0.8
+52.2 ± 5.0
+w/o Visual Coordinate
+77.2 ± 2.0
+88.9 ± 1.7
+74.3 ± 1.0
+68.9 ± 1.3
+46.0 ± 2.7
+w/o Any Visual Mark
+74.2 ± 6.4
+84.9 ± 3.1
+74.5 ± 0.8
+69.2 ± 0.3
+43.0 ± 2.2
+Ablating the proposed scene layout representation
+w/o Numerical Init.
+74.7 ± 4.0
+86.6 ± 2.6
+69.5 ± 0.1
+65.4 ± 1.4
+41.0 ± 1.7
+w/o (Spatial) Const.
+75.8 ± 2.5
+14.1 ± 3.0
+70.4 ± 1.3
+67.3 ± 0.9
+6.7 ± 1.6
+Table 5. Ablation. Removing visual input impedes spatial planning,
+while omitting self-consistency and optimization negatively impacts
+both physical feasibility and layout coherence. We also ablate
+the importance of both types of visual marks and the two key
+components in our proposed scene layout representation.
+baseline, I-Design, is evident in the qualitative examples.
+We further illustrate our model’s ability to generate dif-
+ferent layouts in response to user instructions, as shown in
+Figure 5. Our approach demonstrates the ability to closely
+follow detailed language instructions to generate different
+layouts even for the same set of assets. The examples show
+that our method can meet specific user requirements, such
+as placing chairs on opposite sides or aligning tables in a
+row. Additionally, our method can generate less conven-
+tional layouts, such as placing chairs on top of tables or
+stacking tables, showcasing its flexibility in interpreting and
+executing unique instructions.
+5.3. Human Eval to validate our metrics
+We follow our baseline I-Design, evaluating layouts using
+physical plausibility metrics and GPT-4o-rated scores. To
+further evaluate the alignment between GPT-4o ratings and
+human ratings, we conducted a user study. Following prior
+work [35], we recruited five graduate students to rank the
+methods based on position, orientation, and overall perfor-
+mance. They were given the same instructions used as
+prompts for the GPT-4o evaluator. We collected 495 rat-
+ings for each method and metric pair. We converted GPT-4o
+scores to rankings and computed Kendall’s Tau [? ] in Ta-
+ble 4, showing strong user-user agreement and user-GPT
+agreement. Table 3 reports the average rankings based on
+user and GPT-4o ratings, demonstrating strong correlation
+with the results in our proposed metrics.
+5.4. Ablation Study
+We conduct an ablation study to assess the key components
+of our approach. In w/o Visual, the VLM was replaced
+with an LLM. The ablation w/o Self-Consistency removes
+the step of validating predicted constraints with raw poses,
+while w/o Const. placed objects based solely on predicted
+8
+
+
+Physics
+Semantics
+Overall
+CF
+IB.
+Pos.
+Rot.
+PSA
+GPT-4o
+66.7 ± 5.2
+92.6 ± 3.0
+71.4 ± 3.1
+62.1 ± 2.4
+43.2 ± 7.0
+GPT-4o (FT on numerical)
+77.8 ± 5.2
+29.6 ± 3.0
+73.8 ± 4.2
+68.5 ± 1.9
+11.9 ± 0.9
+GPT-4o (FT on ours)
+77.8 ± 3.0
+96.3 ± 1.7
+68.2 ± 0.9
+62.5 ± 0.8
+48.1 ± 1.8
+LLaVA (random)
+66.7 ± 0.0
+3.7 ± 3.0
+55.6 ± 1.7
+47.5 ± 3.0
+0.7 ± 0.6
+LLaVA (FT on numerical)
+77.8 ± 5.2
+18.5 ± 3.0
+68.4 ± 0.8
+66.0 ± 1.3
+6.8 ± 2.2
+LLaVA (FT on ours)
+85.2 ± 6.0
+70.4 ± 8.0
+73.8 ± 1.0
+66.4 ± 0.5
+39.5 ± 5.7
+Table 6. Comparison of Fine-Tuning VLMs on Different Layout
+Representations. FT denotes fine-tuning. Fine-tuning with our
+representation yields better results than using numerical poses, with
+significant improvements in the open-source model’s performance.
+poses, without performing optimization. As shown in Ta-
+ble 5, the results confirm the effectiveness of our method’s
+design. Although w/o Visual still uses the same optimization
+process, which improves physical feasibility, we observe
+a clear advantage in using a VLM. This likely stems from
+the VLM’s ability to leverage rendered scenes and asset
+views to enhance spatial planning (e.g., arranging groups
+of objects in distinct regions). The comparison with w/o
+Const. confirms that VLMs alone were insufficient; our
+scene representation—consisting of both numerical object
+poses and spatial relations-is essential for generating practi-
+cal layouts. Finally, we observe that self-consistency takes
+advantage of our scene representation to help ensure that
+placements met both physical and semantic requirements.
+We also analyze the effects of two key components in our
+proposed scene layout representation. The results indicate
+that spatial constraints are crucial for ensuring physical
+validity, particularly in preventing object overlap, while a
+good numerical initialization contributes to better semantic
+scores.
+5.5. Finetuning LayoutVLM
+In this experiment, we investigate whether fine-tuning pre-
+trained VLMs with our scene layout representation improves
+physical feasibility and semantic coherence. Specifically, we
+compare this approach with fine-tuning VLMs to directly
+predict numerical poses. Since the 3D-Front training data
+consist of typical household room types, we evaluated the
+fine-tuned models on test cases within the residential cate-
+gory (i.e., bedroom, living room, and dining room). As these
+test cases include unseen 3D assets from Objaverse and even
+new object categories, this experiment also assessed gen-
+eralization capability. We extract the ground-truth layouts
+from 3D scenes by selecting defined spatial relations higher
+than predetermined thresholds. The language instructions
+are generated based on the type of rooms annotated in the
+3D scene dataset. We finetune the open-sourced LLaVA-
+NeXT-Interleave [33] model via LoRA and GPT4-o via the
+publicly available finetuning API.
+The results in Table 6 show that: 1) fine-tuning with our
+scene representation is more effective than using direct nu-
+merical values, and 2) our approach significantly improves
+the performance of the open-source model. The relatively
+limited improvement in the closed-source model likely stems
+from its existing ability to leverage our scene representation
+through prompt instructions, as shown in previous exper-
+iments. In contrast, the open-source VLM struggles with
+zero-shot layout generation. Fine-tuning with our scene rep-
+resentation enables it to generate better layouts for residential
+room types with unseen objects.
+6. Conclusion
+In this paper, we present LAYOUTVLM, a comprehensive
+framework for open-universe 3D layout generation, includ-
+ing a novel scene layout representation that builds on two
+representations of layout from visually marked images: nu-
+merical pose estimates and spatial relations. With the scene
+layout representation combined with self-consistent decod-
+ing, differentiable optimization, and visual prompting, we
+demonstrated significant improvements over existing LLM
+and constraint-based approaches.
+While LAYOUTVLM
+shows promise, it has limitations, including occasional fail-
+ures in generating valid layouts due to suboptimal VLM
+initializations. We hope our work paves the way for future
+research to explore more complex scenes and address these
+challenges, pushing the boundaries of 3D layout generation
+with improved semantic and physical reasoning.
+Acknowledgments.
+This work is in part supported by
+Google, Analog Devices, the Stanford Center for Inte-
+grated Facility Engineering (CIFE), the Stanford Institute for
+Human-Centered AI (HAI), NSF CCRI #2120095, AFOSR
+YIP FA9550-23-1-0127, ONR N00014-23-1-2355, and ONR
+YIP N00014-24-1-2117.
+9
+
+
+References
+[1] Qiuhong Anna Wei, Sijie Ding, Jeong Joon Park, Rahul
+Sajnani, Adrien Poulenard, Srinath Sridhar, and Leonidas
+Guibas. Lego-net: Learning regular rearrangements of ob-
+jects in rooms. In Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, pages 19037–
+19047, 2023. 2
+[2] Nelson Nauata, Sepidehsadat Hosseini, Kai-Hung Chang,
+Hang Chu, Chin-Yi Cheng, and Yasutaka Furukawa. House-
+gan++: Generative adversarial layout refinement network
+towards intelligent computational agent for professional archi-
+tects. In Proceedings of the IEEE/CVF Conference on Com-
+puter Vision and Pattern Recognition, pages 13632–13641,
+2021.
+[3] Despoina Paschalidou, Amlan Kar, Maria Shugrina, Karsten
+Kreis, Andreas Geiger, and Sanja Fidler. Atiss: Autoregres-
+sive transformers for indoor scene synthesis. Advances in
+Neural Information Processing Systems, 34:12013–12026,
+2021. 2
+[4] Weixi Feng, Wanrong Zhu, Tsu-jui Fu, Varun Jampani, Ar-
+jun Akula, Xuehai He, Sugato Basu, Xin Eric Wang, and
+William Yang Wang. Layoutgpt: Compositional visual plan-
+ning and generation with large language models. Advances in
+Neural Information Processing Systems, 36, 2024. 2, 7
+[5] Yue Yang, Fan-Yun Sun, Luca Weihs, Eli VanderBilt, Al-
+varo Herrasti, Winson Han, Jiajun Wu, Nick Haber, Ranjay
+Krishna, Lingjie Liu, et al. Holodeck: Language guided gen-
+eration of 3d embodied ai environments. In Proceedings of
+the IEEE/CVF Conference on Computer Vision and Pattern
+Recognition, pages 16227–16237, 2024. 2, 3, 7, 4
+[6] Jonas Schult, Sam Tsai, Lukas Höllein, Bichen Wu, Jialiang
+Wang, Chih-Yao Ma, Kunpeng Li, Xiaofang Wang, Felix
+Wimbauer, Zijian He, et al. Controlroom3d: Room generation
+using semantic proxy rooms. In Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition,
+pages 6201–6210, 2024. 2
+[7] Xiaoyu Zhou, Xingjian Ran, Yajiao Xiong, Jinlin He, Zhiwei
+Lin, Yongtao Wang, Deqing Sun, and Ming-Hsuan Yang.
+Gala3d: Towards text-to-3d complex scene generation via
+layout-guided generative gaussian splatting. arXiv preprint
+arXiv:2402.07207, 2024.
+[8] Ryan Po and Gordon Wetzstein. Compositional 3d scene
+generation using locally conditioned diffusion. In 2024 In-
+ternational Conference on 3D Vision (3DV), pages 651–663.
+IEEE, 2024.
+[9] Dave Epstein, Ben Poole, Ben Mildenhall, Alexei A Efros,
+and Aleksander Holynski. Disentangled 3d scene generation
+with layout learning. arXiv preprint arXiv:2402.16936, 2024.
+2
+[10] Ohad Rahamim, Hilit Segev, Idan Achituve, Yuval Atzmon,
+Yoni Kasten, and Gal Chechik. Lay-a-scene: Personalized 3d
+object arrangement using text-to-image priors. arXiv preprint
+arXiv:2406.00687, 2024. 2
+[11] Rao Fu, Zehao Wen, Zichen Liu, and Srinath Sridhar. Any-
+home: Open-vocabulary generation of structured and textured
+3d homes. In European Conference on Computer Vision,
+pages 52–70. Springer, 2025.
+[12] Chenguo Lin and Yadong Mu. Instructscene: Instruction-
+driven 3d indoor scene synthesis with semantic graph prior.
+arXiv preprint arXiv:2402.04717, 2024. 2
+[13] Ata Çelen, Guo Han, Konrad Schindler, Luc Van Gool, Iro
+Armeni, Anton Obukhov, and Xi Wang. I-design: Personal-
+ized llm interior designer. arXiv preprint arXiv:2404.02838,
+2024. 2, 7
+[14] Rio Aguina-Kang, Maxim Gumin, Do Heon Han, Stew-
+art Morris, Seung Jean Yoo, Aditya Ganeshan, R Kenny
+Jones, Qiuhong Anna Wei, Kailiang Fu, and Daniel Ritchie.
+Open-universe indoor scene generation using llm program
+synthesis and uncurated object databases. arXiv preprint
+arXiv:2403.09675, 2024. 2, 3
+[15] Yining Hong, Haoyu Zhen, Peihao Chen, Shuhong Zheng,
+Yilun Du, Zhenfang Chen, and Chuang Gan. 3d-llm: Injecting
+the 3d world into large language models. Advances in Neural
+Information Processing Systems, 36:20482–20494, 2023. 3
+[16] Jianing Yang, Xuweiyi Chen, Nikhil Madaan, Madhavan Iyen-
+gar, Shengyi Qian, David F Fouhey, and Joyce Chai. 3d-grand:
+A million-scale dataset for 3d-llms with better grounding and
+less hallucination. arXiv preprint arXiv:2406.05132, 2024.
+[17] Rao Fu, Jingyu Liu, Xilun Chen, Yixin Nie, and Wen-
+han Xiong.
+Scene-llm: Extending language model for
+3d visual understanding and reasoning.
+arXiv preprint
+arXiv:2403.11401, 2024.
+[18] Sijin Chen, Xin Chen, Chi Zhang, Mingsheng Li, Gang Yu,
+Hao Fei, Hongyuan Zhu, Jiayuan Fan, and Tao Chen. Ll3da:
+Visual interactive instruction tuning for omni-3d understand-
+ing reasoning and planning. In CVPR, 2024.
+[19] Zhangyang Qi, Ye Fang, Zeyi Sun, Xiaoyang Wu, Tong Wu,
+Jiaqi Wang, Dahua Lin, and Hengshuang Zhao. Gpt4point:
+A unified framework for point-language understanding and
+generation. In CVPR, 2024.
+[20] Runsen Xu, Xiaolong Wang, Tai Wang, Yilun Chen, Jiang-
+miao Pang, and Dahua Lin. Pointllm: Empowering large
+language models to understand point clouds. In ECCV, 2024.
+[21] Haifeng Huang, Yilun Chen, Zehan Wang, Rongjie Huang,
+Runsen Xu, Tai Wang, Luping Liu, Xize Cheng, Yang Zhao,
+Jiangmiao Pang, et al. Chat-scene: Bridging 3d scene and
+large language models with object identifiers. NeurIPS, 2024.
+3
+[22] Boyuan Chen, Zhuo Xu, Sean Kirmani, Brain Ichter, Dorsa
+Sadigh, Leonidas Guibas, and Fei Xia. Spatialvlm: Endowing
+vision-language models with spatial reasoning capabilities.
+In Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, pages 14455–14465, 2024. 3
+[23] An-Chieh Cheng, Hongxu Yin, Yang Fu, Qiushan Guo, Rui-
+han Yang, Jan Kautz, Xiaolong Wang, and Sifei Liu. Spatial-
+rgpt: Grounded spatial reasoning in vision language model.
+arXiv preprint arXiv:2406.01584, 2024. 3
+[24] Armen Avetisyan, Christopher Xie, Henry Howard-Jenkins,
+Tsun-Yi Yang, Samir Aroudj, Suvam Patra, Fuyang Zhang,
+Duncan Frost, Luke Holland, Campbell Orme, et al. Scene-
+script: Reconstructing scenes with an autoregressive struc-
+tured language model.
+arXiv preprint arXiv:2403.13064,
+2024. 3
+[25] Sha Zhang, Di Huang, Jiajun Deng, Shixiang Tang, Wanli
+Ouyang, Tong He, and Yanyong Zhang.
+Agent3d-zero:
+10
+
+
+An agent for zero-shot 3d understanding. arXiv preprint
+arXiv:2403.11835, 2024. 3
+[26] Jianwei Yang, Hao Zhang, Feng Li, Xueyan Zou, Chunyuan
+Li, and Jianfeng Gao.
+Set-of-mark prompting unleashes
+extraordinary visual grounding in gpt-4v.
+arXiv preprint
+arXiv:2310.11441, 2023. 3, 5
+[27] Mu Cai, Haotian Liu, Siva Karthik Mustikovela, Gregory P
+Meyer, Yuning Chai, Dennis Park, and Yong Jae Lee. Making
+large multimodal models understand arbitrary visual prompts.
+In CVPR, 2024.
+[28] Xuanyu Lei, Zonghan Yang, Xinrui Chen, Peng Li, and Yang
+Liu. Scaffolding coordinates to promote vision-language
+coordination in large multi-modal models. arXiv preprint
+arXiv:2402.12058, 2024. 3
+[29] Josh Achiam, Steven Adler, Sandhini Agarwal, Lama Ahmad,
+Ilge Akkaya, Florencia Leoni Aleman, Diogo Almeida, Janko
+Altenschmidt, Sam Altman, Shyamal Anadkat, et al. GPT-4
+technical report. arXiv preprint arXiv:2303.08774, 2023. 3, 6
+[30] Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc Le, Ed Chi,
+Sharan Narang, Aakanksha Chowdhery, and Denny Zhou.
+Self-consistency improves chain of thought reasoning in lan-
+guage models. In ICLR, 2023. 5
+[31] Zhaohui Zheng, Ping Wang, Wei Liu, Jinze Li, Rongguang
+Ye, and Dongwei Ren. Distance-iou loss: Faster and better
+learning for bounding box regression. In Proceedings of the
+AAAI conference on artificial intelligence, 2020. 5
+[32] Dingfu Zhou, Jin Fang, Xibin Song, Chenye Guan, Junbo
+Yin, Yuchao Dai, and Ruigang Yang. Iou loss for 2d/3d object
+detection. In 2019 international conference on 3D vision
+(3DV), pages 85–94. IEEE, 2019. 5
+[33] Feng Li, Renrui Zhang, Hao Zhang, Yuanhan Zhang, Bo Li,
+Wei Li, Zejun Ma, and Chunyuan Li. Llava-next-interleave:
+Tackling multi-image, video, and 3d in large multimodal
+models. arXiv:2407.07895, 2024. 6, 9
+[34] Matt Deitke, Dustin Schwenk, Jordi Salvador, Luca Weihs,
+Oscar Michel, Eli VanderBilt, Ludwig Schmidt, Kiana Ehsani,
+Aniruddha Kembhavi, and Ali Farhadi. Objaverse: A universe
+of annotated 3d objects. In Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition,
+pages 13142–13153, 2023. 7
+[35] Tong Wu, Guandao Yang, Zhibing Li, Kai Zhang, Ziwei Liu,
+Leonidas Guibas, Dahua Lin, and Gordon Wetzstein. Gpt-4v
+(ision) is a human-aligned evaluator for text-to-3d generation.
+In Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, pages 22227–22238, 2024.
+7, 8
+[36] Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya
+Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry,
+Amanda Askell, Pamela Mishkin, Jack Clark, et al. Learning
+transferable visual models from natural language supervi-
+sion. In International conference on machine learning, pages
+8748–8763. PMLR, 2021. 5
+11
+
+
+LAYOUTVLM: Differentiable Optimization of 3D Layout
+via Vision-Language Models
+Supplementary Material
+A. Details of LAYOUTVLM
+This section elaborates on the details of our method, includ-
+ing the prompts we used.
+A.1. Grouping
+To address the challenge of handling large numbers of 3D as-
+sets, we cluster related assets into groups using the following
+prompt:
+You are an experienced 3D layout designer. You are
+teaching a junior designer the concept of
+semantic asset group. Understanding and
+recognizing semantic asset groups will help
+the designers to design a room layout more
+efficiently by decomposing the room layout
+into smaller, more manageable parts.
+**Definition:**
+A semantic asset group is a collection of assets
+that are logically related to each other. The
+grouping of the assets are based on functional
+, semantic, geometric, and functional
+relationships between assets.
+Usually assets that are close to each other in
+space can be grouped together. For example, a
+bed, a nightstand, and a lamp on top of the
+nightstand can be grouped together.
+However, it is also possible to group assets that
+are not physically close to each other but are
+semantically related. For example, a sofa, a
+tv console in front of the sofa, and a tv on
+top of the tv console can be grouped together
+even though the tv and the tv console is a few
+meters away from the sofa. They can be
+grouped together because they are semantically
+related -- the tv is in front of the sofa.
+**Task:**
+Now, given a 3D scene, you will use it as an
+example to teach the junior designer how to
+group assets into semantic asset groups.
+**Step-by-Step Guide:**
+1. You will first be provided a list of assets.
+Based on the assets, you should describe the
+general layout of the scene, the types of
+assets present, and any notable features.
+2. You will identify the semantic relationships
+between the assets. You should consider the
+functional, semantic, and geometric
+relationships between the assets.
+3. You will then describe how you would group the
+assets into semantic asset groups. You should
+explain the rationale behind each group and
+how the assets within each group are related
+to each other.
+4. You will then order the semantic asset groups
+based on the sequence in which they should be
+placed in the scene. You should consider the
+significance of each group and the logical
+flow of the scene layout. For example, larger
+or more prominent assets may be placed first
+to establish the scenes focal points.
+5. Finally, you will format the grouping
+information into a clear and organized
+structure that can be easily understood by
+other designers or stakeholders.
+**Example:**
+Suppose you are examining a bedroom scene. In the
+bedroom, there are the following assets:
+bed | ...
+nightstand | ...
+lamp | ...
+bed_bench | ...
+dresser-0 | ...
+dresser-1 | ...
+photo_frame-0 | ...
+dressing_table-0 | ...
+chair-0 | ...
+1. After examining the scene, you will describe the
+scene a bedroom with a bed and a seating area
+for dressing.
+2. You will list the assets and their relationships
+:
+- the bed is the central piece
+- the nightstand is next to the bed for placing
+items. The bedside table should be close to
+the bed for easy access.
+- the lamp is on the nightstand for lighting. The
+lamp should be close to the bed for reading.
+- the end of bed bench is at the foot of the bed.
+The bench is at the end of the bed for seating
+or placing items.
+- the dresser is on the other side of the room. The
+dresser is on the opposite side of the bed
+for storage.
+- the photo frame is on the dresser. The photo is
+directly opposite the bed for viewing.
+- the dressing table is in an open area of the room
+.
+- the chair is in front of the dressing table for
+seating.
+3. You will group the assets into semantic asset
+groups:
+- Group 1: Bed, Nightstand, Lamp. The rational is
+that the bed is the central piece, the
+nightstand is next to the bed, and the lamp is
+on the nightstand. They are related to each
+other because they are used for sleeping and
+reading.
+- Group 2: End of bed bench. The bench is at the
+foot of the bed for seating or placing items.
+- Group 3: Dresser, Photo frame. The dresser is on
+the opposite side of the bed for storage, and
+the photo frame is directly opposite the bed
+for viewing.
+- Group 4: Dressing table, Chair. The dressing
+table is in an open area of the room, and the
+chair is in front of the dressing table for
+seating.
+4. You will order the semantic asset groups based
+on the sequence in which they should be placed
+in the scene:
+- Group 1: Bed, Nightstand, Lamp. They should be
+placed first to establish the sleeping area.
+They are the focal point of the room.
+- Group 2: End of bed bench. It should be placed
+next to the bed to complement the sleeping
+area.
+- Group 3: Dresser, Photo frame. They should be
+placed on the opposite side of the room to
+1
+
+
+balance the layout.
+- Group 4: Dressing table, Chair. They should be
+placed in an open area of the room to create a
+dressing area.
+5. You will format the grouping information into a
+clear and organized structure:
+‘‘‘json
+{
+"list": [
+{"id": 1,
+"name": "sleeping area",
+"assets": ["bed", "nightstand", "lamp"],
+"rational": "they are used for sleeping
+and reading.",
+"key_relations_between_assets": ["the bed
+is the central piece", "the
+nightstand is next to the bed", "the
+lamp is on the nightstand"],
+"key_relations_with_other_groups": []
+},
+{"id": 2,
+"name": "seating area",
+"assets": ["bed_bench"],
+"rational": "this end of bed bench is at
+the foot of the bed for seating or
+placing items.",
+"key_relations_between_assets": [],
+"key_relations_with_other_groups": ["the
+bench complements the sleeping area."
+]
+},
+{"id": 3,
+"name": "storage area",
+"assets": ["dresser-0", "dresser-1", "
+photo_frame-0"],
+"rational": "the dresser is on the
+opposite side of the bed for storage,
+and the photo frame is directly
+opposite the bed for viewing.",
+"key_relations_between_assets": ["the
+photo frame is on top of the dresser"
+],
+"key_relations_with_other_groups": ["the
+dresser is for storage, and the photo
+frame is for viewing. To make the
+photo frame visible from the bed, the
+dresser should be placed on the
+opposite side of the bed."]
+},
+{"id": 4,
+"name": "dressing area",
+"assets": ["dressing_table-0", "chair-0"],
+"rational": "the dressing table is in an
+open area of the room, and the chair
+is in front of the dressing table for
+seating.",
+"key_relations_between_assets": ["the
+chair is in front of the dressing
+table"],
+"key_relations_with_other_groups": ["the
+dressing area complements the
+sleeping area and the storage area by
+providing another function in the
+room."]
+}
+]
+}
+‘‘‘
+Now, please proceed by grouping and organizing the
+following list of assets according to the
+layout instruction:
+NOTE: it is very important to include all the
+assets!!! And please do not change the name of
+the assets.
+Task: TASK_DESCRIPTION
+Instruction: LAYOUT_CRITERIA
+In the room, there are the following assets:
+ASSET_LISTS
+A.2. Differentiable Spatial constraint
+We define differentiable objectives for the spatial constraints
+used in our method. We introduce the necessary notations
+and provide the mathematical formulations below. The pose
+of an asset mi is represented as pi = (xi, yi, zi, θi), the
+orientation of the asset θi is represented with an orientation
+vector vi = (cos θi, sin θi), and bi denotes the 3D bounding
+box size of the asset. Below are the mathematical objectives
+for various spatial relations.
+Distance Objective
+Ldistance(pi, pj, dmin, dmax) = clamp
+ (3)
+min(∥pi −pj∥−dmin, dmax −∥posi −posj∥), 0, 1
+
+where ∥posi −pj∥=
+p
+(xi −xj)2 + (yi −yj)2 is the
+Euclidean distance between i and j in the x-y plane. The
+function clamp(x, a, b) constrains x to [a, b], defined as
+clamp(x, a, b) = min(max(x, a), b).
+On-Top-Of Objective
+Lon_top_of(pi, pj, bi, bj) = −LDIoU(pi, pj, bi, bj).
+(4)
+where IoU(a, b) denotes the Intersection-over-Union of the
+bounding boxes of a and b. Instead of using a loss function
+for the z-axis, the On-Top-Of objective directly sets zi the
+z-coordinate of the object i to be on top of the object j.
+Point-Towards Objective
+Lpoint_towards(pi, pj, ϕ) =
+(
+0,
+if vi · dij > 0,
+1 −
+vi·dij
+∥vi∥∥dij∥,
+otherwise,
+(5)
+where dij is the direction vector from i to j rotated by ϕ
+degree around the z-axis.
+Align-With Objective
+Lalign_with(pi, pj, ϕ) = 1 −
+vi · vj
+∥vi∥∥vj∥,
+(6)
+where vi and vj are the orientation vectors of i and j,
+respectively.
+2
+
+
+Against-Wall Objective
+The "Against-Wall" objective
+consists of two components: (a) the sum of distances from
+the object’s corners to the wall, and (b) a term that encour-
+ages the object to point away from the wall. Let c(k)
+i
+be the
+k-th corner of the i-th object, which is calculated based on
+the object’s x-y position (xi, yi), rotation, and bounding box
+size bi. The loss function is:
+Lagainst_wall(pi, wj, bi) =
+4
+X
+k=1
+clamp
+ ∥c(k)
+i
+−wj∥, 0, 1
+
++
+
+1 −
+vi · nwj
+∥vi∥∥nwj∥
+
+,
+(7)
+where ∥c(k)
+i
+−wj∥denotes the Euclidean distance be-
+tween the k-th corner of to the wall segment on the x-y
+plane and nw denotes the normal vector of wall w (i.e., per-
+pendicular to the wall).
+Optimization Details
+We use Adam optimizer and Ex-
+ponential LR scheduler with a decay factor 0.96. Each op-
+timization runs for 400 steps with projection back to the
+boundary every 100 iterations. Optimizing a scene with 40
+assets takes 1–5 minutes on a single GPU, 5-10 GPT-4o calls
+(i.e., one per group), varying based on the VLM-defined
+optimization problem.
+Below is the prompt we feed VLM to generate spatial
+constraints.
+You are an experienced layout designer that place 3
+D assets into a scene. Specify the asset
+placement using a Python-based DSL.
+**3D Convention:**
+- Right-handed coordinate system.
+- The X-Y plane is the floor; the Z axis points up.
+The origin is at a corner, defining the
+global frame.
+- Asset front faces point along the positive X axis
+. The Z axis points up. The local origin is
+centered in X-Y and at the bottom in Z. A [90]
+rotation means that the object will face the
+positive Y axis. The bounding box aligns with
+the assets local frame.
+**DSL:**
+‘‘‘python
+from pydantic import BaseModel, Field
+from typing import List, Optional
+class Wall(BaseModel):
+corner1: List[float] = Field(description="XY
+coordinates of first corner")
+corner2: List[float] = Field(description="XY
+coordinates of second corner")
+class AssetInstance(BaseModel):
+position: Optional[List[float]] = Field(
+description="XYZ position", default=[0, 0,
+0]])
+rotation: List[float] = Field(description="
+counterclockwise rotation in degrees
+around Z-axis.", default=[0])
+class Assets(BaseModel):
+description: str = Field(description="Asset
+description")
+placements: List[AssetInstance] = Field(
+description="Instances of the 3D asset
+that will share the same shape and
+dimension.")
+size: Optional[List[float]] = Field(description
+="BBox size. Z-axis up. Assets front faces
+point along the positive X axis.")
+class ConstraintSolver:
+def __init__(self):
+self.constraints = []
+def on_top_of(self, asset1: AssetInstance,
+asset2: AssetInstance):
+pass
+def against_wall(self, asset1: AssetInstance,
+wall: Wall):
+pass
+def distance_constraint(self, asset1:
+AssetInstance, asset2: AssetInstance,
+min_distance, max_distance, weight=1):
+pass
+def align_with(self, asset1: AssetInstance,
+asset2: AssetInstance, angle=0.):
+pass
+def point_towards(self, asset1: AssetInstance,
+asset2: AssetInstance, angle=0.):
+pass
+solver = ConstraintSolver()
+‘‘‘
+**Constraints:**
+- Z-axis: on_top_of
+- Planar: distance_constraint
+- Orientation: align_with, point_towards
+- Planar & Orientation: against_wall
+- For constraints with multiple arguments, the
+order determines the constraint direction. For
+example, to update both assets placements
+with align_with, specify the constraint twice,
+swapping the arguments. For example, solver.
+point_towards(chair[0], sofa[0]) makes the
+chair point to the sofa, while solver.
+point_towards(sofa[0], chair[0]) adjusts the
+sofa to point to the chair.
+**Task:**
+You will receive:
+1. High-level design goals.
+2. A list of existing scene assets (if any).
+3. A list of new assets with their dimensions and
+orientations.
+4. A top-down view of the current scene, with a
+marked global frame, 1-meter grid, labeled
+assets, and front-facing orientation arrows.
+Walls are also labeled with orientation arrows
+.
+5. A side view of the current scene, with the
+global frame and 1-meter grid.
+6. A top-down view of each new asset in an empty
+scene, facing the positive X-axis, labeled
+with its name and front-facing arrow.
+Your task is to write a program that:
+1. Specifies precise position and rotation for the
+new asset placements.
+3
+
+
+2. Constraints for the asset placements. These
+constraints will ensure that the layout
+semantics are maintained when the layout is
+being adjusted to be physically feasible.
+**Instructions:**
+Follow these instructions carefully:
+- Specify the constraints for all the assets to be
+placed, specifically for each asset instance
+in the placements list of the Assets class.
+- Specify at least one planar constraint and one
+orientation constraint for each asset.
+- Do not specify constraints for existing assets or
+walls.
+- Do not re-initialize existing assets or walls.
+- Do not hallucinate assets.
+- Enclose your answer in the ‘‘‘python ‘‘‘ code
+block. PLEASE DO NOT REPEAT THE GIVEN PROGRAM.
+- Use code comments to explain your reasoning.
+- Do not overwrite asset variable names (e.g.,
+avoid for chair in sofa.placements: ...).
+- It is important to find a empty space to place
+the new sets of assets given the
+A.3. Self-Consistent Decoding
+We propose self-consistent decoding to address the challenge
+of maintaining layout coherence in VLM-generated spatial
+plans. Our main hypothesis is that preserving self-consistent
+spatial relations—those that align with the estimated numer-
+ical poses of objects—is essential for ensuring semantic and
+physical plausibility during optimization. During implemen-
+tation, we simplify the decoding process by enforcing that
+each asset maintains at most one orientational constraint,
+either to “point towards" or “align with" another asset. Addi-
+tionally, the spatial relation "on top of" is excluded from the
+self-consistency decoding, as we empirically observe that
+“on top of " relations are almost accurately and reasonably
+predicted by our model; thus, enforcing self-consistency is
+unnecessary.
+A.4. Annotating Unlabeled 3D Assets
+We annotate the 3D assets used in a similar way as in
+Holodeck [5], using GPT-4o to determine the front face
+of the object and to determine the textual description of the
+asset. More specifically, GPT-4o takes a set of four images
+as inputs, each showing an object from orthogonal rotations
+(0°, 90°, 180°, and 270°) and outputs the following attributes
+for the 3D object:
+• Category: a specific classification of the object, such as
+“chair”, “table”, “building”, etc.
+• Variable Name: a string denoting the python variable
+name that will be used to refer to this object in our scene
+layout representation.
+• Front View: an integer denoting the view representing the
+front of the object, often the most symmetrical view.
+• Description: a detailed textual description of the object.
+• Materials: a list of materials constituting the object.
+• Placement Attributes: Boolean values (ONCEILING, ON-
+WALL, ONFLOOR, ONOBJECT) indicating typical place-
+ment locations. For example, “True” for a ceiling fan’s
+placement on the ceiling.
+B. Details of our Experiments
+B.1. Generating Test Cases
+We developed a pipeline for generating valid open-
+vocabulary 3D layout generation cases to benchmark our
+method against existing methods.
+First, we feed the following prompt to GPT-4o to generate
+a layout instruction given the room type:
+Given a task description, return a string
+description of layout criteria for an interior
+design focused on the provided task.
+Include considerations for aesthetics,
+functionality, and spatial organization. Each
+layout criteria string should start with
+the phrase "The layout criteria should follow the
+task description and be...".
+For example, if the task description is a spatious
+study room, the layout criteria should be:
+"The layout criteria should follow the task
+description and be spatious, tidy, and minimal
+"
+task description: TASK_DESCRIPTION
+Return only the layout criteria and nothing else.
+Ensure that the criteria is
+no longer than 1-2 sentences. It is extremely
+important.
+Condition on the generated room layout instruction, we
+then use the following prompt to retrieve a bunch of plausible
+assets:
+Given a client’s description of a room or tabletop
+and the floor vertices of the room, determine
+what objects and how many of
+them should be placed in this room or table.
+Objects should follow the requirements below.
+Requirement 1: Be specifc
+about how you describe
+the objects, while using as simple english as
+possible. Each object should try to be around
+two words, including
+a relevant adjective if possible. Normally this
+adjective should be the room type, such as "
+kitchen scale" or "bathroom sink". However, it
+can also be a color or
+a material, such as "wooden chair" or "red table"
+if necessary. Ensure that descriptions are
+simple - an elementary student should
+understand what each object is.
+For example, if a client description asks for "
+weightlifting racks", simplify the description
+to "weightlifting equipment".
+For example, if a client description asks for "a
+1980’s jukebox", simplify the description to "
+vintage jukebox".
+For example, if a client description includes "
+aerobic machines",simplify the description to
+"treadmill" and "exercise bike".
+For example, if a client is describing a kitchen
+and is asking for a "scale" for food, ensure
+the object includes an adjective to describe
+the object, such as "kitchen scale".
+4
+
+
+For example, if a client is describing a bathroom
+and is asking for a "sink", ensure the object
+includes an adjective to describe the object,
+such as "bathroom sink".
+Requirement 2: Only choose objects that are
+singular in nature.
+For example, instead of choosing a "speaker system"
+, just choose "speaker".
+For example, Instead of choosing "tables" and "
+chairs", just choose "table" and "chair".
+Requirement 3: Ensure that the objects are relevant
+to the room or tabletop.
+A client’s description can either describe a room
+or tabletop arrangement. If it is describing a
+tabletop arrangement,
+do not include objects like "table" or "chair" in
+the response. Only include objects that would
+be placed on the table.
+If it is describing a room arrangement, do not
+describe include things like "windows" or "
+doors" in the response.
+Only include objects that would be placed in the
+room. Other than paintings, posters, light
+fixtures, or shelfs,
+do not include objects that would be placed on the
+wall.
+Requirement 4: Ensure that rooms have a place to
+sit and a place to put things down, like a
+counter, table, or nightstand.
+This also means that objects like art easels, work
+benches, or desks should have corresponding
+chairs or stools.
+For example, if a client is describing a bar,
+ensure that the response includes a "bar table
+" or "counter" and "bar stools" as well.
+For example, if a client describes a classroom,
+ensure that all desks have corresponding
+chairs.
+Requirement 5: Try and include as many objects as
+possible that are relevant to the room or
+tabletop. Aim for at least 10
+objects in each response, but ideally include more.
+After ensuring these requirements, return a
+dictionary objects, where the key is the
+object name and the value is an array tuple of
+two values.
+The first value of the key array is the number of
+times that object should occur in the room and
+the second value is how many
+types of that object should exist.
+For example, for a given description of a garden,
+you would want many plants, but do not want
+all of them to be the same type.
+Thus, the value of the key array would be [9, 3]
+for the object "plant". This means that there
+should be 9 plants in the garden
+and there should be 3 different types of ferns in
+the garden.
+For example, for a given description of "A study
+room 5m x 5m"
+Return the Dictionary: {"desk": [1, 1], "chair":
+[1, 1], "lamp": [1, 1], "bookcase": [2, 1], "
+laptop_computer": [1, 1], "computer monitor":
+[1, 1], "printer": [1, 1], "sofa": [1, 1], "
+flowerpot": [1, 1], "painting": [1, 1]}
+For example, for a given description of "A tabletop
+arrangement with a bowl placed on a plate 1m
+x 1m"
+Return the Dictionary: {"plate": [1, 1], "bowl":
+[1, 1], "fork": [1, 1], "knife": [1, 1], "
+spoon": [1, 1], "napkin": [1, 1], "salt shaker
+": [1, 1], "pepper shaker": [1, 1], "wine
+glass": [1, 1], "water glass": [1, 1]}
+For example, for a given description of "a vibrant
+game room filled with vintage arcade games and
+a jukebox, 6m x 6m"
+Return the Dictionary: {"jukebox": [1, 1], "arcade
+machine": [3, 1], "pool table": [1, 1], "darts
+board": [1, 1], "bar stool": [4, 1], "bar
+table": [1, 1], "neon sign": [1, 1], "popcorn
+machine": [1, 1], "vending machine": [1, 1], "
+air hockey table": [1, 1]}
+For example, for a given description of "a lush
+inside garden filled with a variety of plants
+and a small birdbath, 5m x 3m"
+Return the Dictionary: {"fern": [8, 3], "birdbath":
+[1, 1], "flowerpot": [3, 1], "watering can":
+[1, 1], "garden gnome": [1, 1], "garden bench"
+: [1, 1], "garden shovel": [1, 1], "garden
+rake": [1, 1], "garden hose": [1, 1]}
+task description: TASK_DESCRIPTION
+layout criteria: LAYOUT_CRITERIA
+room size in meters: ROOM_SIZE
+Remember, you should only include objects that are
+most important to be placed in the room or on
+the table.
+The dictionary should not include the room
+dimensions.
+Return only the dictionary of objects and nothing
+else. It is extremely important.
+Subsequently, we embed the generated asset descriptions
+using CLIP [36] and use the embeddings to retrieve 3D assets
+from Objaverse. The following prompt is employed to verify
+whether the retrieved object belongs to the given room:
+You are an interior designer. A client is
+suggesting possible objects that he thinks
+belongs in a described
+room. You are tasked with determining if the client
+is correct or not, stating whether the
+proposed object
+belongs in the described room.
+Given a client’s description of a room or tabletop,
+the description of an object, and images of
+the object,
+determine if the described object should be placed
+in the room that is described. To help, you
+are also
+given a description of what object the client was
+initially looking for. Ensure that the style
+and color
+of the object matches the type of the room. If an
+object is not in the style of what the room
+type
+would typically have, it should not be placed in
+the room.
+Return "True" if the object should be kept in the
+room and "False" if the object should not be.
+For example, if the room description is a "A
+tabletop arrangement with a bowl placed on a
+5
+
+
+plate 1m x 1m" and the object appears to be "a
+shovel":
+Return: False
+For example, if the room description is a "A
+spatious study room with a desk and chair" and
+the object appears to be "an 18th century
+book":
+Return: True
+For example, for a given description of "a vibrant
+game room filled with vintage arcade games and
+a jukebox, 6m x 6m" and the object appears to
+be "a 1980s pinball machine":
+Return: True
+For example, for a given description of an "art
+room with chairs", and the object appears to
+be a "a pink beach chair":
+Return: False
+task description: TASK_DESCRIPTION
+layout criteria: LAYOUT_CRITERIA
+object description: OBJECT_DESCRIPTION
+object client requested: OBJECT_LOOKING_FOR
+Remember, you should only return "True" if the
+object should be placed in the room / tabletop
+and "False" if the object should not be.
+Do not include any other words in your response. It
+is extremely important.
+At last, we conduct many verifications to remove assets that
+humans deem unsuitable given the room type and layout
+instruction (e.g., a 3D asset of an entire city should not
+appear in an indoor scene).
+B.2. Evaluation
+Evaluating the quality of generated 3D layouts requires met-
+rics that measure both physical plausibility and semantic co-
+herence. In this section, we introduce the evaluation prompts
+we feed to VLM to assess the performance of layout genera-
+tion systems.
+We measure the positional and rotational Semantic co-
+herency score with the following prompts.
+You are an interior designer.
+Given generated renderings of a room, your job is
+to evaluate how well an
+automated 3D layout generator does.
+The instruction given to the 3D layout generator
+was:
+Evaluate the 3D layout generator as follows:
+Assess the the relative position (do not consider
+orientation) between assets: determine if
+related objects are placed near each other in
+a way that makes sense for their use.
+- Scoring Criteria for Position:
+100-81: Excellently Positioned - Related
+objects are positioned near each other
+perfectly, facilitating their combined use
+.
+80-61: Well Positioned - Most related objects
+are logically placed near each other, with
+few exceptions.
+60-41: Adequately Positioned - Some related
+objects are not optimally placed,
+impacting their use together.
+40-21: Poorly Positioned - Many related objects
+are placed far apart, hindering their
+joint use.
+20-1: Very Poorly Positioned - Related objects
+are placed without consideration for their
+relationship, severely affecting
+functionality.
+Please assess the image based on how coherently its
+layout aligns with the given target criteria.
+Please provide justification and explanation for
+the score you give, in detail.
+Always end your answer with "### my final rating is
+: [replace this with a number between 1-100]".
+This is extremely important.
+You are an interior designer.
+Given generated renderings of a room, your job is
+to evaluate how well an
+automated 3D layout generator does.
+The instruction given to the 3D layout generator
+was:
+Evaluate the 3D layout generator as follows:
+Assess the coherency of asset orientation: Evaluate
+if related objects are oriented relative to
+each other in a way that makes sense for their
+use.
+- Scoring Criteria for Orientation:
+100-81: Excellently Oriented - The orientation
+of objects perfectly complements their use
+and relationship with each other.
+80-61: Properly Oriented - Most objects are
+oriented sensibly relative to each other,
+with minor misalignments.
+60-41: Adequately Oriented - Several objects
+have orientations that do not fully
+support their use or relation.
+40-21: Poorly Oriented - Many objects are
+oriented in ways that detract from their
+functionality or relation.
+20-1: Very Poorly Oriented - Objects are
+oriented without any apparent logic,
+severely undermining their intended use
+and relationship.
+Please assess the image based on how coherently its
+layout aligns with the given target criteria.
+Please provide justification and explanation for
+the score you give, in detail.
+Always end your answer with "### my final rating is
+: [replace this with a number between 1-100]".
+This is extremely important.
+We measure the Physically-grounded Semantic Alignment
+Score (PSA) with Collision-Free Score (CF), In-Boundary
+Score (IB), and the overall prompt alignment score following
+prompt.
+You are an interior designer.
+Given generated renderings of a room, your job is
+to evaluate how well an
+automated 3D layout generator does.
+The instruction given to the 3D layout generator
+was:
+Evaluate the 3D layout generator as follows:
+6
+
+
+Layout criteria match: On a scale of 1 to 100, how
+well does the layout (i.e. just the layout not
+the assets) capture the essence of the
+specified layout criteria?
+- Scoring Criteria:
+100: Excellent: The layout of the scene (i.e.
+relative position and pose of objects in
+the scene) align very well with the
+criteria.
+80: Good: The layout of the scene mostly align
+with the criteria (only ~10% assets do not
+).
+60: Ok: The layout of the scene somewhat align
+well with the criteria (only ~30% assets
+do not).
+40: Poor: The layout of the scene (over ~50% of
+the assets) do not align with the
+criteria.
+20: Very Poor: The layout of the whole scene
+does not capture the target criteria at
+all.
+Please assess the image based on how coherently its
+layout aligns with the given target criteria.
+Please provide justification and explanation for
+the score you give, in detail.
+Always end your answer with "### my final rating is
+: [replace this with a number between 1-100]".
+This is extremely important.
+C. More Qualitative Comparison
+In Figure 7, we present more qualitative examples of layouts
+generated by LAYOUTVLM and baseline methods. LAY-
+OUTVLM consistently outperforms baseline methods across
+all room types in terms of both physcial plausibility and
+semantic coherency. In the Living Room example, LAY-
+OUTVLM excels in identifying semantic asset group by
+clustering sofa and table together. By leveraging spatial rea-
+soning from VLMs, we are able to stack assets toegther, as
+shown in the Deli example.
+7
+
+
+Position the low-proﬁle queen 
+bed against the center of one 
+wall, leaving ample space on 
+both sides for easy access.
+LayoutVLM
+I-Design
+Holodeck
+LayoutGPT
+Bedroom
+Stimulating yet organized 
+space; the study desk 
+placed perpendicular to 
+the bed
+Children Room
+Upscale and browsable layout; 
+arrange wooden shelves along 
+the walls for customers to 
+broswe
+Deli
+Active and social layout; 
+position the ping pong table 
+centrally with the foosball table 
+parallel to it, creating distinct 
+play zones with clear 
+pathways 
+Large sofa centered in the 
+room, coffee table in front 
+of the sofa, entertainment 
+center on one wall, and a 
+reading nook in one 
+corner.
+Living Room
+Game Room
+Instructions
+Figure 7. More qualitative comparison with baseline methods in generating layouts based on detailed language instructions.
+8

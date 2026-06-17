@@ -1,0 +1,49 @@
+{
+  "paper_id": "paper_089",
+  "title": "Measuring Massive Multitask Language Understanding (MMLU)",
+  "authors": [
+    "Dan Hendrycks",
+    "Collin Burns",
+    "Steven Basart",
+    "Andy Zou",
+    "Mantas Mazeika",
+    "Dawn Song",
+    "Jacob Steinhardt"
+  ],
+  "year": 2020,
+  "venue": "ICLR 2021",
+  "url": "https://arxiv.org/abs/2009.03300",
+  "pdf_url": "https://arxiv.org/pdf/2009.03300.pdf",
+  "arxiv_id": "2009.03300",
+  "doi": null,
+  "domains": [
+    "eval",
+    "benchmark"
+  ],
+  "method_tags": [
+    "MMLU",
+    "multitask",
+    "knowledge-benchmark"
+  ],
+  "benchmarks": [],
+  "source_input_path": "data/papers/manifest_candidates_expanded.jsonl",
+  "local_pdf_path": "data/papers/raw/paper_089.pdf",
+  "access_status": "open_access",
+  "access_note": "arXiv 2009.03300",
+  "language": "en",
+  "processing": {
+    "text_extracted": false,
+    "overview_generated": true,
+    "chunks_generated": false,
+    "visuals_generated": false,
+    "figure_assets_extracted": false,
+    "table_assets_extracted": false
+  },
+  "quality": {
+    "metadata_complete": true,
+    "overview_complete": true,
+    "chunk_count": 0,
+    "visual_count": 0,
+    "warnings": []
+  }
+}
