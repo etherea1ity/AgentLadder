@@ -94,12 +94,19 @@ class KlaraLoop:
         self.model = model
         self.system_prompt = system_prompt
 
-    def run(self, user_input: str, *, run_id: str | None = None) -> KlaraRunResult:
+    def run(
+        self,
+        user_input: str,
+        *,
+        run_id: str | None = None,
+        prior_messages: tuple[KlaraMessage, ...] = (),
+    ) -> KlaraRunResult:
         """Run the loop until final answer, max turns, or unexpected failure.
 
         Args:
             user_input: User message that starts this run.
             run_id: Optional stable id for deterministic traces and tests.
+            prior_messages: Optional completed transcript before this user turn.
 
         Returns:
             A run result with final transcript, answer, stop reason, and hook
@@ -108,8 +115,11 @@ class KlaraLoop:
 
         # Active run id is the trace join key across all lifecycle events.
         active_run_id = run_id or str(uuid4())
-        # Messages begin with exactly one user message; later turns append to it.
-        messages: list[KlaraMessage] = [KlaraMessage(role="user", content=user_input)]
+        # Messages begin with optional app-provided history, then this user turn.
+        messages: list[KlaraMessage] = [
+            *prior_messages,
+            KlaraMessage(role="user", content=user_input),
+        ]
         self._emit(active_run_id, "run.started", {"model": self.model})
 
         try:

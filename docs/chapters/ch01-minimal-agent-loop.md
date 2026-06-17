@@ -580,11 +580,13 @@ DASHSCOPE_API_KEY
 ```text
 deepseek/deepseek-v4-flash
 deepseek/deepseek-v4-pro
+qwen/qwen-flash
 qwen/qwen3.7-plus
 qwen/qwen3.7-max
+qwen/qwen3.6-plus
 ```
 
-默认 `agent` profile 使用 `qwen/qwen3.7-plus`，因为它可以同时承担普通对话、工具调用和图片理解。Qwen image model 放在 `config/images.toml`，并通过后续工具章节里的 `image_generate` capability 进入 loop，而不是混进 chat model picker。
+默认 `agent` profile 使用 `qwen/qwen-flash`，用于快速普通对话和工具调用；`qwen/qwen3.7-plus` 仍然作为可选的视觉 chat model。Qwen image model 放在 `config/images.toml`，并通过后续工具章节里的 `image_generate` capability 进入 loop，而不是混进 chat model picker。
 
 </details>
 

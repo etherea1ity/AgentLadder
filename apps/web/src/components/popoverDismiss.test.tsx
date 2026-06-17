@@ -9,9 +9,9 @@ const now = new Date("2026-06-16T08:00:00.000Z").toISOString();
 
 const modelOptions: ModelOption[] = [
   {
-    id: "qwen/qwen3.7-plus",
-    model: "qwen/qwen3.7-plus",
-    label: "Qwen3.7 Plus",
+    id: "qwen/qwen-flash",
+    model: "qwen/qwen-flash",
+    label: "Qwen Flash",
   },
   {
     id: "qwen/qwen3.7-max",
@@ -46,7 +46,7 @@ describe("popover dismissal", () => {
         onSend={vi.fn()}
         onStop={vi.fn()}
         modelOptions={modelOptions}
-        selectedModel="qwen/qwen3.7-plus"
+        selectedModel="qwen/qwen-flash"
         onModelChange={onModelChange}
         theme="light"
         onToggleTheme={vi.fn()}

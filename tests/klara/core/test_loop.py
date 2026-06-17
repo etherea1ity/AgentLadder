@@ -70,6 +70,28 @@ def test_no_tool_run_returns_final_answer() -> None:
     assert [message.role for message in result.messages] == ["user", "assistant"]
 
 
+def test_run_can_start_with_prior_conversation_messages() -> None:
+    llm = ScriptedLlm([ModelResponse(content="I can continue.")])
+    loop = KlaraLoop(llm=llm, tool_executor=ToolExecutor())
+
+    result = loop.run(
+        "continue",
+        run_id="run-history",
+        prior_messages=(
+            KlaraMessage(role="user", content="draw Klara"),
+            KlaraMessage(role="assistant", content="I can make that image."),
+        ),
+    )
+
+    assert result.final_answer == "I can continue."
+    assert [message.role for message in llm.calls[0][0]] == [
+        "user",
+        "assistant",
+        "user",
+    ]
+    assert llm.calls[0][0][-1].content == "continue"
+
+
 def test_one_tool_run_feeds_observation_back_to_llm() -> None:
     tool_call = ToolCall(
         id="call-1",

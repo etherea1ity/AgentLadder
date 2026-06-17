@@ -20,6 +20,7 @@ from klara.capabilities.registry import CapabilityRegistry
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
+from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
 from klara.core.tool_executor import ToolExecutor
 
@@ -162,7 +163,14 @@ class RunService:
                 model=current.model or self.default_model or "fake-model",
                 system_prompt=_system_prompt(),
             )
-            result = loop.run(user_message.content, run_id=run_id)
+            result = loop.run(
+                user_message.content,
+                run_id=run_id,
+                prior_messages=self._conversation_history(
+                    run.session_id,
+                    before_message_id=user_message.message_id,
+                ),
+            )
             if run_id in self._cancel_requested:
                 return
 
@@ -232,6 +240,25 @@ class RunService:
         if model and self.allowed_models and model not in self.allowed_models:
             raise ValueError("model_not_allowed")
         return model
+
+    def _conversation_history(
+        self,
+        session_id: str,
+        *,
+        before_message_id: str,
+    ) -> tuple[KlaraMessage, ...]:
+        """Return completed user/assistant messages before the current turn."""
+
+        history: list[KlaraMessage] = []
+        for message in self.store.list_messages(session_id):
+            if message.message_id == before_message_id:
+                break
+            if message.status != "completed" or not message.content.strip():
+                continue
+            if message.role not in {"user", "assistant"}:
+                continue
+            history.append(KlaraMessage(role=message.role, content=message.content))
+        return tuple(history[-12:])
 
 
 class _RunEventBridge:

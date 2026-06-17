@@ -67,4 +67,4 @@ def test_image_generate_tool_returns_markdown_image_observation() -> None:
         "![Generated image](/api/assets/local?path=data/assets/images/test.png)"
     )
     assert "final answer" in payload["final_answer_instruction"].lower()
-
+    assert "do not split the url" in payload["final_answer_instruction"].lower()

@@ -84,8 +84,10 @@ class ImageGenerateTool(BaseTool):
                     for image in images
                 ],
                 "final_answer_instruction": (
-                    "In the final answer, embed each generated image using the "
-                    "markdown field exactly, then add a brief natural-language note."
+                    "In the final answer, embed each generated image using each "
+                    "markdown field exactly as one unbroken Markdown image tag. "
+                    "Do not split the URL, do not print a bare URL, and then add "
+                    "a brief natural-language note."
                 ),
             },
         )
@@ -135,4 +137,3 @@ def _optional_int_or_none(arguments: JsonObject, key: str) -> int | None:
     if value < 0 or value > 2147483647:
         raise ToolInputError(f"{key} must be between 0 and 2147483647")
     return value
-

@@ -1,5 +1,6 @@
 export function normalizeMathMarkdown(value: string) {
-  const repaired = repairBrokenSymbolExplanations(value);
+  const imageReady = normalizeGeneratedImagesMarkdown(value);
+  const repaired = repairBrokenSymbolExplanations(imageReady);
   const placeholders: string[] = [];
   const stash = (text: string) => {
     const index = placeholders.push(text) - 1;
@@ -19,6 +20,96 @@ export function normalizeMathMarkdown(value: string) {
   text = normalizeBalancedParenMath(text, stash);
 
   return text.replace(/@@AGENT_LADDER_MD_(\d+)@@/g, (_match, index) => placeholders[Number(index)] ?? '');
+}
+
+const LOCAL_IMAGE_URL =
+  /\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg)/gi;
+
+export function normalizeGeneratedImagesMarkdown(value: string) {
+  let text = repairSplitLocalImageUrls(value);
+  text = text.replace(
+    /!\[([^\]\n]*)\]\s*(\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg))/gi,
+    (_match, alt, url) => `![${alt || 'Generated image'}](${url})`,
+  );
+  text = text.replace(
+    /!\[([^\]\n]*)\]\s*\n+\s*(\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg))/gi,
+    (_match, alt, url) => `![${alt || 'Generated image'}](${url})`,
+  );
+  text = text.replace(
+    /!\[([^\]\n]*)\]\((\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg))\)\s*\n+\s*\2/gi,
+    (_match, alt, url) => `![${alt || 'Generated image'}](${url})`,
+  );
+  return protectExistingMarkdownImages(text, (unprotected) =>
+    unprotected.replace(LOCAL_IMAGE_URL, (url, offset, fullText) => {
+      const before = fullText.slice(Math.max(0, offset - 3), offset);
+      if (before.endsWith('](')) return url;
+      return `![Generated image](${url})`;
+    }),
+  );
+}
+
+function repairSplitLocalImageUrls(value: string) {
+  const lines = value.split('\n');
+  const repaired: string[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    if (line.trim() !== '/') {
+      repaired.push(line);
+      index += 1;
+      continue;
+    }
+
+    let candidate = '';
+    let cursor = index;
+    let matched = false;
+    while (cursor < lines.length && isLocalImageUrlFragment(lines[cursor])) {
+      candidate += lines[cursor].trim();
+      if (isCompleteLocalImageUrl(candidate)) {
+        repaired.push(candidate);
+        index = cursor + 1;
+        matched = true;
+        break;
+      }
+      if (candidate.length > 260) break;
+      cursor += 1;
+    }
+
+    if (!matched) {
+      repaired.push(line);
+      index += 1;
+    }
+  }
+
+  return repaired.join('\n');
+}
+
+function isLocalImageUrlFragment(line: string) {
+  const text = line.trim();
+  return text.length > 0 && text.length <= 32 && /^[A-Za-z0-9_./?=&%-]+$/.test(text);
+}
+
+function isCompleteLocalImageUrl(value: string) {
+  return /^\/api\/assets\/local\?path=data\/assets\/images\/[^\s)]+?\.(?:png|jpg|jpeg|webp|gif|svg)$/i.test(value);
+}
+
+function protectExistingMarkdownImages(
+  value: string,
+  transform: (text: string) => string,
+) {
+  const placeholders: string[] = [];
+  const protectedText = value.replace(
+    /!\[[^\]\n]*\]\(\/api\/assets\/local\?path=data\/assets\/images\/[^)\n]+\)/gi,
+    (match) => {
+      const index = placeholders.push(match) - 1;
+      return `@@KLARA_IMAGE_${index}@@`;
+    },
+  );
+  return transform(protectedText).replace(
+    /@@KLARA_IMAGE_(\d+)@@/g,
+    (_match, index) => placeholders[Number(index)] ?? '',
+  );
 }
 
 function normalizeBigO(value: string, stash: (text: string) => string) {
@@ -116,4 +207,3 @@ function isTinyMathFragment(line: string) {
   const text = line.trim();
   return text.length > 0 && text.length <= 8 && /^[A-Za-z0-9()=+\-*/\\^_.,\sππωΩλθ{}]+$/.test(text);
 }
-

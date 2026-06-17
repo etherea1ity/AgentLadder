@@ -580,11 +580,13 @@ Current chat models:
 ```text
 deepseek/deepseek-v4-flash
 deepseek/deepseek-v4-pro
+qwen/qwen-flash
 qwen/qwen3.7-plus
 qwen/qwen3.7-max
+qwen/qwen3.6-plus
 ```
 
-The default `agent` profile uses `qwen/qwen3.7-plus` because it can handle normal chat, tool calling, and image understanding. Qwen image models live in `config/images.toml` and enter the loop through the later `image_generate` capability rather than the chat model picker.
+The default `agent` profile uses `qwen/qwen-flash` for fast normal chat and tool calling. `qwen/qwen3.7-plus` remains the selectable vision-capable chat model. Qwen image models live in `config/images.toml` and enter the loop through the later `image_generate` capability rather than the chat model picker.
 
 </details>
 

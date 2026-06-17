@@ -29,14 +29,17 @@ Chat models live in `config/models.toml`:
 ```text
 deepseek/deepseek-v4-flash
 deepseek/deepseek-v4-pro
+qwen/qwen-flash
 qwen/qwen3.7-plus
 qwen/qwen3.7-max
+qwen/qwen3.6-plus
 ```
 
 These are the models that `/api/models` returns to the frontend.
 
-The default `agent` profile is `qwen/qwen3.7-plus` so Klara can use one default
-model for text, tool calling, and image understanding.
+The default `agent` profile is `qwen/qwen-flash`, with Qwen3.7 Plus,
+Qwen3.6 Plus, Qwen3.7 Max, and DeepSeek models available as fallbacks or
+frontend choices. Qwen3.7 Plus remains the configured vision-capable chat model.
 
 ## Image Tool Model
 

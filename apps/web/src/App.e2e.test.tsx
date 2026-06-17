@@ -54,12 +54,12 @@ describe("Klara app flow", () => {
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url === "/api/models")
           return json({
-            default_model: "qwen/qwen3.7-plus",
+            default_model: "qwen/qwen-flash",
             models: [
               {
-                id: "qwen/qwen3.7-plus",
-                model: "qwen/qwen3.7-plus",
-                label: "Qwen3.7 Plus",
+                id: "qwen/qwen-flash",
+                model: "qwen/qwen-flash",
+                label: "Qwen Flash",
               },
             ],
           });

@@ -23,6 +23,14 @@ api_key_env = "DASHSCOPE_API_KEY"
 allow_unlisted_models = false
 
 [[models.providers.qwen.models]]
+id = "qwen-flash"
+label = "Qwen Flash"
+supports_tools = true
+supports_json = true
+supports_vision = false
+enable_thinking = false
+
+[[models.providers.qwen.models]]
 id = "qwen3.7-plus"
 label = "Qwen3.7 Plus"
 supports_tools = true
@@ -38,9 +46,19 @@ supports_json = true
 supports_vision = false
 enable_thinking = false
 
+[[models.providers.qwen.models]]
+id = "qwen3.6-plus"
+label = "Qwen3.6 Plus"
+supports_tools = true
+supports_json = true
+supports_vision = false
+enable_thinking = false
+
 [models.profiles.agent]
-primary = "qwen/qwen3.7-plus"
+primary = "qwen/qwen-flash"
 fallbacks = [
+  "qwen/qwen3.7-plus",
+  "qwen/qwen3.6-plus",
   "qwen/qwen3.7-max",
   "deepseek/deepseek-v4-flash",
   "deepseek/deepseek-v4-pro",
