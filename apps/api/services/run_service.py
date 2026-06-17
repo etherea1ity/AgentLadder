@@ -24,6 +24,8 @@ from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
 from klara.core.tool_executor import ToolExecutor
 
+MAX_HISTORY_MESSAGES = 12
+
 
 class RunService:
     """Project Klara loop runs into the local chat API and SSE event stream."""
@@ -258,7 +260,7 @@ class RunService:
             if message.role not in {"user", "assistant"}:
                 continue
             history.append(KlaraMessage(role=message.role, content=message.content))
-        return tuple(history[-12:])
+        return tuple(history[-MAX_HISTORY_MESSAGES:])
 
 
 class _RunEventBridge:

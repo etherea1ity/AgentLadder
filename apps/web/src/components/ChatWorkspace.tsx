@@ -446,6 +446,11 @@ function AssistantContent({
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeKatex]}
+          components={{
+            img: ({ src, alt }) => (
+              <GeneratedImage src={String(src ?? "")} alt={alt ?? ""} />
+            ),
+          }}
         >
           {normalizeMathMarkdown(content)}
         </ReactMarkdown>
@@ -454,6 +459,39 @@ function AssistantContent({
       )}
     </div>
   );
+}
+
+function GeneratedImage({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  const resolvedSrc = resolveAssetSrc(src);
+  const label = alt || "Generated image";
+
+  if (!resolvedSrc) return null;
+  if (failed) {
+    return (
+      <a className="generated-image-fallback" href={resolvedSrc} target="_blank" rel="noreferrer">
+        图片加载失败，打开原图
+      </a>
+    );
+  }
+
+  return (
+    <img
+      className="generated-image"
+      src={resolvedSrc}
+      alt={label}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function resolveAssetSrc(src: string) {
+  if (!src) return "";
+  if (!src.startsWith("/api/assets/local")) return src;
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+  return `${apiBase}${src}`;
 }
 
 function ChatInput({

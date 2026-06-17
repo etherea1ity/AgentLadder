@@ -30,6 +30,13 @@ describe('normalizeMathMarkdown', () => {
     expect(output).toContain(`![Generated image](${url})`);
   });
 
+  it('keeps generated image markdown out of math normalization', () => {
+    const url = '/api/assets/local?path=data/assets/images/20260617/sample.png';
+    const output = normalizeMathMarkdown(`![Generated image](${url})`);
+
+    expect(output).toBe(`![Generated image](${url})`);
+  });
+
   it('repairs broken generated image markdown', () => {
     const url = '/api/assets/local?path=data/assets/images/20260617/sample.png';
     const output = normalizeGeneratedImagesMarkdown(`![Generated image]\n${url}`);

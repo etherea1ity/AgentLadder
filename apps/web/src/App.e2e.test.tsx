@@ -105,7 +105,7 @@ describe("Klara app flow", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("streams a runtime loop answer without a right-side trace panel", async () => {
-    render(<App />);
+    const { container } = render(<App />);
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
       "run the runtime loop",
@@ -129,11 +129,13 @@ describe("Klara app flow", () => {
       }),
     );
     source.emit("answer_streaming_started", evt("answer_streaming_started", "Klara is writing."));
+    const generatedImageUrl =
+      "/api/assets/local?path=data/assets/images/20260617/sample.png";
     source.emit(
       "answer_delta",
       evt("answer_delta", "", {
-        delta: "Klara completed the runtime loop.",
-        streamed_chars: 33,
+        delta: `![Generated image](${generatedImageUrl})\n\nKlara completed the runtime loop.`,
+        streamed_chars: 100,
       }),
     );
     source.emit(
@@ -145,6 +147,10 @@ describe("Klara app flow", () => {
     );
 
     expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
+    expect(container.querySelector(".generated-image")).toHaveAttribute(
+      "src",
+      generatedImageUrl,
+    );
     expect(screen.queryByText("Run Margin")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /open run trace/i })).not.toBeInTheDocument();
   });

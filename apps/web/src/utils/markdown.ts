@@ -11,6 +11,7 @@ export function normalizeMathMarkdown(value: string) {
   let text = repaired;
   text = protect(text, /```[\s\S]*?```/g);
   text = protect(text, /`[^`]*`/g);
+  text = protect(text, /!?\[[^\]\n]*\]\([^)\n]+\)/g);
   text = protect(text, /\$\$[\s\S]*?\$\$/g);
   text = protect(text, /\$[^$\n]+\$/g);
 
