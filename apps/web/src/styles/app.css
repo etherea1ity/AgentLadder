@@ -1319,13 +1319,24 @@ hr {
   border-radius: 12px;
   border: 1px solid var(--border-subtle);
 }
+.rich-answer .generated-image-link {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px 0 14px;
+  line-height: 0;
+  text-decoration: none;
+}
 .rich-answer .generated-image {
   display: block;
-  width: min(100%, 720px);
-  max-height: 70vh;
+  width: min(100%, 480px);
+  max-height: min(52vh, 480px);
+  height: auto;
   object-fit: contain;
-  margin: 12px 0 14px;
-  background: rgba(255, 255, 255, 0.72);
+  margin: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
 }
 .generated-image-fallback {
   display: inline-flex;

@@ -470,20 +470,22 @@ function GeneratedImage({ src, alt }: { src: string; alt: string }) {
   if (failed) {
     return (
       <a className="generated-image-fallback" href={resolvedSrc} target="_blank" rel="noreferrer">
-        图片加载失败，打开原图
+        Open generated image
       </a>
     );
   }
 
   return (
-    <img
-      className="generated-image"
-      src={resolvedSrc}
-      alt={label}
-      loading="lazy"
-      decoding="async"
-      onError={() => setFailed(true)}
-    />
+    <a className="generated-image-link" href={resolvedSrc} target="_blank" rel="noreferrer">
+      <img
+        className="generated-image"
+        src={resolvedSrc}
+        alt={label}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    </a>
   );
 }
 
