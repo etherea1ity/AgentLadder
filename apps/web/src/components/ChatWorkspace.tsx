@@ -469,9 +469,9 @@ function GeneratedImage({ src, alt }: { src: string; alt: string }) {
   if (!resolvedSrc) return null;
   if (failed) {
     return (
-      <a className="generated-image-fallback" href={resolvedSrc} target="_blank" rel="noreferrer">
-        Open generated image
-      </a>
+      <span className="generated-image-fallback" title={resolvedSrc}>
+        Generated image unavailable
+      </span>
     );
   }
 

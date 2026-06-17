@@ -15,6 +15,7 @@ def test_image_generate_tool_declares_serial_network_metadata() -> None:
 
     assert tool.spec.name == "image_generate"
     assert tool.spec.input_schema["required"] == ["prompt"]
+    assert "Never invent /api/assets/local" in tool.spec.description
     assert tool.metadata.category == "media"
     assert tool.metadata.side_effect == ToolSideEffect.NETWORK
     assert tool.metadata.parallel_safe is False

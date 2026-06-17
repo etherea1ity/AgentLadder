@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -148,10 +148,10 @@ describe("Klara app flow", () => {
     );
 
     expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
-    expect(container.querySelector(".generated-image")).toHaveAttribute(
-      "src",
-      generatedImageUrl,
-    );
+    const generatedImage = container.querySelector(".generated-image");
+    expect(generatedImage).toHaveAttribute("src", generatedImageUrl);
+    fireEvent.error(generatedImage as Element);
+    expect(screen.getByText("Generated image unavailable")).toBeInTheDocument();
     expect(screen.queryByText("Run Margin")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /open run trace/i })).not.toBeInTheDocument();
   });

@@ -1346,6 +1346,7 @@ hr {
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   background: rgba(251, 248, 241, 0.86);
+  color: var(--text-muted);
 }
 .rich-answer del {
   color: var(--text-muted);

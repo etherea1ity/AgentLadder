@@ -87,6 +87,8 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
 
     assert result.final_answer == "harness final"
     assert "You are Klara" in llm.system_prompt
+    assert "must call the image-generation tool" in llm.system_prompt
+    assert "Never invent local image URLs" in llm.system_prompt
     assert "Runtime user context" not in llm.system_prompt
     assert [tool.name for tool in llm.tools] == ["test_echo"]
     assert llm.messages_seen[1][-1].content == "from harness"

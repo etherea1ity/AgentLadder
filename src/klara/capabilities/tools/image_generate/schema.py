@@ -11,7 +11,9 @@ IMAGE_GENERATE_SPEC = ToolSpec(
         "Generate one or two images from a visual prompt. Use this when the "
         "user asks to draw, create, render, make an illustration, poster, "
         "mockup, or other image. The observation returns Markdown image links "
-        "that can be embedded in the final answer beside normal text."
+        "that can be embedded in the final answer beside normal text. Never "
+        "invent /api/assets/local URLs or data/assets/images paths yourself; "
+        "call this tool and copy the returned Markdown image links exactly."
     ),
     input_schema={
         "type": "object",
