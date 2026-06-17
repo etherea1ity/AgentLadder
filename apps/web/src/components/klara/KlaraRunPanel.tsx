@@ -45,7 +45,7 @@ export function KlaraRunPanel({
         <div>
           <p className="run-margin-eyebrow">Public Activity</p>
           <h3>{live ? "Live Run" : "Run Complete"}</h3>
-          <small>v0.3 Agentic RAG</small>
+          <small>Klara run trace</small>
         </div>
       </header>
 
