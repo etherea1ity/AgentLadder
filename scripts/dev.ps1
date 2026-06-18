@@ -28,6 +28,59 @@ function Get-Listener {
         Select-Object -First 1
 }
 
+function Get-ListenerProcess {
+    param([object]$Listener)
+    if (-not $Listener) {
+        return $null
+    }
+    $processId = [int]$Listener.OwningProcess
+    if ($processId -le 0) {
+        return $null
+    }
+    try {
+        Get-CimInstance Win32_Process -Filter "ProcessId = $processId" -ErrorAction Stop
+    }
+    catch {
+        return $null
+    }
+}
+
+function Test-KlaraApiListener {
+    param([object]$Listener)
+    $process = Get-ListenerProcess $Listener
+    if (-not $process) {
+        return $false
+    }
+    $commandLine = [string]$process.CommandLine
+    return $commandLine.Contains("apps.api.main:app")
+}
+
+function Find-UsableApiPort {
+    param([int]$StartPort)
+    $port = $StartPort
+    while ($port -lt 65535) {
+        $listener = Get-Listener $port
+        if (-not $listener -or (Test-KlaraApiListener $listener)) {
+            return $port
+        }
+        $port += 1
+    }
+    throw "No usable Klara API port found after $StartPort."
+}
+
+function Read-PidInfo {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return $null
+    }
+    try {
+        Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+    }
+    catch {
+        return $null
+    }
+}
+
 function Wait-ForHttp {
     param(
         [string]$Url,
@@ -60,11 +113,12 @@ function Test-Http {
 function Stop-Listener {
     param(
         [int]$Port,
-        [string]$Reason
+        [string]$Reason,
+        [switch]$Required
     )
     $listener = Get-Listener $Port
     if (-not $listener) {
-        return
+        return $true
     }
     $processId = [int]$listener.OwningProcess
     if ($processId -le 0) {
@@ -78,6 +132,11 @@ function Stop-Listener {
         Write-Warning "Port $Port reports PID $processId, but that process is not visible. It may be a stale Windows TCP entry; continuing."
     }
     Start-Sleep -Seconds 1
+    $stopped = -not (Get-Listener $Port)
+    if ($Required -and -not $stopped) {
+        return $false
+    }
+    return $stopped
 }
 
 function New-EncodedCommand {
@@ -104,9 +163,16 @@ New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 Assert-Command "python"
 Assert-Command "npm"
 
+$requestedApiPort = $ApiPort
+
 if ($Restart) {
-    Stop-Listener $ApiPort "restart requested"
-    Stop-Listener $WebPort "restart requested"
+    $apiStopped = Stop-Listener $ApiPort "restart requested" -Required
+    Stop-Listener $WebPort "restart requested" | Out-Null
+    if (-not $apiStopped) {
+        $fallbackPort = Find-UsableApiPort ($ApiPort + 1)
+        Write-Warning "Could not stop the listener on API port $ApiPort. Using http://127.0.0.1:$fallbackPort instead."
+        $ApiPort = $fallbackPort
+    }
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ".env"))) {
@@ -127,10 +193,22 @@ if (-not (Test-Path -LiteralPath (Join-Path $WebRoot "node_modules"))) {
 $apiProcess = $null
 $apiListener = Get-Listener $ApiPort
 if ($apiListener) {
-    Write-Host "API already listening on http://127.0.0.1:$ApiPort (PID $($apiListener.OwningProcess))."
-    Write-Host "Use .\scripts\dev.ps1 -Restart after backend code changes."
+    if (Test-KlaraApiListener $apiListener) {
+        Write-Host "API already listening on http://127.0.0.1:$ApiPort (PID $($apiListener.OwningProcess))."
+        Write-Host "Use .\scripts\dev.ps1 -Restart after backend code changes."
+    }
+    else {
+        $fallbackPort = Find-UsableApiPort ($ApiPort + 1)
+        Write-Warning "Port $ApiPort is occupied by an unmanaged listener. Using http://127.0.0.1:$fallbackPort instead."
+        $ApiPort = $fallbackPort
+        $apiListener = Get-Listener $ApiPort
+    }
 }
-else {
+
+if ($apiListener -and -not (Test-KlaraApiListener $apiListener)) {
+    throw "Port $ApiPort is occupied by a non-Klara service. Choose another -ApiPort."
+}
+if (-not $apiListener) {
     $apiCommand = @"
 Set-Location -LiteralPath "$RepoRoot"
 `$env:PYTHONPATH = "src"
@@ -145,9 +223,11 @@ $apiReadyBeforeWeb = Wait-ForHttp "http://127.0.0.1:$ApiPort/api/health" 40
 $webProcess = $null
 $webListener = Get-Listener $WebPort
 if ($webListener) {
+    $pidInfoBefore = Read-PidInfo $PidFile
+    $webMatchesApiPort = $pidInfoBefore -and ([int]$pidInfoBefore.api_port -eq $ApiPort)
     $webApiBridgeReady = Test-Http "http://127.0.0.1:$WebPort/api/health"
-    if ($apiReadyBeforeWeb -and -not $webApiBridgeReady) {
-        Stop-Listener $WebPort "existing web server does not proxy /api to Klara API"
+    if ($apiReadyBeforeWeb -and ((-not $webApiBridgeReady) -or (-not $webMatchesApiPort))) {
+        Stop-Listener $WebPort "existing web server is not attached to API port $ApiPort" | Out-Null
         $webListener = $null
     }
     else {
@@ -170,6 +250,7 @@ $apiReady = Wait-ForHttp "http://127.0.0.1:$ApiPort/api/health" 40
 $webReady = Wait-ForHttp "http://127.0.0.1:$WebPort/" 40
 
 $pidInfo = [ordered]@{
+    requested_api_port = $requestedApiPort
     api_port = $ApiPort
     web_port = $WebPort
     api_launcher_pid = if ($apiProcess) { $apiProcess.Id } else { $null }
