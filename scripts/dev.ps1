@@ -71,7 +71,12 @@ function Stop-Listener {
         throw "Port $Port is busy, but no owning process could be resolved."
     }
     Write-Host "Stopping process $processId on port ${Port}: $Reason"
-    Stop-Process -Id $processId -Force
+    try {
+        Stop-Process -Id $processId -Force -ErrorAction Stop
+    }
+    catch [Microsoft.PowerShell.Commands.ProcessCommandException] {
+        Write-Warning "Port $Port reports PID $processId, but that process is not visible. It may be a stale Windows TCP entry; continuing."
+    }
     Start-Sleep -Seconds 1
 }
 

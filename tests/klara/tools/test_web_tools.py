@@ -43,7 +43,7 @@ def test_web_fetch_tool_returns_page_observation() -> None:
     assert result.ok is True
     assert payload["title"] == "Fetched"
     assert payload["text"] == "Page text"
-    assert payload["source_tier"] == "candidate_source"
+    assert "source_tier" not in payload
     assert payload["trust"] == "untrusted_external_content"
 
 
@@ -111,22 +111,21 @@ def test_web_search_tool_returns_ranked_results() -> None:
     assert "web_fetch" in payload["next_step"]
     assert "not verified source text" in payload["next_step"]
     assert "may not enforce freshness or language hints" in payload["provider_limitations"]
-    assert "preferred_source" in payload["source_selection"]
+    assert "source_selection" not in payload
     assert payload["provider"] == "duckduckgo_lite"
     assert payload["results"] == [
         {
             "title": "Example",
             "url": "https://example.com",
             "snippet": "",
-            "source_tier": "candidate_source",
             "original_rank": 1,
         }
     ]
     assert payload["trust"] == "untrusted_external_content"
 
 
-def test_web_search_tool_marks_preferred_sources_without_losing_original_rank() -> None:
-    """Known reliable domains should be easier for the model to choose."""
+def test_web_search_tool_preserves_provider_result_order() -> None:
+    """Search results should not be reordered by local domain preferences."""
 
     def searcher(
         query: str,
@@ -153,34 +152,9 @@ def test_web_search_tool_marks_preferred_sources_without_losing_original_rank() 
 
     payload = json.loads(result.content)
     assert result.ok is True
-    assert [hit["title"] for hit in payload["results"]] == ["BBC Scores", "SEO Site"]
-    assert payload["results"][0]["source_tier"] == "preferred_source"
-    assert payload["results"][0]["original_rank"] == 2
-    assert payload["results"][1]["source_tier"] == "candidate_source"
-    assert payload["results"][1]["original_rank"] == 1
-
-
-def test_web_fetch_tool_marks_preferred_source_domains() -> None:
-    """Fetched page observations should expose source quality too."""
-
-    def page_fetcher(url: str, *, max_chars: int, timeout_seconds: float) -> FetchedPage:
-        return FetchedPage(
-            url=url,
-            final_url="https://www.bbc.com/sport/football/world-cup",
-            status=200,
-            content_type="text/html",
-            title="BBC",
-            text="BBC source text",
-            truncated=False,
-        )
-
-    tool = WebFetchTool(page_fetcher=page_fetcher)
-
-    result = tool.execute({"url": "https://www.bbc.com/sport/football/world-cup"})
-
-    payload = json.loads(result.content)
-    assert result.ok is True
-    assert payload["source_tier"] == "preferred_source"
+    assert [hit["title"] for hit in payload["results"]] == ["SEO Site", "BBC Scores"]
+    assert [hit["original_rank"] for hit in payload["results"]] == [1, 2]
+    assert all("source_tier" not in hit for hit in payload["results"])
 
 
 def test_web_search_tool_applies_portable_search_hints() -> None:

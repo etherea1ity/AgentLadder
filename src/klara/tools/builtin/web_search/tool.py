@@ -8,7 +8,6 @@ from typing import Callable
 
 from klara.tools.base import BaseTool, ToolInputError
 from klara.tools.builtin.web_search.schema import WEB_SEARCH_METADATA, WEB_SEARCH_SPEC
-from klara.tools.source_quality import source_tier
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 from klara.services.web import SearchHit, SearchResponse, WebSearchError, search_web
 
@@ -19,8 +18,7 @@ WEB_SEARCH_EVIDENCE_NOTE = (
     "Search results are candidate links and snippets, not verified source text. "
     "For current/latest/news/sports/scores or other web-backed facts, call "
     "web_fetch on at least one relevant reliable result before writing the "
-    "final answer. Prefer results marked preferred_source when they are relevant. "
-    "If these results look weak, stale, schedule-only, or SEO-like, retry "
+    "final answer. If these results look weak, stale, schedule-only, or SEO-like, retry "
     "web_search once with a narrower query or source/domain hint."
 )
 
@@ -80,7 +78,6 @@ class WebSearchTool(BaseTool):
         except WebSearchError as exc:
             return self.failure(arguments, str(exc))
 
-        ranked_hits = _rank_search_hits(response.results)
         return self.json_success(
             arguments,
             {
@@ -96,22 +93,16 @@ class WebSearchTool(BaseTool):
                     "language hints. Treat snippets as candidates and verify "
                     "time-sensitive facts with fetched source text."
                 ),
-                "source_selection": (
-                    "Prefer relevant preferred_source results for web_fetch. "
-                    "Use ordinary candidate_source results only when no better "
-                    "source is available or when they add clearly needed detail."
-                ),
                 "provider": response.provider,
-                "result_count": len(ranked_hits),
+                "result_count": len(response.results),
                 "results": [
                     {
                         "title": hit.title,
                         "url": hit.url,
                         "snippet": hit.snippet,
-                        "source_tier": source_tier(hit.url),
                         "original_rank": original_rank,
                     }
-                    for original_rank, hit in ranked_hits
+                    for original_rank, hit in enumerate(response.results, start=1)
                 ],
                 "searched_url": response.searched_url,
                 "truncated": response.truncated,
@@ -239,15 +230,3 @@ def _apply_search_hints(query: str, search_hints: dict[str, str]) -> str:
     if not extras:
         return query
     return " ".join([query, *extras])
-
-
-def _rank_search_hits(hits: tuple[SearchHit, ...]) -> list[tuple[int, SearchHit]]:
-    """Prefer known reliable domains while preserving provider rank inside tiers."""
-
-    return sorted(
-        enumerate(hits, start=1),
-        key=lambda item: (
-            0 if source_tier(item[1].url) == "preferred_source" else 1,
-            item[0],
-        ),
-    )

@@ -14,6 +14,9 @@ from klara.tools.executor import ToolExecutor
 from klara.tools.registry import ToolRegistry
 
 
+DEFAULT_LOOP_POLICY = LoopPolicy()
+
+
 @dataclass(frozen=True)
 class KlaraHarnessConfig:
     """Configuration needed to assemble one loop run."""
@@ -22,8 +25,10 @@ class KlaraHarnessConfig:
     model: str = "fake-model"
     # Trace path is optional so tests can choose when to write JSONL.
     trace_path: Path | None = None
-    # Max turns bounds the loop before a real policy system exists.
-    max_turns: int = 12
+    # Loop policy knobs keep runtime limits configurable outside core.
+    max_turns: int = DEFAULT_LOOP_POLICY.max_turns
+    max_tool_calls: int = DEFAULT_LOOP_POLICY.max_tool_calls
+    max_repeated_tool_calls: int = DEFAULT_LOOP_POLICY.max_repeated_tool_calls
     # User context is local-only and kept for future partitioning.
     user_context: UserContext = field(default_factory=UserContext.local_default)
     # Persona prompt stays in app so core does not own product identity.
@@ -80,7 +85,11 @@ class KlaraHarness:
             llm=self.llm,
             tool_executor=ToolExecutor(list(self.registry.visible_tools())),
             hooks=hooks,
-            policy=LoopPolicy(max_turns=self.config.max_turns),
+            policy=LoopPolicy(
+                max_turns=self.config.max_turns,
+                max_tool_calls=self.config.max_tool_calls,
+                max_repeated_tool_calls=self.config.max_repeated_tool_calls,
+            ),
             model=self.config.model,
             system_prompt=self._system_prompt(),
         )

@@ -13,5 +13,7 @@ node_modules/
 dist/
 build/
 *.egg-info/
+# Legacy local package residue from older AgentLadder/RAG branches.
+src/agent_ladder/
 .klara/
 data/

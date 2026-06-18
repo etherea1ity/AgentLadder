@@ -11,6 +11,8 @@ class StopReason(StrEnum):
 
     FINAL = "final"
     MAX_TURNS = "max_turns"
+    MAX_TOOL_CALLS = "max_tool_calls"
+    REPEATED_TOOL_CALL = "repeated_tool_call"
     FAILED = "failed"
 
 
@@ -18,15 +20,23 @@ class StopReason(StrEnum):
 class LoopPolicy:
     """Bounded execution policy for the runtime loop.
 
-    The runtime currently uses max-turn control. Richer policy should live
-    outside core or enter through deliberate extensions to this contract.
+    Max turns is the final fuse. Tool budgets are the normal protection against
+    loops that keep requesting tools without making user-visible progress.
     """
 
-    # Max turns prevents a model from requesting tools forever.
-    max_turns: int = 12
+    # Max turns prevents a model from reasoning forever across non-tool turns.
+    max_turns: int = 24
+    # Max total tool calls prevents broad requests from becoming unbounded.
+    max_tool_calls: int = 48
+    # Max identical name+arguments calls catches repeated retries of one action.
+    max_repeated_tool_calls: int = 3
 
     def __post_init__(self) -> None:
         """Validate policy values as soon as the immutable policy is created."""
 
         if self.max_turns < 1:
             raise ValueError("max_turns must be at least 1")
+        if self.max_tool_calls < 1:
+            raise ValueError("max_tool_calls must be at least 1")
+        if self.max_repeated_tool_calls < 1:
+            raise ValueError("max_repeated_tool_calls must be at least 1")

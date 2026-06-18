@@ -6,6 +6,7 @@ Klara keeps operator configuration in a small number of files:
 - `.env.example` lists the required and optional environment names.
 - `config/models.toml` lists chat LLM providers exposed to the loop.
 - `config/images.toml` lists image-generation providers used by media tools.
+- `config/runtime.toml` lists runtime loop limits and policy fuses.
 
 The runtime loop uses chat completions for decisions and calls image generation
 through the `image_generate` tool when the user asks for an image.
@@ -54,3 +55,16 @@ shown through the local assets route:
 ```text
 LLM loop -> image_generate tool -> Qwen image adapter -> local Markdown image link
 ```
+
+## Runtime Loop Limits
+
+Runtime limits live in `config/runtime.toml`:
+
+```text
+KLARA_LOOP_MAX_TURNS
+KLARA_LOOP_MAX_TOOL_CALLS
+KLARA_LOOP_MAX_REPEATED_TOOL_CALLS
+```
+
+Environment variables override the TOML values for local experiments and
+deployment-specific tuning.

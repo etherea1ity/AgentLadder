@@ -8,7 +8,6 @@ from typing import Callable
 
 from klara.tools.base import BaseTool, ToolInputError
 from klara.tools.builtin.web_fetch.schema import WEB_FETCH_METADATA, WEB_FETCH_SPEC
-from klara.tools.source_quality import source_tier
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 from klara.services.web import FetchedPage, WebFetchError, fetch_page
 
@@ -60,7 +59,6 @@ class WebFetchTool(BaseTool):
             {
                 "url": page.url,
                 "final_url": page.final_url,
-                "source_tier": source_tier(page.final_url or page.url),
                 "status": page.status,
                 "content_type": page.content_type,
                 "title": page.title,

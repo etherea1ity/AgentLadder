@@ -9,7 +9,7 @@ from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_service import RunService
 from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
-from klara.infra.config.loader import load_models_config
+from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.config.models import ModelsConfig
 from klara.infra.llm.routed_client import RoutedLlmClient
 
@@ -58,6 +58,7 @@ def _local_user_context() -> UserContext:
 _store = JsonlAppStore(os.getenv("KLARA_APP_DATA", "data/app"))
 _bus = SSEBus()
 _models = load_models_config(Path("config"))
+_runtime = load_runtime_config(Path("config"))
 _model_options = _load_model_options(_models)
 _default_model_ref = _default_model(_models)
 _llm = RoutedLlmClient(models=_models, dotenv_path=".env")
@@ -68,6 +69,7 @@ _run_service = RunService(
     trace_path=os.getenv("KLARA_TRACE_PATH", "data/traces/runs.jsonl"),
     allowed_models={item.model for item in _model_options},
     default_model=_default_model_ref,
+    loop_policy=_runtime.loop_policy,
     user_context=_local_user_context(),
 )
 

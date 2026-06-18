@@ -18,7 +18,12 @@ def test_runtime_context_includes_date_without_minute_precision() -> None:
     assert "call web_search before answering from memory" in prompt
     assert "fetch at least one relevant result" in prompt
     assert "Search snippets are candidates, not evidence" in prompt
-    assert "If fetched sources conflict, prefer preferred_source pages" in prompt
+    assert "If fetched pages disagree" in prompt
+    assert "corroborated by more than one relevant source" in prompt
+    assert "preferred_source" not in prompt
+    assert "candidate_source" not in prompt
+    assert "do not invent quotes, numeric ratings" in prompt
+    assert "separate the complete factual list from source-limited analysis" in prompt
     assert "sports/scores/schedules" in prompt
     assert "Call current_time only for exact wall-clock time" in prompt
     assert "Call web_fetch for source text from a specific public URL" in prompt

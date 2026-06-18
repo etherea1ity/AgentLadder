@@ -2722,3 +2722,214 @@ body,
   color: rgba(226, 232, 240, 0.55);
   overflow-wrap: anywhere;
 }
+
+/* Reference-aligned chat surface: keep Klara's components, but use the
+   calmer ReAct/ZENO conversation width, spacing, and message hierarchy. */
+.chat-workspace.has-messages {
+  --chat-rail-width: min(900px, calc(100% - 48px));
+  --chat-user-bg: #907157;
+}
+
+.app-shell.with-margin .chat-workspace.has-messages {
+  --chat-rail-width: min(860px, calc(100% - 48px));
+}
+
+.chat-workspace.has-messages .top-path,
+.chat-workspace.has-messages .top-path.is-compact {
+  flex: 0 0 58px;
+  height: 58px;
+  padding: 0 24px;
+}
+
+.chat-workspace.has-messages .message-list {
+  padding: 34px 0 24px;
+}
+
+.conversation-turn {
+  width: var(--chat-rail-width);
+  margin: 0 auto 36px;
+}
+
+.conversation-turn:has(.message-actions) {
+  margin-bottom: 40px;
+}
+
+.conversation-turn:last-child {
+  margin-bottom: 8px;
+}
+
+.conversation-turn .user-message {
+  display: grid;
+  justify-items: end;
+  margin: 24px 0 28px;
+  padding: 0;
+}
+
+.conversation-turn .user-message .message-label {
+  display: none;
+}
+
+.conversation-turn .user-message p {
+  width: fit-content;
+  max-width: min(70%, 680px);
+  margin: 0;
+  border-radius: 18px;
+  background: var(--chat-user-bg);
+  color: #fffdf8;
+  padding: 10px 16px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  box-shadow: 0 10px 26px rgba(32, 39, 37, 0.06);
+}
+
+.conversation-turn .assistant-message {
+  margin: 0;
+  padding: 0;
+}
+
+.conversation-turn .assistant-label {
+  min-height: 32px;
+  margin: 0 0 8px;
+  gap: 8px 10px;
+}
+
+.conversation-turn .assistant-label .klara-status-row {
+  min-height: 30px;
+}
+
+.conversation-turn .assistant-content {
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.74;
+}
+
+.conversation-turn .rich-answer p,
+.conversation-turn .rich-answer ul,
+.conversation-turn .rich-answer ol,
+.conversation-turn .rich-answer blockquote,
+.conversation-turn .rich-answer table,
+.conversation-turn .rich-answer pre {
+  margin: 0 0 13px;
+}
+
+.conversation-turn .rich-answer p:last-child,
+.conversation-turn .rich-answer ul:last-child,
+.conversation-turn .rich-answer ol:last-child,
+.conversation-turn .rich-answer blockquote:last-child,
+.conversation-turn .rich-answer table:last-child,
+.conversation-turn .rich-answer pre:last-child {
+  margin-bottom: 0;
+}
+
+.conversation-turn .rich-answer h1,
+.conversation-turn .rich-answer h2,
+.conversation-turn .rich-answer h3 {
+  line-height: 1.28;
+  margin: 22px 0 10px;
+  font-weight: 680;
+}
+
+.conversation-turn .rich-answer h1 {
+  font-size: 21px;
+}
+
+.conversation-turn .rich-answer h2 {
+  font-size: 19px;
+}
+
+.conversation-turn .rich-answer h3 {
+  font-size: 17px;
+}
+
+.conversation-turn .rich-answer li {
+  margin: 4px 0;
+}
+
+.conversation-turn .thinking-line {
+  min-height: 28px;
+  margin: 0 0 10px;
+  padding: 3px 8px 3px 0;
+  max-width: min(680px, 100%);
+  font-size: 13px;
+  gap: 8px;
+}
+
+.conversation-turn .thinking-glyph {
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 0 5px rgba(95, 123, 98, 0.08);
+}
+
+.conversation-turn .message-actions {
+  margin-top: 12px;
+  gap: 14px;
+}
+
+.conversation-turn .message-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+}
+
+.composer-footer {
+  padding: 12px 24px 24px;
+}
+
+.composer-footer .input-wrap {
+  width: var(--chat-rail-width);
+  border-radius: 26px;
+  padding: 14px 16px 12px;
+}
+
+.composer-footer .input-wrap textarea {
+  min-height: 40px;
+  font-size: 15px;
+  line-height: 1.48;
+}
+
+.theme-dark .chat-workspace.has-messages {
+  --chat-user-bg: #8a6b4a;
+}
+
+@media (max-width: 900px) {
+  .chat-workspace.has-messages,
+  .app-shell.with-margin .chat-workspace.has-messages {
+    --chat-rail-width: calc(100% - 32px);
+  }
+
+  .chat-workspace.has-messages .top-path,
+  .chat-workspace.has-messages .top-path.is-compact {
+    padding: 0 16px 0 64px;
+  }
+
+  .chat-workspace.has-messages .message-list {
+    padding-top: 22px;
+  }
+
+  .conversation-turn {
+    margin-bottom: 30px;
+  }
+
+  .conversation-turn:has(.message-actions) {
+    margin-bottom: 34px;
+  }
+
+  .conversation-turn .user-message {
+    margin: 18px 0 24px;
+  }
+
+  .conversation-turn .user-message p {
+    max-width: 86%;
+  }
+
+  .conversation-turn .assistant-content {
+    font-size: 16px;
+    line-height: 1.68;
+  }
+
+  .composer-footer {
+    padding: 10px 0 18px;
+  }
+}

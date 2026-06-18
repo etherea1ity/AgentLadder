@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 from typing import Protocol
 from uuid import uuid4
 
@@ -10,7 +11,7 @@ from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
-from klara.core.tools import ToolRunner, ToolSpec
+from klara.core.tools import ToolCall, ToolRunner, ToolSpec
 
 
 class LlmClient(Protocol):
@@ -47,6 +48,11 @@ class FinalAnswerGuard(Protocol):
         messages: tuple[KlaraMessage, ...],
     ) -> tuple[KlaraMessage, ...] | None:
         """Return replacement messages when the loop should continue."""
+
+        ...
+
+    def fallback_answer(self, messages: tuple[KlaraMessage, ...]) -> str | None:
+        """Return a safe final answer when repeated guards were ignored."""
 
         ...
 
@@ -135,6 +141,8 @@ class KlaraLoop:
             *prior_messages,
             KlaraMessage(role="user", content=user_input),
         ]
+        tool_call_count = 0
+        tool_call_signatures: dict[str, int] = {}
         self._emit(active_run_id, "run.started", {"model": self.model})
 
         try:
@@ -190,6 +198,50 @@ class KlaraLoop:
                             {"turn_index": turn_index, "guard": "final_answer"},
                         )
                         continue
+                    drafted_messages = [*messages, assistant_message]
+                    guarded_messages = self._apply_final_answer_guard(drafted_messages)
+                    if guarded_messages is not None:
+                        messages = guarded_messages
+                        self._emit(
+                            active_run_id,
+                            "prepare_next_turn.started",
+                            {"turn_index": turn_index, "guard": "final_answer"},
+                        )
+                        messages = self.prepare_next_turn(messages)
+                        self._emit(
+                            active_run_id,
+                            "prepare_next_turn.completed",
+                            {
+                                "turn_index": turn_index,
+                                "message_count": len(messages),
+                                "guard": "final_answer",
+                            },
+                        )
+                        self._emit(
+                            active_run_id,
+                            "turn.completed",
+                            {"turn_index": turn_index, "guard": "final_answer"},
+                        )
+                        continue
+                    fallback_answer = self._fallback_final_answer(drafted_messages)
+                    if fallback_answer is not None:
+                        messages.append(
+                            KlaraMessage(role="assistant", content=fallback_answer)
+                        )
+                        self._emit(
+                            active_run_id,
+                            "turn.completed",
+                            {
+                                "turn_index": turn_index,
+                                "guard": "fallback_answer",
+                            },
+                        )
+                        return self._complete(
+                            active_run_id,
+                            messages,
+                            fallback_answer,
+                            StopReason.FINAL,
+                        )
                     messages.append(assistant_message)
                     # No tool calls means the assistant content is the final answer.
                     self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
@@ -202,6 +254,29 @@ class KlaraLoop:
 
                 messages.append(assistant_message)
 
+                tool_policy_stop = self._tool_policy_stop(
+                    response.tool_calls,
+                    total_tool_calls=tool_call_count,
+                    tool_call_signatures=tool_call_signatures,
+                )
+                if tool_policy_stop is not None:
+                    stop_reason, policy_context = tool_policy_stop
+                    self._emit(
+                        active_run_id,
+                        "tool_policy.stopped",
+                        {
+                            "turn_index": turn_index,
+                            "stop_reason": stop_reason.value,
+                            **policy_context,
+                        },
+                    )
+                    return self._finalize_without_tools(
+                        active_run_id,
+                        messages,
+                        stop_reason=stop_reason,
+                        policy_context=policy_context,
+                    )
+
                 # Execute every requested tool before preparing the next model turn.
                 for call in response.tool_calls:
                     self._emit(
@@ -212,6 +287,12 @@ class KlaraLoop:
 
                 # Tool results become model-visible observations in request order.
                 tool_results = self.tool_executor.execute_many(response.tool_calls)
+                tool_call_count += len(response.tool_calls)
+                for call in response.tool_calls:
+                    signature = _tool_call_signature(call)
+                    tool_call_signatures[signature] = (
+                        tool_call_signatures.get(signature, 0) + 1
+                    )
                 for result in tool_results:
                     self._emit(
                         active_run_id,
@@ -280,6 +361,22 @@ class KlaraLoop:
             return None
         return list(guarded)
 
+    def _fallback_final_answer(
+        self,
+        messages: list[KlaraMessage],
+    ) -> str | None:
+        """Return a guard-owned safe answer when available."""
+
+        if self.final_answer_guard is None:
+            return None
+        fallback = getattr(self.final_answer_guard, "fallback_answer", None)
+        if fallback is None:
+            return None
+        answer = fallback(tuple(messages))
+        if answer is None or not answer.strip():
+            return None
+        return answer.strip()
+
     def _finalize_after_max_turns(
         self,
         run_id: str,
@@ -287,13 +384,39 @@ class KlaraLoop:
     ) -> KlaraRunResult:
         """Ask the model for a final no-tool answer after tool turns are exhausted."""
 
-        final_turn_index = self.policy.max_turns + 1
+        return self._finalize_without_tools(
+            run_id,
+            messages,
+            stop_reason=StopReason.MAX_TURNS,
+            policy_context={
+                "reason": "The tool turn limit has been reached.",
+                "max_turns": self.policy.max_turns,
+            },
+        )
+
+    def _finalize_without_tools(
+        self,
+        run_id: str,
+        messages: list[KlaraMessage],
+        *,
+        stop_reason: StopReason,
+        policy_context: dict[str, object],
+    ) -> KlaraRunResult:
+        """Ask the model for a final no-tool answer after a policy stop."""
+
+        assistant_count = len(
+            [message for message in messages if message.role == "assistant"]
+        )
+        final_turn_index = assistant_count + 1
+        reason = str(
+            policy_context.get("reason") or "A runtime policy limit was reached."
+        )
         finalization_prompt = "\n\n".join(
             [
                 self.system_prompt,
                 (
                     "<finalization_context>\n"
-                    "The tool turn limit has been reached. Do not request more tools. "
+                    f"{reason} Do not request more tools. "
                     "Write the best final answer now from the observations already "
                     "in the transcript. If the observations are incomplete, say what "
                     "is uncertain.\n"
@@ -320,18 +443,100 @@ class KlaraLoop:
                 "turn_index": final_turn_index,
                 "tool_call_count": 0,
                 "ignored_tool_call_count": ignored_tool_call_count,
+                "stop_reason": stop_reason.value,
+                "policy_context": policy_context,
                 "usage": response.usage or {},
                 "finalization": True,
             },
         )
+        if not response.content.strip() and ignored_tool_call_count:
+            retry_prompt = KlaraMessage(
+                role="user",
+                content=(
+                    "<finalization_retry_guard>\n"
+                    "Your previous finalization attempted to call tools, but "
+                    "runtime policy has stopped tool use for this run. Tools "
+                    "are unavailable now. Write the best final answer from the "
+                    "observations already in the transcript. If evidence is "
+                    "partial, say what is known and what remains uncertain.\n"
+                    "</finalization_retry_guard>"
+                ),
+            )
+            messages.append(retry_prompt)
+            retry_turn_index = final_turn_index + 1
+            self._emit(
+                run_id,
+                "llm.started",
+                {
+                    "turn_index": retry_turn_index,
+                    "finalization": True,
+                    "retry_after_ignored_tools": True,
+                },
+            )
+            response = self.llm.complete(
+                system_prompt=finalization_prompt,
+                messages=tuple(messages),
+                tools=(),
+                model=self.model,
+            )
+            ignored_tool_call_count = len(response.tool_calls)
+            self._emit(
+                run_id,
+                "llm.completed",
+                {
+                    "turn_index": retry_turn_index,
+                    "tool_call_count": 0,
+                    "ignored_tool_call_count": ignored_tool_call_count,
+                    "stop_reason": stop_reason.value,
+                    "policy_context": policy_context,
+                    "usage": response.usage or {},
+                    "finalization": True,
+                    "retry_after_ignored_tools": True,
+                },
+            )
         final_answer = response.content.strip()
         if not final_answer:
-            final_answer = (
-                "Tool turn limit reached before the model produced a final answer. "
-                "Please ask again with a narrower request or fewer required lookups."
-            )
+            final_answer = _empty_final_answer_for_stop(stop_reason)
         messages.append(KlaraMessage(role="assistant", content=final_answer))
-        return self._complete(run_id, messages, final_answer, StopReason.MAX_TURNS)
+        return self._complete(run_id, messages, final_answer, stop_reason)
+
+    def _tool_policy_stop(
+        self,
+        tool_calls: tuple[ToolCall, ...],
+        *,
+        total_tool_calls: int,
+        tool_call_signatures: dict[str, int],
+    ) -> tuple[StopReason, dict[str, object]] | None:
+        """Return a policy stop when pending tools would exceed budgets."""
+
+        pending_count = len(tool_calls)
+        if total_tool_calls + pending_count > self.policy.max_tool_calls:
+            return (
+                StopReason.MAX_TOOL_CALLS,
+                {
+                    "reason": "The tool call budget has been reached.",
+                    "max_tool_calls": self.policy.max_tool_calls,
+                    "completed_tool_calls": total_tool_calls,
+                    "pending_tool_calls": pending_count,
+                },
+            )
+
+        pending_signatures = dict(tool_call_signatures)
+        for call in tool_calls:
+            signature = _tool_call_signature(call)
+            next_count = pending_signatures.get(signature, 0) + 1
+            pending_signatures[signature] = next_count
+            if next_count > self.policy.max_repeated_tool_calls:
+                return (
+                    StopReason.REPEATED_TOOL_CALL,
+                    {
+                        "reason": "The same tool request repeated too many times.",
+                        "tool_name": call.name,
+                        "max_repeated_tool_calls": self.policy.max_repeated_tool_calls,
+                        "repeated_count": next_count,
+                    },
+                )
+        return None
 
     def _complete(
         self,
@@ -355,3 +560,30 @@ class KlaraLoop:
         """Create and emit one lifecycle event through the hook manager."""
 
         self.hooks.emit(KlaraEvent(type=event_type, run_id=run_id, payload=payload))
+
+
+def _tool_call_signature(call: ToolCall) -> str:
+    """Return a stable signature for repeated-call budget accounting."""
+
+    arguments = json.dumps(
+        call.arguments,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return f"{call.name}:{arguments}"
+
+
+def _empty_final_answer_for_stop(stop_reason: StopReason) -> str:
+    """Return a user-facing fallback when finalization produces no text."""
+
+    if stop_reason == StopReason.MAX_TURNS:
+        return (
+            "Tool turn limit reached before the model produced a final answer. "
+            "Please ask again with a narrower request or fewer required lookups."
+        )
+    return (
+        "A tool policy limit was reached before the model produced a final answer. "
+        "Please ask again with a narrower request or fewer required lookups."
+    )

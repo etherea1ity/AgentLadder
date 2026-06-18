@@ -48,8 +48,17 @@ def build_runtime_context_prompt(
                 "from snippets alone."
             ),
             (
-                "If fetched sources conflict, prefer preferred_source pages and "
-                "call out unresolved conflicts instead of merging claims."
+                "If fetched pages disagree, do not merge conflicting claims. "
+                "Prefer claims that are directly supported by fetched text, "
+                "dated clearly, and corroborated by more than one relevant "
+                "source; otherwise call out uncertainty."
+            ),
+            (
+                "For web-backed summaries, do not invent quotes, numeric "
+                "ratings, awards, player statistics, or per-item commentary "
+                "that fetched text does not state. If evidence is complete for "
+                "facts but partial for analysis, separate the complete factual "
+                "list from source-limited analysis."
             ),
             (
                 "Call current_time only for exact wall-clock time, weekday, "
