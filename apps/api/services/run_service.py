@@ -16,7 +16,10 @@ from apps.api.schemas import (
 )
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.sse_bus import SSEBus
+from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
+from klara.context.runtime import build_system_prompt
+from klara.context.timestamps import stamp_user_message_content
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
@@ -40,6 +43,7 @@ class RunService:
         allowed_models: set[str] | None = None,
         default_model: str | None = None,
         loop_policy: LoopPolicy | None = None,
+        user_context: UserContext | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -51,6 +55,7 @@ class RunService:
             allowed_models: Model refs accepted from the UI.
             default_model: Model ref used when a run does not select one.
             loop_policy: Bounded execution policy for loop safety.
+            user_context: Local user partition and prompt timezone context.
         """
 
         self.store = store
@@ -59,6 +64,7 @@ class RunService:
         self.allowed_models = allowed_models or set()
         self.default_model = default_model
         self.loop_policy = loop_policy or LoopPolicy()
+        self.user_context = user_context or UserContext.local_default()
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -164,10 +170,11 @@ class RunService:
                 hooks=hooks,
                 policy=self.loop_policy,
                 model=current.model or self.default_model or "fake-model",
-                system_prompt=_system_prompt(),
+                system_prompt=_system_prompt(self.user_context),
             )
+            model_visible_user_input = self._model_visible_content(user_message)
             result = loop.run(
-                user_message.content,
+                model_visible_user_input,
                 run_id=run_id,
                 prior_messages=self._conversation_history(
                     run.session_id,
@@ -260,8 +267,24 @@ class RunService:
                 continue
             if message.role not in {"user", "assistant"}:
                 continue
-            history.append(KlaraMessage(role=message.role, content=message.content))
+            history.append(
+                KlaraMessage(
+                    role=message.role,
+                    content=self._model_visible_content(message),
+                )
+            )
         return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
+
+    def _model_visible_content(self, message: MessageRecord) -> str:
+        """Return stored message text translated for the model boundary."""
+
+        if message.role != "user":
+            return message.content
+        return stamp_user_message_content(
+            message.content,
+            created_at=message.created_at,
+            timezone_name=self.user_context.timezone,
+        )
 
 
 class _RunEventBridge:
@@ -343,10 +366,11 @@ class _UsageTotals:
         self.total_tokens += payload["total_tokens"] or 0
 
 
-def _system_prompt() -> str:
+def _system_prompt(user_context: UserContext) -> str:
     """Build the app prompt while keeping persona outside core."""
 
-    return (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8").strip()
+    persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8")
+    return build_system_prompt(persona=persona, timezone_name=user_context.timezone)
 
 
 def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:

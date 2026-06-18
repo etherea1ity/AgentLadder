@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from klara.app.user_context import UserContext
+from klara.context.runtime import build_system_prompt
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient
 from klara.core.policies import LoopPolicy
@@ -86,6 +87,9 @@ class KlaraHarness:
         return loop.run(user_input, run_id=run_id)
 
     def _system_prompt(self) -> str:
-        """Build the system prompt from the single persona prompt."""
+        """Build the persona prompt plus date-only runtime context."""
 
-        return self.config.persona_path.read_text(encoding="utf-8").strip()
+        return build_system_prompt(
+            persona=self.config.persona_path.read_text(encoding="utf-8"),
+            timezone_name=self.config.user_context.timezone,
+        )

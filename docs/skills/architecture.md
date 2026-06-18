@@ -44,7 +44,8 @@ If a later tool or capability needs to affect a run, attach it through app assem
 
 - `app`: assemble persona, user context, model choice, visible tools, hooks, trace sinks, and loop policy.
 - `tools`: register, describe, group, filter, and execute model-visible tools.
-- `context`: budget, priority, compaction, summaries, next-turn preparation.
+- `context`: runtime date anchors, prompt-facing message timestamps, budget,
+  priority, compaction, summaries, next-turn preparation.
 - `memory`: durable continuity with explicit remember/update/delete/search policies.
 - `skills`: procedural memory for repeatable work.
 - `services`: knowledge, RAG, web, storage, MCP, evidence, external adapters.
@@ -142,6 +143,30 @@ Tool execution uses metadata-driven waves:
 - dependency planning must use metadata and profiles, not concrete tool names
 
 Core loop and frontend must not branch on concrete tool names.
+
+## Runtime Context And Timestamps
+
+Klara stores raw messages in the app store, then translates them into
+model-visible context at the LLM boundary.
+
+Use this split:
+
+- `MessageRecord.created_at`, run timestamps, and event timestamps are audit/UI
+  facts. Keep them in UTC ISO form.
+- `src/klara/context/runtime.py` builds the date-only runtime context appended
+  to the system prompt.
+- `src/klara/context/timestamps.py` builds compact user-message prefixes from
+  each message's own creation timestamp.
+- `apps/api/services/run_service.py` is the API boundary that converts stored
+  messages into model-visible `KlaraMessage` content.
+
+Do not write timestamp prefixes back into stored user content. Do not stamp
+assistant or tool messages. Do not use current wall-clock time to restamp
+historical messages; replayed history must derive from each message's own
+`created_at` so it stays stable.
+
+The system prompt should include the current date and timezone but avoid
+minute-level time. Exact wall-clock questions belong to the `current_time` tool.
 
 ## Documentation Hygiene
 

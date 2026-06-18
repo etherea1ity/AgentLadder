@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 
 from apps.api.schemas import ModelOption
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_service import RunService
 from apps.api.services.sse_bus import SSEBus
+from klara.app.user_context import UserContext
 from klara.infra.config.loader import load_models_config
 from klara.infra.config.models import ModelsConfig
 from klara.infra.llm.routed_client import RoutedLlmClient
@@ -46,6 +48,13 @@ def _default_model(models: ModelsConfig) -> str:
     return profile.primary
 
 
+def _local_user_context() -> UserContext:
+    """Build the local app user context, including prompt timezone."""
+
+    timezone = os.getenv("KLARA_TIMEZONE", "local").strip() or "local"
+    return replace(UserContext.local_default(), timezone=timezone)
+
+
 _store = JsonlAppStore(os.getenv("KLARA_APP_DATA", "data/app"))
 _bus = SSEBus()
 _models = load_models_config(Path("config"))
@@ -59,6 +68,7 @@ _run_service = RunService(
     trace_path=os.getenv("KLARA_TRACE_PATH", "data/traces/runs.jsonl"),
     allowed_models={item.model for item in _model_options},
     default_model=_default_model_ref,
+    user_context=_local_user_context(),
 )
 
 

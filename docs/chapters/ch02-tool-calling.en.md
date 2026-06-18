@@ -120,8 +120,9 @@ The first World Cup question could correctly run `web_search -> web_fetch`, so t
 
 1. Tool declarations must be clear. The model only sees `ToolSpec`; vague descriptions make tool selection unreliable.
 2. Tool results are not facts by themselves. `web_search` returns candidates, and `web_fetch` returns external page text; both can be stale, low quality, or prompt-injection-shaped.
-3. History cannot be replayed forever. After image generation, old assistant messages may contain `/api/assets/local?...` links; those links do not help later search questions and waste context.
-4. Each chat window has its own history. `RunService._conversation_history(session_id, ...)` reads messages from the current session only.
+3. Time is part of runtime context, not a tool result by default. Klara now appends a date-only runtime context to the system prompt and stamps each user message at the model boundary from that message's own `created_at`.
+4. History cannot be replayed forever. After image generation, old assistant messages may contain `/api/assets/local?...` links; those links do not help later search questions and waste context.
+5. Each chat window has its own history. `RunService._conversation_history(session_id, ...)` reads messages from the current session only.
 
 This chapter solves the basic boundary:
 
@@ -130,6 +131,7 @@ how tools are declared
 how tools are registered
 how tools are executed
 how results return to the loop
+how runtime time anchors enter model-visible context
 how history receives minimal cleanup and a recent-12-message bound
 ```
 
