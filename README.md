@@ -844,6 +844,33 @@ run_completed.stop_reason
 
 观察右侧事件里第二问是否继续产生 `web_search` / `web_fetch`。如果没有，这不是靠关键词 if 修的地方，而是后续 context policy、tool-use evaluation、source grounding 要继续推进的地方。
 
+## 本章留下的问题
+
+工具能用，不代表事实已经被核验。一个真实例子是：
+
+```text
+用户问：给我一个总结，世界杯到目前的每一场比赛、每一个比赛总结以及精彩评论、球员表现
+
+Klara 可能拿到正确比分，例如“阿根廷 3-0 阿尔及利亚”，
+但在球员表现里写成“梅西贡献一传一射”。
+如果真实赛况是梅西帽子戏法，那么比分对了，细节仍然错了。
+```
+
+这不是 `web_search`、`web_fetch` 或工具注册本身的问题。它说明：模型把 observation 写成最终答案时，还没有做到 claim 级别的证据核验。
+
+更完整的解法会放到后续章节：
+
+```text
+Chapter 3: Hooks And Trace
+-> 先让每次工具调用、网页抓取、最终回答都可观察、可回放。
+
+Source Grounding / Evidence Ledger / Claim Verification
+-> 再把比分、进球者、助攻、赛后评论、引用这类事实 claim 绑定到具体来源。
+-> 没有来源支撑的细节，要么不写，要么明确标成未确认。
+```
+
+读者 takeaway：Chapter 2 解决“工具如何进入 loop”；事实核验要等可观察 trace 和 evidence grounding 机制接上以后再解决。
+
 ## 小实验
 
 1. 把 `current_time` 的 `max_output_chars` 改小，观察 executor 截断。

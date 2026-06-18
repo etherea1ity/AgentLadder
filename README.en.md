@@ -844,6 +844,35 @@ What about Argentina?
 
 Inspect whether the second question produces `web_search` / `web_fetch` events. If it does not, this is not a place for a keyword if-statement; it is future work for context policy, tool-use evaluation, and source grounding.
 
+## What This Chapter Leaves Open
+
+Having tools does not mean every factual claim has been verified. A real example:
+
+```text
+User asks: summarize every World Cup match so far, each match recap,
+highlights, commentary, and player performance.
+
+Klara may get the score right, such as "Argentina 3-0 Algeria",
+but then write "Messi had one goal and one assist" in the player notes.
+If the actual match was a Messi hat trick, the score is right but the detail is still wrong.
+```
+
+This is not primarily a `web_search`, `web_fetch`, or tool-registration problem. It shows that the model can turn observations into final prose without claim-level evidence checking.
+
+The fuller solution belongs in later chapters:
+
+```text
+Chapter 3: Hooks And Trace
+-> first make every tool call, fetched source, and final answer observable and replayable.
+
+Source Grounding / Evidence Ledger / Claim Verification
+-> then bind factual claims such as scores, scorers, assists, quotes, and commentary
+   to concrete sources.
+-> unsupported details should either be omitted or marked as unconfirmed.
+```
+
+Reader takeaway: Chapter 2 solves how tools enter the loop; factual verification needs observable trace plus evidence grounding.
+
 ## Small Experiments
 
 1. Lower `current_time` `max_output_chars` and observe executor truncation.
