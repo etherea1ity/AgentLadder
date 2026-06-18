@@ -69,8 +69,7 @@ export default function App() {
     const controller = new AbortController();
     const saved = readPersistedUi();
     setSidebarCollapsed(saved.sidebarCollapsed || isMobileViewport());
-    setActiveSessionId(null);
-    void refreshSessionsWithRetry(controller.signal, () => cancelled);
+    void restoreInitialSession(saved, controller.signal, () => cancelled);
     const warmupRefreshes = [700, 1800].map((delayMs) =>
       window.setTimeout(() => {
         if (!cancelled)
@@ -498,8 +497,26 @@ export default function App() {
         signal,
         silent: index < attempts.length - 1,
       });
-      if (sessionsResult) return;
+      if (sessionsResult) return sessionsResult;
     }
+    return null;
+  }
+
+  async function restoreInitialSession(
+    saved: PersistedUi,
+    signal: AbortSignal,
+    isCancelled: () => boolean,
+  ) {
+    const loadedSessions = await refreshSessionsWithRetry(signal, isCancelled);
+    if (isCancelled() || signal.aborted || !loadedSessions?.length) return;
+
+    const savedSession = saved.activeSessionId
+      ? loadedSessions.find(
+          (session) => session.session_id === saved.activeSessionId,
+        )
+      : null;
+    const targetSessionId = savedSession?.session_id ?? loadedSessions[0].session_id;
+    await loadSession(targetSessionId);
   }
 
   function applyRunEvent(event: RunEvent) {

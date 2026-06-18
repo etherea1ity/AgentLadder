@@ -25,8 +25,8 @@ class LlmProviderError(RuntimeError):
 class OpenAICompatibleSettings:
     """Per-request settings for OpenAI-compatible chat completions."""
 
-    # Maximum output tokens requested from the provider.
-    max_tokens: int = 1200
+    # Optional provider output cap. None means Klara does not impose a cap.
+    max_tokens: int | None = None
     # Sampling temperature for the provider.
     temperature: float = 0.4
     # Network timeout for one blocking provider request.
@@ -183,9 +183,10 @@ def build_chat_completion_payload(
         "model": model,
         "messages": provider_messages,
         "temperature": settings.temperature,
-        "max_tokens": settings.max_tokens,
         "stream": False,
     }
+    if settings.max_tokens is not None:
+        payload["max_tokens"] = settings.max_tokens
     if tools:
         payload["tools"] = [_tool_to_openai_schema(tool) for tool in tools]
         payload["tool_choice"] = "auto"

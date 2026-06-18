@@ -61,6 +61,21 @@ def test_payload_maps_messages_tools_and_tool_results() -> None:
     }
     assert payload["tools"][0]["function"]["name"] == "lookup"
     assert payload["tool_choice"] == "auto"
+    assert payload["max_tokens"] == 99
+
+
+def test_payload_omits_max_tokens_by_default() -> None:
+    """Klara should not impose an output cap unless a caller configures one."""
+
+    payload = build_chat_completion_payload(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen-flash",
+        settings=OpenAICompatibleSettings(),
+    )
+
+    assert "max_tokens" not in payload
 
 
 def test_payload_can_disable_qwen_thinking_for_tool_calls() -> None:
@@ -164,6 +179,7 @@ def test_openai_compatible_client_builds_authenticated_request(monkeypatch) -> N
     assert captured["url"] == "https://api.deepseek.com/v1/chat/completions"
     assert captured["timeout"] == 7
     assert captured["payload"]["model"] == "deepseek-v4-flash"
+    assert "max_tokens" not in captured["payload"]
     assert captured["headers"]["Authorization"] == "Bearer test-key"
 
 

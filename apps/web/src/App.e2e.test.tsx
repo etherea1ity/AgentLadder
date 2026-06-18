@@ -43,11 +43,13 @@ const runResponse = {
   status: "queued",
   events_url: "/api/runs/run_1/events/stream",
 };
+let listedSessions: (typeof session)[];
 
 describe("Klara app flow", () => {
   beforeEach(() => {
     localStorage.clear();
     MockEventSource.instances = [];
+    listedSessions = [];
     vi.stubGlobal("EventSource", MockEventSource);
     vi.stubGlobal(
       "fetch",
@@ -64,7 +66,7 @@ describe("Klara app flow", () => {
               },
             ],
           });
-        if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: [] });
+        if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: listedSessions });
         if (url === "/api/sessions" && init?.method === "POST") return json(session);
         if (url === "/api/runs") return json(runResponse);
         if (url === "/api/sessions/sess_1")
@@ -104,6 +106,21 @@ describe("Klara app flow", () => {
   });
 
   afterEach(() => vi.restoreAllMocks());
+
+  it("restores the previous conversation after a page refresh", async () => {
+    listedSessions = [session];
+    localStorage.setItem(
+      "klara_ui_state",
+      JSON.stringify({ activeSessionId: "sess_1", sidebarCollapsed: false }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText("runtime loop")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Klara completed the runtime loop."),
+    ).toBeInTheDocument();
+  });
 
   it("streams a runtime loop answer without a right-side trace panel", async () => {
     const { container } = render(<App />);
