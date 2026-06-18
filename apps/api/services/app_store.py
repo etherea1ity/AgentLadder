@@ -130,8 +130,7 @@ class JsonlAppStore:
                 if not line.strip():
                     continue
                 record = json.loads(line)
-                run = record.get("run", {})
-                if run.get("run_id") == run_id:
+                if record.get("run_id") == run_id:
                     result = record
         return result
 
@@ -158,7 +157,7 @@ class JsonlAppStore:
                 if not line.strip():
                     continue
                 record = json.loads(line)
-                if record.get("run", {}).get("run_id") not in run_ids:
+                if record.get("run_id") not in run_ids:
                     kept.append(record)
         tmp = path.with_suffix(path.suffix + ".tmp")
         tmp.parent.mkdir(parents=True, exist_ok=True)

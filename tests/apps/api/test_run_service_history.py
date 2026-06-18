@@ -130,3 +130,36 @@ def test_current_user_message_is_timestamped_for_model_boundary(tmp_path) -> Non
         == "[Thu 2026-06-18 20:34 GMT+08] World Cup status?"
     )
     assert current_user.content == "World Cup status?"
+
+
+def test_run_service_projects_model_and_trace_saved(tmp_path) -> None:
+    """Completed app runs should expose model and trace persistence in events."""
+
+    store = JsonlAppStore(tmp_path / "app")
+    trace_path = tmp_path / "traces" / "runs.jsonl"
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=FinalLlm(),
+        trace_path=str(trace_path),
+        default_model="test-model",
+    )
+
+    created = service.create_run(session.session_id, "hello")
+    thread = service._threads[created.run_id]
+    thread.join(timeout=5)
+
+    run = store.get_run(created.run_id)
+    events = store.list_events(created.run_id)
+    llm_started = next(
+        event for event in events if event.event_type == "llm_call_started"
+    )
+    completed = next(event for event in events if event.event_type == "run_completed")
+
+    assert run is not None
+    assert run.status == "completed"
+    assert run.trace_saved is True
+    assert llm_started.payload["model"] == "test-model"
+    assert completed.payload["trace_saved"] is True
+    assert store.latest_trace_for_run(created.run_id, trace_path) is not None

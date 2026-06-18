@@ -42,10 +42,46 @@ def test_delete_session_purges_related_messages_runs_events_and_traces(tmp_path)
     store.save_run(run)
     store.append_event(event)
     trace_path.write_text(
-        json.dumps({"run": {"run_id": run.run_id}, "type": "run.completed"})
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "type": "run.started",
+                        "run_id": run.run_id,
+                        "timestamp": "2026-06-18T00:00:00+00:00",
+                        "payload": {},
+                    }
+                ),
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "type": "run.completed",
+                        "run_id": run.run_id,
+                        "timestamp": "2026-06-18T00:00:01+00:00",
+                        "payload": {"stop_reason": "final"},
+                    }
+                ),
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "type": "run.completed",
+                        "run_id": "run_keep",
+                        "timestamp": "2026-06-18T00:00:02+00:00",
+                        "payload": {},
+                    }
+                ),
+            ]
+        )
         + "\n",
         encoding="utf-8",
     )
+
+    latest = store.latest_trace_for_run(run.run_id, trace_path)
+
+    assert latest is not None
+    assert latest["type"] == "run.completed"
+    assert latest["payload"] == {"stop_reason": "final"}
 
     deleted = store.delete_session(session.session_id, trace_path)
 
@@ -55,4 +91,17 @@ def test_delete_session_purges_related_messages_runs_events_and_traces(tmp_path)
     assert store.list_messages(session.session_id) == []
     assert store.list_runs(session.session_id) == []
     assert store.list_events(run.run_id) == []
-    assert trace_path.read_text(encoding="utf-8") == ""
+    remaining = [
+        json.loads(line)
+        for line in trace_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert remaining == [
+        {
+            "schema_version": 1,
+            "type": "run.completed",
+            "run_id": "run_keep",
+            "timestamp": "2026-06-18T00:00:02+00:00",
+            "payload": {},
+        }
+    ]

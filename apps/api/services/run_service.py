@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -194,6 +195,7 @@ class RunService:
 
             latency_ms = int((perf_counter() - started) * 1000)
             token_source: TokenSource = "reported" if usage_totals.has_reported else "unknown"
+            trace_saved = self._trace_has_run_events(run_id)
             completed = current.model_copy(
                 update={
                     "status": "completed",
@@ -203,7 +205,7 @@ class RunService:
                     "completion_tokens": usage_totals.completion_tokens,
                     "total_tokens": usage_totals.total_tokens,
                     "token_source": token_source,
-                    "trace_saved": False,
+                    "trace_saved": trace_saved,
                 }
             )
             self.store.save_run(completed)
@@ -220,7 +222,7 @@ class RunService:
                     "token_source": token_source,
                     "stop_reason": result.stop_reason.value,
                     "hook_failures": result.hook_failures,
-                    "trace_saved": False,
+                    "trace_saved": trace_saved,
                 },
             )
         except Exception as exc:
@@ -239,6 +241,24 @@ class RunService:
         event = RunEventRecord(run_id=run_id, event_type=event_type, message=message, payload=payload)
         self.store.append_event(event)
         self.bus.publish(event)
+
+    def _trace_has_run_events(self, run_id: str) -> bool:
+        """Return whether the local JSONL trace contains events for this run."""
+
+        path = Path(self.trace_path)
+        if not path.exists():
+            return False
+        with path.open("r", encoding="utf-8") as file:
+            for line in file:
+                if not line.strip():
+                    continue
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if record.get("run_id") == run_id:
+                    return True
+        return False
 
     def _cleanup_run_runtime(self, run_id: str) -> None:
         """Remove per-run cancellation and thread bookkeeping."""
@@ -308,7 +328,10 @@ class _RunEventBridge:
                 self.run_id,
                 "llm_call_started",
                 "Klara is calling the model.",
-                {"turn_index": event.payload.get("turn_index")},
+                {
+                    "turn_index": event.payload.get("turn_index"),
+                    "model": self._model(),
+                },
             )
             return
         if event.type == "llm.completed":
@@ -345,6 +368,15 @@ class _RunEventBridge:
                 f"{name} returned an observation.",
                 {"turn_index": event.payload.get("turn_index"), "tool_result": tool_result},
             )
+
+
+    def _model(self) -> str | None:
+        """Return the selected model for this projected run."""
+
+        run = self.service.store.get_run(self.run_id)
+        if run and run.model:
+            return run.model
+        return self.service.default_model
 
 
 class _UsageTotals:
