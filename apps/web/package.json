@@ -11,25 +11,25 @@
   },
   "dependencies": {
     "@rive-app/canvas-advanced": "^2.37.8",
-    "@vitejs/plugin-react": "^4.7.0",
     "katex": "^0.17.0",
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest",
+    "lucide-react": "^1.16.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0",
-    "typescript": "latest",
-    "vite": "^6.3.5"
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "latest",
-    "@testing-library/react": "latest",
-    "@testing-library/user-event": "latest",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
     "jsdom": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vite": "^6.4.2",
     "vitest": "^3.2.4"
   }
 }
