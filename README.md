@@ -1,30 +1,37 @@
-﻿# Chapter 2: Tool Calling
+# Chapter 3: Hooks and Trace
 
 语言：中文 | [English](./README.en.md)
 
-上一章：[Chapter 1: Minimal LLM Loop](./docs/chapters/ch01-minimal-agent-loop.md)
-下一章：Chapter 3: Hooks And Trace
+上一章：[Chapter 2: Tool Calling](./docs/chapters/ch02-tool-calling.md)
+
+下一章：Chapter 4: Harness And Config
+
 总路线：[Klara Roadmap](./docs/skills/roadmap.md)
+
+完整章节：[docs/chapters/ch03-hooks-and-trace.md](./docs/chapters/ch03-hooks-and-trace.md)
 
 ---
 
 ## 一句话看懂本章
 
-工具调用的本质是：模型提出 `tool_calls`，runtime 执行工具，把 observation 放回上下文；如果模型没有提出 `tool_calls`，loop 就停止并返回最终答案。
+Klara 不直接把 loop 写成黑盒函数，而是在关键生命周期点发出 public events；hooks 可以观察或轻量影响这些事件，trace、API、前端 run surface 都从同一条事件流投影出来。
 
-![Klara Chapter 2 Tool Calling](./docs/assets/ch02-tool-calling.png)
+![Klara Chapter 3 Hooks and Trace](./docs/assets/ch03-hooks-and-trace.svg)
 
 | 看到什么 | Klara 做什么 |
 | --- | --- |
-| assistant 返回 `tool_calls` | 执行工具，把结果追加成 `role="tool"` observation，继续下一轮 |
-| assistant 没有 `tool_calls` | 返回最终答案，停止 |
-| 工具不存在、参数错误、执行失败 | 返回 failed observation，让下一轮模型看到错误 |
-| 工具返回太长 | 按 metadata 截断后再进入上下文 |
-| 达到 `max_turns` | 不再暴露工具，最后做一次无工具 LLM 总结，然后按 `LoopPolicy` 停止 |
+| `user_prompt_submit.*` | 用户请求进入 runtime，hook 可以观察提交边界 |
+| `llm.started/completed` | 模型调用开始/结束，trace 和 UI 同步更新 |
+| `pre_tool_use.*` | 工具执行前的 hook placement，可以 allow/block，但不是完整权限系统 |
+| `tool.started/completed/failed` | 每个工具调用有可配对的 started 和 terminal event |
+| `post_tool_use.*` | 工具 observation 生成后，hook 可以观察结果 |
+| `stop.*` | loop 准备停止，hook 可以做收尾观察 |
+| JSONL trace | 开发者可以重放 run 的 public lifecycle |
+| frontend run surface | 用户可以看到工具卡片和 runtime 状态 |
 
 ## 快速体验
 
-准备好 `.env` 后启动前后端：
+启动前后端：
 
 ```powershell
 .\scripts\dev.ps1
@@ -36,848 +43,269 @@
 http://127.0.0.1:5123
 ```
 
-先问一个稳定的本地工具问题：
+先问：
 
 ```text
 请使用 current_time 查询 Asia/Shanghai 当前时间，然后用一句话回答。
 ```
 
-你应该看到：Klara 调用 `current_time`，runtime 返回时间 observation，然后模型基于 observation 写最终回答。
+你应该看到：assistant 消息下方出现 run surface，里面有 model call、`current_time` tool card、hook placement 小标签，以及完成后的 trace 状态。
 
-再问一个网络证据链问题：
-
-```text
-请使用 web_search 搜索世界杯最新战报，再用 web_fetch 打开一个结果总结。
-```
-
-你应该看到：`web_search` 只找候选网页，`web_fetch` 才读取其中一个 URL。网页内容会以不可信 observation 进入下一轮。
-
-最后试一个媒体工具：
+再打开：
 
 ```text
-请生成一张暖色调的 Klara 书桌插画，并把图片展示在回答里。
+http://127.0.0.1:8011/api/runs/{run_id}
 ```
 
-你应该看到：Klara 调用 `image_generate`，工具把图片保存成本地资产，最终回答用 Markdown 图片链接把图片穿插在文字中。
+你应该看到同一条 run 的 API events。删除 session 后，相关 messages、runs、events 和 JSONL trace 行也会被清理。
 
-## 1. 从真实问题开始：为什么“有工具”还会答错
+## 1. Chapter 3 改变了什么
 
-本章不是为了把函数包装成工具而包装。我们先看一个真实问题。
-
-同样是“世界杯最新战报”：
+Chapter 2 的工具 loop 已经能运行：
 
 ```text
-好的 run：
-llm_call_completed: tool_call_count=1
-tool_call_started: web_search
-tool_call_completed: web_search
-llm_call_completed: tool_call_count=1
-tool_call_started: web_fetch
-tool_call_completed: web_fetch
-llm_call_completed: tool_call_count=0
-
-坏的 follow-up：
-用户追问：阿根廷呢？
-llm_call_completed: tool_call_count=0
-assistant 直接回答，没有重新建立搜索证据链
+模型提出 tool_calls
+-> runtime 执行工具
+-> observation 回到下一轮模型上下文
 ```
 
-这说明问题不只是“有没有 web_search”。问题是：
+第三章不重写这个 loop。它新增的是 lifecycle event stream：
 
 ```text
-当前问题
--> 当前可见工具声明是否清楚
--> 历史上下文是否干净
--> 工具 observation 是否可信、可控、可回退
+KlaraLoop
+-> public KlaraEvent
+-> HookManager
+-> JsonlTraceHook / RunEventProjector / frontend run surface
 ```
 
-Klara 不应该靠关键词规则修补，例如“看到世界杯就强制搜索”。那样很快会变成一堆脆弱的 if/else。Klara 要做的是把工具边界建清楚：
+Klara 学到：如果想观察或轻量影响 runtime 行为，不应该把所有逻辑塞进 loop 主体；应该在稳定 placement 上挂 hook，在稳定 public event 上做 trace 和 UI projection。
+
+对应代码：
 
 ```text
-ToolSpec       -> 模型看见：我能调用什么，参数怎么写
-ToolMetadata   -> runtime 看见：风险、并行、审批、输出上限、可信度
-ToolExecutor   -> 执行工具，把成功/失败都变成 observation
-History policy -> 每个会话只注入最近历史，并清理本地图片链接
+src/klara/core/events.py
+src/klara/core/hooks.py
+src/klara/core/loop.py
 ```
+
+## 2. Public event 是共同事实源
+
+`KlaraEvent` 是 trace、API、UI 的共同事实源。它包含：
+
+```text
+schema_version
+event_id
+seq
+type
+run_id
+timestamp
+payload
+private_payload_ref
+```
+
+`seq` 在单个 run 内从 1 开始单调递增。`payload` 保持旧调用兼容，但新的公共边界由 `public_payload` 表达。工具结果只公开 compact preview 和长度概念，避免 UI 直接展示超长工具正文。
+
+对应代码：
+
+```text
+src/klara/core/events.py
+tests/klara/core/test_hooks.py
+tests/klara/core/test_loop.py
+```
+
+读者 takeaway：public event 不是“随便打日志”，而是可重放、可投影、可测试的 runtime contract。
+
+## 3. Hooks 是 lifecycle extension point，不是工具
+
+本章有两类 hook 行为：
+
+```text
+observer hook
+-> on_event(event)
+-> 只观察，不改变 loop
+
+placement hook
+-> on_user_prompt_submit / on_pre_tool_use / on_post_tool_use / on_stop
+-> 在固定生命周期位置观察或轻量决策
+```
+
+PreToolUse 可以 block 当前工具调用，但这仍然不是完整 permission engine。block 的结果是：
+
+```text
+pre_tool_use.completed allowed=false
+tool.failed blocked=true
+failed observation 进入下一轮模型上下文
+```
+
+它不会打开审批 UI、等待人工确认、写长期策略或改变工具注册表。
+
+对应代码：
+
+```text
+src/klara/core/hooks.py
+src/klara/core/loop.py
+tests/klara/core/test_hooks.py
+```
+
+## 4. Tool lifecycle 可以精确配对
+
+每个 tool call 都有可教学的事件语义：
+
+```text
+成功工具       -> one tool.started + one tool.completed
+未知工具       -> one tool.started + one tool.failed
+工具异常       -> one tool.started + one tool.failed
+PreToolUse block -> zero tool.started + one tool.failed
+policy stop     -> pending call 不产生 tool.started
+```
+
+这让 run surface 能可靠地画 tool cards，也让 trace replay 不需要猜测某个工具到底有没有执行。
 
 对应代码：
 
 ```text
 src/klara/core/loop.py
-src/klara/core/tools.py
-src/klara/tools/registry.py
 src/klara/tools/executor.py
-src/klara/context/history.py
+tests/klara/core/test_loop.py
+```
+
+## 5. Trace 和 frontend 是两种 projection
+
+JSONL trace 是开发者视角：
+
+```json
+{
+  "schema_version": 1,
+  "event_id": "evt_...",
+  "seq": 7,
+  "type": "tool.completed",
+  "run_id": "run_...",
+  "payload": {
+    "tool_result": {
+      "name": "current_time",
+      "ok": true,
+      "content_preview": "...",
+      "content_length": 128
+    }
+  }
+}
+```
+
+API/SSE 是产品视角：
+
+```text
+llm.started         -> llm_call_started
+tool.started        -> tool_call_started
+tool.failed         -> tool_call_failed
+pre_tool_use.*      -> hook_placement_*
+tool_policy.stopped -> policy_stop
+```
+
+前端 run surface 是用户视角：
+
+```text
+compact lifecycle timeline
+tool cards
+hook badges
+trace saved state
+optional workstream note
+```
+
+对应代码：
+
+```text
+apps/api/services/run_event_projector.py
+apps/api/services/app_store.py
 apps/api/services/run_service.py
+apps/web/src/components/klara/KlaraRunSurface.tsx
+apps/web/src/components/klara/useKlaraRunMotion.ts
 ```
 
-读者 takeaway：工具章节真正要讲的是 runtime 边界，不是某一个搜索 API。
+## 6. Optional narrator 只是 capstone
 
-<details>
-<summary>展开：这次事故应该怎么读</summary>
+Narrator model 默认关闭，只位于 API/app projection 层。它不能写入 assistant content，不能进入主模型后续 messages，也不能展示 raw chain-of-thought。
 
-第一条世界杯问题能正确走 `web_search -> web_fetch`，说明工具链本身能跑。后面追问出现不稳定，说明更深的问题在“模型可见状态”：
-
-1. 工具声明要足够清楚。模型只看 `ToolSpec`，如果工具描述含糊，它可能不调用工具，或者调用错工具。
-2. 工具结果不能直接等于事实。`web_search` 返回的是候选结果，`web_fetch` 返回的是外部网页正文，这些 observation 都可能过时、低质量或被网页内容污染。
-3. 历史上下文不能无限回放。图片生成后，旧回答里会有 `/api/assets/local?...` 本地图片链接；这些链接对后续搜索问题没有帮助，还会占上下文。
-4. 每个聊天窗口应有自己的历史。`RunService._conversation_history(session_id, ...)` 只读取当前 session 的消息，不会把其他窗口混进来。
-
-本章只解决最基础的边界：
+它只能基于真实 run events 生成短 note：
 
 ```text
-工具如何声明
-工具如何注册
-工具如何执行
-工具结果如何回到 loop
-历史如何做最小清理和最近 12 条边界
+workstream_note
+-> text
+-> source=narrator_model
+-> phase
+-> evidence_event_ids
 ```
 
-完整的 context compression、source grounding、memory policy、工具选择评估会在后面章节展开。
-
-</details>
-
-## 2. Loop 只认识 tool_calls，不认识具体工具
-
-上一章已经有最小 loop。本章不改变 loop 的核心判断：
-
-```text
-messages + system_prompt + tool specs
--> LLM
--> assistant message
--> 有 tool_calls：执行工具，追加 observation，继续
--> 无 tool_calls：返回 final answer，停止
-```
-
-Klara 学到：工具调用不是另一个聊天接口，而是 loop 的继续信号。
+如果它声称搜索、读取、运行、验证或修改，recent events 必须有证据。无证据、JSON 无效、重复、过长或出现 hidden reasoning 语言时，note 会被忽略。
 
 对应代码：
 
 ```text
+apps/api/services/workstream_narrator.py
+src/klara/prompts/workstream_narrator.md
+tests/apps/api/test_workstream_narrator.py
+```
+
+## 本章不做什么
+
+第三章不包括：
+
+- complete permission engine
+- Todo Planning
+- agent task ledger
+- context compression
+- memory write policy
+- full harness/config refactor
+- full provider streaming adapter
+- OpenAI/Claude/DeepSeek reasoning stream integration
+- raw chain-of-thought display
+
+Todo 属于 Chapter 5。RAG/module pipeline 属于后续章节。Thinking-like narrator 只是一层 evidence-bound runtime note，不是第三章主线。
+
+## 代码索引
+
+```text
+src/klara/core/events.py
+src/klara/core/hooks.py
 src/klara/core/loop.py
-src/klara/core/messages.py
-src/klara/core/policies.py
+apps/api/services/run_event_projector.py
+apps/api/services/app_store.py
+apps/api/services/run_service.py
+apps/web/src/components/klara/KlaraRunSurface.tsx
+apps/web/src/components/klara/useKlaraRunMotion.ts
 ```
 
-<details>
-<summary>展开：KlaraLoop.run 的工具分支</summary>
+## 运行与验证
 
-这段代码在每一轮 turn 里运行。输入是当前 transcript、系统 prompt、当前模型、以及本轮可见工具 specs。输出要么是最终答案，要么是追加了工具 observation 的下一轮 transcript。
-
-真实代码：
-
-```python
-response = self.llm.complete(
-    system_prompt=self.system_prompt,
-    messages=tuple(messages),
-    tools=self.tool_executor.specs,
-    model=self.model,
-)
-
-assistant_message = KlaraMessage(
-    role="assistant",
-    content=response.content,
-    tool_calls=response.tool_calls,
-)
-messages.append(assistant_message)
-
-if not response.tool_calls:
-    return self._complete(
-        active_run_id,
-        messages,
-        response.content,
-        StopReason.FINAL,
-    )
-
-tool_results = self.tool_executor.execute_many(response.tool_calls)
-for result in tool_results:
-    messages.append(
-        KlaraMessage(
-            role="tool",
-            name=result.name,
-            tool_call_id=result.tool_call_id,
-            content=result.content if result.ok else result.error or "",
-        )
-    )
-```
-
-怎么读：
-
-1. `self.llm.complete(...)` 是一轮模型调用。模型只收到 `ToolSpec`，不会拿到 Python 工具对象。
-2. assistant message 先进入 `messages`。即使 assistant 只是请求工具，这条消息也必须保存，因为后面的 tool message 要用 `tool_call_id` 接回它。
-3. `if not response.tool_calls` 是停止信号。没有工具请求，`response.content` 就是最终答案。
-4. `execute_many(response.tool_calls)` 把工具请求交给 executor。loop 不关心工具名是 `current_time`、`web_search` 还是未来的 RAG。
-5. 每个 `ToolResult` 变成 `role="tool"` 消息。成功用 `content`，失败用 `error`，但两者都会进入下一轮模型可见上下文。
-
-具体例子：
-
-```text
-assistant:
-  tool_calls=[{"id": "call-1", "name": "current_time", "arguments": {"timezone": "Asia/Shanghai"}}]
-
-executor:
-  ToolResult(tool_call_id="call-1", name="current_time", ok=True, content="{...}")
-
-loop:
-  append role="tool", tool_call_id="call-1", name="current_time"
-
-next model turn:
-  模型看到时间 observation，然后写最终答案
-```
-
-状态变化：
-
-- `messages` 先追加 assistant 请求。
-- 如果没有工具请求，run 用 `StopReason.FINAL` 完成。
-- 如果有工具请求，`messages` 继续追加 tool observations。
-- `LoopPolicy.max_turns = 12` 防止模型无限请求工具；耗尽后会做一次无工具总结。
-
-架构边界：`core.loop` 只依赖 `ToolRunner` 协议，不导入 `klara.tools` 里的具体实现。
-
-读者 takeaway：loop 只决定继续或停止；具体工具能力留在工具层。
-
-</details>
-
-## 3. ToolSpec 给模型看，ToolMetadata 给 runtime 看
-
-一个工具有两份契约：
-
-```text
-ToolSpec       -> 模型可见：名称、描述、JSON 参数 schema
-ToolMetadata   -> 模型不可见：风险、并行、审批、超时、输出上限、可信度
-```
-
-主例子是 `current_time`。它没有网络、没有密钥、输出稳定，非常适合看清工具模板。
-
-对应代码：
-
-```text
-src/klara/core/tools.py
-src/klara/tools/builtin/current_time/schema.py
-```
-
-<details>
-<summary>展开：current_time 的 Spec 和 Metadata</summary>
-
-`ToolSpec` 是模型可见内容。它回答“模型怎样请求这个工具”。
-
-```python
-CURRENT_TIME_SPEC = ToolSpec(
-    name="current_time",
-    description=(
-        "Return the current date, time, weekday, and UTC offset for a requested "
-        "timezone. Use for current-time questions, not historical or web facts."
-    ),
-    input_schema={
-        "type": "object",
-        "properties": {
-            "timezone": {
-                "type": "string",
-                "description": (
-                    "Optional IANA timezone, such as Asia/Shanghai or UTC. "
-                    "Use local time when omitted."
-                ),
-            },
-        },
-        "required": [],
-        "additionalProperties": False,
-    },
-)
-```
-
-怎么读：
-
-- `name="current_time"` 是模型生成 `tool_call.name` 时必须精确匹配的字符串。
-- `description` 明确说它只回答当前时间，不回答历史事实或网页事实。
-- `input_schema` 约束模型生成 JSON arguments。
-- `additionalProperties=False` 告诉模型不要发 `city`、`locale`、`format` 这类工具不理解的字段。
-
-`ToolMetadata` 是 runtime 可见内容。它回答“runtime 怎样管理这个工具”。
-
-```python
-CURRENT_TIME_METADATA = ToolMetadata(
-    label="Current Time",
-    category="time",
-    side_effect=ToolSideEffect.NONE,
-    parallel_safe=True,
-    timeout_seconds=1.0,
-    max_output_chars=1000,
-)
-```
-
-字段流向：
-
-| 字段 | 谁读取 | 当前作用 |
-| --- | --- | --- |
-| `ToolSpec.name` | LLM / executor | 模型按这个名字请求，executor 按这个名字查找 |
-| `ToolSpec.description` | LLM | 帮模型判断什么时候该用工具 |
-| `ToolSpec.input_schema` | LLM adapter | 转成 provider tool schema |
-| `metadata.parallel_safe` | `ToolExecutor` | 决定能否进入并行 wave |
-| `metadata.requires_approval` | `ToolExecutor` | 需要审批则切断并行 wave |
-| `metadata.timeout_seconds` | tool/service | 传给具体工具或网络服务 |
-| `metadata.max_output_chars` | `ToolExecutor` | 截断模型可见 observation |
-| `metadata.output_trust` | trace / future guard | 标记网页等外部 observation 不可信 |
-
-状态变化：
-
-- 模型只看到 `ToolSpec`。
-- runtime 保留 `ToolMetadata`。
-- executor 用 metadata 做并行与截断。
-
-读者 takeaway：Spec 是给模型的说明书；Metadata 是给 runtime 的调度和安全信号。
-
-</details>
-
-## 4. 每个工具是一个 package
-
-Klara 采用一工具一包：
-
-```text
-src/klara/tools/builtin/
-  current_time/
-    __init__.py
-    schema.py
-    timezones.py
-    tool.py
-  image_generate/
-    __init__.py
-    schema.py
-    tool.py
-  web_search/
-    __init__.py
-    schema.py
-    tool.py
-  web_fetch/
-    __init__.py
-    schema.py
-    tool.py
-```
-
-Klara 学到：工具不是散落函数，而是一个可声明、可注册、可测试的能力包。
-
-对应代码：
-
-```text
-src/klara/tools/base.py
-src/klara/tools/builtin/current_time/
-src/klara/tools/builtin/image_generate/
-src/klara/tools/builtin/web_search/
-src/klara/tools/builtin/web_fetch/
-tests/klara/architecture/test_boundaries.py
-```
-
-<details>
-<summary>展开：BaseTool 为什么只是作者模板，不是 core 依赖</summary>
-
-core 只要求工具满足 `KlaraTool` protocol。本地工具继承 `BaseTool`，是为了共享参数校验和结果构造，不是为了让 loop 依赖继承树。
-
-```python
-class BaseTool:
-    spec: ToolSpec
-    metadata: ToolMetadata
-
-    def execute(self, arguments: JsonObject) -> ToolResult:
-        try:
-            return self.run(arguments)
-        except ToolInputError as exc:
-            return self.failure(arguments, str(exc))
-
-    def run(self, arguments: JsonObject) -> ToolResult:
-        raise NotImplementedError
-```
-
-怎么读：
-
-1. executor 调用的是 `tool.execute(arguments)`。
-2. `BaseTool.execute()` 捕获 `ToolInputError`，把参数错误变成 failed observation。
-3. 具体工具只实现 `run()`。
-4. core 不导入 `BaseTool`，所以未来 MCP、远端工具、沙箱工具也可以只实现 protocol。
-
-`current_time` 的失败路径：
-
-```python
-timezone_name = str(arguments.get("timezone") or "").strip()
-try:
-    resolved_name, resolved_timezone = resolve_timezone(timezone_name)
-except ValueError as exc:
-    return self.failure(arguments, str(exc))
-```
-
-具体例子：
-
-```text
-arguments={"timezone": "Mars/Olympus"}
--> resolve_timezone raises ValueError
--> CurrentTimeTool returns ok=False
--> loop appends role="tool" with the error
--> next model turn can explain the invalid timezone
-```
-
-读者 takeaway：参数错误是模型可见 observation，不是后端崩溃。
-
-</details>
-
-## 5. Registry 负责发现当前可见工具
-
-模型不能看到“所有未来能力”。每个 run 只暴露 registry 当前选择的工具。
-
-```text
-klara.tools.builtin.*
--> 发现子包
--> 导入 <tool_package>.tool
--> 找到唯一 BaseTool subclass
--> 实例化
--> visible_tools()
-```
-
-对应代码：
-
-```text
-src/klara/tools/registry.py
-tests/klara/tools/test_tool_registry.py
-```
-
-<details>
-<summary>展开：自动发现为什么比手写列表更适合课程</summary>
-
-真实代码：
-
-```python
-def discover_local_tool_classes() -> tuple[type[BaseTool], ...]:
-    discovered: list[type[BaseTool]] = []
-    for module_info in sorted(
-        pkgutil.iter_modules(
-            builtin_tools_package.__path__,
-            builtin_tools_package.__name__ + ".",
-        ),
-        key=lambda item: item.name,
-    ):
-        if not module_info.ispkg:
-            continue
-        tool_module = importlib.import_module(f"{module_info.name}.tool")
-        candidates = [
-            value
-            for _, value in inspect.getmembers(tool_module, inspect.isclass)
-            if value is not BaseTool
-            and issubclass(value, BaseTool)
-            and value.__module__ == tool_module.__name__
-        ]
-        if len(candidates) != 1:
-            raise RuntimeError(
-                f"{module_info.name}.tool must define exactly one BaseTool subclass"
-            )
-        discovered.append(candidates[0])
-    return tuple(discovered)
-```
-
-怎么读：
-
-1. `pkgutil.iter_modules(...)` 扫描内置工具包。
-2. `sorted(..., key=lambda item: item.name)` 固定顺序，避免不同机器上工具顺序漂移。
-3. `if not module_info.ispkg` 只接受目录包，逼迫每个工具有自己的文件夹。
-4. `importlib.import_module(f"{module_info.name}.tool")` 只导入每个工具包的 `tool.py`。
-5. `issubclass(value, BaseTool)` 确认这是本地工具模板。
-6. `value.__module__ == tool_module.__name__` 排除 import 进来的类。
-7. `len(candidates) != 1` 直接报错，避免一个工具包里暴露多个工具导致歧义。
-
-当前默认工具由测试锁住：
-
-```python
-assert names == {"current_time", "image_generate", "web_fetch", "web_search"}
-```
-
-状态变化：
-
-- 新工具按目录规范加入后，会被默认 registry 发现。
-- registry 输出的是 concrete tools。
-- harness 把这些 tools 交给 `ToolExecutor`。
-- loop 仍然只通过 `ToolRunner` 协议拿 specs 和执行结果。
-
-读者 takeaway：registry 是工具可见性边界，不是关键词路由器。
-
-</details>
-
-## 6. Executor 把工具请求变成稳定 observation
-
-`ToolExecutor` 是模型请求和具体工具之间的窄门。
-
-```text
-ToolCall(id, name, arguments)
--> lookup visible tool by name
--> tool.execute(arguments)
--> normalize id/name
--> limit output
--> ToolResult
-```
-
-对应代码：
-
-```text
-src/klara/tools/executor.py
-tests/klara/tools/test_tool_executor.py
-```
-
-<details>
-<summary>展开：单个工具调用怎么执行</summary>
-
-真实代码：
-
-```python
-def execute(self, call: ToolCall) -> ToolResult:
-    tool = self._tools.get(call.name)
-    if tool is None:
-        return ToolResult(
-            tool_call_id=call.id,
-            name=call.name,
-            content="",
-            ok=False,
-            error=f"Unknown tool: {call.name}",
-        )
-    try:
-        result = tool.execute(call.arguments)
-    except Exception as exc:
-        return ToolResult(
-            tool_call_id=call.id,
-            name=call.name,
-            content="",
-            ok=False,
-            error=f"{type(exc).__name__}: {exc}",
-        )
-    normalized = self._normalize_result(call, result)
-    return self._limit_result(normalized, max_chars=tool.metadata.max_output_chars)
-```
-
-怎么读：
-
-1. `call.name` 来自模型生成的 tool call。
-2. executor 只在“当前 run 可见工具”里查找这个名字。
-3. unknown tool 不抛异常，而是返回 `ok=False` 的 `ToolResult`。
-4. 具体工具异常也会变成 failed observation。
-5. `_normalize_result()` 保证返回结果的 `tool_call_id` 和 `name` 接回原始请求。
-6. `_limit_result()` 按工具 metadata 截断输出，避免网页或图片工具把上下文撑爆。
-
-具体例子：
-
-```text
-call = ToolCall(id="call-9", name="read_file", arguments={"path": "x"})
-
-executor 找不到 read_file，返回：
-ToolResult(
-  tool_call_id="call-9",
-  name="read_file",
-  content="",
-  ok=False,
-  error="Unknown tool: read_file",
-)
-```
-
-状态变化：
-
-- 不存在的工具不会让 FastAPI 崩溃。
-- 工具异常不会打断整个 run。
-- 失败也会进入下一轮模型上下文。
-
-读者 takeaway：工具失败是 agent 可以观察和修正的状态。
-
-</details>
-
-<details>
-<summary>展开：多个工具调用如何串并行分区</summary>
-
-模型一次可能返回多个 tool calls。Klara 不按具体工具名硬编码顺序，而是按 metadata 形成 execution waves。
-
-真实代码：
-
-```python
-def execute_many(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
-    results: list[ToolResult] = []
-    parallel_wave: list[ToolCall] = []
-    for call in calls:
-        if self._can_run_in_parallel(call):
-            parallel_wave.append(call)
-            continue
-        results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
-        parallel_wave = []
-        results.append(self.execute(call))
-    results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
-    return tuple(results)
-
-def _can_run_in_parallel(self, call: ToolCall) -> bool:
-    tool = self._tools.get(call.name)
-    if tool is None:
-        return False
-    return tool.metadata.parallel_safe and not tool.metadata.requires_approval
-```
-
-算法：
-
-```text
-parallel_safe=True 且 requires_approval=False
--> 进入当前 parallel wave
-
-parallel_safe=False
-或 requires_approval=True
-或 unknown tool
--> 先 flush 当前 wave，再单独执行当前 call
-```
-
-具体 trace：
-
-```text
-[safe A, safe B, serial C, safe D, unknown E]
--> A/B 同一个 wave 并发执行
--> C 单独执行
--> D 单独一个 wave
--> E 单独执行并返回 failed observation
-```
-
-为什么图片工具是串行：
-
-```text
-image_generate:
-  side_effect=NETWORK
-  parallel_safe=False
-  timeout_seconds=180.0
-```
-
-图片生成可能慢、贵、网络依赖强，也会产出本地资产链接，所以先按串行工具处理。
-
-读者 takeaway：并行/串行不是写死工具名，而是读取 metadata。
-
-</details>
-
-## 7. Web 和 Image：工具结果不是事实，只是 observation
-
-`web_search`、`web_fetch`、`image_generate` 都是工具，但它们的风险不同。
-
-```text
-web_search     -> 找 title / URL / snippet
-web_fetch      -> 读取一个 public HTTP(S) 页面
-image_generate -> 调 Qwen 图片模型，保存本地资产，返回 Markdown 图片链接
-```
-
-Klara 学到：外部 I/O 能力可以暴露成工具，但 provider、安全校验、资产保存不应该塞进 core loop。
-
-对应代码：
-
-```text
-src/klara/tools/builtin/web_search/schema.py
-src/klara/tools/builtin/web_fetch/schema.py
-src/klara/tools/builtin/image_generate/schema.py
-src/klara/services/web/search.py
-src/klara/services/web/fetcher.py
-src/klara/services/web/safety.py
-src/klara/services/images/qwen.py
-src/klara/services/images/storage.py
-src/klara/services/images/types.py
-src/klara/infra/config/images.py
-```
-
-<details>
-<summary>展开：web_fetch 为什么要放安全边界</summary>
-
-`web_fetch` 可以访问外部 URL，所以 tool wrapper 只负责参数和 observation，网络安全放在 service 层。
-
-工具 wrapper：
-
-```python
-page = self.page_fetcher(
-    url,
-    max_chars=max_chars,
-    timeout_seconds=self.metadata.timeout_seconds,
-)
-return self.json_success(arguments, {...})
-```
-
-安全校验：
-
-```python
-def validate_public_http_url(raw_url: str) -> str:
-    ...
-    if parsed.scheme not in {"http", "https"}:
-        raise WebSafetyError("URL must use http or https")
-    if parsed.username or parsed.password:
-        raise WebSafetyError("URL must not include credentials")
-    ...
-    _reject_local_hostname(host)
-    _reject_private_addresses(host)
-```
-
-运行状态：
-
-- `http://localhost:8011` 会被拒绝。
-- private IP、loopback、带凭据 URL 会被拒绝。
-- 网页正文返回时标为 `untrusted_external_content`。
-
-读者 takeaway：web 工具的输出不能当系统指令，只能当不可信 observation。
-
-</details>
-
-<details>
-<summary>展开：image_generate 为什么会影响后续上下文</summary>
-
-图片工具返回的是 Markdown 图片链接，最终答案可以把图片穿插在文字中：
-
-```text
-![Generated image](/api/assets/local?path=data/assets/images/20260617/xxx.png)
-```
-
-这对前端展示是好的，但对下一轮模型历史不一定有用。模型不需要反复看到本地资产 URL；这些 URL 还可能让后续普通问题带上图片语境。
-
-所以本章加入最小 history sanitizer：
-
-```python
-GENERATED_IMAGE_PLACEHOLDER = "[generated image omitted from prior context]"
-
-def prepare_conversation_history(
-    messages: Iterable[KlaraMessage],
-    *,
-    max_messages: int,
-) -> tuple[KlaraMessage, ...]:
-    prepared: list[KlaraMessage] = []
-    for message in messages:
-        prepared.append(
-            KlaraMessage(
-                role=message.role,
-                content=sanitize_history_content(message.content),
-                name=message.name,
-                tool_call_id=message.tool_call_id,
-                tool_calls=message.tool_calls,
-            )
-        )
-    return tuple(prepared[-max_messages:])
-```
-
-API 层调用它：
-
-```python
-MAX_HISTORY_MESSAGES = 12
-...
-return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
-```
-
-注意这里有两个不同的 12：
-
-- `LoopPolicy.max_turns = 12`：一个 run 最多 12 个工具循环 turn，耗尽后追加一次无工具总结。
-- `MAX_HISTORY_MESSAGES = 12`：下一次 run 最多注入当前 session 最近 12 条 completed user/assistant 消息。
-
-状态变化：
-
-- 历史按 session 读取，不跨聊天窗口污染。
-- 只注入 completed user/assistant 消息，不回放运行中的消息。
-- 本地图片链接被替换成短 placeholder。
-- 这还不是完整 context compression；完整压缩、source summary、memory 会在后面章节讲。
-
-读者 takeaway：工具越多，越需要清楚地区分“用户可见内容”和“下一轮模型应该看见的上下文”。
-
-</details>
-
-## 本章的证据 Guard
-
-Chapter 2 仍然只有一个 loop。它不为世界杯、新闻或任何关键词增加 intent router。当前实现通过 `WebEvidenceGuard` 增加一组 evidence-state guard，并通过通用的 `final_answer_guard` 扩展点注入 loop：
-
-```text
-web_search candidates only
--> model tries to final
--> runtime_tool_guard asks for web_fetch
-
-web_search fails or returns no useful results
--> runtime_search_failure_guard asks it to try another query/provider
-
-search/fetch evidence contradicts itself
--> model tries to final
--> runtime_temporal_consistency_guard asks it to resolve or state uncertainty
-
-web_fetch page text exists
--> model tries to final
--> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
-   navigation, and ads before final synthesis
-```
-
-这一节的核心点是：工具结果不是事实本身。Search 返回候选网页，fetch 返回不可信网页正文，最终回答前可能还需要一点证据状态 guard。这里不再按网站域名分层，也不维护 preferred/candidate source 名单。
-
-## 8. 运行与验证
-
-启动：
+后端和 core：
 
 ```powershell
-.\scripts\dev.ps1 -Restart
+pytest -q
 ```
 
-默认地址：
-
-```text
-Web: http://127.0.0.1:5123
-API: http://127.0.0.1:8011
-```
-
-建议验证：
+前端：
 
 ```powershell
-python -m pytest tests\klara tests\apps\api
 cd apps\web
-npm.cmd test
-npm.cmd run build
+npm test
+npm run build
+npm audit --omit=dev
 ```
 
-前端观察点：
+建议手动观察：
 
-```text
-llm_call_completed.tool_call_count
-tool_call_started
-tool_call_completed
-run_completed.stop_reason
-```
-
-如果你想复现“世界杯问题”，可以在一个新窗口里问：
-
-```text
-请搜索世界杯最新战报，并打开一个网页总结。
-```
-
-再追问：
-
-```text
-阿根廷呢？
-```
-
-观察右侧事件里第二问是否继续产生 `web_search` / `web_fetch`。如果没有，这不是靠关键词 if 修的地方，而是后续 context policy、tool-use evaluation、source grounding 要继续推进的地方。
-
-## 本章留下的问题
-
-工具能用，不代表事实已经被核验。一个真实例子是：
-
-```text
-用户问：给我一个总结，世界杯到目前的每一场比赛、每一个比赛总结以及精彩评论、球员表现
-
-Klara 可能拿到正确比分，例如“阿根廷 3-0 阿尔及利亚”，
-但在球员表现里写成“梅西贡献一传一射”。
-如果真实赛况是梅西帽子戏法，那么比分对了，细节仍然错了。
-```
-
-这不是 `web_search`、`web_fetch` 或工具注册本身的问题。它说明：模型把 observation 写成最终答案时，还没有做到 claim 级别的证据核验。
-
-更完整的解法会放到后续章节：
-
-```text
-Chapter 3: Hooks And Trace
--> 先让每次工具调用、网页抓取、最终回答都可观察、可回放。
-
-Source Grounding / Evidence Ledger / Claim Verification
--> 再把比分、进球者、助攻、赛后评论、引用这类事实 claim 绑定到具体来源。
--> 没有来源支撑的细节，要么不写，要么明确标成未确认。
-```
-
-读者 takeaway：Chapter 2 解决“工具如何进入 loop”；事实核验要等可观察 trace 和 evidence grounding 机制接上以后再解决。
+1. 启动 `.\scripts\dev.ps1`。
+2. 问 `current_time` 问题。
+3. 在 run surface 看 tool card 和 hook badges。
+4. 打开 `/api/runs/{run_id}` 看 events。
+5. 删除 session，确认相关 trace 被清理。
 
 ## 小实验
 
-1. 把 `current_time` 的 `max_output_chars` 改小，观察 executor 截断。
-2. 构造两个 parallel-safe 测试工具和一个 serial 工具，观察 `execute_many()` 如何切 wave。
-3. 请求不存在的工具名，确认 loop 返回 failed observation。
-4. 请求 `web_fetch` 读取 `http://localhost:8011`，确认安全层拒绝。
-5. 生成图片后继续问搜索问题，观察 history sanitizer 如何把本地图片链接替换成 placeholder。
+1. 写一个只实现 `on_event` 的 hook，确认它收到 lifecycle events。
+2. 写一个 `on_pre_tool_use` 返回 `allowed=False` 的 hook，确认工具没有执行但模型看到 failed observation。
+3. 人为让 hook 抛异常，确认 run 仍然完成。
+4. 打开 JSONL trace，按 `seq` 重放一条 run。
 
 ## 下一章预告
 
-Chapter 3 会讲 Hooks And Trace：工具调用已经能发生，下一步是把 runtime 生命周期事件投影到 hook、trace、UI 和 guard 里，而不是把观察逻辑写进 loop 主体。
+Chapter 4 会讲 Harness And Config：现在 loop、tools、hooks 和 trace 都有了边界，下一步是把 provider、model、prompt、tools、hooks 和 trace sink 的组装放到一个清楚的 harness 入口里。

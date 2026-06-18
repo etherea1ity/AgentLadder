@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Klara Chapter 3 Hooks and Trace</title>
+  <desc id="desc">A public event stream fans out from the Klara loop into hooks, JSONL trace, API projection, and frontend run surface.</desc>
+  <rect width="1280" height="720" fill="#f8fbfc"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280"/>
+    </marker>
+    <style>
+      .title { font: 700 46px system-ui, -apple-system, Segoe UI, sans-serif; fill: #0f172a; }
+      .label { font: 700 25px system-ui, -apple-system, Segoe UI, sans-serif; fill: #0f172a; }
+      .small { font: 500 20px system-ui, -apple-system, Segoe UI, sans-serif; fill: #334155; }
+      .tiny { font: 500 17px system-ui, -apple-system, Segoe UI, sans-serif; fill: #475569; }
+      .box { stroke-width: 3; rx: 22; }
+      .arrow { stroke: #6b7280; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+      .event { fill: #ffffff; stroke: #0ea5a3; stroke-width: 2; rx: 14; }
+    </style>
+  </defs>
+  <text x="640" y="68" text-anchor="middle" class="title">Chapter 3: Hooks and Trace</text>
+  <text x="640" y="105" text-anchor="middle" class="small">One public lifecycle event stream, many projections</text>
+
+  <rect x="72" y="254" width="230" height="132" fill="#dff7f4" stroke="#0f766e" class="box"/>
+  <text x="187" y="310" text-anchor="middle" class="label">Klara Loop</text>
+  <text x="187" y="344" text-anchor="middle" class="small">model + tools</text>
+
+  <path class="arrow" d="M302 320 C370 320 388 210 456 210"/>
+  <path class="arrow" d="M302 320 C370 320 388 320 456 320"/>
+  <path class="arrow" d="M302 320 C370 320 388 430 456 430"/>
+
+  <rect x="456" y="147" width="324" height="330" fill="#ffffff" stroke="#7c3aed" class="box"/>
+  <text x="618" y="185" text-anchor="middle" class="label">Public Events</text>
+  <rect x="492" y="210" width="252" height="38" class="event"/>
+  <text x="618" y="236" text-anchor="middle" class="tiny">user_prompt_submit.*</text>
+  <rect x="492" y="264" width="252" height="38" class="event"/>
+  <text x="618" y="290" text-anchor="middle" class="tiny">llm.started / completed</text>
+  <rect x="492" y="318" width="252" height="38" class="event"/>
+  <text x="618" y="344" text-anchor="middle" class="tiny">pre_tool_use.*</text>
+  <rect x="492" y="372" width="252" height="38" class="event"/>
+  <text x="618" y="398" text-anchor="middle" class="tiny">tool.started / terminal</text>
+  <rect x="492" y="426" width="252" height="38" class="event"/>
+  <text x="618" y="452" text-anchor="middle" class="tiny">stop.* / run.completed</text>
+
+  <path class="arrow" d="M780 252 C832 210 852 184 902 164"/>
+  <path class="arrow" d="M780 310 C840 300 856 300 902 300"/>
+  <path class="arrow" d="M780 368 C840 398 856 432 902 456"/>
+
+  <rect x="902" y="104" width="260" height="96" fill="#eef2ff" stroke="#4f46e5" class="box"/>
+  <text x="1032" y="145" text-anchor="middle" class="label">Hooks</text>
+  <text x="1032" y="174" text-anchor="middle" class="tiny">observe or lightly decide</text>
+
+  <rect x="902" y="252" width="260" height="96" fill="#ecfdf5" stroke="#16a34a" class="box"/>
+  <text x="1032" y="293" text-anchor="middle" class="label">JSONL Trace</text>
+  <text x="1032" y="322" text-anchor="middle" class="tiny">replayable public schema</text>
+
+  <rect x="902" y="408" width="260" height="124" fill="#fff7ed" stroke="#f97316" class="box"/>
+  <text x="1032" y="448" text-anchor="middle" class="label">API + UI</text>
+  <text x="1032" y="478" text-anchor="middle" class="tiny">SSE projection</text>
+  <text x="1032" y="506" text-anchor="middle" class="tiny">tool cards + hook badges</text>
+
+  <rect x="182" y="558" width="916" height="70" fill="#ffffff" stroke="#cbd5e1" rx="18" stroke-width="2"/>
+  <text x="640" y="602" text-anchor="middle" class="small">Trace is for developers. Run surface is for users. Narrator notes are optional and evidence-bound.</text>
+</svg>

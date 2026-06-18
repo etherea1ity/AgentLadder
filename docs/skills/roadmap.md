@@ -139,6 +139,10 @@ Runnable result:
 - hooks receive lifecycle events
 - trace and frontend projections are produced from the same public events
 - tool start/result cards appear in the run surface
+- hook failure does not crash the loop
+- `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop` placements are real
+- public/private hook payload boundary is explicit
+- trace event schema is stable enough for teaching and replay
 
 Includes:
 
@@ -150,12 +154,19 @@ Includes:
 - hook failure isolation
 - public versus private hook payloads
 - trace event schema
+- API/SSE projection from public events
+- frontend run surface / tool cards
+- optional evidence-bound narrator model as a final capstone only
 
 Excludes:
 
 - complete permission engine
+- Todo Planning
+- agent task ledger
 - context compression implementation
 - memory write policy
+- full provider streaming adapter
+- raw chain-of-thought display
 
 ### Chapter 4 - Harness And Config
 
