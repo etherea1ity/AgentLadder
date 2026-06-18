@@ -87,6 +87,23 @@ class FailingWebSearchFixtureTool(BaseTool):
 
 
 @dataclass(frozen=True)
+class ExplodingFixtureTool(BaseTool):
+    """Test-only tool that raises to exercise terminal failure events."""
+
+    spec: ToolSpec = ToolSpec(
+        name="test_explode",
+        description="Raise an exception for tests.",
+        input_schema={"type": "object", "properties": {}, "additionalProperties": True},
+    )
+    metadata: ToolMetadata = ToolMetadata(label="Explode", category="test")
+
+    def run(self, arguments: JsonObject) -> ToolResult:
+        """Raise instead of returning a normal observation."""
+
+        raise RuntimeError("boom")
+
+
+@dataclass(frozen=True)
 class WebFetchFixtureTool(BaseTool):
     """Test-only web fetch tool that returns source text."""
 
@@ -177,11 +194,13 @@ class EventRecorder:
     def __init__(self) -> None:
         """Create empty event storage."""
 
+        self.events: list[object] = []
         self.event_types: list[str] = []
 
     def on_event(self, event: object) -> None:
         """Record one public event type."""
 
+        self.events.append(event)
         self.event_types.append(str(getattr(event, "type")))
 
 
@@ -247,6 +266,30 @@ class SpyToolExecutor(ToolExecutor):
 
         self.execute_calls += 1
         return super().execute(call)
+
+
+def _tool_call_ids_for(events: list[object], event_type: str) -> list[str]:
+    """Return tool call ids from public tool lifecycle events."""
+
+    ids: list[str] = []
+    for event in events:
+        if str(getattr(event, "type")) != event_type:
+            continue
+        payload = getattr(event, "payload")
+        if event_type == "tool.started":
+            ids.append(str(payload["tool_call"]["id"]))
+        else:
+            ids.append(str(payload["tool_result"]["tool_call_id"]))
+    return ids
+
+
+def _terminal_tool_call_ids(events: list[object]) -> list[str]:
+    """Return tool call ids from terminal tool lifecycle events."""
+
+    ids: list[str] = []
+    ids.extend(_tool_call_ids_for(events, "tool.completed"))
+    ids.extend(_tool_call_ids_for(events, "tool.failed"))
+    return ids
 
 
 def test_no_tool_run_returns_final_answer() -> None:
@@ -338,7 +381,54 @@ def test_pre_tool_use_defaults_to_allow() -> None:
     assert result.final_answer == "I saw allowed."
     assert "pre_tool_use.started" in recorder.event_types
     assert "pre_tool_use.completed" in recorder.event_types
+    assert _tool_call_ids_for(recorder.events, "tool.started") == ["call-allow"]
+    assert _tool_call_ids_for(recorder.events, "tool.completed") == ["call-allow"]
+    assert _terminal_tool_call_ids(recorder.events) == ["call-allow"]
     assert result.messages[2].content == "allowed"
+
+
+def test_parallel_tool_batch_pairs_each_call_independently() -> None:
+    recorder = EventRecorder()
+    first_call = ToolCall(
+        id="call-parallel-1",
+        name="test_echo",
+        arguments={"text": "one"},
+    )
+    second_call = ToolCall(
+        id="call-parallel-2",
+        name="test_echo",
+        arguments={"text": "two"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(first_call, second_call)),
+            ModelResponse(content="done"),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("use two tools", run_id="run-parallel-tools")
+
+    assert [message.content for message in result.messages if message.role == "tool"] == [
+        "one",
+        "two",
+    ]
+    assert _tool_call_ids_for(recorder.events, "tool.started") == [
+        "call-parallel-1",
+        "call-parallel-2",
+    ]
+    assert _tool_call_ids_for(recorder.events, "tool.completed") == [
+        "call-parallel-1",
+        "call-parallel-2",
+    ]
+    assert _terminal_tool_call_ids(recorder.events) == [
+        "call-parallel-1",
+        "call-parallel-2",
+    ]
 
 
 def test_pre_tool_use_can_block_tool_with_model_visible_observation() -> None:
@@ -392,8 +482,9 @@ def test_blocked_tool_emits_failed_terminal_without_started_event() -> None:
 
     loop.run("use a blocked tool", run_id="run-pre-block-events")
 
-    assert "tool.started" not in recorder.event_types
-    assert recorder.event_types.count("tool.failed") == 1
+    assert _tool_call_ids_for(recorder.events, "tool.started") == []
+    assert _tool_call_ids_for(recorder.events, "tool.failed") == ["call-blocked"]
+    assert _terminal_tool_call_ids(recorder.events) == ["call-blocked"]
 
 
 def test_post_tool_use_receives_result_after_execution() -> None:
@@ -556,6 +647,41 @@ def test_loop_stops_at_tool_call_budget() -> None:
     assert tool_call_ids == ["call-1"]
 
 
+def test_policy_stop_does_not_start_pending_tool_calls() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="",
+                tool_calls=(
+                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"}),
+                ),
+            ),
+            ModelResponse(
+                content="",
+                tool_calls=(
+                    ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
+                    ToolCall(id="call-3", name="test_echo", arguments={"text": "3"}),
+                ),
+            ),
+            ModelResponse(content="I stopped at the tool budget."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+        policy=LoopPolicy(max_turns=10, max_tool_calls=2),
+    )
+
+    result = loop.run("search broadly", run_id="run-tool-budget-events")
+
+    assert result.stop_reason == StopReason.MAX_TOOL_CALLS
+    assert _tool_call_ids_for(recorder.events, "tool.started") == ["call-1"]
+    assert _terminal_tool_call_ids(recorder.events) == ["call-1"]
+    assert "tool_policy.stopped" in recorder.event_types
+
+
 def test_loop_stops_at_repeated_tool_call_budget() -> None:
     repeated_call = ToolCall(
         id="call-1",
@@ -664,6 +790,7 @@ def test_policy_finalization_retries_when_model_requests_tools_again() -> None:
 
 
 def test_unknown_tool_returns_observation_error() -> None:
+    recorder = EventRecorder()
     llm = ScriptedLlm(
         [
             ModelResponse(
@@ -675,13 +802,49 @@ def test_unknown_tool_returns_observation_error() -> None:
             ModelResponse(content="Tool was unavailable."),
         ]
     )
-    loop = KlaraLoop(llm=llm, tool_executor=ToolExecutor())
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+    )
 
     result = loop.run("call missing", run_id="run-missing-tool")
 
     assert result.stop_reason == StopReason.FINAL
     assert result.messages[2].role == "tool"
     assert result.messages[2].content == "Unknown tool: missing_tool"
+    assert _tool_call_ids_for(recorder.events, "tool.started") == ["missing-1"]
+    assert _tool_call_ids_for(recorder.events, "tool.failed") == ["missing-1"]
+    assert _terminal_tool_call_ids(recorder.events) == ["missing-1"]
+
+
+def test_tool_exception_returns_failed_terminal_event() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="",
+                tool_calls=(
+                    ToolCall(id="explode-1", name="test_explode", arguments={}),
+                ),
+            ),
+            ModelResponse(content="Tool failed."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([ExplodingFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("call exploding tool", run_id="run-tool-exception")
+
+    assert result.stop_reason == StopReason.FINAL
+    assert result.messages[2].role == "tool"
+    assert result.messages[2].content == "RuntimeError: boom"
+    assert _tool_call_ids_for(recorder.events, "tool.started") == ["explode-1"]
+    assert _tool_call_ids_for(recorder.events, "tool.failed") == ["explode-1"]
+    assert _terminal_tool_call_ids(recorder.events) == ["explode-1"]
 
 
 def test_tool_result_public_payload_includes_preview_and_length() -> None:
