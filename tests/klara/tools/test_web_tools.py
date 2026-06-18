@@ -67,9 +67,8 @@ def test_web_search_tool_declares_network_untrusted_metadata() -> None:
     tool = WebSearchTool()
 
     assert tool.spec.name == "web_search"
-    assert "live/current/latest/today/news/sports" in tool.spec.description
-    assert "web_fetch" in tool.spec.description
-    assert "untrusted" in tool.spec.description
+    assert "ranked result cards" in tool.spec.description
+    assert "web_fetch" not in tool.spec.description
     assert tool.spec.input_schema["required"] == ["query"]
     assert "freshness" in tool.spec.input_schema["properties"]
     assert "date_after" in tool.spec.input_schema["properties"]

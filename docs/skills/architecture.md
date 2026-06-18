@@ -127,12 +127,15 @@ Tool registration is automatic for local built-in tools: each package under
 `tool.py`. The registry discovers packages, filters visibility later by profile,
 and must not carry a hand-written list of default tool instances.
 
-Tool-use negotiation belongs to the tool wrapper:
+Tool contracts and tool-use policy are separate:
 
-- model schema and description live in `ToolSpec`
+- model-visible capability schema lives in `ToolSpec`
+- `ToolSpec.description` should be short: what the tool does and what it returns
+- do not put few-shot examples, keyword routing, source-ranking policy, or
+  chapter-specific teaching text inside a tool schema
 - runtime policy lives in `ToolMetadata`
-- system prompt identity lives in `src/klara/prompts/persona.md`
-- tool-specific model guidance belongs in the `ToolSpec` description and schema
+- general tool-use discipline lives in `src/klara/prompts/persona.md` and
+  `src/klara/context/runtime.py`
 - execution remains a narrow `run(arguments)` method
 
 Tool execution uses metadata-driven waves:

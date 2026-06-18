@@ -13,8 +13,7 @@ def test_current_time_tool_declares_real_tool_template_metadata() -> None:
 
     assert tool.spec.name == "current_time"
     assert "exact current wall-clock" in tool.spec.description
-    assert "timezone conversion" in tool.spec.description
-    assert "use web_search" in tool.spec.description
+    assert "web_search" not in tool.spec.description
     assert "timezone" in tool.spec.input_schema["properties"]
     assert tool.spec.input_schema["additionalProperties"] is False
     assert tool.metadata.label == "Current Time"

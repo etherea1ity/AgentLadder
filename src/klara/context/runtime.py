@@ -37,8 +37,9 @@ def build_runtime_context_prompt(
                 "current_time only to learn today's date."
             ),
             (
-                "For live/current/latest/today/news/sports/schedules/prices, "
-                "call web_search before answering from memory."
+                "For live/current/latest/today/so-far/news/sports/scores/"
+                "schedules/prices/versions, call web_search before answering "
+                "from memory."
             ),
             (
                 "Call current_time only for exact wall-clock time, weekday, "

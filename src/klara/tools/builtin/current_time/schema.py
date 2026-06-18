@@ -10,20 +10,14 @@ CURRENT_TIME_SPEC = ToolSpec(
     name="current_time",
     description=(
         "Return exact current wall-clock date, time, weekday, and UTC offset "
-        "for a requested timezone. Use for exact current time, weekday checks, "
-        "timezone conversion, and relative date/time arithmetic. Do not use "
-        "for live news, sports results, schedules, prices, versions, or other "
-        "web facts; use web_search for those."
+        "for a requested timezone."
     ),
     input_schema={
         "type": "object",
         "properties": {
             "timezone": {
                 "type": "string",
-                "description": (
-                    "Optional IANA timezone, such as Asia/Shanghai or UTC. "
-                    "Use local time when omitted."
-                ),
+                "description": "Optional IANA timezone name. Use local time when omitted.",
             },
         },
         "required": [],
