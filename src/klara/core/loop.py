@@ -233,13 +233,26 @@ class KlaraLoop:
         """Ask the model for a final no-tool answer after tool turns are exhausted."""
 
         final_turn_index = self.policy.max_turns + 1
+        finalization_prompt = "\n\n".join(
+            [
+                self.system_prompt,
+                (
+                    "<finalization_context>\n"
+                    "The tool turn limit has been reached. Do not request more tools. "
+                    "Write the best final answer now from the observations already "
+                    "in the transcript. If the observations are incomplete, say what "
+                    "is uncertain.\n"
+                    "</finalization_context>"
+                ),
+            ]
+        ).strip()
         self._emit(
             run_id,
             "llm.started",
             {"turn_index": final_turn_index, "finalization": True},
         )
         response = self.llm.complete(
-            system_prompt=self.system_prompt,
+            system_prompt=finalization_prompt,
             messages=tuple(messages),
             tools=(),
             model=self.model,
@@ -256,8 +269,14 @@ class KlaraLoop:
                 "finalization": True,
             },
         )
-        messages.append(KlaraMessage(role="assistant", content=response.content))
-        return self._complete(run_id, messages, response.content, StopReason.MAX_TURNS)
+        final_answer = response.content.strip()
+        if not final_answer:
+            final_answer = (
+                "Tool turn limit reached before the model produced a final answer. "
+                "Please ask again with a narrower request or fewer required lookups."
+            )
+        messages.append(KlaraMessage(role="assistant", content=final_answer))
+        return self._complete(run_id, messages, final_answer, StopReason.MAX_TURNS)
 
     def _complete(
         self,

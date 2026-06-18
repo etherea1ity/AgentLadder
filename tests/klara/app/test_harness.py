@@ -95,6 +95,7 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     assert "call web_search before answering from memory" in llm.system_prompt
     assert "keep the user's original scope and named entities" in llm.system_prompt
     assert "prefer primary or official sources" in llm.system_prompt
+    assert "Fetch at least one relevant source page" in llm.system_prompt
     assert "Runtime user context" not in llm.system_prompt
     assert [tool.name for tool in llm.tools] == ["test_echo"]
     assert llm.messages_seen[1][-1].content == "from harness"

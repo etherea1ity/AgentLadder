@@ -145,7 +145,7 @@ class ToolSpec:
 
     # Name is the stable call target used by ToolCall.
     name: str
-    # Description tells the model when the tool is useful.
+    # Description states the capability and returned observation shape.
     description: str
     # Input schema describes the expected JSON arguments.
     input_schema: JsonObject

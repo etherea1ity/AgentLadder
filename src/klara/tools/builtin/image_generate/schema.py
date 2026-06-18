@@ -8,12 +8,8 @@ from klara.core.tools import ToolMetadata, ToolSideEffect, ToolSpec
 IMAGE_GENERATE_SPEC = ToolSpec(
     name="image_generate",
     description=(
-        "Generate one or two images from a visual prompt. Use this when the "
-        "user asks to draw, create, render, make an illustration, poster, "
-        "mockup, or other image. The observation returns Markdown image links "
-        "that can be embedded in the final answer beside normal text. Never "
-        "invent /api/assets/local URLs or data/assets/images paths yourself; "
-        "call this tool and copy the returned Markdown image links exactly."
+        "Generate one or two images from a visual prompt and return JSON with "
+        "local public URLs plus Markdown image tags."
     ),
     input_schema={
         "type": "object",

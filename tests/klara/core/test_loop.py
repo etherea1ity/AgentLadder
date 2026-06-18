@@ -41,6 +41,8 @@ class ScriptedLlm:
         self.responses = responses
         # Calls keep the model-visible transcript and tool specs per turn.
         self.calls: list[tuple[tuple[KlaraMessage, ...], tuple[ToolSpec, ...]]] = []
+        # System prompts prove finalization can add no-tool guidance.
+        self.system_prompts: list[str] = []
 
     def complete(
         self,
@@ -53,6 +55,7 @@ class ScriptedLlm:
         """Return the next scripted model response."""
 
         # Capture each call before popping so failure cases still expose evidence.
+        self.system_prompts.append(system_prompt)
         self.calls.append((messages, tools))
         if not self.responses:
             raise AssertionError("No scripted LLM response left")
@@ -151,6 +154,7 @@ def test_loop_stops_at_max_turns_when_model_keeps_requesting_tools() -> None:
 
     assert result.stop_reason == StopReason.MAX_TURNS
     assert result.final_answer == "I stopped after observing 2."
+    assert "<finalization_context>" in llm.system_prompts[-1]
     assert [message.role for message in result.messages] == [
         "user",
         "assistant",
@@ -159,6 +163,39 @@ def test_loop_stops_at_max_turns_when_model_keeps_requesting_tools() -> None:
         "tool",
         "assistant",
     ]
+    assert llm.calls[-1][1] == ()
+
+
+def test_max_turn_finalization_never_returns_blank_when_model_asks_for_more_tools() -> None:
+    """A stubborn model should not leave the user with an empty final answer."""
+
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="",
+                tool_calls=(
+                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"}),
+                ),
+            ),
+            ModelResponse(
+                content="",
+                tool_calls=(
+                    ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
+                ),
+            ),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        policy=LoopPolicy(max_turns=1),
+    )
+
+    result = loop.run("loop please", run_id="run-max-blank")
+
+    assert result.stop_reason == StopReason.MAX_TURNS
+    assert result.final_answer
+    assert "Tool turn limit reached" in result.final_answer
     assert llm.calls[-1][1] == ()
 
 
