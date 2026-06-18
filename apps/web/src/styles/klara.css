@@ -373,6 +373,168 @@
   border-color: #3b4138;
 }
 
+/* Chapter 3 run surface */
+.klara-run-surface {
+  width: 100%;
+  margin: 4px 0 12px;
+  border: 1px solid rgba(221, 209, 189, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.5);
+  overflow: hidden;
+}
+.klara-run-surface-toggle {
+  width: 100%;
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.klara-run-surface-toggle span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 650;
+}
+.klara-run-surface-toggle small {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.klara-run-surface-body {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgba(221, 209, 189, 0.62);
+  padding: 10px;
+}
+.klara-hook-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.klara-hook-badges span {
+  border: 1px solid rgba(100, 123, 100, 0.2);
+  border-radius: 999px;
+  background: rgba(100, 123, 100, 0.08);
+  color: var(--accent-running);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 650;
+}
+.klara-hook-badges .is-blocked {
+  border-color: rgba(163, 91, 82, 0.24);
+  background: rgba(163, 91, 82, 0.08);
+  color: var(--accent-error);
+}
+.klara-tool-card-grid {
+  display: grid;
+  gap: 8px;
+}
+.klara-tool-card {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid rgba(221, 209, 189, 0.78);
+  border-radius: 8px;
+  background: rgba(247, 240, 229, 0.45);
+  padding: 9px;
+}
+.klara-tool-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(184, 129, 47, 0.08);
+  color: var(--accent-clay);
+}
+.klara-tool-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.klara-tool-card h4 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.klara-tool-card header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-running);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.klara-tool-card.is-failed header span {
+  color: var(--accent-error);
+}
+.klara-tool-card p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.klara-tool-card .is-muted {
+  color: var(--text-muted);
+}
+.klara-tool-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.klara-run-timeline {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.klara-run-timeline li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.klara-run-timeline li > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent-running);
+}
+.klara-run-timeline .is-failed > span {
+  background: var(--accent-error);
+}
+.klara-run-timeline p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.theme-dark .klara-run-surface,
+.theme-dark .klara-tool-card {
+  background: rgba(36, 40, 33, 0.58);
+  border-color: #3b4138;
+}
+.theme-dark .klara-run-surface-body {
+  border-top-color: #3b4138;
+}
+
 .input-wrap:focus-within {
   box-shadow:
     0 20px 54px rgba(32, 39, 37, 0.08),

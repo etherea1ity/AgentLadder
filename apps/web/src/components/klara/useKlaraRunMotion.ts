@@ -85,6 +85,28 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
       const name = toolResult?.name ?? 'tool';
       return { ...base, kind: 'tool.call.completed', status: toolResult?.ok === false ? 'failed' : 'completed', publicLabel: `${name} returned`, publicDetail: `The ${name} observation was added to the loop.`, concept: 'ToolResult', capabilities: ['tool'] };
     }
+    case 'tool_call_failed': {
+      const toolResult = event.payload?.tool_result as { name?: string; error?: string } | undefined;
+      const name = toolResult?.name ?? 'tool';
+      return { ...base, kind: 'tool.call.failed', status: 'failed', publicLabel: `${name} failed`, publicDetail: toolResult?.error ?? `The ${name} call produced a failed observation.`, concept: 'ToolResult', capabilities: ['tool', 'policy'] };
+    }
+    case 'policy_stop':
+      return { ...base, kind: 'policy.stopped', status: 'completed', publicLabel: 'Tool policy stopped', publicDetail: String(event.payload?.reason ?? 'A runtime tool policy stopped additional tool calls.'), concept: 'LoopPolicy', capabilities: ['policy'] };
+    case 'hook_placement_started':
+    case 'hook_placement_completed': {
+      const placement = String(event.payload?.placement ?? 'Hook');
+      const allowed = event.payload?.allowed;
+      const status = event.event_type === 'hook_placement_started' ? 'started' : allowed === false ? 'failed' : 'completed';
+      return {
+        ...base,
+        kind: event.event_type === 'hook_placement_started' ? 'hook.placement.started' : 'hook.placement.completed',
+        status,
+        publicLabel: `${placement} ${event.event_type === 'hook_placement_started' ? 'started' : allowed === false ? 'blocked' : 'completed'}`,
+        publicDetail: String(event.payload?.reason ?? `${placement} lifecycle placement ran.`),
+        concept: placement,
+        capabilities: ['policy', 'trace'],
+      };
+    }
     case 'run_completed':
       return { ...base, kind: 'run.completed', status: 'completed', publicLabel: 'Completed', publicDetail: 'Klara completed the public answer.', concept: 'AnswerState', capabilities: ['model'] };
     case 'run_failed':
@@ -157,6 +179,7 @@ function phaseForRun(run: Run, kind?: KlaraRunEventKind): KlaraVisualPhase {
   if (run.status === 'failed' || run.status === 'cancelled') return 'error';
   if (kind === 'trace.saved') return 'saving';
   if (kind === 'tool.call.started') return 'acting';
+  if (kind === 'tool.call.failed' || kind === 'policy.stopped') return 'checking';
   if (kind === 'retrieval.started' || kind === 'chunk.retrieved') return 'searching';
   if (kind === 'web.search.started' || kind === 'web.page.read') return 'searching_web';
   if (kind === 'verification.started') return 'checking';

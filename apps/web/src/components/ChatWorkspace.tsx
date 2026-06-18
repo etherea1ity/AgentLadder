@@ -20,6 +20,7 @@ import type {
 } from "../types/domain";
 import { KlaraHero } from "./klara/KlaraHero";
 import { KlaraPresence } from "./klara/KlaraPresence";
+import { KlaraRunSurface } from "./klara/KlaraRunSurface";
 import { KlaraRunStatus } from "./klara/KlaraRunStatus";
 import { KlaraHandoffOverlay, useKlaraHandoff } from "./klara/useKlaraHandoff";
 import { isKlaraRunActive } from "./klara/useKlaraRunMotion";
@@ -393,6 +394,7 @@ function AssistantMessage({
           arrivalActive={arrivalActive}
         />
       </div>
+      <KlaraRunSurface run={run} />
       <AssistantContent
         content={message.content}
         running={message.status === "running"}

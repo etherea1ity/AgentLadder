@@ -629,6 +629,29 @@ export default function App() {
           current_label: toolResult?.name ? `${toolResult.name} returned` : "Observation returned",
         };
       }
+      if (event.event_type === "tool_call_failed") {
+        const toolResult = event.payload?.tool_result as { name?: string } | undefined;
+        next.live = {
+          streamed_chars: current.live?.streamed_chars ?? 0,
+          current_label: toolResult?.name ? `${toolResult.name} failed` : "Tool failed",
+        };
+      }
+      if (event.event_type === "policy_stop") {
+        next.live = {
+          streamed_chars: current.live?.streamed_chars ?? 0,
+          current_label: "Tool policy stopped",
+        };
+      }
+      if (
+        event.event_type === "hook_placement_started" ||
+        event.event_type === "hook_placement_completed"
+      ) {
+        const placement = event.payload?.placement as string | undefined;
+        next.live = {
+          streamed_chars: current.live?.streamed_chars ?? 0,
+          current_label: placement ? `${placement} hook` : "Runtime hook",
+        };
+      }
       if (event.event_type === "answer_delta") {
         if (cancelRequested || isTerminal(current.status)) return prev;
         next.status = "streaming";
