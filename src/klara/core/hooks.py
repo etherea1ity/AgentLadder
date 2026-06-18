@@ -2,11 +2,57 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 from typing import Protocol
 
 from klara.core.events import KlaraEvent
+from klara.core.tools import ToolCall, ToolResult
+
+
+@dataclass(frozen=True)
+class HookDecision:
+    """Minimal lifecycle decision returned by placement hooks."""
+
+    allowed: bool = True
+    reason: str = ""
+    public_metadata: dict[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class UserPromptSubmitContext:
+    """Context exposed when a user prompt enters the runtime."""
+
+    run_id: str
+    user_input: str
+
+
+@dataclass(frozen=True)
+class PreToolUseContext:
+    """Context exposed immediately before a tool may execute."""
+
+    run_id: str
+    turn_index: int
+    tool_call: ToolCall
+
+
+@dataclass(frozen=True)
+class PostToolUseContext:
+    """Context exposed after an executed tool returns an observation."""
+
+    run_id: str
+    turn_index: int
+    tool_call: ToolCall
+    tool_result: ToolResult
+
+
+@dataclass(frozen=True)
+class StopContext:
+    """Context exposed just before the run emits completion."""
+
+    run_id: str
+    stop_reason: str
 
 
 class KlaraHook(Protocol):
@@ -65,6 +111,98 @@ class HookManager:
             except Exception as exc:  # pragma: no cover - exact hook errors vary
                 # Hook failures are runtime observations, not loop failures.
                 self.failures.append((event.type, f"{type(exc).__name__}: {exc}"))
+
+    def user_prompt_submit(self, context: UserPromptSubmitContext) -> HookDecision:
+        """Run optional user-prompt placement hooks.
+
+        Hook failures are isolated and default to allow so observer bugs do not
+        break core run execution.
+        """
+
+        return self._decision_placement(
+            "user_prompt_submit",
+            "on_user_prompt_submit",
+            context,
+        )
+
+    def pre_tool_use(self, context: PreToolUseContext) -> HookDecision:
+        """Run optional pre-tool placement hooks.
+
+        Any explicit block prevents the tool call from executing. Hook failures
+        are recorded and default to allow because this chapter only teaches
+        placement, not a complete permission engine.
+        """
+
+        return self._decision_placement(
+            "pre_tool_use",
+            "on_pre_tool_use",
+            context,
+        )
+
+    def post_tool_use(self, context: PostToolUseContext) -> None:
+        """Run optional post-tool placement hooks without affecting the loop."""
+
+        self._notify_placement("post_tool_use", "on_post_tool_use", context)
+
+    def stop(self, context: StopContext) -> None:
+        """Run optional stop placement hooks without affecting completion."""
+
+        self._notify_placement("stop", "on_stop", context)
+
+    def _decision_placement(
+        self,
+        placement_name: str,
+        method_name: str,
+        context: object,
+    ) -> HookDecision:
+        """Call decision hooks and aggregate their allow/block decisions."""
+
+        final_decision = HookDecision()
+        for hook in self._hooks:
+            handler = getattr(hook, method_name, None)
+            if handler is None:
+                continue
+            try:
+                decision = handler(context)
+            except Exception as exc:  # pragma: no cover - exact hook errors vary
+                self.failures.append(
+                    (placement_name, f"{type(exc).__name__}: {exc}")
+                )
+                continue
+            if decision is None:
+                continue
+            if not isinstance(decision, HookDecision):
+                decision = HookDecision(
+                    allowed=bool(getattr(decision, "allowed", True)),
+                    reason=str(getattr(decision, "reason", "")),
+                    public_metadata=dict(
+                        getattr(decision, "public_metadata", {}) or {}
+                    ),
+                )
+            if not decision.allowed:
+                return decision
+            if decision.reason or decision.public_metadata:
+                final_decision = decision
+        return final_decision
+
+    def _notify_placement(
+        self,
+        placement_name: str,
+        method_name: str,
+        context: object,
+    ) -> None:
+        """Call notification placement hooks and isolate failures."""
+
+        for hook in self._hooks:
+            handler = getattr(hook, method_name, None)
+            if handler is None:
+                continue
+            try:
+                handler(context)
+            except Exception as exc:  # pragma: no cover - exact hook errors vary
+                self.failures.append(
+                    (placement_name, f"{type(exc).__name__}: {exc}")
+                )
 
 
 class JsonlTraceHook:

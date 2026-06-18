@@ -5,6 +5,12 @@ from datetime import date
 import json
 
 from klara.context.web_evidence import WebEvidenceGuard
+from klara.core.hooks import (
+    HookDecision,
+    HookManager,
+    PostToolUseContext,
+    PreToolUseContext,
+)
 from klara.core.loop import KlaraLoop
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
@@ -165,6 +171,84 @@ class ScriptedLlm:
         return self.responses.pop(0)
 
 
+class EventRecorder:
+    """Hook that records public lifecycle events."""
+
+    def __init__(self) -> None:
+        """Create empty event storage."""
+
+        self.event_types: list[str] = []
+
+    def on_event(self, event: object) -> None:
+        """Record one public event type."""
+
+        self.event_types.append(str(getattr(event, "type")))
+
+
+class BlockingPreToolHook:
+    """Hook that blocks one tool before execution."""
+
+    def __init__(self, reason: str = "blocked for test") -> None:
+        """Store the public block reason."""
+
+        self.reason = reason
+        self.contexts: list[PreToolUseContext] = []
+
+    def on_event(self, event: object) -> None:
+        """Observer method is not needed for this test hook."""
+
+    def on_pre_tool_use(self, context: PreToolUseContext) -> HookDecision:
+        """Block every requested tool."""
+
+        self.contexts.append(context)
+        return HookDecision(allowed=False, reason=self.reason)
+
+
+class PostToolRecordingHook:
+    """Hook that records post-tool contexts."""
+
+    def __init__(self) -> None:
+        """Create empty context storage."""
+
+        self.contexts: list[PostToolUseContext] = []
+
+    def on_event(self, event: object) -> None:
+        """Observer method is not needed for this test hook."""
+
+    def on_post_tool_use(self, context: PostToolUseContext) -> None:
+        """Record the post-tool observation."""
+
+        self.contexts.append(context)
+
+
+class BrokenPreToolHook:
+    """Hook whose pre-tool placement fails."""
+
+    def on_event(self, event: object) -> None:
+        """Observer method is not needed for this test hook."""
+
+    def on_pre_tool_use(self, context: PreToolUseContext) -> HookDecision:
+        """Raise so HookManager can prove safe default allow."""
+
+        raise RuntimeError("pre broke")
+
+
+class SpyToolExecutor(ToolExecutor):
+    """Tool executor that counts actual single-call executions."""
+
+    def __init__(self, tools: list[BaseTool] | None = None) -> None:
+        """Create a spy executor with an execution counter."""
+
+        super().__init__(tools)
+        self.execute_calls = 0
+
+    def execute(self, call: ToolCall) -> ToolResult:
+        """Count concrete executions before delegating."""
+
+        self.execute_calls += 1
+        return super().execute(call)
+
+
 def test_no_tool_run_returns_final_answer() -> None:
     llm = ScriptedLlm([ModelResponse(content="Hello from Klara.")])
     loop = KlaraLoop(llm=llm, tool_executor=ToolExecutor())
@@ -227,6 +311,139 @@ def test_one_tool_run_feeds_observation_back_to_llm() -> None:
     ]
     assert llm.calls[1][0][-1].role == "tool"
     assert llm.calls[1][0][-1].content == "observed"
+
+
+def test_pre_tool_use_defaults_to_allow() -> None:
+    recorder = EventRecorder()
+    hooks = HookManager([recorder])
+    tool_call = ToolCall(
+        id="call-allow",
+        name="test_echo",
+        arguments={"text": "allowed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="I saw allowed."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=hooks,
+    )
+
+    result = loop.run("use a tool", run_id="run-pre-allow")
+
+    assert result.final_answer == "I saw allowed."
+    assert "pre_tool_use.started" in recorder.event_types
+    assert "pre_tool_use.completed" in recorder.event_types
+    assert result.messages[2].content == "allowed"
+
+
+def test_pre_tool_use_can_block_tool_with_model_visible_observation() -> None:
+    tool_call = ToolCall(
+        id="call-blocked",
+        name="test_echo",
+        arguments={"text": "should not run"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="I saw the block."),
+        ]
+    )
+    hook = BlockingPreToolHook(reason="test policy")
+    executor = SpyToolExecutor([EchoFixtureTool()])
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=executor,
+        hooks=HookManager([hook]),
+    )
+
+    result = loop.run("use a blocked tool", run_id="run-pre-block")
+
+    assert executor.execute_calls == 0
+    assert result.messages[2].role == "tool"
+    assert result.messages[2].content == "Tool blocked by hook: test policy"
+    assert llm.calls[1][0][-1].content == "Tool blocked by hook: test policy"
+    assert hook.contexts[0].tool_call.id == "call-blocked"
+
+
+def test_blocked_tool_emits_failed_terminal_without_started_event() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-blocked",
+        name="test_echo",
+        arguments={"text": "should not run"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="blocked"),
+        ]
+    )
+    hooks = HookManager([recorder, BlockingPreToolHook(reason="not allowed")])
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=hooks,
+    )
+
+    loop.run("use a blocked tool", run_id="run-pre-block-events")
+
+    assert "tool.started" not in recorder.event_types
+    assert recorder.event_types.count("tool.failed") == 1
+
+
+def test_post_tool_use_receives_result_after_execution() -> None:
+    hook = PostToolRecordingHook()
+    tool_call = ToolCall(
+        id="call-post",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="done"),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([hook]),
+    )
+
+    loop.run("use a tool", run_id="run-post-hook")
+
+    assert len(hook.contexts) == 1
+    assert hook.contexts[0].tool_call.id == "call-post"
+    assert hook.contexts[0].tool_result.content == "observed"
+
+
+def test_pre_tool_use_failure_records_failure_and_defaults_to_allow() -> None:
+    tool_call = ToolCall(
+        id="call-pre-failure",
+        name="test_echo",
+        arguments={"text": "still runs"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="done"),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([BrokenPreToolHook()]),
+    )
+
+    result = loop.run("use a tool", run_id="run-pre-failure")
+
+    assert result.messages[2].content == "still runs"
+    assert ("pre_tool_use", "RuntimeError: pre broke") in result.hook_failures
 
 
 def test_loop_stops_at_max_turns_when_model_keeps_requesting_tools() -> None:

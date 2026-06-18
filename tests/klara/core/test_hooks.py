@@ -3,7 +3,13 @@ from __future__ import annotations
 import json
 
 from klara.core.events import EventKind, KlaraEvent
-from klara.core.hooks import HookManager, JsonlTraceHook
+from klara.core.hooks import (
+    HookDecision,
+    HookManager,
+    JsonlTraceHook,
+    StopContext,
+    UserPromptSubmitContext,
+)
 from klara.core.loop import KlaraLoop
 from klara.core.messages import ModelResponse
 from klara.tools.executor import ToolExecutor
@@ -39,6 +45,44 @@ class RecordingHook:
         """Remember one emitted event."""
 
         self.events.append(event)
+
+
+class UserPromptHook:
+    """Hook that records user prompt placement calls."""
+
+    def __init__(self) -> None:
+        """Create empty context storage."""
+
+        self.contexts: list[UserPromptSubmitContext] = []
+
+    def on_event(self, event: KlaraEvent) -> None:
+        """Observer method is optional for placement behavior."""
+
+    def on_user_prompt_submit(
+        self,
+        context: UserPromptSubmitContext,
+    ) -> HookDecision:
+        """Record the submitted prompt and allow the run."""
+
+        self.contexts.append(context)
+        return HookDecision(public_metadata={"placement": "submit"})
+
+
+class StopRecordingHook(RecordingHook):
+    """Hook that records where the stop placement runs."""
+
+    def __init__(self) -> None:
+        """Create event and stop context storage."""
+
+        super().__init__()
+        self.stop_contexts: list[StopContext] = []
+        self.stop_marker: int | None = None
+
+    def on_stop(self, context: StopContext) -> None:
+        """Record stop context after stop.started and before stop.completed."""
+
+        self.stop_contexts.append(context)
+        self.stop_marker = len(self.events)
 
 
 def test_hook_failure_does_not_crash_run() -> None:
@@ -90,10 +134,14 @@ def test_jsonl_trace_hook_writes_public_events(tmp_path) -> None:
     event_types = [event["type"] for event in events]
     assert event_types == [
         "run.started",
+        "user_prompt_submit.started",
+        "user_prompt_submit.completed",
         "turn.started",
         "llm.started",
         "llm.completed",
         "turn.completed",
+        "stop.started",
+        "stop.completed",
         "run.completed",
     ]
     assert all(event["schema_version"] == 1 for event in events)
@@ -134,3 +182,30 @@ def test_public_event_does_not_include_private_payload_content() -> None:
     assert public["payload"] == {"model": "fake-model"}
     assert public["private_payload_ref"] == "private://run-public-boundary/1"
     assert "raw hidden scratchpad" not in serialized
+
+
+def test_user_prompt_submit_placement_is_called() -> None:
+    hook = UserPromptHook()
+    hooks = HookManager([hook])
+    loop = KlaraLoop(llm=FinalLlm(), tool_executor=ToolExecutor(), hooks=hooks)
+
+    loop.run("hi from user", run_id="run-user-submit")
+
+    assert len(hook.contexts) == 1
+    assert hook.contexts[0].run_id == "run-user-submit"
+    assert hook.contexts[0].user_input == "hi from user"
+
+
+def test_stop_hook_is_called_before_run_completed() -> None:
+    hook = StopRecordingHook()
+    hooks = HookManager([hook])
+    loop = KlaraLoop(llm=FinalLlm(), tool_executor=ToolExecutor(), hooks=hooks)
+
+    loop.run("hi", run_id="run-stop")
+
+    event_types = [event.type for event in hook.events]
+    assert hook.stop_contexts[0].stop_reason == "final"
+    assert hook.stop_marker is not None
+    assert event_types[hook.stop_marker - 1] == "stop.started"
+    assert event_types[hook.stop_marker] == "stop.completed"
+    assert event_types.index("stop.completed") < event_types.index("run.completed")

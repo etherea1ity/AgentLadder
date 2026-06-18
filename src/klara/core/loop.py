@@ -8,10 +8,16 @@ from typing import Protocol
 from uuid import uuid4
 
 from klara.core.events import EventKind, EventSequencer, KlaraEvent
-from klara.core.hooks import HookManager
+from klara.core.hooks import (
+    HookManager,
+    PostToolUseContext,
+    PreToolUseContext,
+    StopContext,
+    UserPromptSubmitContext,
+)
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
-from klara.core.tools import ToolCall, ToolRunner, ToolSpec
+from klara.core.tools import ToolCall, ToolResult, ToolRunner, ToolSpec
 
 
 class LlmClient(Protocol):
@@ -146,6 +152,21 @@ class KlaraLoop:
         tool_call_count = 0
         tool_call_signatures: dict[str, int] = {}
         self._emit(sequencer, active_run_id, EventKind.RUN_STARTED, {"model": self.model})
+        self._emit(
+            sequencer,
+            active_run_id,
+            EventKind.USER_PROMPT_SUBMIT_STARTED,
+            {"input_length": len(user_input)},
+        )
+        user_prompt_decision = self.hooks.user_prompt_submit(
+            UserPromptSubmitContext(run_id=active_run_id, user_input=user_input)
+        )
+        self._emit(
+            sequencer,
+            active_run_id,
+            EventKind.USER_PROMPT_SUBMIT_COMPLETED,
+            _decision_payload(user_prompt_decision),
+        )
 
         try:
             # Iterate through bounded turns so a model cannot request tools forever.
@@ -296,17 +317,13 @@ class KlaraLoop:
                         policy_context=policy_context,
                     )
 
-                # Execute every requested tool before preparing the next model turn.
-                for call in response.tool_calls:
-                    self._emit(
-                        sequencer,
-                        active_run_id,
-                        EventKind.TOOL_STARTED,
-                        {"turn_index": turn_index, "tool_call": call.to_public_dict()},
-                    )
-
                 # Tool results become model-visible observations in request order.
-                tool_results = self.tool_executor.execute_many(response.tool_calls)
+                tool_results = self._execute_tool_calls(
+                    sequencer,
+                    active_run_id,
+                    turn_index,
+                    response.tool_calls,
+                )
                 tool_call_count += len(response.tool_calls)
                 for call in response.tool_calls:
                     signature = _tool_call_signature(call)
@@ -314,15 +331,6 @@ class KlaraLoop:
                         tool_call_signatures.get(signature, 0) + 1
                     )
                 for result in tool_results:
-                    self._emit(
-                        sequencer,
-                        active_run_id,
-                        EventKind.TOOL_COMPLETED,
-                        {
-                            "turn_index": turn_index,
-                            "tool_result": result.to_public_dict(),
-                        },
-                    )
                     messages.append(
                         KlaraMessage(
                             role="tool",
@@ -574,6 +582,145 @@ class KlaraLoop:
                 )
         return None
 
+    def _execute_tool_calls(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        turn_index: int,
+        tool_calls: tuple[ToolCall, ...],
+    ) -> tuple[ToolResult, ...]:
+        """Run pre/post tool placements while preserving request-order results."""
+
+        allowed_calls: list[ToolCall] = []
+        blocked_results: dict[str, ToolResult] = {}
+        for call in tool_calls:
+            self._emit(
+                sequencer,
+                run_id,
+                EventKind.PRE_TOOL_USE_STARTED,
+                {"turn_index": turn_index, "tool_call": call.to_public_dict()},
+            )
+            decision = self.hooks.pre_tool_use(
+                PreToolUseContext(
+                    run_id=run_id,
+                    turn_index=turn_index,
+                    tool_call=call,
+                )
+            )
+            completed_payload = {
+                "turn_index": turn_index,
+                "tool_call": call.to_public_dict(),
+                **_decision_payload(decision),
+            }
+            self._emit(
+                sequencer,
+                run_id,
+                EventKind.PRE_TOOL_USE_COMPLETED,
+                completed_payload,
+            )
+            if decision.allowed:
+                allowed_calls.append(call)
+                continue
+            blocked_result = _blocked_tool_result(call, decision.reason)
+            blocked_results[call.id] = blocked_result
+            self._emit_tool_terminal(
+                sequencer,
+                run_id,
+                turn_index,
+                blocked_result,
+                EventKind.TOOL_FAILED,
+                blocked=True,
+            )
+
+        for call in allowed_calls:
+            self._emit(
+                sequencer,
+                run_id,
+                EventKind.TOOL_STARTED,
+                {"turn_index": turn_index, "tool_call": call.to_public_dict()},
+            )
+
+        executed_results = self.tool_executor.execute_many(tuple(allowed_calls))
+        executed_by_id: dict[str, ToolResult] = {}
+        allowed_by_id = {call.id: call for call in allowed_calls}
+        for result in executed_results:
+            terminal_kind = (
+                EventKind.TOOL_COMPLETED if result.ok else EventKind.TOOL_FAILED
+            )
+            self._emit_tool_terminal(
+                sequencer,
+                run_id,
+                turn_index,
+                result,
+                terminal_kind,
+                blocked=False,
+            )
+            call = allowed_by_id.get(result.tool_call_id)
+            if call is not None:
+                self._emit_post_tool_use(
+                    sequencer,
+                    run_id,
+                    turn_index,
+                    call,
+                    result,
+                )
+            executed_by_id[result.tool_call_id] = result
+
+        ordered_results: list[ToolResult] = []
+        for call in tool_calls:
+            result = blocked_results.get(call.id) or executed_by_id[call.id]
+            ordered_results.append(result)
+        return tuple(ordered_results)
+
+    def _emit_tool_terminal(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        turn_index: int,
+        result: ToolResult,
+        event_type: EventKind,
+        *,
+        blocked: bool,
+    ) -> None:
+        """Emit a tool terminal event with the public result payload."""
+
+        self._emit(
+            sequencer,
+            run_id,
+            event_type,
+            {
+                "turn_index": turn_index,
+                "tool_result": result.to_public_dict(),
+                "blocked": blocked,
+            },
+        )
+
+    def _emit_post_tool_use(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        turn_index: int,
+        call: ToolCall,
+        result: ToolResult,
+    ) -> None:
+        """Emit and run post-tool placement hooks."""
+
+        payload = {
+            "turn_index": turn_index,
+            "tool_call": call.to_public_dict(),
+            "tool_result": result.to_public_dict(),
+        }
+        self._emit(sequencer, run_id, EventKind.POST_TOOL_USE_STARTED, payload)
+        self.hooks.post_tool_use(
+            PostToolUseContext(
+                run_id=run_id,
+                turn_index=turn_index,
+                tool_call=call,
+                tool_result=result,
+            )
+        )
+        self._emit(sequencer, run_id, EventKind.POST_TOOL_USE_COMPLETED, payload)
+
     def _complete(
         self,
         sequencer: EventSequencer,
@@ -584,6 +731,19 @@ class KlaraLoop:
     ) -> KlaraRunResult:
         """Emit completion and build the final run result."""
 
+        self._emit(
+            sequencer,
+            run_id,
+            EventKind.STOP_STARTED,
+            {"stop_reason": stop_reason.value},
+        )
+        self.hooks.stop(StopContext(run_id=run_id, stop_reason=stop_reason.value))
+        self._emit(
+            sequencer,
+            run_id,
+            EventKind.STOP_COMPLETED,
+            {"stop_reason": stop_reason.value},
+        )
         self._emit(
             sequencer,
             run_id,
@@ -628,6 +788,34 @@ def _tool_call_signature(call: ToolCall) -> str:
         default=str,
     )
     return f"{call.name}:{arguments}"
+
+
+def _blocked_tool_result(call: ToolCall, reason: str) -> ToolResult:
+    """Return a model-visible observation for a hook-blocked tool."""
+
+    public_reason = reason.strip() or "blocked"
+    return ToolResult(
+        tool_call_id=call.id,
+        name=call.name,
+        content="",
+        ok=False,
+        error=f"Tool blocked by hook: {public_reason}",
+    )
+
+
+def _decision_payload(decision: object) -> dict[str, object]:
+    """Serialize a hook decision for public lifecycle events."""
+
+    payload: dict[str, object] = {
+        "allowed": bool(getattr(decision, "allowed", True)),
+    }
+    reason = str(getattr(decision, "reason", "") or "")
+    public_metadata = dict(getattr(decision, "public_metadata", {}) or {})
+    if reason:
+        payload["reason"] = reason
+    if public_metadata:
+        payload["metadata"] = public_metadata
+    return payload
 
 
 def _empty_final_answer_for_stop(stop_reason: StopReason) -> str:
