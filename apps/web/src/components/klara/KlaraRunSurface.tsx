@@ -36,6 +36,13 @@ export function KlaraRunSurface({ run }: { run?: Run }) {
           (event.event_type === "run_completed" && event.payload?.trace_saved === true),
       ),
   );
+  const traceLabel = traceSaved
+    ? "Trace saved"
+    : active
+      ? "Tracing"
+      : visibleEvents.length
+        ? "Events loaded"
+        : "Trace unavailable";
 
   if (!run) return null;
 
@@ -51,7 +58,7 @@ export function KlaraRunSurface({ run }: { run?: Run }) {
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         <span>{title}</span>
-        <small>{traceSaved ? "Trace saved" : active ? "Tracing" : "Trace unavailable"}</small>
+        <small>{traceLabel}</small>
       </button>
       {expanded ? (
         <div className="klara-run-surface-body">

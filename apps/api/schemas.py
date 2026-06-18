@@ -107,6 +107,7 @@ class SessionDetailResponse(BaseModel):
     session: SessionRecord
     messages: list[MessageRecord]
     runs: list[RunRecord]
+    events: list[RunEventRecord] = Field(default_factory=list)
 
 
 class RenameSessionRequest(BaseModel):

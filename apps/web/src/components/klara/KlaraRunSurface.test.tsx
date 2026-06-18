@@ -111,6 +111,22 @@ describe("KlaraRunSurface", () => {
     expect(screen.getByText("Klara is preparing the observable run.")).toBeInTheDocument();
   });
 
+  it("does not label persisted public events as unavailable", () => {
+    render(
+      <KlaraRunSurface
+        run={{
+          ...baseRun,
+          status: "completed",
+          trace_saved: false,
+          events: [evt("run_completed", { trace_saved: false })],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Events loaded")).toBeInTheDocument();
+    expect(screen.queryByText("Trace unavailable")).not.toBeInTheDocument();
+  });
+
   it("collapses completed runs by default", () => {
     render(
       <KlaraRunSurface

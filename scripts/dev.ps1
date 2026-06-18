@@ -164,11 +164,26 @@ Assert-Command "python"
 Assert-Command "npm"
 
 $requestedApiPort = $ApiPort
+$pidInfoBefore = Read-PidInfo $PidFile
 
 if ($Restart) {
-    $apiStopped = Stop-Listener $ApiPort "restart requested" -Required
+    $restartApiPorts = @($ApiPort)
+    if ($pidInfoBefore -and $pidInfoBefore.api_port) {
+        $recordedApiPort = [int]$pidInfoBefore.api_port
+        if ($restartApiPorts -notcontains $recordedApiPort) {
+            $restartApiPorts += $recordedApiPort
+        }
+    }
+
+    $requestedApiStopped = $true
+    foreach ($port in $restartApiPorts) {
+        $stopped = Stop-Listener $port "restart requested" -Required
+        if ($port -eq $ApiPort -and -not $stopped) {
+            $requestedApiStopped = $false
+        }
+    }
     Stop-Listener $WebPort "restart requested" | Out-Null
-    if (-not $apiStopped) {
+    if (-not $requestedApiStopped) {
         $fallbackPort = Find-UsableApiPort ($ApiPort + 1)
         Write-Warning "Could not stop the listener on API port $ApiPort. Using http://127.0.0.1:$fallbackPort instead."
         $ApiPort = $fallbackPort
@@ -223,7 +238,6 @@ $apiReadyBeforeWeb = Wait-ForHttp "http://127.0.0.1:$ApiPort/api/health" 40
 $webProcess = $null
 $webListener = Get-Listener $WebPort
 if ($webListener) {
-    $pidInfoBefore = Read-PidInfo $PidFile
     $webMatchesApiPort = $pidInfoBefore -and ([int]$pidInfoBefore.api_port -eq $ApiPort)
     $webApiBridgeReady = Test-Http "http://127.0.0.1:$WebPort/api/health"
     if ($apiReadyBeforeWeb -and ((-not $webApiBridgeReady) -or (-not $webMatchesApiPort))) {

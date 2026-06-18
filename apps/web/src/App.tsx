@@ -186,8 +186,12 @@ export default function App() {
       }));
       setRuns((prev) => {
         const next = { ...prev };
+        const eventsByRunId = groupEventsByRunId(detail.events ?? []);
         detail.runs.forEach((run) => {
-          const merged = { ...run, events: prev[run.run_id]?.events ?? [] };
+          const merged = {
+            ...run,
+            events: eventsByRunId[run.run_id] ?? prev[run.run_id]?.events ?? [],
+          };
           next[run.run_id] = normalizeReconciledRun(run.run_id, merged);
         });
         return next;
@@ -456,8 +460,12 @@ export default function App() {
       }));
       setRuns((prev) => {
         const next = { ...prev };
+        const eventsByRunId = groupEventsByRunId(detail.events ?? []);
         detail.runs.forEach((run) => {
-          const merged = { ...run, events: prev[run.run_id]?.events ?? [] };
+          const merged = {
+            ...run,
+            events: eventsByRunId[run.run_id] ?? prev[run.run_id]?.events ?? [],
+          };
           next[run.run_id] = normalizeReconciledRun(run.run_id, merged);
         });
         return next;
@@ -951,6 +959,12 @@ function upsertSession(items: Session[], session: Session) {
         item.session_id === session.session_id ? session : item,
       )
     : [session, ...items];
+}
+function groupEventsByRunId(events: RunEvent[]) {
+  return events.reduce<Record<string, RunEvent[]>>((groups, event) => {
+    (groups[event.run_id] ??= []).push(event);
+    return groups;
+  }, {});
 }
 function remapDraftSession(
   messages: Record<string, Message>,

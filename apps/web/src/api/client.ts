@@ -2,7 +2,7 @@ import type { Message, ModelOption, Run, RunEvent, Session } from '../types/doma
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
-type SessionDetail = { session: Session; messages: Message[]; runs: Omit<Run, 'events'>[] };
+type SessionDetail = { session: Session; messages: Message[]; runs: Omit<Run, 'events'>[]; events?: RunEvent[] };
 type CreateRunResponse = { run_id: string; session_id: string; user_message_id: string; assistant_message_id: string; status: Run['status']; events_url: string };
 type RunDetail = { run: Omit<Run, 'events'>; events: RunEvent[]; trace: Record<string, unknown> | null };
 export type RunEventSubscription = { runId: string; close: () => void };

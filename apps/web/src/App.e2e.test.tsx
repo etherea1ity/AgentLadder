@@ -96,8 +96,26 @@ describe("Klara app flow", () => {
                 ...runResponse,
                 status: "completed",
                 latency_ms: 1200,
-                trace_saved: false,
+                trace_saved: true,
               },
+            ],
+            events: [
+              evt("tool_call_started", "Klara is using current_time.", {
+                tool_call: { id: "call_1", name: "current_time" },
+              }),
+              evt("tool_call_completed", "current_time returned.", {
+                tool_result: {
+                  tool_call_id: "call_1",
+                  name: "current_time",
+                  ok: true,
+                  content_preview: "Asia/Shanghai 22:00",
+                  content_length: 20,
+                },
+              }),
+              evt("run_completed", "Run completed.", {
+                latency_ms: 1200,
+                trace_saved: true,
+              }),
             ],
           });
         return json({});
@@ -120,6 +138,8 @@ describe("Klara app flow", () => {
     expect(
       await screen.findByText("Klara completed the runtime loop."),
     ).toBeInTheDocument();
+    expect(await screen.findByText(/Run trace.*3 events.*1 tool/)).toBeInTheDocument();
+    expect(screen.getByText("Trace saved")).toBeInTheDocument();
   });
 
   it("streams a runtime loop answer without a right-side trace panel", async () => {
