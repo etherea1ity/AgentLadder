@@ -20,7 +20,7 @@
 | assistant 没有 `tool_calls` | 返回最终答案，停止 |
 | 工具不存在、参数错误、执行失败 | 返回 failed observation，让下一轮模型看到错误 |
 | 工具返回太长 | 按 metadata 截断后再进入上下文 |
-| 达到 `max_turns` | 按 `LoopPolicy` 停止，避免无限工具循环 |
+| 达到 `max_turns` | 不再暴露工具，最后做一次无工具 LLM 总结，然后按 `LoopPolicy` 停止 |
 
 ## 快速体验
 
@@ -230,7 +230,7 @@ next model turn:
 - `messages` 先追加 assistant 请求。
 - 如果没有工具请求，run 用 `StopReason.FINAL` 完成。
 - 如果有工具请求，`messages` 继续追加 tool observations。
-- `LoopPolicy.max_turns = 12` 防止模型无限请求工具。
+- `LoopPolicy.max_turns = 12` 防止模型无限请求工具；耗尽后会做一次无工具总结。
 
 架构边界：`core.loop` 只依赖 `ToolRunner` 协议，不导入 `klara.tools` 里的具体实现。
 
@@ -758,7 +758,7 @@ return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
 
 注意这里有两个不同的 12：
 
-- `LoopPolicy.max_turns = 12`：一个 run 最多 12 个模型 turn，防止无限工具循环。
+- `LoopPolicy.max_turns = 12`：一个 run 最多 12 个工具循环 turn，耗尽后追加一次无工具总结。
 - `MAX_HISTORY_MESSAGES = 12`：下一次 run 最多注入当前 session 最近 12 条 completed user/assistant 消息。
 
 状态变化：

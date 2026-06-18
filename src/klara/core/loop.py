@@ -47,7 +47,7 @@ class KlaraRunResult:
     run_id: str
     # Messages preserve the final model-visible transcript for tests and replay.
     messages: tuple[KlaraMessage, ...]
-    # Final answer is the user-facing assistant text or last observation at max turns.
+    # Final answer is the user-facing assistant text produced by the model.
     final_answer: str
     # Stop reason makes loop termination explicit and testable.
     stop_reason: StopReason
@@ -202,14 +202,8 @@ class KlaraLoop:
                 )
                 self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
 
-            # At max turns, expose the last visible content and explicit stop reason.
-            final_answer = messages[-1].content if messages else ""
-            return self._complete(
-                active_run_id,
-                messages,
-                final_answer,
-                StopReason.MAX_TURNS,
-            )
+            # At max turns, stop exposing tools and ask for one final answer.
+            return self._finalize_after_max_turns(active_run_id, messages)
         except Exception as exc:
             # Unexpected failures are traced, then re-raised for caller visibility.
             self._emit(
@@ -230,6 +224,40 @@ class KlaraLoop:
         """
 
         return messages
+
+    def _finalize_after_max_turns(
+        self,
+        run_id: str,
+        messages: list[KlaraMessage],
+    ) -> KlaraRunResult:
+        """Ask the model for a final no-tool answer after tool turns are exhausted."""
+
+        final_turn_index = self.policy.max_turns + 1
+        self._emit(
+            run_id,
+            "llm.started",
+            {"turn_index": final_turn_index, "finalization": True},
+        )
+        response = self.llm.complete(
+            system_prompt=self.system_prompt,
+            messages=tuple(messages),
+            tools=(),
+            model=self.model,
+        )
+        ignored_tool_call_count = len(response.tool_calls)
+        self._emit(
+            run_id,
+            "llm.completed",
+            {
+                "turn_index": final_turn_index,
+                "tool_call_count": 0,
+                "ignored_tool_call_count": ignored_tool_call_count,
+                "usage": response.usage or {},
+                "finalization": True,
+            },
+        )
+        messages.append(KlaraMessage(role="assistant", content=response.content))
+        return self._complete(run_id, messages, response.content, StopReason.MAX_TURNS)
 
     def _complete(
         self,

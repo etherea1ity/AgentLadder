@@ -138,6 +138,7 @@ def test_loop_stops_at_max_turns_when_model_keeps_requesting_tools() -> None:
                     ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
                 ),
             ),
+            ModelResponse(content="I stopped after observing 2."),
         ]
     )
     loop = KlaraLoop(
@@ -149,7 +150,16 @@ def test_loop_stops_at_max_turns_when_model_keeps_requesting_tools() -> None:
     result = loop.run("loop please", run_id="run-max")
 
     assert result.stop_reason == StopReason.MAX_TURNS
-    assert result.final_answer == "2"
+    assert result.final_answer == "I stopped after observing 2."
+    assert [message.role for message in result.messages] == [
+        "user",
+        "assistant",
+        "tool",
+        "assistant",
+        "tool",
+        "assistant",
+    ]
+    assert llm.calls[-1][1] == ()
 
 
 def test_unknown_tool_returns_observation_error() -> None:

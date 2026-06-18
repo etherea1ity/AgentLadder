@@ -418,14 +418,8 @@ src/klara/core/policies.py
 If the model keeps requesting tools until the turn budget is exhausted:
 
 ```python
-# At max turns, expose the last visible content and explicit stop reason.
-final_answer = messages[-1].content if messages else ""
-return self._complete(
-    active_run_id,
-    messages,
-    final_answer,
-    StopReason.MAX_TURNS,
-)
+# At max turns, stop exposing tools and ask for one final answer.
+return self._finalize_after_max_turns(active_run_id, messages)
 ```
 
 Completion is still emitted as an event:

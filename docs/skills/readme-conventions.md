@@ -149,7 +149,7 @@ Start with a compact teaching block:
 | --- | --- |
 | 有 `tool_calls` | 执行工具，把结果放回上下文，继续下一轮 |
 | 没有 `tool_calls` | 返回最终答案，停止 |
-| 达到 `max_turns` | 按 policy 停止，并展示停止原因 |
+| 达到 `max_turns` | 不再暴露工具，最后做一次无工具 LLM 总结，并展示停止原因 |
 ````
 
 This block should appear before harness, provider, frontend, RAG, memory, or
@@ -506,7 +506,7 @@ For Chapter 1, `KlaraLoop.run()` must be explained in this order:
 6. If there are tool calls, execute each tool.
 7. Append each tool result as a model-visible observation.
 8. Prepare the next turn.
-9. Stop with `StopReason.MAX_TURNS` when policy is exhausted.
+9. When policy is exhausted, stop exposing tools, make one no-tool finalization call, then stop with `StopReason.MAX_TURNS`.
 
 ## Images
 

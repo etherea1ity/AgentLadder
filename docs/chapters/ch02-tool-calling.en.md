@@ -20,7 +20,7 @@ Tool calling means: the model produces `tool_calls`, the runtime executes tools,
 | assistant has no `tool_calls` | Return the final answer and stop |
 | tool is unknown, arguments are invalid, or execution fails | Return a failed observation visible to the next model turn |
 | tool output is too long | Truncate by metadata before it enters context |
-| `max_turns` is reached | Stop by `LoopPolicy` to avoid infinite tool loops |
+| `max_turns` is reached | Stop exposing tools, make one final no-tool LLM call, then stop by `LoopPolicy` |
 
 ## Quick Experience
 
@@ -230,7 +230,7 @@ State changes:
 - `messages` first receives the assistant request.
 - If no tool is requested, the run completes with `StopReason.FINAL`.
 - If tools are requested, `messages` receives tool observations.
-- `LoopPolicy.max_turns = 12` prevents infinite tool requests.
+- `LoopPolicy.max_turns = 12` prevents infinite tool requests; when exhausted, Klara makes one no-tool finalization call.
 
 Architecture boundary: `core.loop` depends on the `ToolRunner` protocol; it does not import concrete implementations from `klara.tools`.
 
@@ -758,7 +758,7 @@ return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
 
 There are two different 12s:
 
-- `LoopPolicy.max_turns = 12`: one run can have at most 12 model turns, preventing infinite tool loops.
+- `LoopPolicy.max_turns = 12`: one run can have at most 12 tool-loop turns, then one no-tool finalization call.
 - `MAX_HISTORY_MESSAGES = 12`: the next run receives at most the latest 12 completed user/assistant messages from the current session.
 
 State changes:

@@ -418,14 +418,8 @@ src/klara/core/policies.py
 如果模型一直请求工具，超过最大轮数时，loop 用 `max_turns` 停止：
 
 ```python
-# At max turns, expose the last visible content and explicit stop reason.
-final_answer = messages[-1].content if messages else ""
-return self._complete(
-    active_run_id,
-    messages,
-    final_answer,
-    StopReason.MAX_TURNS,
-)
+# At max turns, stop exposing tools and ask for one final answer.
+return self._finalize_after_max_turns(active_run_id, messages)
 ```
 
 完成时，loop 仍然只是发事件：
