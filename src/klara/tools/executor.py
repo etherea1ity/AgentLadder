@@ -3,8 +3,17 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
+from time import perf_counter
 
-from klara.core.tools import KlaraTool, ToolCall, ToolMetadata, ToolResult, ToolSpec
+from klara.core.tools import (
+    KlaraTool,
+    ToolCall,
+    ToolExecutionReport,
+    ToolMetadata,
+    ToolResult,
+    ToolSpec,
+)
 
 
 class ToolExecutor:
@@ -90,18 +99,34 @@ class ToolExecutor:
             Tool results in the same order as the requested calls.
         """
 
+        reports = self.execute_many_with_reports(calls)
+        return tuple(report.result for report in reports)
+
+    def execute_many_with_reports(
+        self,
+        calls: tuple[ToolCall, ...],
+    ) -> tuple[ToolExecutionReport, ...]:
+        """Execute one model-requested tool batch with per-call metrics.
+
+        Args:
+            calls: Tool calls requested by one assistant turn.
+
+        Returns:
+            Tool execution reports in the same order as the requested calls.
+        """
+
         # Consecutive parallel-safe calls can share a wave; serial calls split waves.
-        results: list[ToolResult] = []
+        reports: list[ToolExecutionReport] = []
         parallel_wave: list[ToolCall] = []
         for call in calls:
             if self._can_run_in_parallel(call):
                 parallel_wave.append(call)
                 continue
-            results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
+            reports.extend(self._execute_parallel_report_wave(tuple(parallel_wave)))
             parallel_wave = []
-            results.append(self.execute(call))
-        results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
-        return tuple(results)
+            reports.append(self._execute_with_report(call))
+        reports.extend(self._execute_parallel_report_wave(tuple(parallel_wave)))
+        return tuple(reports)
 
     def _can_run_in_parallel(self, call: ToolCall) -> bool:
         """Return whether a tool call may run beside another call."""
@@ -114,13 +139,38 @@ class ToolExecutor:
     def _execute_parallel_wave(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
         """Execute a contiguous wave of parallel-safe tool calls."""
 
+        reports = self._execute_parallel_report_wave(calls)
+        return tuple(report.result for report in reports)
+
+    def _execute_parallel_report_wave(
+        self,
+        calls: tuple[ToolCall, ...],
+    ) -> tuple[ToolExecutionReport, ...]:
+        """Execute a contiguous parallel-safe wave with per-call metrics."""
+
         if not calls:
             return ()
         if len(calls) == 1:
-            return (self.execute(calls[0]),)
+            return (self._execute_with_report(calls[0]),)
         # Thread pool keeps the sync tool interface simple while allowing I/O tools to overlap.
         with ThreadPoolExecutor(max_workers=len(calls)) as pool:
-            return tuple(pool.map(self.execute, calls))
+            return tuple(pool.map(self._execute_with_report, calls))
+
+    def _execute_with_report(self, call: ToolCall) -> ToolExecutionReport:
+        """Execute one tool call and attach timing metadata."""
+
+        started_at = _now_iso()
+        started = perf_counter()
+        result = self.execute(call)
+        duration_ms = int((perf_counter() - started) * 1000)
+        completed_at = _now_iso()
+        return ToolExecutionReport(
+            call=call,
+            result=result,
+            duration_ms=duration_ms,
+            started_at=started_at,
+            completed_at=completed_at,
+        )
 
     def _normalize_result(self, call: ToolCall, result: ToolResult) -> ToolResult:
         """Normalize a concrete result against the original model request."""
@@ -153,3 +203,9 @@ class ToolExecutor:
             ok=result.ok,
             error=error,
         )
+
+
+def _now_iso() -> str:
+    """Return an ISO timestamp for tool execution metrics."""
+
+    return datetime.now(UTC).isoformat()

@@ -303,6 +303,90 @@ def test_no_tool_run_returns_final_answer() -> None:
     assert [message.role for message in result.messages] == ["user", "assistant"]
 
 
+def test_llm_completed_event_includes_duration_ms() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [ModelResponse(content="done", usage={"input_tokens": 2, "output_tokens": 3})]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+    )
+
+    loop.run("hi", run_id="run-llm-metrics")
+
+    completed = next(
+        event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
+    )
+    metrics = getattr(completed, "payload")["metrics"]
+    usage = getattr(completed, "payload")["usage"]
+    assert isinstance(metrics["duration_ms"], int)
+    assert metrics["duration_ms"] >= 0
+    assert metrics["prompt_tokens"] == 2
+    assert metrics["completion_tokens"] == 3
+    assert metrics["total_tokens"] == 5
+    assert metrics["token_source"] == "reported"
+    assert usage["prompt_tokens"] == 2
+    assert usage["completion_tokens"] == 3
+
+
+def test_tool_terminal_event_includes_duration_ms() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-1",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="done"),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    loop.run("echo", run_id="run-tool-metrics")
+
+    completed = next(
+        event
+        for event in recorder.events
+        if str(getattr(event, "type")) == "tool.completed"
+    )
+    metrics = getattr(completed, "payload")["metrics"]
+    assert isinstance(metrics["duration_ms"], int)
+    assert metrics["duration_ms"] >= 0
+
+
+def test_run_completed_event_includes_metrics() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [ModelResponse(content="done", usage={"prompt_tokens": 4, "completion_tokens": 6})]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+    )
+
+    loop.run("hi", run_id="run-completed-metrics")
+
+    completed = next(
+        event for event in recorder.events if str(getattr(event, "type")) == "run.completed"
+    )
+    metrics = getattr(completed, "payload")["metrics"]
+    assert isinstance(metrics["duration_ms"], int)
+    assert metrics["duration_ms"] >= 0
+    assert metrics["prompt_tokens"] == 4
+    assert metrics["completion_tokens"] == 6
+    assert metrics["total_tokens"] == 10
+    assert metrics["token_source"] == "reported"
+
+
 def test_run_can_start_with_prior_conversation_messages() -> None:
     llm = ScriptedLlm([ModelResponse(content="I can continue.")])
     loop = KlaraLoop(llm=llm, tool_executor=ToolExecutor())

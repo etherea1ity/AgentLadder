@@ -47,6 +47,40 @@ def test_llm_completed_projection_updates_usage_totals() -> None:
     assert projector.usage_totals.total_tokens == 8
 
 
+def test_llm_completed_projection_includes_duration_and_usage() -> None:
+    projector = RunEventProjector()
+    event = KlaraEvent(
+        type="llm.completed",
+        run_id="run-1",
+        payload={
+            "turn_index": 1,
+            "tool_call_count": 0,
+            "usage": {
+                "prompt_tokens": 7,
+                "completion_tokens": 11,
+                "total_tokens": 18,
+            },
+            "metrics": {
+                "duration_ms": 123,
+                "prompt_tokens": 7,
+                "completion_tokens": 11,
+                "total_tokens": 18,
+                "token_source": "reported",
+            },
+        },
+    )
+
+    projected = projector.project(event)[0]
+
+    assert projected.event_type == "llm_call_completed"
+    assert projected.payload["duration_ms"] == 123
+    assert projected.payload["latency_ms"] == 123
+    assert projected.payload["prompt_tokens"] == 7
+    assert projected.payload["completion_tokens"] == 11
+    assert projected.payload["total_tokens"] == 18
+    assert projected.payload["token_source"] == "reported"
+
+
 def test_tool_events_project_to_visible_started_completed_and_failed() -> None:
     projector = RunEventProjector()
 
@@ -106,6 +140,32 @@ def test_tool_events_project_to_visible_started_completed_and_failed() -> None:
     assert failed.payload["blocked"] is True
     assert failed.payload["tool_result"]["error"] == "Tool blocked by hook: test"
     assert "content" not in failed.payload["tool_result"]
+
+
+def test_tool_completed_projection_includes_duration() -> None:
+    projector = RunEventProjector()
+    event = KlaraEvent(
+        type="tool.completed",
+        run_id="run-1",
+        payload={
+            "turn_index": 1,
+            "tool_result": {
+                "tool_call_id": "call-1",
+                "name": "current_time",
+                "content_preview": "2026-06-18",
+                "content_length": 10,
+                "ok": True,
+            },
+            "metrics": {"duration_ms": 42},
+        },
+    )
+
+    projected = projector.project(event)[0]
+
+    assert projected.event_type == "tool_call_completed"
+    assert projected.payload["duration_ms"] == 42
+    assert projected.payload["latency_ms"] == 42
+    assert projected.payload["metrics"]["duration_ms"] == 42
 
 
 def test_policy_and_hook_events_project_to_visible_runtime_events() -> None:

@@ -219,6 +219,13 @@ class RunService:
             latency_ms = int((perf_counter() - started) * 1000)
             usage_totals = projector.usage_totals
             token_source: TokenSource = "reported" if usage_totals.has_reported else "unknown"
+            completed_metrics = {
+                "latency_ms": latency_ms,
+                "prompt_tokens": usage_totals.prompt_tokens,
+                "completion_tokens": usage_totals.completion_tokens,
+                "total_tokens": usage_totals.total_tokens,
+                "token_source": token_source,
+            }
             trace_saved = self._trace_has_run_events(run_id)
             completed = current.model_copy(
                 update={
@@ -247,6 +254,7 @@ class RunService:
                     "stop_reason": result.stop_reason.value,
                     "hook_failures": result.hook_failures,
                     "trace_saved": trace_saved,
+                    "metrics": completed_metrics,
                 },
             )
         except Exception as exc:

@@ -27,11 +27,11 @@ class UsageTotals:
         self.total_tokens = 0
         self.has_reported = False
 
-    def add(self, usage: dict[str, Any]) -> None:
+    def add(self, usage: dict[str, Any], *, token_source: str | None = None) -> None:
         """Add one provider usage payload when token fields are present."""
 
         payload = _usage_payload(usage)
-        if any(value is not None for value in payload.values()):
+        if token_source == "reported" or any(value is not None for value in payload.values()):
             self.has_reported = True
         self.prompt_tokens += payload["prompt_tokens"] or 0
         self.completion_tokens += payload["completion_tokens"] or 0
@@ -73,7 +73,11 @@ class RunEventProjector:
                 if isinstance(event.payload.get("usage"), dict)
                 else {}
             )
-            self.usage_totals.add(usage)
+            metrics = _dict_payload(event.payload.get("metrics"))
+            usage_fields = _usage_payload(usage)
+            token_source = _token_source(metrics, usage_fields)
+            duration_ms = _int_or_none(metrics.get("duration_ms"))
+            self.usage_totals.add(usage, token_source=token_source)
             return (
                 ProjectedRunEvent(
                     event_type="llm_call_completed",
@@ -83,7 +87,15 @@ class RunEventProjector:
                         "tool_call_count": event.payload.get("tool_call_count"),
                         "usage": usage,
                         "finalization": bool(event.payload.get("finalization", False)),
-                        **_usage_payload(usage),
+                        **usage_fields,
+                        "duration_ms": duration_ms,
+                        "latency_ms": duration_ms,
+                        "token_source": token_source,
+                        "metrics": {
+                            **usage_fields,
+                            "duration_ms": duration_ms,
+                            "token_source": token_source,
+                        },
                     },
                 ),
             )
@@ -97,6 +109,7 @@ class RunEventProjector:
                     payload={
                         "turn_index": event.payload.get("turn_index"),
                         "tool_call": tool_call,
+                        "started_at": event.payload.get("started_at"),
                     },
                 ),
             )
@@ -104,6 +117,8 @@ class RunEventProjector:
             tool_result = _compact_tool_result(
                 _dict_payload(event.payload.get("tool_result"))
             )
+            metrics = _dict_payload(event.payload.get("metrics"))
+            duration_ms = _int_or_none(metrics.get("duration_ms"))
             name = str(tool_result.get("name") or "tool")
             failed = event.type == "tool.failed" or tool_result.get("ok") is False
             return (
@@ -120,6 +135,11 @@ class RunEventProjector:
                         "turn_index": event.payload.get("turn_index"),
                         "tool_result": tool_result,
                         "blocked": bool(event.payload.get("blocked", False)),
+                        "started_at": event.payload.get("started_at"),
+                        "completed_at": event.payload.get("completed_at"),
+                        "duration_ms": duration_ms,
+                        "latency_ms": duration_ms,
+                        "metrics": {"duration_ms": duration_ms},
                     },
                 ),
             )
@@ -198,11 +218,11 @@ def _dict_payload(value: object) -> dict[str, Any]:
 def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:
     """Normalize common OpenAI-compatible usage field names."""
 
-    prompt = _int_or_none(usage.get("prompt_tokens") or usage.get("input_tokens"))
+    prompt = _int_or_none(_first_present(usage, "prompt_tokens", "input_tokens"))
     completion = _int_or_none(
-        usage.get("completion_tokens") or usage.get("output_tokens")
+        _first_present(usage, "completion_tokens", "output_tokens")
     )
-    total = _int_or_none(usage.get("total_tokens"))
+    total = _int_or_none(_first_present(usage, "total_tokens"))
     if total is None and (prompt is not None or completion is not None):
         total = (prompt or 0) + (completion or 0)
     return {
@@ -210,6 +230,29 @@ def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:
         "completion_tokens": completion,
         "total_tokens": total,
     }
+
+
+def _token_source(
+    metrics: dict[str, Any],
+    usage_fields: dict[str, int | None],
+) -> str:
+    """Return a stable token-source label for one projected LLM call."""
+
+    source = metrics.get("token_source")
+    if source in {"reported", "estimated", "unknown"}:
+        return str(source)
+    if any(value is not None for value in usage_fields.values()):
+        return "reported"
+    return "unknown"
+
+
+def _first_present(usage: dict[str, Any], *keys: str) -> Any:
+    """Return the first present value from a usage dictionary."""
+
+    for key in keys:
+        if key in usage:
+            return usage[key]
+    return None
 
 
 def _int_or_none(value: Any) -> int | None:

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 import json
-from typing import Protocol
+from time import perf_counter
+from typing import Any, Protocol
 from uuid import uuid4
 
 from klara.core.events import EventKind, EventSequencer, KlaraEvent
@@ -18,6 +20,9 @@ from klara.core.hooks import (
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
 from klara.core.tools import ToolCall, ToolResult, ToolRunner, ToolSpec
+
+
+_TOKEN_KEYS = ("prompt_tokens", "completion_tokens", "total_tokens")
 
 
 class LlmClient(Protocol):
@@ -77,6 +82,36 @@ class KlaraRunResult:
     stop_reason: StopReason
     # Hook failures are visible without changing successful loop semantics.
     hook_failures: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+
+
+@dataclass
+class _RunMetrics:
+    """Accumulate public run-level metrics from lifecycle events."""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    has_reported_tokens: bool = False
+
+    def add_llm_metrics(self, metrics: dict[str, object]) -> None:
+        """Accumulate one LLM metrics payload."""
+
+        if metrics.get("token_source") == "reported":
+            self.has_reported_tokens = True
+        self.prompt_tokens += _int_token(metrics.get("prompt_tokens"))
+        self.completion_tokens += _int_token(metrics.get("completion_tokens"))
+        self.total_tokens += _int_token(metrics.get("total_tokens"))
+
+    def to_public_dict(self, *, duration_ms: int) -> dict[str, object]:
+        """Return run-level public metrics."""
+
+        return {
+            "duration_ms": duration_ms,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "total_tokens": self.total_tokens,
+            "token_source": "reported" if self.has_reported_tokens else "unknown",
+        }
 
 
 class KlaraLoop:
@@ -151,6 +186,8 @@ class KlaraLoop:
         ]
         tool_call_count = 0
         tool_call_signatures: dict[str, int] = {}
+        run_started = perf_counter()
+        run_metrics = _RunMetrics()
         self._emit(sequencer, active_run_id, EventKind.RUN_STARTED, {"model": self.model})
         self._emit(
             sequencer,
@@ -179,12 +216,17 @@ class KlaraLoop:
                     {"turn_index": turn_index, "model": self.model},
                 )
                 # Ask the injected model using only the prompt, transcript, and specs.
+                llm_started = perf_counter()
                 response = self.llm.complete(
                     system_prompt=self.system_prompt,
                     messages=tuple(messages),
                     tools=self.tool_executor.specs,
                     model=self.model,
                 )
+                llm_duration_ms = _duration_ms(llm_started)
+                usage = _normalize_usage(response.usage)
+                llm_metrics = _llm_metrics(llm_duration_ms, usage)
+                run_metrics.add_llm_metrics(llm_metrics)
                 self._emit(
                     sequencer,
                     active_run_id,
@@ -192,7 +234,8 @@ class KlaraLoop:
                     {
                         "turn_index": turn_index,
                         "tool_call_count": len(response.tool_calls),
-                        "usage": response.usage or {},
+                        "usage": usage,
+                        "metrics": llm_metrics,
                     },
                 )
                 # Store the assistant request before tools so replay matches transcript.
@@ -278,6 +321,8 @@ class KlaraLoop:
                             messages,
                             fallback_answer,
                             StopReason.FINAL,
+                            run_started=run_started,
+                            run_metrics=run_metrics,
                         )
                     messages.append(assistant_message)
                     # No tool calls means the assistant content is the final answer.
@@ -288,6 +333,8 @@ class KlaraLoop:
                         messages,
                         response.content,
                         StopReason.FINAL,
+                        run_started=run_started,
+                        run_metrics=run_metrics,
                     )
 
                 messages.append(assistant_message)
@@ -315,6 +362,8 @@ class KlaraLoop:
                         messages,
                         stop_reason=stop_reason,
                         policy_context=policy_context,
+                        run_started=run_started,
+                        run_metrics=run_metrics,
                     )
 
                 # Tool results become model-visible observations in request order.
@@ -357,7 +406,13 @@ class KlaraLoop:
                 self._emit(sequencer, active_run_id, EventKind.TURN_COMPLETED, {"turn_index": turn_index})
 
             # At max turns, stop exposing tools and ask for one final answer.
-            return self._finalize_after_max_turns(sequencer, active_run_id, messages)
+            return self._finalize_after_max_turns(
+                sequencer,
+                active_run_id,
+                messages,
+                run_started=run_started,
+                run_metrics=run_metrics,
+            )
         except Exception as exc:
             # Unexpected failures are traced, then re-raised for caller visibility.
             self._emit(
@@ -414,6 +469,9 @@ class KlaraLoop:
         sequencer: EventSequencer,
         run_id: str,
         messages: list[KlaraMessage],
+        *,
+        run_started: float,
+        run_metrics: _RunMetrics,
     ) -> KlaraRunResult:
         """Ask the model for a final no-tool answer after tool turns are exhausted."""
 
@@ -426,6 +484,8 @@ class KlaraLoop:
                 "reason": "The tool turn limit has been reached.",
                 "max_turns": self.policy.max_turns,
             },
+            run_started=run_started,
+            run_metrics=run_metrics,
         )
 
     def _finalize_without_tools(
@@ -436,6 +496,8 @@ class KlaraLoop:
         *,
         stop_reason: StopReason,
         policy_context: dict[str, object],
+        run_started: float,
+        run_metrics: _RunMetrics,
     ) -> KlaraRunResult:
         """Ask the model for a final no-tool answer after a policy stop."""
 
@@ -469,12 +531,17 @@ class KlaraLoop:
                 "model": self.model,
             },
         )
+        llm_started = perf_counter()
         response = self.llm.complete(
             system_prompt=finalization_prompt,
             messages=tuple(messages),
             tools=(),
             model=self.model,
         )
+        llm_duration_ms = _duration_ms(llm_started)
+        usage = _normalize_usage(response.usage)
+        llm_metrics = _llm_metrics(llm_duration_ms, usage)
+        run_metrics.add_llm_metrics(llm_metrics)
         ignored_tool_call_count = len(response.tool_calls)
         self._emit(
             sequencer,
@@ -486,7 +553,8 @@ class KlaraLoop:
                 "ignored_tool_call_count": ignored_tool_call_count,
                 "stop_reason": stop_reason.value,
                 "policy_context": policy_context,
-                "usage": response.usage or {},
+                "usage": usage,
+                "metrics": llm_metrics,
                 "finalization": True,
             },
         )
@@ -516,12 +584,17 @@ class KlaraLoop:
                     "retry_after_ignored_tools": True,
                 },
             )
+            llm_started = perf_counter()
             response = self.llm.complete(
                 system_prompt=finalization_prompt,
                 messages=tuple(messages),
                 tools=(),
                 model=self.model,
             )
+            llm_duration_ms = _duration_ms(llm_started)
+            usage = _normalize_usage(response.usage)
+            llm_metrics = _llm_metrics(llm_duration_ms, usage)
+            run_metrics.add_llm_metrics(llm_metrics)
             ignored_tool_call_count = len(response.tool_calls)
             self._emit(
                 sequencer,
@@ -533,7 +606,8 @@ class KlaraLoop:
                     "ignored_tool_call_count": ignored_tool_call_count,
                     "stop_reason": stop_reason.value,
                     "policy_context": policy_context,
-                    "usage": response.usage or {},
+                    "usage": usage,
+                    "metrics": llm_metrics,
                     "finalization": True,
                     "retry_after_ignored_tools": True,
                 },
@@ -542,7 +616,15 @@ class KlaraLoop:
         if not final_answer:
             final_answer = _empty_final_answer_for_stop(stop_reason)
         messages.append(KlaraMessage(role="assistant", content=final_answer))
-        return self._complete(sequencer, run_id, messages, final_answer, stop_reason)
+        return self._complete(
+            sequencer,
+            run_id,
+            messages,
+            final_answer,
+            stop_reason,
+            run_started=run_started,
+            run_metrics=run_metrics,
+        )
 
     def _tool_policy_stop(
         self,
@@ -623,6 +705,7 @@ class KlaraLoop:
                 continue
             blocked_result = _blocked_tool_result(call, decision.reason)
             blocked_results[call.id] = blocked_result
+            blocked_at = _now_iso()
             self._emit_tool_terminal(
                 sequencer,
                 run_id,
@@ -630,6 +713,9 @@ class KlaraLoop:
                 blocked_result,
                 EventKind.TOOL_FAILED,
                 blocked=True,
+                duration_ms=0,
+                started_at=blocked_at,
+                completed_at=blocked_at,
             )
 
         for call in allowed_calls:
@@ -637,13 +723,20 @@ class KlaraLoop:
                 sequencer,
                 run_id,
                 EventKind.TOOL_STARTED,
-                {"turn_index": turn_index, "tool_call": call.to_public_dict()},
+                {
+                    "turn_index": turn_index,
+                    "tool_call": call.to_public_dict(),
+                    "started_at": _now_iso(),
+                },
             )
 
-        executed_results = self.tool_executor.execute_many(tuple(allowed_calls))
+        executed_reports = self.tool_executor.execute_many_with_reports(
+            tuple(allowed_calls)
+        )
         executed_by_id: dict[str, ToolResult] = {}
         allowed_by_id = {call.id: call for call in allowed_calls}
-        for result in executed_results:
+        for report in executed_reports:
+            result = report.result
             terminal_kind = (
                 EventKind.TOOL_COMPLETED if result.ok else EventKind.TOOL_FAILED
             )
@@ -654,6 +747,9 @@ class KlaraLoop:
                 result,
                 terminal_kind,
                 blocked=False,
+                duration_ms=report.duration_ms,
+                started_at=report.started_at,
+                completed_at=report.completed_at,
             )
             call = allowed_by_id.get(result.tool_call_id)
             if call is not None:
@@ -681,6 +777,9 @@ class KlaraLoop:
         event_type: EventKind,
         *,
         blocked: bool,
+        duration_ms: int,
+        started_at: str,
+        completed_at: str,
     ) -> None:
         """Emit a tool terminal event with the public result payload."""
 
@@ -692,6 +791,11 @@ class KlaraLoop:
                 "turn_index": turn_index,
                 "tool_result": result.to_public_dict(),
                 "blocked": blocked,
+                "started_at": started_at,
+                "completed_at": completed_at,
+                "metrics": {
+                    "duration_ms": duration_ms,
+                },
             },
         )
 
@@ -728,6 +832,9 @@ class KlaraLoop:
         messages: list[KlaraMessage],
         final_answer: str,
         stop_reason: StopReason,
+        *,
+        run_started: float,
+        run_metrics: _RunMetrics,
     ) -> KlaraRunResult:
         """Emit completion and build the final run result."""
 
@@ -748,7 +855,12 @@ class KlaraLoop:
             sequencer,
             run_id,
             EventKind.RUN_COMPLETED,
-            {"stop_reason": stop_reason.value},
+            {
+                "stop_reason": stop_reason.value,
+                "metrics": run_metrics.to_public_dict(
+                    duration_ms=_duration_ms(run_started)
+                ),
+            },
         )
         return KlaraRunResult(
             run_id=run_id,
@@ -775,6 +887,82 @@ class KlaraLoop:
                 seq=sequencer.next(),
             )
         )
+
+
+def _duration_ms(started: float) -> int:
+    """Return elapsed milliseconds from a perf_counter start value."""
+
+    return max(0, int((perf_counter() - started) * 1000))
+
+
+def _now_iso() -> str:
+    """Return an ISO timestamp for public lifecycle timing payloads."""
+
+    return datetime.now(UTC).isoformat()
+
+
+def _normalize_usage(usage: dict[str, int] | None) -> dict[str, int | None]:
+    """Normalize common provider usage field names."""
+
+    source = usage or {}
+    prompt = _int_or_none(_first_present(source, "prompt_tokens", "input_tokens"))
+    completion = _int_or_none(
+        _first_present(source, "completion_tokens", "output_tokens")
+    )
+    total = _int_or_none(_first_present(source, "total_tokens"))
+    if total is None and (prompt is not None or completion is not None):
+        total = (prompt or 0) + (completion or 0)
+    return {
+        "prompt_tokens": prompt,
+        "completion_tokens": completion,
+        "total_tokens": total,
+    }
+
+
+def _llm_metrics(
+    duration_ms: int,
+    usage: dict[str, int | None],
+) -> dict[str, object]:
+    """Return public metrics for one LLM call."""
+
+    token_source = (
+        "reported"
+        if any(usage.get(key) is not None for key in _TOKEN_KEYS)
+        else "unknown"
+    )
+    return {
+        "duration_ms": duration_ms,
+        "prompt_tokens": usage.get("prompt_tokens"),
+        "completion_tokens": usage.get("completion_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+        "token_source": token_source,
+    }
+
+
+def _first_present(source: dict[str, int], *keys: str) -> int | None:
+    """Return the first present value from a usage dictionary."""
+
+    for key in keys:
+        if key in source:
+            return source[key]
+    return None
+
+
+def _int_or_none(value: Any) -> int | None:
+    """Return an integer only for real integer token counts."""
+
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    return None
+
+
+def _int_token(value: object) -> int:
+    """Return a token count suitable for totals."""
+
+    parsed = _int_or_none(value)
+    return parsed if parsed is not None else 0
 
 
 def _tool_call_signature(call: ToolCall) -> str:

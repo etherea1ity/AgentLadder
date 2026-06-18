@@ -18,6 +18,18 @@ class FinalLlm:
         return ModelResponse(content="ok")
 
 
+class UsageLlm:
+    """Tiny LLM fixture that reports token usage."""
+
+    def complete(self, **_: object) -> ModelResponse:
+        """Return a final answer with provider usage."""
+
+        return ModelResponse(
+            content="ok",
+            usage={"input_tokens": 5, "output_tokens": 8},
+        )
+
+
 def test_conversation_history_uses_completed_messages_before_current_turn(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()
@@ -163,3 +175,39 @@ def test_run_service_projects_model_and_trace_saved(tmp_path) -> None:
     assert llm_started.payload["model"] == "test-model"
     assert completed.payload["trace_saved"] is True
     assert store.latest_trace_for_run(created.run_id, trace_path) is not None
+
+
+def test_run_completed_payload_exposes_latency_and_tokens(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=UsageLlm(),
+        default_model="test-model",
+    )
+
+    created = service.create_run(session.session_id, "hello")
+    thread = service._threads[created.run_id]
+    thread.join(timeout=5)
+
+    run = store.get_run(created.run_id)
+    completed = next(
+        event
+        for event in store.list_events(created.run_id)
+        if event.event_type == "run_completed"
+    )
+    metrics = completed.payload["metrics"]
+
+    assert run is not None
+    assert run.status == "completed"
+    assert isinstance(metrics["latency_ms"], int)
+    assert metrics["latency_ms"] >= 0
+    assert metrics["prompt_tokens"] == 5
+    assert metrics["completion_tokens"] == 8
+    assert metrics["total_tokens"] == 13
+    assert metrics["token_source"] == "reported"
+    assert completed.payload["prompt_tokens"] == 5
+    assert completed.payload["completion_tokens"] == 8
+    assert completed.payload["total_tokens"] == 13
+    assert completed.payload["token_source"] == "reported"

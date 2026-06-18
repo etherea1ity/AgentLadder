@@ -140,6 +140,17 @@ class ToolResult:
 
 
 @dataclass(frozen=True)
+class ToolExecutionReport:
+    """Execution metadata for one concrete tool call."""
+
+    call: ToolCall
+    result: ToolResult
+    duration_ms: int
+    started_at: str
+    completed_at: str
+
+
+@dataclass(frozen=True)
 class ToolSpec:
     """Model-visible description of an available tool.
 
@@ -198,5 +209,13 @@ class ToolRunner(Protocol):
 
     def execute_many(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
         """Execute one assistant tool-call batch and preserve request order."""
+
+        ...
+
+    def execute_many_with_reports(
+        self,
+        calls: tuple[ToolCall, ...],
+    ) -> tuple[ToolExecutionReport, ...]:
+        """Execute one tool-call batch and preserve per-call metrics."""
 
         ...
