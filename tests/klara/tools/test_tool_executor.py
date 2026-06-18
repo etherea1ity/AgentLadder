@@ -3,8 +3,8 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass
 
-from klara.core.tool_executor import ToolExecutor
 from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
+from klara.tools.executor import ToolExecutor
 
 
 @dataclass(frozen=True)

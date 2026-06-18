@@ -22,12 +22,12 @@ ToolExecutor
 HookManager
 LoopPolicy
 UserContext
-CapabilityRegistry
+ToolRegistry
 ```
 
 Rules:
 
-- Files use lowercase snake case: `loop.py`, `tool_executor.py`, `user_context.py`.
+- Files use lowercase snake case: `loop.py`, `executor.py`, `user_context.py`.
 - Classes use PascalCase.
 - Functions, methods, and variables use snake_case.
 - Constants use UPPER_SNAKE_CASE.
@@ -45,7 +45,6 @@ tools.py
 events.py
 hooks.py
 policies.py
-tool_executor.py
 loop.py
 ```
 
@@ -60,7 +59,7 @@ If not, put it outside core.
 Concrete model-visible tools are packages, not flat files:
 
 ```text
-src/klara/capabilities/tools/<tool_name>/
+src/klara/tools/builtin/<tool_name>/
   __init__.py
   schema.py
   tool.py
@@ -116,7 +115,9 @@ Public function docstrings should use `Args` and `Returns`; add `Raises` for mea
 - core-local modules
 - typing protocols
 
-It may not import app, capabilities concrete tools, services, memory, skills, backend, eval, or training.
+It may not import app, concrete built-in tools, services, memory, skills, backend, eval, or training.
+It may import `klara.core.tools` contracts, but it must not import the concrete
+`klara.tools` registry or built-in tool packages.
 
 ## Tests
 

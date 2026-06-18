@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from klara.capabilities.base_tool import BaseTool
 from klara.core.loop import KlaraLoop
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
-from klara.core.tool_executor import ToolExecutor
 from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
+from klara.tools.base import BaseTool
+from klara.tools.executor import ToolExecutor
 
 
 @dataclass(frozen=True)

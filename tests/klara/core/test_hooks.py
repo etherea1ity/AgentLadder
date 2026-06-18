@@ -6,7 +6,7 @@ from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop
 from klara.core.messages import ModelResponse
-from klara.core.tool_executor import ToolExecutor
+from klara.tools.executor import ToolExecutor
 
 
 class FinalLlm:

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 
-from klara.capabilities.tools.image_generate import ImageGenerateTool
 from klara.core.tools import ToolSideEffect
 from klara.infra.config.images import ImageModel, ImageProviderConfig
 from klara.services.images import GeneratedImage
+from klara.tools.builtin.image_generate import ImageGenerateTool
 
 
 def test_image_generate_tool_declares_serial_network_metadata() -> None:

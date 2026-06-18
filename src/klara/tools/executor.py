@@ -1,4 +1,4 @@
-"""Tool execution boundary for Klara core."""
+"""Tool execution boundary for Klara runs."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ class ToolExecutor:
 
     The executor is a narrow boundary: it knows concrete tools only through the
     `KlaraTool` protocol. It does not decide which tools should be visible; the
-    harness and capability registry own that choice.
+    harness and tool registry own that choice.
     """
 
     def __init__(self, tools: list[KlaraTool] | None = None) -> None:

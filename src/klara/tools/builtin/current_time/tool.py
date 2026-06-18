@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from klara.capabilities.base_tool import BaseTool
-from klara.capabilities.tools.current_time.schema import CURRENT_TIME_METADATA, CURRENT_TIME_SPEC
-from klara.capabilities.tools.current_time.timezones import format_utc_offset, resolve_timezone
+from klara.tools.base import BaseTool
+from klara.tools.builtin.current_time.schema import CURRENT_TIME_METADATA, CURRENT_TIME_SPEC
+from klara.tools.builtin.current_time.timezones import format_utc_offset, resolve_timezone
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 
 
@@ -15,7 +15,7 @@ from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 class CurrentTimeTool(BaseTool):
     """Return the current local or requested time as a model observation.
 
-    This tool is the template for real local capabilities: it has a
+    This tool is the template for real local tools: it has a
     model-visible schema, Klara-visible runtime metadata, and one narrow
     execution method. It does not know the loop, frontend, provider, or trace.
     """

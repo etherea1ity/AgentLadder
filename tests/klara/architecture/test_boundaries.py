@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 CORE = ROOT / "src" / "klara" / "core"
-TOOLS = ROOT / "src" / "klara" / "capabilities" / "tools"
+TOOLS = ROOT / "src" / "klara" / "tools" / "builtin"
 
 CORE_FILES = {
     "__init__.py",
@@ -15,14 +15,13 @@ CORE_FILES = {
     "events.py",
     "hooks.py",
     "policies.py",
-    "tool_executor.py",
     "loop.py",
 }
 
 FORBIDDEN_CORE_IMPORT_PREFIXES = (
     "klara.app",
     "klara.context",
-    "klara.capabilities",
+    "klara.tools",
     "klara.services",
     "klara.memory",
     "klara.skills",

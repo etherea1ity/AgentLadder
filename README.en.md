@@ -1,4 +1,4 @@
-# Chapter 2: Tool Calling
+﻿# Chapter 2: Tool Calling
 
 Language: [中文](./README.md) | English
 
@@ -10,18 +10,17 @@ Roadmap: [Klara Roadmap](./docs/skills/roadmap.md)
 
 ## The Chapter In One Sentence
 
-The Chapter 1 loop stays the same; this chapter turns "the model wants a tool" into a registered, executable, recoverable, observable runtime boundary.
+Tool calling means: the model produces `tool_calls`, the runtime executes tools, and observations go back into context; if the model produces no `tool_calls`, the loop stops and returns the final answer.
 
 ![Klara Chapter 2 Tool Calling](./docs/assets/ch02-tool-calling.png)
 
-| What Klara sees | What runtime does |
+| What Klara sees | What Klara does |
 | --- | --- |
-| assistant returns `tool_calls` | Do not finish yet; enter tool execution |
-| `tool_call.name` exists in the registry | Call that tool and wrap the result as `ToolResult` |
-| `tool_call.name` is missing | Return a failed observation instead of crashing |
-| tool arguments or execution fail | Return a failed observation visible to the next model turn |
-| tool succeeds | Append a `role="tool"` observation and continue |
+| assistant returns `tool_calls` | Execute tools, append `role="tool"` observations, continue |
 | assistant has no `tool_calls` | Return the final answer and stop |
+| tool is unknown, arguments are invalid, or execution fails | Return a failed observation visible to the next model turn |
+| tool output is too long | Truncate by metadata before it enters context |
+| `max_turns` is reached | Stop by `LoopPolicy` to avoid infinite tool loops |
 
 ## Quick Experience
 
@@ -37,72 +36,135 @@ Open:
 http://127.0.0.1:5123
 ```
 
-Start with the stable local tool:
+Start with a stable local tool:
 
 ```text
 Please use current_time to check the current time in Asia/Shanghai, then answer in one sentence.
 ```
 
-You should see: Klara requests `current_time`, runtime returns a time observation, and the model writes the final answer from that observation.
+You should see: Klara calls `current_time`, the runtime returns a time observation, and the model writes the final answer from that observation.
 
-Then inspect tool error recovery:
-
-```text
-Please use current_time to check the current time in Mars/Olympus.
-```
-
-You should see: the tool returns a failed observation instead of crashing the backend; the next model turn can explain that the timezone is unknown.
-
-Finally inspect read-only web tools:
+Then ask for a web evidence chain:
 
 ```text
-Please use web_search to search for python docs, then use web_fetch to open the first result and summarize it.
+Please use web_search to search for the latest World Cup report, then use web_fetch to open one result and summarize it.
 ```
 
-`web_search` finds candidates; `web_fetch` reads one URL. External page content is marked as an untrusted observation.
+You should see: `web_search` finds candidate pages; `web_fetch` reads one URL. Page content enters the next turn as an untrusted observation.
 
----
-
-## 1. What Changes In This Chapter
-
-Chapter 1 already has the loop:
+Finally try the media tool:
 
 ```text
-messages + tools -> LLM -> assistant message
-assistant has tool_calls -> runtime executes tools -> tool observation -> next LLM turn
-assistant has no tool_calls -> final answer -> stop
+Generate a warm Klara desk illustration and show the image in the answer.
 ```
 
-This chapter does not change that loop. It changes the tool execution boundary:
+You should see: Klara calls `image_generate`, the tool stores the image as a local asset, and the final answer embeds the image with Markdown beside normal text.
+
+## 1. Start From A Real Problem: Why Tools Can Still Answer Poorly
+
+This chapter is not about wrapping functions for its own sake. Start with the real problem.
+
+For similar "latest World Cup report" questions:
 
 ```text
-hardcoded placeholder branch
--> registry lookup
--> selected tool handler
--> ToolResult observation
+good run:
+llm_call_completed: tool_call_count=1
+tool_call_started: web_search
+tool_call_completed: web_search
+llm_call_completed: tool_call_count=1
+tool_call_started: web_fetch
+tool_call_completed: web_fetch
+llm_call_completed: tool_call_count=0
+
+bad follow-up:
+user asks: What about Argentina?
+llm_call_completed: tool_call_count=0
+assistant answers directly, without rebuilding a search evidence chain
 ```
 
-Klara learns: the model may request an action, but runtime owns action lookup, risk signals, error recovery, and output limits.
+So the problem is not merely "do we have web_search?" The problem is:
+
+```text
+current question
+-> are the visible tool declarations clear?
+-> is recent history clean?
+-> are tool observations trustworthy, bounded, and recoverable?
+```
+
+Klara should not patch this with keyword rules such as "if the user says World Cup, force search." That turns the runtime into fragile if/else routing. Klara instead builds clear tool boundaries:
+
+```text
+ToolSpec       -> model-visible: what can I call, and what arguments exist?
+ToolMetadata   -> runtime-visible: risk, parallelism, approval, output budget, trust
+ToolExecutor   -> execute tools and turn success/failure into observations
+History policy -> replay only recent session history and remove local image links
+```
 
 Code:
 
 ```text
 src/klara/core/loop.py
-src/klara/core/tool_executor.py
 src/klara/core/tools.py
+src/klara/tools/registry.py
+src/klara/tools/executor.py
+src/klara/context/history.py
+apps/api/services/run_service.py
+```
+
+Reader takeaway: the tool chapter is about runtime boundaries, not one search API.
+
+<details>
+<summary>Expand: how to read this incident</summary>
+
+The first World Cup question could correctly run `web_search -> web_fetch`, so the tool chain itself works. The unstable follow-up points to model-visible state:
+
+1. Tool declarations must be clear. The model only sees `ToolSpec`; vague descriptions make tool selection unreliable.
+2. Tool results are not facts by themselves. `web_search` returns candidates, and `web_fetch` returns external page text; both can be stale, low quality, or prompt-injection-shaped.
+3. History cannot be replayed forever. After image generation, old assistant messages may contain `/api/assets/local?...` links; those links do not help later search questions and waste context.
+4. Each chat window has its own history. `RunService._conversation_history(session_id, ...)` reads messages from the current session only.
+
+This chapter solves the basic boundary:
+
+```text
+how tools are declared
+how tools are registered
+how tools are executed
+how results return to the loop
+how history receives minimal cleanup and a recent-12-message bound
+```
+
+Full context compression, source grounding, memory policy, and tool-use evaluation come later.
+
+</details>
+
+## 2. The Loop Only Understands tool_calls, Not Concrete Tools
+
+Chapter 1 already has the minimal loop. Chapter 2 keeps the same decision:
+
+```text
+messages + system_prompt + tool specs
+-> LLM
+-> assistant message
+-> has tool_calls: execute tools, append observations, continue
+-> no tool_calls: return final answer, stop
+```
+
+Klara learns: a tool call is not a separate chat endpoint; it is the loop's continue signal.
+
+Code:
+
+```text
+src/klara/core/loop.py
+src/klara/core/messages.py
+src/klara/core/policies.py
 ```
 
 <details>
-<summary>Expand: why the loop does not know concrete tools</summary>
+<summary>Expand: the tool branch in KlaraLoop.run</summary>
 
-This code runs inside each turn of `KlaraLoop.run()`. Its input is not a concrete tool. Its input is the current transcript, system prompt, model id, and the `ToolSpec` list exposed by the executor.
+This code runs in every turn. Its input is the current transcript, system prompt, selected model, and visible tool specs. Its output is either a final answer or the next transcript with tool observations appended.
 
-Input and output:
-
-- Input: `messages` is the transcript so far, and `self.tool_executor.specs` is the model-visible contract for the tools available in this run.
-- Output: if the assistant has no `tool_calls`, return the final `KlaraRunResult`; if it has `tool_calls`, append tool observations and continue to the next turn.
-
-Real execution order:
+Real code:
 
 ```python
 response = self.llm.complete(
@@ -112,16 +174,20 @@ response = self.llm.complete(
     model=self.model,
 )
 
-messages.append(
-    KlaraMessage(
-        role="assistant",
-        content=response.content,
-        tool_calls=response.tool_calls,
-    )
+assistant_message = KlaraMessage(
+    role="assistant",
+    content=response.content,
+    tool_calls=response.tool_calls,
 )
+messages.append(assistant_message)
 
 if not response.tool_calls:
-    return KlaraRunResult(...)
+    return self._complete(
+        active_run_id,
+        messages,
+        response.content,
+        StopReason.FINAL,
+    )
 
 tool_results = self.tool_executor.execute_many(response.tool_calls)
 for result in tool_results:
@@ -129,72 +195,71 @@ for result in tool_results:
         KlaraMessage(
             role="tool",
             name=result.name,
-            content=result.content if result.ok else result.error or "",
             tool_call_id=result.tool_call_id,
+            content=result.content if result.ok else result.error or "",
         )
     )
 ```
 
-How to read this code:
+How to read it:
 
-1. `self.llm.complete(...)` is one model turn. The loop gives the model `messages`, `system_prompt`, `model`, and `tools`; it does not pass Python tool objects.
-2. `tools=self.tool_executor.specs` is the key boundary. The model sees tool names, descriptions, and parameter schemas, not classes such as `CurrentTimeTool` or `WebFetchTool`.
-3. `messages.append(KlaraMessage(role="assistant", ...))` records the assistant output before tools run. Even when the assistant requests tools, this message belongs in the transcript because later tool messages answer it.
-4. `if not response.tool_calls` is the stop signal. With no tool request, `response.content` is the final answer.
-5. `execute_many(response.tool_calls)` delegates all tool requests to the executor. The loop does not inspect tool names or decide which tools are safe.
-6. Each `ToolResult` becomes a `role="tool"` message. `tool_call_id` joins the observation back to the assistant tool call, and `name` lets trace/UI show which tool produced it.
-7. `content=result.content if result.ok else result.error or ""` turns both success and failure into model-visible text. A tool failure does not crash the loop; it becomes an observation for the next model turn.
+1. `self.llm.complete(...)` is one model turn. The model receives `ToolSpec`; it never receives Python tool objects.
+2. The assistant message enters `messages` before tools run. Even if the assistant only requested tools, later tool messages need `tool_call_id` to attach to this request.
+3. `if not response.tool_calls` is the stop signal. With no tool request, `response.content` is the final answer.
+4. `execute_many(response.tool_calls)` delegates tool requests to the executor. The loop does not care whether the tool is `current_time`, `web_search`, or a future RAG tool.
+5. Every `ToolResult` becomes a `role="tool"` message. Success uses `content`; failure uses `error`; both are visible in the next model turn.
 
 Concrete example:
 
 ```text
-assistant: tool_calls=[{"id": "call-1", "name": "current_time", "arguments": {"timezone": "Asia/Shanghai"}}]
-executor: ToolResult(tool_call_id="call-1", name="current_time", ok=True, content="{...}")
-loop: append role="tool", tool_call_id="call-1", name="current_time"
-next turn: the model sees the time observation and can write the final answer
+assistant:
+  tool_calls=[{"id": "call-1", "name": "current_time", "arguments": {"timezone": "Asia/Shanghai"}}]
+
+executor:
+  ToolResult(tool_call_id="call-1", name="current_time", ok=True, content="{...}")
+
+loop:
+  append role="tool", tool_call_id="call-1", name="current_time"
+
+next model turn:
+  the model sees the time observation and writes the final answer
 ```
 
-Runtime state changes:
+State changes:
 
-- The LLM sees only `ToolSpec`, not Python classes.
-- The assistant message is appended before tools run, preserving what the model requested.
-- If there are no `tool_calls`, the run stops.
-- If there are `tool_calls`, the loop delegates to `ToolExecutor`.
-- Each tool result becomes a `role="tool"` message visible to the next model turn.
+- `messages` first receives the assistant request.
+- If no tool is requested, the run completes with `StopReason.FINAL`.
+- If tools are requested, `messages` receives tool observations.
+- `LoopPolicy.max_turns = 12` prevents infinite tool requests.
 
-Architecture boundary: `core.loop` knows `ToolExecutor` and `ToolResult`; it does not know `current_time`, `web_search`, or any future concrete tool.
+Architecture boundary: `core.loop` depends on the `ToolRunner` protocol; it does not import concrete implementations from `klara.tools`.
 
-Takeaway: the loop owns model turns and message state; concrete capabilities must stay behind the executor and capability layers.
+Reader takeaway: the loop decides continue or stop; concrete capability ownership stays in the tools layer.
 
 </details>
 
-## 2. Tools Have Two Contracts: Spec For Model, Metadata For Runtime
+## 3. ToolSpec Is For The Model; ToolMetadata Is For Runtime
 
-A tool is not just a function name. Klara splits every tool into two contracts:
+A tool has two contracts:
 
 ```text
-ToolSpec       -> model-visible: when to use it and how to fill arguments
-ToolMetadata   -> runtime-visible: risk, parallelism, approval, output limit, trust
+ToolSpec       -> model-visible: name, description, JSON parameter schema
+ToolMetadata   -> runtime-visible: risk, parallelism, approval, timeout, output budget, trust
 ```
 
-The main example is `current_time`. It is the best teaching tool here: no network, no key, stable output, controlled errors.
+The main example is `current_time`. It has no network dependency, no key, stable output, and controlled errors, so it is the cleanest template.
 
 Code:
 
 ```text
 src/klara/core/tools.py
-src/klara/capabilities/tools/current_time/schema.py
+src/klara/tools/builtin/current_time/schema.py
 ```
 
 <details>
-<summary>Expand: current_time ToolSpec</summary>
+<summary>Expand: current_time Spec and Metadata</summary>
 
-`ToolSpec` is model-visible. It answers "how may the model request this tool?", not "how does runtime execute it?"
-
-Input and output:
-
-- Input: the tool author declares `name`, `description`, and `input_schema` in `schema.py`.
-- Output: the LLM client converts these fields into the provider's tool/function schema.
+`ToolSpec` is model-visible. It answers "how can the model request this tool?"
 
 ```python
 CURRENT_TIME_SPEC = ToolSpec(
@@ -220,50 +285,14 @@ CURRENT_TIME_SPEC = ToolSpec(
 )
 ```
 
-How to read this code:
+How to read it:
 
-- `name="current_time"` is the exact string the model must produce in `tool_call.name`; it is also the lookup key used later by the executor.
-- `description` is usage guidance for the model. It says this tool answers current-time questions, not historical facts or web facts, so the model does not misuse it as search.
-- `input_schema.type="object"` means arguments must be a JSON object. Klara keeps tool arguments JSON-compatible for traces, tests, and provider adapters.
-- `timezone` is the only parameter and is not required, so the model may pass `{}` when the user did not specify a timezone.
-- `additionalProperties=False` tells the model not to send fields such as `city`, `locale`, or `format` that this tool does not understand.
+- `name="current_time"` is the exact string the model must produce in `tool_call.name`.
+- `description` says it handles current time, not historical facts or web facts.
+- `input_schema` constrains JSON arguments.
+- `additionalProperties=False` tells the model not to send unsupported fields like `city`, `locale`, or `format`.
 
-Field flow in this chapter:
-
-| Field | Who reads it | Current behavior |
-| --- | --- | --- |
-| `name` | LLM and `ToolExecutor` | The model requests the tool by this name; the executor looks up the instance by this name |
-| `description` | LLM | Helps the model decide when to call the tool |
-| `input_schema` | LLM provider / adapter | Constrains the JSON argument shape the model should generate |
-
-Concrete example:
-
-```text
-User asks: what time is it in Shanghai?
-After seeing ToolSpec, the model may generate:
-ToolCall(name="current_time", arguments={"timezone": "Asia/Shanghai"})
-```
-
-Runtime state changes:
-
-- The LLM sees the tool name `current_time`.
-- The LLM knows it may pass `timezone`.
-- `additionalProperties=False` discourages unrelated arguments.
-- The execution function, Python module path, and metadata are not exposed to the model.
-
-Takeaway: `ToolSpec` describes how the model may request a tool. It is not the execution policy.
-
-</details>
-
-<details>
-<summary>Expand: current_time ToolMetadata</summary>
-
-`ToolMetadata` is runtime-visible. It does not enter model context; it exists for the executor, trace, UI, later guards, and policy.
-
-Input and output:
-
-- Input: the tool author declares the runtime safety, parallelism, display, and output boundaries.
-- Output: the executor and upper runtime layers use these fields to decide how to execute, truncate, and present the tool.
+`ToolMetadata` is runtime-visible. It answers "how should runtime manage this tool?"
 
 ```python
 CURRENT_TIME_METADATA = ToolMetadata(
@@ -276,48 +305,43 @@ CURRENT_TIME_METADATA = ToolMetadata(
 )
 ```
 
-How to read this code:
+Field flow:
 
-- `label="Current Time"` is the human-facing name, suitable for trace or UI. It does not have to match the call name.
-- `category="time"` lets UI, trace, or future profiles group tools.
-- `side_effect=ToolSideEffect.NONE` says this tool does not read the network, write files, or control the system.
-- `parallel_safe=True` is already consumed by the current executor. It allows multiple safe tools to run in the same wave.
-- `timeout_seconds=1.0` is this tool's execution budget signal; network tools pass this value into the service layer.
-- `max_output_chars=1000` is already consumed by the current executor. Observations longer than this are truncated.
+| Field | Reader | Current behavior |
+| --- | --- | --- |
+| `ToolSpec.name` | LLM / executor | Model requests this name; executor looks it up |
+| `ToolSpec.description` | LLM | Helps the model decide when to use the tool |
+| `ToolSpec.input_schema` | LLM adapter | Converted to provider tool schema |
+| `metadata.parallel_safe` | `ToolExecutor` | Determines whether a call can join a parallel wave |
+| `metadata.requires_approval` | `ToolExecutor` | Splits the wave when approval is needed |
+| `metadata.timeout_seconds` | tool/service | Passed to concrete tools or network services |
+| `metadata.max_output_chars` | `ToolExecutor` | Truncates model-visible observations |
+| `metadata.output_trust` | trace / future guard | Marks external observations as untrusted |
 
-Field flow in this chapter:
+State changes:
 
-| Field | Who reads it | Current behavior | Future behavior |
-| --- | --- | --- | --- |
-| `label` / `category` | trace/UI | Display and grouping | capability profiles |
-| `side_effect` | runtime policy | Kept as a risk signal | approval, permissions, profiles |
-| `parallel_safe` | `ToolExecutor._can_run_in_parallel()` | Controls whether a call may enter a parallel wave | finer scheduling |
-| `requires_approval` | `ToolExecutor._can_run_in_parallel()` | Approval-gated calls split waves | approval UI |
-| `timeout_seconds` | tool/service adapter | Passes an execution or network budget | unified timeout policy |
-| `max_output_chars` | `ToolExecutor._limit_result()` | Truncates model-visible output | token budget policy |
-| `output_trust` | trace/prompt guard | Kept as a trust signal | web-injection defense |
+- The model sees only `ToolSpec`.
+- Runtime keeps `ToolMetadata`.
+- The executor consumes metadata for parallelism and truncation.
 
-Runtime state changes:
-
-- Runtime knows this tool has no side effects.
-- The executor may place it in a parallel wave.
-- The output limiter knows how much text may be exposed to the model.
-- Trace/UI can show a human-facing label and category.
-
-Takeaway: metadata is not prompt text; it is a runtime signal for planning, guarding, truncation, and presentation.
+Reader takeaway: Spec is the model manual; Metadata is the runtime scheduling and safety signal.
 
 </details>
 
-## 3. Each Tool Is A Package, Not A Loose Function
+## 4. Each Tool Is A Package
 
-Klara uses one package per model-visible tool:
+Klara uses one package per tool:
 
 ```text
-src/klara/capabilities/tools/
+src/klara/tools/builtin/
   current_time/
     __init__.py
     schema.py
     timezones.py
+    tool.py
+  image_generate/
+    __init__.py
+    schema.py
     tool.py
   web_search/
     __init__.py
@@ -329,53 +353,92 @@ src/klara/capabilities/tools/
     tool.py
 ```
 
-This shape keeps responsibilities visible:
-
-- `schema.py`: model contract and runtime metadata.
-- `tool.py`: argument validation, service call, observation formatting.
-- domain helpers: for example `timezones.py`.
-- external providers or complex I/O: live under `src/klara/services/`.
+Klara learns: a tool is not a loose function; it is a declared, registered, testable capability package.
 
 Code:
 
 ```text
-src/klara/capabilities/tools/current_time/
-src/klara/capabilities/tools/web_search/
-src/klara/capabilities/tools/web_fetch/
+src/klara/tools/base.py
+src/klara/tools/builtin/current_time/
+src/klara/tools/builtin/image_generate/
+src/klara/tools/builtin/web_search/
+src/klara/tools/builtin/web_fetch/
 tests/klara/architecture/test_boundaries.py
 ```
 
-Klara learns: adding a tool should not put concrete tool names into core, frontend, or loop branches.
+<details>
+<summary>Expand: why BaseTool is an authoring template, not a core dependency</summary>
 
-## 4. Registry Decides Which Tools Are Visible
+Core only requires the structural `KlaraTool` protocol. Local tools inherit `BaseTool` to share argument validation and result construction. The loop does not depend on this inheritance tree.
 
-The model should not see every future capability. Each run exposes only the visible tools selected by the registry.
+```python
+class BaseTool:
+    spec: ToolSpec
+    metadata: ToolMetadata
+
+    def execute(self, arguments: JsonObject) -> ToolResult:
+        try:
+            return self.run(arguments)
+        except ToolInputError as exc:
+            return self.failure(arguments, str(exc))
+
+    def run(self, arguments: JsonObject) -> ToolResult:
+        raise NotImplementedError
+```
+
+How to read it:
+
+1. The executor calls `tool.execute(arguments)`.
+2. `BaseTool.execute()` catches `ToolInputError` and turns invalid arguments into failed observations.
+3. Concrete tools implement `run()`.
+4. Core does not import `BaseTool`, so future MCP tools, remote tools, or sandboxed tools can implement only the protocol.
+
+Failure path in `current_time`:
+
+```python
+timezone_name = str(arguments.get("timezone") or "").strip()
+try:
+    resolved_name, resolved_timezone = resolve_timezone(timezone_name)
+except ValueError as exc:
+    return self.failure(arguments, str(exc))
+```
+
+Concrete example:
 
 ```text
-klara.capabilities.tools.*
--> discover package
+arguments={"timezone": "Mars/Olympus"}
+-> resolve_timezone raises ValueError
+-> CurrentTimeTool returns ok=False
+-> loop appends role="tool" with the error
+-> next model turn can explain the invalid timezone
+```
+
+Reader takeaway: invalid tool arguments are model-visible observations, not backend crashes.
+
+</details>
+
+## 5. Registry Discovers The Tools Visible To This Run
+
+The model should not see every future capability. Each run exposes the tools selected by the registry.
+
+```text
+klara.tools.builtin.*
+-> discover child package
 -> import <tool_package>.tool
 -> find exactly one BaseTool subclass
--> instantiate it
+-> instantiate
 -> visible_tools()
 ```
 
 Code:
 
 ```text
-src/klara/capabilities/registry.py
-tests/klara/capabilities/test_registry.py
+src/klara/tools/registry.py
+tests/klara/tools/test_tool_registry.py
 ```
 
 <details>
-<summary>Expand: automatic local tool discovery</summary>
-
-This code discovers local tools under `src/klara/capabilities/tools/` instead of keeping a handwritten default list in the registry.
-
-Input and output:
-
-- Input: child packages under `klara.capabilities.tools`, such as `current_time`, `web_fetch`, and `web_search`.
-- Output: the single concrete `BaseTool` subclass from each tool package, returned in package-name order.
+<summary>Expand: why discovery is better than a handwritten list for this course</summary>
 
 Real code:
 
@@ -383,7 +446,10 @@ Real code:
 def discover_local_tool_classes() -> tuple[type[BaseTool], ...]:
     discovered: list[type[BaseTool]] = []
     for module_info in sorted(
-        pkgutil.iter_modules(tools_package.__path__, tools_package.__name__ + "."),
+        pkgutil.iter_modules(
+            builtin_tools_package.__path__,
+            builtin_tools_package.__name__ + ".",
+        ),
         key=lambda item: item.name,
     ):
         if not module_info.ispkg:
@@ -404,52 +470,40 @@ def discover_local_tool_classes() -> tuple[type[BaseTool], ...]:
     return tuple(discovered)
 ```
 
-How to read this code:
+How to read it:
 
-1. `pkgutil.iter_modules(...)` scans the direct children of the `klara.capabilities.tools` package.
-2. `sorted(..., key=lambda item: item.name)` fixes discovery order, so tool order does not drift across machines or filesystems.
-3. `if not module_info.ispkg: continue` accepts only packages. A tool must live in its own directory, not as a loose `.py` file.
-4. `importlib.import_module(f"{module_info.name}.tool")` imports only the `tool.py` file inside each package, making the implementation entrypoint stable.
-5. `inspect.getmembers(..., inspect.isclass)` finds classes defined in that module.
-6. `issubclass(value, BaseTool)` ensures the class follows Klara's local tool template.
-7. `value.__module__ == tool_module.__name__` excludes imported classes, so `BaseTool` or helper classes are not mistaken for the current tool.
-8. `len(candidates) != 1` fails fast. One tool package may expose exactly one concrete tool, otherwise the registry cannot know which class should be model-visible.
-9. `discovered.append(candidates[0])` records the class itself; `discover_local_tools()` later instantiates it.
+1. `pkgutil.iter_modules(...)` scans built-in tool packages.
+2. `sorted(..., key=lambda item: item.name)` makes tool order deterministic.
+3. `if not module_info.ispkg` accepts only package directories, so each tool must own a folder.
+4. `importlib.import_module(f"{module_info.name}.tool")` imports only each package's `tool.py`.
+5. `issubclass(value, BaseTool)` confirms this is a local tool template.
+6. `value.__module__ == tool_module.__name__` excludes imported helper classes.
+7. `len(candidates) != 1` fails fast when a package exposes zero or multiple concrete tools.
 
-Concrete example:
-
-```text
-tools/current_time/tool.py  -> CurrentTimeTool
-tools/web_fetch/tool.py     -> WebFetchTool
-tools/web_search/tool.py    -> WebSearchTool
-```
-
-If `web_fetch/tool.py` accidentally defines two `BaseTool` subclasses, default registry startup fails instead of silently exposing an ambiguous tool.
-
-Runtime state changes:
-
-- The registry does not maintain a handwritten default tool list.
-- A new tool becomes visible when it follows the package shape.
-- Each package must expose exactly one concrete `BaseTool`, so both runtime and readers know what is visible.
-- Tool order is deterministic, which keeps tests, traces, and model-visible specs stable.
-
-The current default set is locked by test:
+The default set is locked by a test:
 
 ```python
-assert names == {"current_time", "web_fetch", "web_search"}
+assert names == {"current_time", "image_generate", "web_fetch", "web_search"}
 ```
 
-Takeaway: the registry owns visibility. It is not the executor.
+State changes:
+
+- A new tool that follows the package shape is discovered by the default registry.
+- The registry returns concrete tools.
+- The harness passes those tools into `ToolExecutor`.
+- The loop still only uses the `ToolRunner` protocol.
+
+Reader takeaway: the registry is a tool visibility boundary, not a keyword router.
 
 </details>
 
-## 5. Executor Handles Lookup, Execution, Recovery, And Truncation
+## 6. Executor Turns Tool Requests Into Stable Observations
 
-`ToolExecutor` is the narrow gate between a model request and a concrete tool.
+`ToolExecutor` is the narrow gate between model requests and concrete tools.
 
 ```text
 ToolCall(id, name, arguments)
--> lookup visible tools by name
+-> lookup visible tool by name
 -> tool.execute(arguments)
 -> normalize id/name
 -> limit output
@@ -459,19 +513,12 @@ ToolCall(id, name, arguments)
 Code:
 
 ```text
-src/klara/core/tool_executor.py
-tests/klara/core/test_tool_executor.py
+src/klara/tools/executor.py
+tests/klara/tools/test_tool_executor.py
 ```
 
 <details>
-<summary>Expand: how one tool call becomes an observation</summary>
-
-This code is the protection layer between a model request and a concrete tool. The model produces a `ToolCall`; the executor turns it into a stable `ToolResult`.
-
-Input and output:
-
-- Input: `ToolCall(id, name, arguments)`, where `id` comes from the model response, `name` is the requested tool name, and `arguments` is the model-generated JSON argument object.
-- Output: always return a `ToolResult`. Success, unknown tools, tool exceptions, and long outputs all collapse into the same observation shape.
+<summary>Expand: how a single tool call executes</summary>
 
 Real code:
 
@@ -500,22 +547,21 @@ def execute(self, call: ToolCall) -> ToolResult:
     return self._limit_result(normalized, max_chars=tool.metadata.max_output_chars)
 ```
 
-How to read this code:
+How to read it:
 
-1. `tool = self._tools.get(call.name)` looks up the model-provided name in the visible tool map for this run. `self._tools` is built from the registry-selected tools, not from a global tool table.
-2. `tool is None` is the unknown-tool branch. Even if the model requests a missing tool, runtime returns an `ok=False` `ToolResult` instead of throwing.
-3. `tool_call_id=call.id` in the unknown-tool result matters. The next tool message can still join back to the assistant's original tool call.
-4. `tool.execute(call.arguments)` is the only point where concrete tool code runs. The executor does not know whether the tool is time, search, fetch, or future RAG.
-5. `except Exception as exc` is the last line of defense. Concrete tools should not throw casually, but if they do, the executor still converts the exception into a failed observation.
-6. `_normalize_result(call, result)` repairs mismatched `tool_call_id` and `name`. Concrete tools can build simple results; the executor guarantees transcript join keys.
-7. `_limit_result(..., max_chars=tool.metadata.max_output_chars)` enforces the model-visible output boundary. No matter how long a tool output is, it is truncated before the next model turn.
+1. `call.name` comes from the model's tool call.
+2. The executor searches only the tools visible in this run.
+3. Unknown tools return `ok=False` instead of raising.
+4. Concrete tool exceptions also become failed observations.
+5. `_normalize_result()` joins the returned result back to the original request id and name.
+6. `_limit_result()` truncates by metadata so web or image tools cannot blow up context.
 
-Concrete example: the model requests a missing tool.
+Concrete example:
 
 ```text
 call = ToolCall(id="call-9", name="read_file", arguments={"path": "x"})
 
-executor cannot find read_file and returns:
+executor cannot find read_file, so it returns:
 ToolResult(
   tool_call_id="call-9",
   name="read_file",
@@ -523,127 +569,22 @@ ToolResult(
   ok=False,
   error="Unknown tool: read_file",
 )
-
-The loop then appends this result as a role="tool" message.
-The next model turn sees "the tool failed" instead of a backend crash.
 ```
 
-Runtime state changes:
+State changes:
 
-- An unknown tool becomes a failed observation.
-- A Python exception inside a tool becomes a failed observation.
-- If the returned id/name does not match the original request, the executor normalizes it.
-- Output longer than `metadata.max_output_chars` is truncated before the model sees it.
+- Unknown tools do not crash FastAPI.
+- Tool exceptions do not terminate the whole run.
+- Failures still enter the next model turn.
 
-Takeaway: tool failure is model-visible runtime state, not a backend crash.
+Reader takeaway: tool failure is an observable agent state.
 
 </details>
 
-## 6. BaseTool Turns Argument Errors Into Failed Observations
-
-Each local tool inherits `BaseTool`. This is not a core requirement; it is an authoring template for local tools.
-
-Code:
-
-```text
-src/klara/capabilities/base_tool.py
-src/klara/capabilities/tools/current_time/tool.py
-tests/klara/capabilities/test_current_time_tool.py
-```
-
 <details>
-<summary>Expand: why ToolInputError does not crash the loop</summary>
+<summary>Expand: how multiple tool calls become serial/parallel waves</summary>
 
-This code is the local authoring template for tools. Core only requires the `KlaraTool` protocol, but local tools inherit `BaseTool` so they can share argument helpers, JSON output, and failed-observation construction.
-
-Input and output:
-
-- Input: JSON-like `arguments` generated by the model.
-- Output: on success, return the concrete tool's `ToolResult`; on argument error, return an `ok=False` `ToolResult`.
-
-Real code:
-
-```python
-def execute(self, arguments: JsonObject) -> ToolResult:
-    try:
-        return self.run(arguments)
-    except ToolInputError as exc:
-        return self.failure(arguments, str(exc))
-```
-
-Failure path in `current_time`:
-
-```python
-timezone_name = str(arguments.get("timezone") or "").strip()
-try:
-    resolved_name, resolved_timezone = resolve_timezone(timezone_name)
-except ValueError as exc:
-    return self.failure(arguments, str(exc))
-```
-
-How to read this code:
-
-1. `BaseTool.execute()` is the entrypoint called by the executor. The executor does not call `run()` directly because `execute()` owns consistent input-error handling.
-2. `self.run(arguments)` is the concrete tool implementation, such as `CurrentTimeTool.run()`.
-3. `ToolInputError` means "the model-provided arguments do not match this tool contract." That error is recoverable agent state.
-4. `self.failure(arguments, str(exc))` builds `ToolResult(content="", ok=False, error=...)` and uses the tool's own `spec.name`.
-5. In `current_time`, `timezone_name = str(arguments.get("timezone") or "").strip()` collapses missing values, empty strings, and padded strings into one clean input.
-6. `resolve_timezone(timezone_name)` is the domain validation step. On success it returns a normalized timezone name and timezone object; on failure it raises `ValueError`.
-7. `except ValueError as exc: return self.failure(...)` converts a domain error into a failed observation.
-
-Concrete example:
-
-```text
-arguments={"timezone": "Mars/Olympus"}
--> resolve_timezone("Mars/Olympus") raises ValueError
--> CurrentTimeTool returns ok=False
--> loop appends role="tool" with error text
--> the model can apologize or ask for a valid IANA timezone
-```
-
-Runtime state changes:
-
-- A bad timezone such as `Mars/Olympus` does not escape to FastAPI or the frontend.
-- The tool returns `ok=False`, `content=""`, and `error="Unknown timezone: Mars/Olympus"`.
-- The loop appends that error as a tool message for the next model turn.
-
-Takeaway: tool errors are observations inside the agent loop.
-
-</details>
-
-## 7. Partitioning: Metadata Creates Execution Waves
-
-The model may request several tool calls in one assistant turn. Klara does not hard-code ordering by concrete tool name; it partitions calls by metadata.
-
-Current rule:
-
-```text
-parallel_safe=True and requires_approval=False
--> may enter the same parallel wave
-
-parallel_safe=False
-or requires_approval=True
-or unknown tool
--> split the wave and execute separately
-```
-
-Code:
-
-```text
-src/klara/core/tool_executor.py
-src/klara/core/tools.py
-tests/klara/core/test_tool_executor.py
-```
-
-<details>
-<summary>Expand: how execute_many splits execution waves</summary>
-
-This code handles the case where one assistant turn returns several tool calls. It does not run everything serially, and it does not blindly run everything in parallel. It partitions calls into execution waves based on metadata.
-
-Input and output:
-
-- Input: `tuple[ToolCall, ...]` returned by the model in one assistant turn; order is the model request order.
-- Output: `tuple[ToolResult, ...]`; result order still matches request order.
+The model may return multiple tool calls in one assistant turn. Klara does not hardcode order by tool name; it partitions by metadata.
 
 Real code:
 
@@ -660,11 +601,7 @@ def execute_many(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
         results.append(self.execute(call))
     results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
     return tuple(results)
-```
 
-Decision function:
-
-```python
 def _can_run_in_parallel(self, call: ToolCall) -> bool:
     tool = self._tools.get(call.name)
     if tool is None:
@@ -672,123 +609,87 @@ def _can_run_in_parallel(self, call: ToolCall) -> bool:
     return tool.metadata.parallel_safe and not tool.metadata.requires_approval
 ```
 
-Parallel wave execution:
+Algorithm:
 
-```python
-def _execute_parallel_wave(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
-    if not calls:
-        return ()
-    if len(calls) == 1:
-        return (self.execute(calls[0]),)
-    with ThreadPoolExecutor(max_workers=len(calls)) as pool:
-        return tuple(pool.map(self.execute, calls))
+```text
+parallel_safe=True and requires_approval=False
+-> join current parallel wave
+
+parallel_safe=False
+or requires_approval=True
+or unknown tool
+-> flush current wave, then execute current call alone
 ```
-
-How to read this code:
-
-1. `results` stores completed outputs and eventually becomes the returned tuple.
-2. `parallel_wave` collects the current contiguous run of calls that are safe to run together.
-3. If `_can_run_in_parallel(call)` is true, the call is added to `parallel_wave` and execution is deferred.
-4. If a non-parallel call appears, the executor first flushes the current `parallel_wave`, then runs the non-parallel call alone.
-5. After the loop, the executor flushes one final time so a trailing safe wave is not lost.
-6. `_can_run_in_parallel()` reads only the visible tool map and two metadata fields: `parallel_safe` and `requires_approval`.
-7. Unknown tools return false because runtime cannot prove they are safe; they run alone through `execute()` and become failed observations.
-8. `_execute_parallel_wave()` has separate branches for 0, 1, and many calls. Only many calls create a `ThreadPoolExecutor`, and `pool.map` preserves input order, so concurrent execution does not reorder observations.
 
 Concrete trace:
 
 ```text
-calls = [safe A, safe B, serial C, safe D, unknown E]
-
-safe A -> parallel_wave=[A]
-safe B -> parallel_wave=[A, B]
-serial C -> run [A, B] concurrently, then run C alone
-safe D -> parallel_wave=[D]
-unknown E -> run [D], then run E alone; E returns a failed observation
-
-final result order is [A_result, B_result, C_result, D_result, E_failed]
+[safe A, safe B, serial C, safe D, unknown E]
+-> A/B run concurrently in one wave
+-> C runs alone
+-> D runs in the next wave
+-> E runs alone and returns a failed observation
 ```
 
-Runtime state changes:
+Why the image tool is serial:
 
-- Consecutive parallel-safe calls may run through a thread pool.
-- Serial or approval-gated calls split the current wave.
-- Unknown tools split the wave because runtime cannot prove they are safe.
-- Results keep the original model request order.
+```text
+image_generate:
+  side_effect=NETWORK
+  parallel_safe=False
+  timeout_seconds=180.0
+```
 
-Be precise:
+Image generation may be slow, expensive, network-dependent, and produce local asset links, so it starts as a serial tool.
 
-- `parallel_safe` and `requires_approval` currently participate in wave partitioning.
-- `side_effect` is currently a risk classification signal for later permissions, UI, profiles, and policies.
-- `output_trust` is currently an observation trust signal for later prompt wrappers, web-injection defense, trace, and UI.
-
-Takeaway: partitioning should read metadata, not concrete tool names.
+Reader takeaway: serial/parallel behavior reads metadata instead of hardcoding tool names.
 
 </details>
 
-## 8. Web Tools Show Why Metadata Matters
+## 7. Web And Image: Tool Results Are Observations, Not Facts
 
-`current_time` teaches the minimal tool template; `web_search` and `web_fetch` teach risk boundaries.
+`web_search`, `web_fetch`, and `image_generate` are all tools, but their risks differ.
 
 ```text
-web_search -> find URLs, titles, snippets
-web_fetch  -> read the body of one public HTTP(S) page
+web_search     -> find title / URL / snippet
+web_fetch      -> read one public HTTP(S) page
+image_generate -> call Qwen image model, store local asset, return Markdown image link
 ```
 
-They are not a research agent in this chapter. They exist here to show:
-
-- network tools carry `side_effect=NETWORK`
-- external page content carries `output_trust=UNTRUSTED`
-- provider/page parsing belongs in the service layer, not core
-- a tool observation is input to the model, not guaranteed truth
+Klara learns: external I/O can be exposed as tools, but provider calls, safety checks, and asset storage do not belong in the core loop.
 
 Code:
 
 ```text
-src/klara/capabilities/tools/web_search/schema.py
-src/klara/capabilities/tools/web_fetch/schema.py
+src/klara/tools/builtin/web_search/schema.py
+src/klara/tools/builtin/web_fetch/schema.py
+src/klara/tools/builtin/image_generate/schema.py
 src/klara/services/web/search.py
 src/klara/services/web/fetcher.py
 src/klara/services/web/safety.py
-tests/klara/capabilities/test_web_tools.py
-tests/klara/services/test_web_search.py
-tests/klara/services/test_web_fetch.py
+src/klara/services/images/qwen.py
+src/klara/services/images/storage.py
+src/klara/services/images/types.py
+src/klara/infra/config/images.py
 ```
 
 <details>
-<summary>Expand: why web_fetch does not put urllib directly in tool.py</summary>
+<summary>Expand: why web_fetch has a safety boundary</summary>
 
-`web_fetch` is the risk-boundary example in this chapter. It can access the external network, so the implementation should not pile every concern into `tool.py`. The tool wrapper owns arguments, metadata, and observation formatting; network behavior belongs in the service layer.
+`web_fetch` can access external URLs, so the tool wrapper owns arguments and observations while network safety lives in the service layer.
 
-Input and output:
-
-- Input: model-generated `{"url": "...", "max_chars": ...}`.
-- Output: on success, return a JSON observation with page text; on failure, return an `ok=False` observation.
-
-The tool wrapper owns model contract and observation formatting:
+Tool wrapper:
 
 ```python
-@dataclass(frozen=True)
-class WebFetchTool(BaseTool):
-    spec: ToolSpec = WEB_FETCH_SPEC
-    metadata: ToolMetadata = WEB_FETCH_METADATA
-    page_fetcher: PageFetcher = fetch_page
-
-    def run(self, arguments: JsonObject) -> ToolResult:
-        url = self.optional_string(arguments, "url")
-        if not url:
-            raise ToolInputError("url must not be empty")
-        max_chars = _optional_int(arguments, "max_chars", default=4000)
-        ...
-        page = self.page_fetcher(
-            url,
-            max_chars=max_chars,
-            timeout_seconds=self.metadata.timeout_seconds,
-        )
-        return self.json_success(arguments, {...})
+page = self.page_fetcher(
+    url,
+    max_chars=max_chars,
+    timeout_seconds=self.metadata.timeout_seconds,
+)
+return self.json_success(arguments, {...})
 ```
 
-Network behavior lives in the service layer:
+Safety validation:
 
 ```python
 def validate_public_http_url(raw_url: str) -> str:
@@ -802,69 +703,78 @@ def validate_public_http_url(raw_url: str) -> str:
     _reject_private_addresses(host)
 ```
 
-How to read the tool wrapper:
+Runtime behavior:
 
-1. `spec` and `metadata` come from `schema.py`, so model contract and runtime signals stay centralized.
-2. `page_fetcher: PageFetcher = fetch_page` is the dependency injection point. Tests can pass a fake fetcher without touching the network.
-3. `url = self.optional_string(arguments, "url")` reuses a `BaseTool` argument helper; non-string input becomes `ToolInputError`.
-4. `if not url` is required-argument validation. An empty URL is a model argument error, not a network error.
-5. `_optional_int(..., default=4000)` reads the optional length limit; `200 <= max_chars <= 6000` prevents the model from requesting page text that is too small or too large.
-6. `self.page_fetcher(... timeout_seconds=self.metadata.timeout_seconds)` passes runtime metadata into the service layer. The tool does not implement socket or HTTP details itself.
-7. `except WebFetchError as exc` converts service-layer fetch failures into failed observations.
-8. `trust="untrusted_external_content"` tells later layers that page text is not trusted system instruction; it is external observation data.
+- `http://localhost:8011` is rejected.
+- private IPs, loopback addresses, and credential-bearing URLs are rejected.
+- page text returns with `untrusted_external_content`.
 
-How to read the safety service:
-
-1. `raw_url.strip()` removes surrounding whitespace; an empty string is rejected.
-2. `parsed.scheme not in {"http", "https"}` rejects protocols such as `file://` and `ftp://`.
-3. `not parsed.hostname` rejects URLs without a host.
-4. `parsed.username or parsed.password` rejects credential-bearing URLs so secrets do not enter requests or traces.
-5. `_reject_local_hostname(host)` rejects `localhost` and `.localhost`.
-6. `_reject_private_addresses(host)` checks literal IPs and DNS-resolved addresses.
-7. `not address.is_global` rejects private, loopback, link-local, reserved, and other non-public addresses.
-8. `parsed._replace(fragment="")` removes URL fragments because fragments are not sent to the server and should not affect fetch cache or trace identity.
-
-Concrete examples:
-
-```text
-url="https://docs.python.org/3/"
--> scheme is https
--> host resolves to public addresses
--> service fetches HTML and extracts text
--> tool returns a JSON observation with trust="untrusted_external_content"
-
-url="http://localhost:8011"
--> _reject_local_hostname("localhost")
--> WebFetchError / WebSafetyError
--> tool returns a failed observation
-```
-
-Runtime state changes:
-
-- The tool layer stays short enough to teach and register.
-- The service layer owns URL validation, redirect validation, HTML extraction, and length limits.
-- `localhost` and private IP addresses are rejected so `web_fetch` cannot become a local-network probe.
-- Page text returns with `trust="untrusted_external_content"`.
-
-Takeaway: external I/O can be exposed as a tool, but provider and safety boundaries belong in services.
+Reader takeaway: web tool output is not a system instruction; it is an untrusted observation.
 
 </details>
 
-## 9. What This Chapter Does Not Do
+<details>
+<summary>Expand: why image_generate can affect later context</summary>
 
-These boundaries are intentionally later:
+The image tool returns Markdown image links, so the final answer can interleave images and text:
 
-- full approval UI
-- shell/filesystem mutation tools
-- Bing, Google, Baidu, or Brave account-backed provider routing
-- MCP
-- RAG or research-agent behavior
+```text
+![Generated image](/api/assets/local?path=data/assets/images/20260617/xxx.png)
+```
 
-Klara only learns this here: a tool is a registered, executable, recoverable, observable runtime action boundary.
+That is good for the frontend, but not always useful for future model history. The model does not need to repeatedly see local asset URLs, and those URLs can bias unrelated later questions toward image context.
 
-## Run And Verification
+So this chapter adds a minimal history sanitizer:
 
-Start the dev environment:
+```python
+GENERATED_IMAGE_PLACEHOLDER = "[generated image omitted from prior context]"
+
+def prepare_conversation_history(
+    messages: Iterable[KlaraMessage],
+    *,
+    max_messages: int,
+) -> tuple[KlaraMessage, ...]:
+    prepared: list[KlaraMessage] = []
+    for message in messages:
+        prepared.append(
+            KlaraMessage(
+                role=message.role,
+                content=sanitize_history_content(message.content),
+                name=message.name,
+                tool_call_id=message.tool_call_id,
+                tool_calls=message.tool_calls,
+            )
+        )
+    return tuple(prepared[-max_messages:])
+```
+
+The API layer calls it:
+
+```python
+MAX_HISTORY_MESSAGES = 12
+...
+return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
+```
+
+There are two different 12s:
+
+- `LoopPolicy.max_turns = 12`: one run can have at most 12 model turns, preventing infinite tool loops.
+- `MAX_HISTORY_MESSAGES = 12`: the next run receives at most the latest 12 completed user/assistant messages from the current session.
+
+State changes:
+
+- History is read per session, so chat windows do not share transcript state.
+- Only completed user/assistant messages are replayed.
+- Local image links become a short placeholder.
+- This is not full context compression yet; compression, source summaries, and memory come later.
+
+Reader takeaway: the more tools Klara has, the more carefully it must separate user-visible content from model-visible future context.
+
+</details>
+
+## 8. Run And Verify
+
+Start:
 
 ```powershell
 .\scripts\dev.ps1 -Restart
@@ -877,38 +787,46 @@ Web: http://127.0.0.1:5123
 API: http://127.0.0.1:8011
 ```
 
-Chapter-related checks:
+Recommended checks:
 
 ```powershell
-python -m pytest --basetemp .tmp\pytest
+python -m pytest tests\klara tests\apps\api
 cd apps\web
 npm.cmd test
 npm.cmd run build
 ```
 
-Optional real-network smoke test:
+Frontend signals to inspect:
 
-```powershell
-$env:PYTHONPATH='src'
-@'
-from klara.services.web.search import search_web
-from klara.services.web.fetcher import fetch_page
-
-response = search_web("python docs", count=1)
-print(response.provider, response.results[0].title, response.results[0].url)
-page = fetch_page(response.results[0].url, max_chars=300)
-print(page.status, page.content_type, page.title)
-'@ | python -
+```text
+llm_call_completed.tool_call_count
+tool_call_started
+tool_call_completed
+run_completed.stop_reason
 ```
+
+To reproduce the "World Cup" question, open a new chat and ask:
+
+```text
+Please search for the latest World Cup report and open one page to summarize it.
+```
+
+Then follow up:
+
+```text
+What about Argentina?
+```
+
+Inspect whether the second question produces `web_search` / `web_fetch` events. If it does not, this is not a place for a keyword if-statement; it is future work for context policy, tool-use evaluation, and source grounding.
 
 ## Small Experiments
 
-1. Change `current_time` `max_output_chars` and observe executor truncation.
-2. Set a fixture tool's `parallel_safe` to `False` and watch `execute_many()` split waves.
-3. Request a missing tool name and confirm the loop returns a failed observation.
+1. Lower `current_time` `max_output_chars` and observe executor truncation.
+2. Build two parallel-safe test tools and one serial test tool, then inspect `execute_many()` wave partitioning.
+3. Request a nonexistent tool name and confirm the loop returns a failed observation.
 4. Ask `web_fetch` to read `http://localhost:8011` and confirm the safety layer rejects it.
-5. Add `allowed_domains=["python.org"]` to `web_search` and observe filtering.
+5. Generate an image, then ask a search question and inspect how the history sanitizer replaces local image links with a placeholder.
 
-## Next Chapter Preview
+## Next Chapter
 
-Chapter 3 covers Hooks And Trace: now that tool calls can happen, the next step is to project runtime lifecycle events into trace, UI, and later guards without putting observation logic into the loop body.
+Chapter 3 covers Hooks And Trace: tool calls can now happen, so the next step is projecting runtime lifecycle events into hooks, trace, UI, and guards without writing observation logic into the loop body.

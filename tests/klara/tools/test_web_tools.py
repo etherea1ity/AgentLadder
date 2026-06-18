@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 
-from klara.capabilities.tools.web_fetch import WebFetchTool
-from klara.capabilities.tools.web_search import WebSearchTool
 from klara.core.tools import ToolOutputTrust, ToolSideEffect
 from klara.services.web import FetchedPage, SearchHit, SearchResponse, WebFetchError
+from klara.tools.builtin.web_fetch import WebFetchTool
+from klara.tools.builtin.web_search import WebSearchTool
 
 
 def test_web_fetch_tool_declares_network_untrusted_metadata() -> None:

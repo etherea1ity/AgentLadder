@@ -1,21 +1,20 @@
-"""Capability registry used by the Klara harness."""
+"""Tool registry used by Klara run assembly."""
 
 from __future__ import annotations
 
 import importlib
 import inspect
 import pkgutil
-from dataclasses import replace
 
-import klara.capabilities.tools as tools_package
-from klara.capabilities.base_tool import BaseTool, ToolTurnEffect
-from klara.core.tools import KlaraTool, ToolResult
+import klara.tools.builtin as builtin_tools_package
+from klara.core.tools import KlaraTool
+from klara.tools.base import BaseTool
 
 
-class CapabilityRegistry:
+class ToolRegistry:
     """Store the tools visible to a Klara run.
 
-    The registry starts small so profiles, permissions, and visibility policy
+    The registry starts small so toolsets, permissions, and visibility policy
     can be added without changing core loop contracts.
     """
 
@@ -30,7 +29,7 @@ class CapabilityRegistry:
         self._tools = list(tools or [])
 
     @classmethod
-    def with_default_tools(cls) -> "CapabilityRegistry":
+    def with_default_tools(cls) -> "ToolRegistry":
         """Create the default local registry.
 
         Returns:
@@ -57,39 +56,25 @@ class CapabilityRegistry:
 
         return tuple(self._tools)
 
-    def effects_for_results(self, results: list[ToolResult]) -> tuple[ToolTurnEffect, ...]:
-        """Dispatch result callbacks back to their owning tool classes."""
-
-        effects: list[ToolTurnEffect] = []
-        tools_by_name = {
-            tool.spec.name: tool for tool in self._tools if isinstance(tool, BaseTool)
-        }
-        for result in results:
-            tool = tools_by_name.get(result.name)
-            if tool is None:
-                continue
-            effect = tool.after_result(result)
-            if effect is not None:
-                effects.append(replace(effect, source_tool=tool.spec.name))
-        return tuple(effects)
-
-
 def discover_local_tools() -> list[KlaraTool]:
-    """Discover concrete local tools from tool packages.
+    """Discover concrete local tools from built-in tool packages.
 
     Returns:
-        Tool instances found under `klara.capabilities.tools`.
+        Tool instances found under `klara.tools.builtin`.
     """
 
     return [tool_class() for tool_class in discover_local_tool_classes()]
 
 
 def discover_local_tool_classes() -> tuple[type[BaseTool], ...]:
-    """Discover one `BaseTool` subclass from each concrete tool package."""
+    """Discover one `BaseTool` subclass from each concrete built-in tool package."""
 
     discovered: list[type[BaseTool]] = []
     for module_info in sorted(
-        pkgutil.iter_modules(tools_package.__path__, tools_package.__name__ + "."),
+        pkgutil.iter_modules(
+            builtin_tools_package.__path__,
+            builtin_tools_package.__name__ + ".",
+        ),
         key=lambda item: item.name,
     ):
         if not module_info.ispkg:

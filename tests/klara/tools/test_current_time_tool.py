@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from klara.capabilities.tools.current_time import CurrentTimeTool
 from klara.core.tools import ToolOutputTrust, ToolSideEffect
+from klara.tools.builtin.current_time import CurrentTimeTool
 
 
 def test_current_time_tool_declares_real_tool_template_metadata() -> None:

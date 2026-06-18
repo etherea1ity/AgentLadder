@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from klara.capabilities.base_tool import BaseTool, ToolInputError
-from klara.capabilities.tools.image_generate.schema import (
+from klara.tools.base import BaseTool, ToolInputError
+from klara.tools.builtin.image_generate.schema import (
     IMAGE_GENERATE_METADATA,
     IMAGE_GENERATE_SPEC,
 )

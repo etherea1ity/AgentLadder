@@ -10,8 +10,7 @@ from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
-from klara.core.tool_executor import ToolExecutor
-from klara.core.tools import ToolSpec
+from klara.core.tools import ToolRunner, ToolSpec
 
 
 class LlmClient(Protocol):
@@ -61,7 +60,7 @@ class KlaraLoop:
 
     The loop owns runtime execution only. It does not choose persona, load
     memory, select capability profiles, query RAG, or talk to backend transports.
-    Those concerns attach around the loop through harness, capabilities, hooks,
+    Those concerns attach around the loop through harness, tools, hooks,
     context, or trace.
     """
 
@@ -69,7 +68,7 @@ class KlaraLoop:
         self,
         *,
         llm: LlmClient,
-        tool_executor: ToolExecutor,
+        tool_executor: ToolRunner,
         hooks: HookManager | None = None,
         policy: LoopPolicy | None = None,
         model: str = "fake-model",

@@ -72,8 +72,8 @@ class ToolCall:
     """A model-requested tool invocation.
 
     Core records the request but does not know whether the tool is RAG, memory,
-    web, or a deterministic demonstration capability. Concrete ability
-    ownership stays in `klara.capabilities` and service layers.
+    web, or a deterministic demonstration tool. Concrete tool ownership stays
+    in `klara.tools` and service layers.
     """
 
     # Id joins this request with the tool result observation.
@@ -165,7 +165,7 @@ class ToolSpec:
 
 
 class KlaraTool(Protocol):
-    """Protocol implemented by concrete capabilities that core may execute."""
+    """Protocol implemented by concrete tools that a runner may execute."""
 
     spec: ToolSpec
     metadata: ToolMetadata
@@ -179,5 +179,20 @@ class KlaraTool(Protocol):
         Returns:
             A model-visible tool observation.
         """
+
+        ...
+
+
+class ToolRunner(Protocol):
+    """Protocol for the injected tool executor used by the loop."""
+
+    @property
+    def specs(self) -> tuple[ToolSpec, ...]:
+        """Return model-visible tool specifications for this run."""
+
+        ...
+
+    def execute_many(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
+        """Execute one assistant tool-call batch and preserve request order."""
 
         ...

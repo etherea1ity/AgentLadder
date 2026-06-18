@@ -4,10 +4,10 @@ import json
 from dataclasses import dataclass
 
 from klara.app.harness import KlaraHarness, KlaraHarnessConfig
-from klara.capabilities.base_tool import BaseTool
-from klara.capabilities.registry import CapabilityRegistry
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
+from klara.tools.base import BaseTool
+from klara.tools.registry import ToolRegistry
 
 
 @dataclass(frozen=True)
@@ -79,7 +79,7 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     trace_path = tmp_path / "run.jsonl"
     harness = KlaraHarness(
         llm=llm,
-        registry=CapabilityRegistry([EchoFixtureTool()]),
+        registry=ToolRegistry([EchoFixtureTool()]),
         config=KlaraHarnessConfig(trace_path=trace_path),
     )
 

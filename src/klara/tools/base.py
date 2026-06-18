@@ -1,30 +1,11 @@
-"""Base class and helpers for authoring Klara capability tools."""
+"""Base class and helpers for authoring Klara tools."""
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from typing import Any
 
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
-
-
-@dataclass(frozen=True)
-class ToolTurnEffect:
-    """Optional next-turn updates requested by a tool result.
-
-    Tools own their result-specific advice. The app layer can later merge these
-    effects without branching on concrete tool names.
-    """
-
-    # Prompt text that may be appended before the next model turn.
-    overlay_prompt: str | None = None
-    # Tool names to hide after this result.
-    disable_tools: tuple[str, ...] = ()
-    # True when the next model turn should write a final answer only.
-    final_response: bool = False
-    # Filled by registry/effect dispatchers, not by concrete tools.
-    source_tool: str | None = None
 
 
 class ToolInputError(ValueError):
@@ -54,11 +35,6 @@ class BaseTool:
         """Run the concrete tool implementation."""
 
         raise NotImplementedError
-
-    def after_result(self, result: ToolResult) -> ToolTurnEffect | None:
-        """Return optional next-turn effects after this tool result."""
-
-        return None
 
     def call_id(self, arguments: JsonObject) -> str:
         """Return the tool-call id embedded by the executor or a test fallback."""

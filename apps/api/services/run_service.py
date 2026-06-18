@@ -16,13 +16,14 @@ from apps.api.schemas import (
 )
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.sse_bus import SSEBus
-from klara.capabilities.registry import CapabilityRegistry
+from klara.context.history import prepare_conversation_history
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
 from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
-from klara.core.tool_executor import ToolExecutor
+from klara.tools.executor import ToolExecutor
+from klara.tools.registry import ToolRegistry
 
 MAX_HISTORY_MESSAGES = 12
 
@@ -156,7 +157,7 @@ class RunService:
         hooks = HookManager([bridge, JsonlTraceHook(Path(self.trace_path))])
 
         try:
-            registry = CapabilityRegistry.with_default_tools()
+            registry = ToolRegistry.with_default_tools()
             loop = KlaraLoop(
                 llm=self.llm_client,
                 tool_executor=ToolExecutor(list(registry.visible_tools())),
@@ -260,7 +261,7 @@ class RunService:
             if message.role not in {"user", "assistant"}:
                 continue
             history.append(KlaraMessage(role=message.role, content=message.content))
-        return tuple(history[-MAX_HISTORY_MESSAGES:])
+        return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
 
 
 class _RunEventBridge:

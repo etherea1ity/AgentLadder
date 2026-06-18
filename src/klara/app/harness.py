@@ -6,11 +6,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from klara.app.user_context import UserContext
-from klara.capabilities.registry import CapabilityRegistry
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient
 from klara.core.policies import LoopPolicy
-from klara.core.tool_executor import ToolExecutor
+from klara.tools.executor import ToolExecutor
+from klara.tools.registry import ToolRegistry
 
 
 @dataclass(frozen=True)
@@ -40,21 +40,21 @@ class KlaraHarness:
         self,
         *,
         llm: LlmClient,
-        registry: CapabilityRegistry | None = None,
+        registry: ToolRegistry | None = None,
         config: KlaraHarnessConfig | None = None,
     ) -> None:
         """Create a harness around an injected LLM client.
 
         Args:
             llm: Model client used by the loop.
-            registry: Optional capability registry for visible tools.
+            registry: Optional tool registry for visible tools.
             config: Optional run-assembly configuration.
         """
 
         # LLM stays injected so tests can run with deterministic fake models.
         self.llm = llm
         # Registry defaults to discovered local tools.
-        self.registry = registry or CapabilityRegistry.with_default_tools()
+        self.registry = registry or ToolRegistry.with_default_tools()
         # Config owns local model id, prompt path, trace path, and future partition context.
         self.config = config or KlaraHarnessConfig()
 
@@ -74,7 +74,7 @@ class KlaraHarness:
         if self.config.trace_path is not None:
             hooks.register(JsonlTraceHook(self.config.trace_path))
 
-        # The harness converts visible capabilities into the core executor boundary.
+        # The harness converts visible tools into the executor boundary.
         loop = KlaraLoop(
             llm=self.llm,
             tool_executor=ToolExecutor(list(self.registry.visible_tools())),

@@ -212,6 +212,79 @@ LoopPolicy modules.
 The module names can appear after the reader understands what runtime action
 they serve.
 
+## Real Incident -> Mechanism -> Source
+
+When a chapter grows out of a real bug, confusing demo, or failed user run,
+teach from that incident. Do not write it as a changelog or a confession. Use it
+as the smallest visible case that makes the runtime boundary necessary.
+
+Use this order:
+
+```text
+1. 现场：用户问了什么，Klara 做错了什么，或者 trace 显示了什么。
+2. 判断：这不是哪个表面模块的问题，而是哪条 runtime 边界不清。
+3. 机制：本章新增或收紧哪条机制。
+4. 源码：对应的真实文件、关键分支、状态变化。
+5. 验证：读者怎么在前端、trace、tests 或 prompts 里复现。
+6. 预告：完整解法若属于后续章节，只讲当前章节的边界。
+```
+
+For Chapter 2, the real incident pattern is:
+
+```text
+用户先问世界杯战报，Klara 能走 web_search -> web_fetch。
+之后加入 image_generate，并在同一类聊天里继续问最新战报或追问阿根廷。
+有些 run 没有稳定继续调用搜索工具，或者把低质量网页 observation 当成事实。
+```
+
+The teaching point is not "add a keyword router". The teaching point is:
+
+```text
+ToolSpec tells the model what actions exist.
+ToolMetadata tells runtime how risky and schedulable those actions are.
+ToolExecutor turns success and failure into observations.
+Conversation-history preparation removes stale local asset links and bounds the
+history before the next run.
+```
+
+This incident should point to source:
+
+```text
+src/klara/core/loop.py
+src/klara/core/tools.py
+src/klara/tools/registry.py
+src/klara/tools/executor.py
+src/klara/context/history.py
+apps/api/services/run_service.py
+data/app/run_events.jsonl
+```
+
+Use short trace excerpts, not giant logs. A good excerpt shows the decision
+signal:
+
+```text
+llm_call_completed: tool_call_count=1
+tool_call_started: web_search
+tool_call_completed: web_search
+tool_call_started: web_fetch
+...
+follow-up run: tool_call_count=0
+```
+
+Anti-pattern:
+
+```text
+We fixed image pollution and added web tools.
+```
+
+Better:
+
+```text
+The model can only decide well when the current run exposes a clear tool
+contract and a clean recent history. This chapter builds the tool boundary; full
+context compression and memory policy are deferred.
+```
+
 ## Concept -> Mechanism -> Code -> Experiment
 
 Each main teaching section should move in this order:

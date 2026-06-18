@@ -29,7 +29,7 @@ Klara should feel like Klara: calm, branch-aware, observable, and honest about w
 `src/klara/core` must not import:
 
 - app
-- concrete capabilities
+- concrete tools
 - context
 - memory
 - skills
@@ -38,12 +38,12 @@ Klara should feel like Klara: calm, branch-aware, observable, and honest about w
 - eval
 - training
 
-If a later capability needs to affect a run, attach it through app assembly, hooks, capabilities, context, trace, or service adapters. Do not turn core into a product pipeline.
+If a later tool or capability needs to affect a run, attach it through app assembly, hooks, tools, context, trace, or service adapters. Do not turn core into a product pipeline.
 
 ## Layer Responsibilities
 
 - `app`: assemble persona, user context, model choice, visible tools, hooks, trace sinks, and loop policy.
-- `capabilities`: register and expose tools by chapter/profile.
+- `tools`: register, describe, group, filter, and execute model-visible tools.
 - `context`: budget, priority, compaction, summaries, next-turn preparation.
 - `memory`: durable continuity with explicit remember/update/delete/search policies.
 - `skills`: procedural memory for repeatable work.
@@ -97,10 +97,10 @@ Trace Dataset -> Tiny Pretrain -> Tool-Use SFT -> Preference/DPO
 ## Tool Package Layout
 
 Each concrete model-visible tool lives in its own package under
-`src/klara/capabilities/tools/`:
+`src/klara/tools/builtin/`:
 
 ```text
-src/klara/capabilities/tools/
+src/klara/tools/builtin/
   current_time/
     __init__.py
     schema.py
@@ -111,18 +111,18 @@ src/klara/capabilities/tools/
 Use this package shape by default:
 
 - `schema.py`: model-visible `ToolSpec` and Klara-visible `ToolMetadata`.
-- `tool.py`: the `BaseTool` implementation, result effects, and narrow
+- `tool.py`: the `BaseTool` implementation and narrow
   execution method.
 - focused helper files: parsing, normalization, adapters, or domain helpers.
 - package `__init__.py`: export the concrete tool class only.
 
-Concrete tools may import `klara.core` contracts and capability-local helpers.
+Concrete tools may import `klara.core` contracts and tool-local helpers.
 They must not import the loop, backend, frontend, or trace sinks. External
 provider clients belong in `src/klara/services/`; the tool package should wrap
 that service into a model-visible capability.
 
 Tool registration is automatic for local built-in tools: each package under
-`src/klara/capabilities/tools/` must expose exactly one `BaseTool` subclass from
+`src/klara/tools/builtin/` must expose exactly one `BaseTool` subclass from
 `tool.py`. The registry discovers packages, filters visibility later by profile,
 and must not carry a hand-written list of default tool instances.
 
@@ -132,7 +132,6 @@ Tool-use negotiation belongs to the tool wrapper:
 - runtime policy lives in `ToolMetadata`
 - system prompt identity lives in `src/klara/prompts/persona.md`
 - tool-specific model guidance belongs in the `ToolSpec` description and schema
-- post-result next-turn advice lives in `after_result()`
 - execution remains a narrow `run(arguments)` method
 
 Tool execution uses metadata-driven waves:

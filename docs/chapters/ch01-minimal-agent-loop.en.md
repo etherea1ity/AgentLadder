@@ -45,10 +45,10 @@ You should see: the model answers directly and the run ends.
 Then ask:
 
 ```text
-Please use the debug_echo tool to echo klara-loop, then tell me what you saw.
+Please use the current_time tool to check the current time in Asia/Shanghai, then tell me what you saw.
 ```
 
-You should see: the model requests `debug_echo`, runtime executes the tool, the observation returns to context, and the loop either continues or returns the final answer.
+You should see: the model requests `current_time`, runtime executes the tool, the observation returns to context, and the loop either continues or returns the final answer.
 
 ## Why Start With A Loop
 
@@ -292,8 +292,8 @@ Code:
 
 ```text
 src/klara/core/loop.py
-src/klara/core/tool_executor.py
-src/klara/capabilities/tools/debug_echo/tool.py
+src/klara/tools/executor.py
+src/klara/tools/builtin/current_time/tool.py
 ```
 
 <details>
@@ -639,7 +639,7 @@ These tests confirm:
 ## Small Experiments
 
 - Lower `KlaraHarnessConfig.max_turns`, then observe `StopReason.MAX_TURNS`.
-- Ask the model to use `debug_echo`, then inspect `tool.started` and `tool.completed` order in the event area.
+- Ask the model to use `current_time`, then inspect `tool.started` and `tool.completed` order in the event area.
 - Open the local trace JSONL and confirm one `run_id` joins `run.started`, `llm.completed`, `tool.completed`, and `run.completed`.
 
 ## Next Chapter
