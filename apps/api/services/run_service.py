@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -17,12 +18,19 @@ from apps.api.schemas import (
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
-from klara.capabilities.registry import CapabilityRegistry
+from klara.context.history import prepare_conversation_history
+from klara.context.runtime import build_system_prompt
+from klara.context.timestamps import resolve_prompt_timezone, stamp_user_message_content
+from klara.context.web_evidence import WebEvidenceGuard
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
+from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
-from klara.core.tool_executor import ToolExecutor
+from klara.tools.executor import ToolExecutor
+from klara.tools.registry import ToolRegistry
+
+MAX_HISTORY_MESSAGES = 12
 
 
 class RunService:
@@ -37,6 +45,7 @@ class RunService:
         allowed_models: set[str] | None = None,
         default_model: str | None = None,
         loop_policy: LoopPolicy | None = None,
+        user_context: UserContext | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -48,6 +57,7 @@ class RunService:
             allowed_models: Model refs accepted from the UI.
             default_model: Model ref used when a run does not select one.
             loop_policy: Bounded execution policy for loop safety.
+            user_context: Local user partition and prompt timezone context.
         """
 
         self.store = store
@@ -56,6 +66,7 @@ class RunService:
         self.allowed_models = allowed_models or set()
         self.default_model = default_model
         self.loop_policy = loop_policy or LoopPolicy()
+        self.user_context = user_context or UserContext.local_default()
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -154,15 +165,25 @@ class RunService:
         hooks = HookManager([bridge, JsonlTraceHook(Path(self.trace_path))])
 
         try:
+            registry = ToolRegistry.with_default_tools()
             loop = KlaraLoop(
                 llm=self.llm_client,
-                tool_executor=ToolExecutor(list(CapabilityRegistry.with_default_tools().visible_tools())),
+                tool_executor=ToolExecutor(list(registry.visible_tools())),
                 hooks=hooks,
                 policy=self.loop_policy,
                 model=current.model or self.default_model or "fake-model",
-                system_prompt=_system_prompt(),
+                system_prompt=_system_prompt(self.user_context),
+                final_answer_guard=_web_evidence_guard(self.user_context),
             )
-            result = loop.run(user_message.content, run_id=run_id)
+            model_visible_user_input = self._model_visible_content(user_message)
+            result = loop.run(
+                model_visible_user_input,
+                run_id=run_id,
+                prior_messages=self._conversation_history(
+                    run.session_id,
+                    before_message_id=user_message.message_id,
+                ),
+            )
             if run_id in self._cancel_requested:
                 return
 
@@ -232,6 +253,41 @@ class RunService:
         if model and self.allowed_models and model not in self.allowed_models:
             raise ValueError("model_not_allowed")
         return model
+
+    def _conversation_history(
+        self,
+        session_id: str,
+        *,
+        before_message_id: str,
+    ) -> tuple[KlaraMessage, ...]:
+        """Return completed user/assistant messages before the current turn."""
+
+        history: list[KlaraMessage] = []
+        for message in self.store.list_messages(session_id):
+            if message.message_id == before_message_id:
+                break
+            if message.status != "completed" or not message.content.strip():
+                continue
+            if message.role not in {"user", "assistant"}:
+                continue
+            history.append(
+                KlaraMessage(
+                    role=message.role,
+                    content=self._model_visible_content(message),
+                )
+            )
+        return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
+
+    def _model_visible_content(self, message: MessageRecord) -> str:
+        """Return stored message text translated for the model boundary."""
+
+        if message.role != "user":
+            return message.content
+        return stamp_user_message_content(
+            message.content,
+            created_at=message.created_at,
+            timezone_name=self.user_context.timezone,
+        )
 
 
 class _RunEventBridge:
@@ -313,21 +369,21 @@ class _UsageTotals:
         self.total_tokens += payload["total_tokens"] or 0
 
 
-def _system_prompt() -> str:
+def _system_prompt(user_context: UserContext) -> str:
     """Build the app prompt while keeping persona outside core."""
 
-    persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8").strip()
-    user = UserContext.local_default()
-    return "\n\n".join(
-        [
-            persona,
-            (
-                "Runtime user context:\n"
-                f"- display_name: {user.display_name}\n"
-                f"- locale: {user.locale}\n"
-                f"- timezone: {user.timezone}"
-            ),
-        ]
+    persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8")
+    return build_system_prompt(persona=persona, timezone_name=user_context.timezone)
+
+
+def _web_evidence_guard(user_context: UserContext) -> WebEvidenceGuard:
+    """Build the web evidence guard with the same prompt-facing date."""
+
+    prompt_timezone = resolve_prompt_timezone(user_context.timezone)
+    current_date = datetime.now(UTC).astimezone(prompt_timezone.tzinfo).date()
+    return WebEvidenceGuard(
+        current_date=current_date,
+        timezone_name=prompt_timezone.name,
     )
 
 

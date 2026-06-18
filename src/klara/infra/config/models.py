@@ -17,6 +17,10 @@ class ProviderModel:
     supports_tools: bool = False
     # Whether this model can reliably produce JSON-style output.
     supports_json: bool = False
+    # Whether this model can accept image inputs in chat messages.
+    supports_vision: bool = False
+    # Provider-specific thinking switch; Qwen tools need this disabled.
+    enable_thinking: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -48,6 +52,11 @@ class ProviderConfig:
         if self.allow_unlisted_models:
             return True
         return any(model.id == model_id for model in self.models)
+
+    def model_entry(self, model_id: str) -> ProviderModel | None:
+        """Return the configured model entry when one is listed."""
+
+        return next((model for model in self.models if model.id == model_id), None)
 
 
 @dataclass(frozen=True)

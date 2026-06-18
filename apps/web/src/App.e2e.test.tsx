@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -43,27 +43,30 @@ const runResponse = {
   status: "queued",
   events_url: "/api/runs/run_1/events/stream",
 };
+let listedSessions: (typeof session)[];
 
 describe("Klara app flow", () => {
   beforeEach(() => {
     localStorage.clear();
     MockEventSource.instances = [];
+    listedSessions = [];
     vi.stubGlobal("EventSource", MockEventSource);
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url === "/api/models")
           return json({
-            default_model: "deepseek/deepseek-v4-flash",
+            default_model: "qwen/qwen-flash",
             models: [
               {
-                id: "deepseek/deepseek-v4-flash",
-                model: "deepseek/deepseek-v4-flash",
-                label: "DeepSeek V4 Flash",
+                id: "qwen/qwen-flash",
+                model: "qwen/qwen-flash",
+                label: "Qwen 3.7 Flash",
+                use_when: "qwen provider",
               },
             ],
           });
-        if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: [] });
+        if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: listedSessions });
         if (url === "/api/sessions" && init?.method === "POST") return json(session);
         if (url === "/api/runs") return json(runResponse);
         if (url === "/api/sessions/sess_1")
@@ -104,8 +107,23 @@ describe("Klara app flow", () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it("streams a runtime loop answer without a right-side trace panel", async () => {
+  it("restores the previous conversation after a page refresh", async () => {
+    listedSessions = [session];
+    localStorage.setItem(
+      "klara_ui_state",
+      JSON.stringify({ activeSessionId: "sess_1", sidebarCollapsed: false }),
+    );
+
     render(<App />);
+
+    expect(await screen.findByText("runtime loop")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Klara completed the runtime loop."),
+    ).toBeInTheDocument();
+  });
+
+  it("streams a runtime loop answer without a right-side trace panel", async () => {
+    const { container } = render(<App />);
     await userEvent.type(
       screen.getByPlaceholderText("Ask your first question..."),
       "run the runtime loop",
@@ -129,11 +147,13 @@ describe("Klara app flow", () => {
       }),
     );
     source.emit("answer_streaming_started", evt("answer_streaming_started", "Klara is writing."));
+    const generatedImageUrl =
+      "/api/assets/local?path=data/assets/images/20260617/sample.png";
     source.emit(
       "answer_delta",
       evt("answer_delta", "", {
-        delta: "Klara completed the runtime loop.",
-        streamed_chars: 33,
+        delta: `![Generated image](${generatedImageUrl})\n\nKlara completed the runtime loop.`,
+        streamed_chars: 100,
       }),
     );
     source.emit(
@@ -145,6 +165,10 @@ describe("Klara app flow", () => {
     );
 
     expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
+    const generatedImage = container.querySelector(".generated-image");
+    expect(generatedImage).toHaveAttribute("src", generatedImageUrl);
+    fireEvent.error(generatedImage as Element);
+    expect(screen.getByText("Generated image unavailable")).toBeInTheDocument();
     expect(screen.queryByText("Run Margin")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /open run trace/i })).not.toBeInTheDocument();
   });

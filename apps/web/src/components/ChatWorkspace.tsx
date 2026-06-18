@@ -446,6 +446,11 @@ function AssistantContent({
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeKatex]}
+          components={{
+            img: ({ src, alt }) => (
+              <GeneratedImage src={String(src ?? "")} alt={alt ?? ""} />
+            ),
+          }}
         >
           {normalizeMathMarkdown(content)}
         </ReactMarkdown>
@@ -454,6 +459,41 @@ function AssistantContent({
       )}
     </div>
   );
+}
+
+function GeneratedImage({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  const resolvedSrc = resolveAssetSrc(src);
+  const label = alt || "Generated image";
+
+  if (!resolvedSrc) return null;
+  if (failed) {
+    return (
+      <span className="generated-image-fallback" title={resolvedSrc}>
+        Generated image unavailable
+      </span>
+    );
+  }
+
+  return (
+    <a className="generated-image-link" href={resolvedSrc} target="_blank" rel="noreferrer">
+      <img
+        className="generated-image"
+        src={resolvedSrc}
+        alt={label}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    </a>
+  );
+}
+
+function resolveAssetSrc(src: string) {
+  if (!src) return "";
+  if (!src.startsWith("/api/assets/local")) return src;
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+  return `${apiBase}${src}`;
 }
 
 function ChatInput({
@@ -636,7 +676,7 @@ function ModelPicker({
             }}
           >
             <span>{option.label}</span>
-            <small>{option.model}</small>
+            <small>{option.use_when ?? option.model}</small>
             {option.model === selectedModel ? <Check size={15} /> : null}
           </button>
         ))}

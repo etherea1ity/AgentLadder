@@ -1,28 +1,30 @@
-# Chapter 1: Minimal LLM Loop
+﻿# Chapter 2: Tool Calling
 
 Language: [中文](./README.md) | English
 
-Previous: none  
-Next: Chapter 2: Tool Calling
+Previous: [Chapter 1: Minimal LLM Loop](./docs/chapters/ch01-minimal-agent-loop.en.md)
+Next: Chapter 3: Hooks And Trace
 Roadmap: [Klara Roadmap](./docs/skills/roadmap.md)
 
 ---
 
 ## The Chapter In One Sentence
 
-Klara moves from a one-shot pipeline to a minimal loop: if the model asks for tools, runtime executes them and continues; if the model asks for no tools, the loop stops and returns the answer.
+Tool calling means: the model produces `tool_calls`, the runtime executes tools, and observations go back into context; if the model produces no `tool_calls`, the loop stops and returns the final answer.
 
-![Klara Chapter 1 Minimal LLM Loop](./docs/assets/ch01-minimal-loop.png)
+![Klara Chapter 2 Tool Calling](./docs/assets/ch02-tool-calling.png)
 
 | What Klara sees | What Klara does |
 | --- | --- |
-| `tool_calls` exists | Execute tools, append observations, continue |
-| no `tool_calls` | Return the final answer and stop |
-| `max_turns` reached | Stop by policy and expose the stop reason |
+| assistant returns `tool_calls` | Execute tools, append `role="tool"` observations, continue |
+| assistant has no `tool_calls` | Return the final answer and stop |
+| tool is unknown, arguments are invalid, or execution fails | Return a failed observation visible to the next model turn |
+| tool output is too long | Truncate by metadata before it enters context |
+| `max_turns` is reached | Stop exposing tools, make one final no-tool LLM call, then stop by `LoopPolicy` |
 
 ## Quick Experience
 
-After `.env` is ready, start backend and frontend together:
+After `.env` is ready, start backend and frontend:
 
 ```powershell
 .\scripts\dev.ps1
@@ -34,307 +36,161 @@ Open:
 http://127.0.0.1:5123
 ```
 
-Ask first:
+Start with a stable local tool:
 
 ```text
-Introduce yourself in one sentence.
+Please use current_time to check the current time in Asia/Shanghai, then answer in one sentence.
 ```
 
-You should see: the model answers directly and the run ends.
+You should see: Klara calls `current_time`, the runtime returns a time observation, and the model writes the final answer from that observation.
 
-Then ask:
+Then ask for a web evidence chain:
 
 ```text
-Please use the debug_echo tool to echo klara-loop, then tell me what you saw.
+Please use web_search to search for the latest World Cup report, then use web_fetch to open one result and summarize it.
 ```
 
-You should see: the model requests `debug_echo`, runtime executes the tool, the observation returns to context, and the loop either continues or returns the final answer.
+You should see: `web_search` finds candidate pages; `web_fetch` reads one URL. Page content enters the next turn as an untrusted observation.
 
-## Why Start With A Loop
-
-The old pipeline shape was a fixed path:
+Finally try the media tool:
 
 ```text
-question -> retrieve -> prompt -> answer
+Generate a warm Klara desk illustration and show the image in the answer.
 ```
 
-Klara needs to learn how to run one turn, inspect the result, then decide whether to continue or stop. That skeleton is where later tool registry, RAG, memory, hooks, context compression, and RL will attach.
+You should see: Klara calls `image_generate`, the tool stores the image as a local asset, and the final answer embeds the image with Markdown beside normal text.
 
-Klara learns: an agent run is not a black-box model call. It is an observable, testable, continuable, stoppable runtime loop.
+## 1. Start From A Real Problem: Why Tools Can Still Answer Poorly
 
----
+This chapter is not about wrapping functions for its own sake. Start with the real problem.
 
-## 1. The Harness Assembles One Run
-
-The core loop does not read environment variables, choose persona, or know frontend and storage paths.
-The app-layer harness assembles those dependencies and injects them into the loop.
+For similar "latest World Cup report" questions:
 
 ```text
-user input
--> KlaraHarness
--> persona + model + tools + hooks + policy
--> KlaraLoop
+good run:
+llm_call_completed: tool_call_count=1
+tool_call_started: web_search
+tool_call_completed: web_search
+llm_call_completed: tool_call_count=1
+tool_call_started: web_fetch
+tool_call_completed: web_fetch
+llm_call_completed: tool_call_count=0
+
+bad follow-up:
+user asks: What about Argentina?
+llm_call_completed: tool_call_count=0
+assistant answers directly, without rebuilding a search evidence chain
 ```
 
-Klara learns: core executes runtime logic; the app layer assembles the runtime world.
-
-Code:
+So the problem is not merely "do we have web_search?" The problem is:
 
 ```text
-src/klara/app/harness.py
+current question
+-> are the visible tool declarations clear?
+-> is recent history clean?
+-> are tool observations trustworthy, bounded, and recoverable?
 ```
 
-<details>
-<summary>Expand: how the harness injects trace hooks and tools</summary>
-
-Real code:
-
-```python
-# Hooks are built per run so trace sinks do not leak across executions.
-hooks = HookManager()
-if self.config.trace_path is not None:
-    hooks.register(JsonlTraceHook(self.config.trace_path))
-
-# The harness converts visible capabilities into the core executor boundary.
-loop = KlaraLoop(
-    llm=self.llm,
-    tool_executor=ToolExecutor(list(self.registry.visible_tools())),
-    hooks=hooks,
-    policy=LoopPolicy(max_turns=self.config.max_turns),
-    model=self.config.model,
-    system_prompt=self._system_prompt(),
-)
-return loop.run(user_input, run_id=run_id)
-```
-
-This code:
-
-- creates a run-local `HookManager`
-- registers `JsonlTraceHook` when a trace path exists
-- injects LLM, tools, hooks, policy, model, and system prompt into `KlaraLoop`
-
-The key boundary: `KlaraLoop` does not read `.env`, create trace files, or choose tools. It receives prepared dependencies.
-
-</details>
-
-## 2. The Loop Receives Dependencies
-
-`KlaraLoop` is the runtime core, not the product entry point. It stores dependencies, then executes the loop in `run()`.
+Klara should not patch this with keyword rules such as "if the user says World Cup, force search." That turns the runtime into fragile if/else routing. Klara instead builds clear tool boundaries:
 
 ```text
-llm + tool_executor + hooks + policy + model + system_prompt
--> KlaraLoop
+ToolSpec       -> model-visible: what can I call, and what arguments exist?
+ToolMetadata   -> runtime-visible: risk, parallelism, approval, output budget, trust
+ToolExecutor   -> execute tools and turn success/failure into observations
+History policy -> replay only recent session history and remove local image links
 ```
-
-Klara learns: keep the loop small and inject dependencies explicitly.
 
 Code:
 
 ```text
 src/klara/core/loop.py
+src/klara/core/tools.py
+src/klara/tools/registry.py
+src/klara/tools/executor.py
+src/klara/context/history.py
+apps/api/services/run_service.py
 ```
+
+Reader takeaway: the tool chapter is about runtime boundaries, not one search API.
 
 <details>
-<summary>Expand: reading KlaraLoop.__init__</summary>
+<summary>Expand: how to read this incident</summary>
 
-Real code:
+The first World Cup question could correctly run `web_search -> web_fetch`, so the tool chain itself works. The unstable follow-up points to model-visible state:
 
-```python
-def __init__(
-    self,
-    *,
-    llm: LlmClient,
-    tool_executor: ToolExecutor,
-    hooks: HookManager | None = None,
-    policy: LoopPolicy | None = None,
-    model: str = "fake-model",
-    system_prompt: str = "",
-) -> None:
+1. Tool declarations must be clear. The model only sees `ToolSpec`; vague descriptions make tool selection unreliable.
+2. Tool results are not facts by themselves. `web_search` returns candidates, and `web_fetch` returns external page text; both can be stale, low quality, or prompt-injection-shaped.
+3. History cannot be replayed forever. After image generation, old assistant messages may contain `/api/assets/local?...` links; those links do not help later search questions and waste context.
+4. Each chat window has its own history. `RunService._conversation_history(session_id, ...)` reads messages from the current session only.
+
+This chapter solves the basic boundary:
+
+```text
+how tools are declared
+how tools are registered
+how tools are executed
+how results return to the loop
+how history receives minimal cleanup and a recent-12-message bound
 ```
 
-Parameters:
-
-- `llm`: the model client.
-- `tool_executor`: the boundary that executes requested tools.
-- `hooks`: the runtime lifecycle event outlet.
-- `policy`: loop boundaries such as max turns.
-- `model`: the selected model for this run.
-- `system_prompt`: Klara's identity and behavior constraints.
-
-Real code:
-
-```python
-# Dependencies are injected so core stays independent of providers/services.
-self.llm = llm
-self.tool_executor = tool_executor
-self.hooks = hooks or HookManager()
-self.policy = policy or LoopPolicy()
-self.model = model
-self.system_prompt = system_prompt
-```
-
-The point is the boundary:
-
-- providers are not created in core
-- trace sinks are not created in core
-- frontend bridges are not created in core
-- visible tools are not discovered in core
+Full context compression, source grounding, memory policy, and tool-use evaluation come later.
 
 </details>
 
-## 3. A Run Starts From One User Message
+## 2. The Loop Only Understands tool_calls, Not Concrete Tools
 
-The first step is not the model call. The run first needs a stable identity and one user message.
+Chapter 1 already has the minimal loop. Chapter 2 keeps the same decision:
 
 ```text
-user_input
--> run_id
--> [KlaraMessage(role="user")]
--> run.started event
+messages + system_prompt + tool specs
+-> LLM
+-> assistant message
+-> has tool_calls: execute tools, append observations, continue
+-> no tool_calls: return final answer, stop
 ```
 
-Klara learns: trace, frontend events, and tests need the same `run_id` join key.
+Klara learns: a tool call is not a separate chat endpoint; it is the loop's continue signal.
 
 Code:
 
 ```text
 src/klara/core/loop.py
 src/klara/core/messages.py
-src/klara/core/events.py
+src/klara/core/policies.py
 ```
 
 <details>
-<summary>Expand: the beginning of run()</summary>
+<summary>Expand: the tool branch in KlaraLoop.run</summary>
+
+This code runs in every turn. Its input is the current transcript, system prompt, selected model, and visible tool specs. Its output is either a final answer or the next transcript with tool observations appended.
 
 Real code:
 
 ```python
-# Active run id is the trace join key across all lifecycle events.
-active_run_id = run_id or str(uuid4())
-# Messages begin with exactly one user message; later turns append to it.
-messages: list[KlaraMessage] = [KlaraMessage(role="user", content=user_input)]
-self._emit(active_run_id, "run.started", {"model": self.model})
-```
-
-Line by line:
-
-- `active_run_id` identifies the run.
-- tests and APIs can pass a stable `run_id`.
-- otherwise, the loop generates a UUID.
-- `messages` starts with one user message.
-- `run.started` is emitted to hooks, not directly written as a log.
-
-Trace is therefore not hardcoded logging inside the loop. The loop emits events; `JsonlTraceHook` writes them.
-
-</details>
-
-## 4. Each Turn Calls The LLM First
-
-Each turn sends the current transcript, system prompt, tool specs, and model id to the LLM client.
-
-```text
-system_prompt + messages + tool specs + model
--> llm.complete(...)
--> ModelResponse(content, tool_calls)
-```
-
-Klara learns: the LLM call is one step inside the loop, not the whole agent.
-
-Code:
-
-```text
-src/klara/core/loop.py
-src/klara/core/messages.py
-src/klara/infra/llm/openai_compatible.py
-```
-
-<details>
-<summary>Expand: LLM call code</summary>
-
-Real code:
-
-```python
-self._emit(active_run_id, "turn.started", {"turn_index": turn_index})
-self._emit(active_run_id, "llm.started", {"turn_index": turn_index})
-# Ask the injected model using only the prompt, transcript, and specs.
 response = self.llm.complete(
     system_prompt=self.system_prompt,
     messages=tuple(messages),
     tools=self.tool_executor.specs,
     model=self.model,
 )
-```
 
-The call receives:
+assistant_message = KlaraMessage(
+    role="assistant",
+    content=response.content,
+    tool_calls=response.tool_calls,
+)
+messages.append(assistant_message)
 
-- `system_prompt`: Klara's behavior contract.
-- `messages`: the visible transcript so far.
-- `tools`: the tool schemas visible to the model.
-- `model`: the selected model.
-
-The result is a `ModelResponse`, which may contain final text or tool calls.
-
-</details>
-
-## 5. `tool_calls` Decides Continue Or Stop
-
-This is Chapter 1's core decision:
-
-```text
-response.tool_calls?
--> yes: execute tools, append observations, continue
--> no: final answer, stop
-```
-
-Klara learns: the model can request tools, but runtime executes them.
-
-Code:
-
-```text
-src/klara/core/loop.py
-src/klara/core/tool_executor.py
-src/klara/capabilities/tools/fake_tool.py
-```
-
-<details>
-<summary>Expand: how a tool call becomes an observation</summary>
-
-Real code:
-
-```python
 if not response.tool_calls:
-    # No tool calls means the assistant content is the final answer.
-    self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
     return self._complete(
         active_run_id,
         messages,
         response.content,
         StopReason.FINAL,
     )
-```
 
-If there are no `tool_calls`, the loop ends.
-
-If there are `tool_calls`, runtime executes every tool:
-
-```python
-# Execute every requested tool before preparing the next model turn.
-for call in response.tool_calls:
-    self._emit(
-        active_run_id,
-        "tool.started",
-        {"turn_index": turn_index, "tool_call": call.to_public_dict()},
-    )
-    # Tool results become model-visible observations.
-    result = self.tool_executor.execute(call)
-    self._emit(
-        active_run_id,
-        "tool.completed",
-        {
-            "turn_index": turn_index,
-            "tool_result": result.to_public_dict(),
-        },
-    )
+tool_results = self.tool_executor.execute_many(response.tool_calls)
+for result in tool_results:
     messages.append(
         KlaraMessage(
             role="tool",
@@ -345,311 +201,686 @@ for call in response.tool_calls:
     )
 ```
 
-Runtime state changes here: the tool result becomes a `role="tool"` message. It is not hidden state; the next LLM turn can see it as an observation.
+How to read it:
+
+1. `self.llm.complete(...)` is one model turn. The model receives `ToolSpec`; it never receives Python tool objects.
+2. The assistant message enters `messages` before tools run. Even if the assistant only requested tools, later tool messages need `tool_call_id` to attach to this request.
+3. `if not response.tool_calls` is the stop signal. With no tool request, `response.content` is the final answer.
+4. `execute_many(response.tool_calls)` delegates tool requests to the executor. The loop does not care whether the tool is `current_time`, `web_search`, or a future RAG tool.
+5. Every `ToolResult` becomes a `role="tool"` message. Success uses `content`; failure uses `error`; both are visible in the next model turn.
+
+Concrete example:
+
+```text
+assistant:
+  tool_calls=[{"id": "call-1", "name": "current_time", "arguments": {"timezone": "Asia/Shanghai"}}]
+
+executor:
+  ToolResult(tool_call_id="call-1", name="current_time", ok=True, content="{...}")
+
+loop:
+  append role="tool", tool_call_id="call-1", name="current_time"
+
+next model turn:
+  the model sees the time observation and writes the final answer
+```
+
+State changes:
+
+- `messages` first receives the assistant request.
+- If no tool is requested, the run completes with `StopReason.FINAL`.
+- If tools are requested, `messages` receives tool observations.
+- `LoopPolicy.max_turns = 12` prevents infinite tool requests.
+
+Architecture boundary: `core.loop` depends on the `ToolRunner` protocol; it does not import concrete implementations from `klara.tools`.
+
+Reader takeaway: the loop decides continue or stop; concrete capability ownership stays in the tools layer.
 
 </details>
 
-## 6. prepare_next_turn Starts Minimal
+## 3. ToolSpec Is For The Model; ToolMetadata Is For Runtime
 
-Chapter 1 keeps `prepare_next_turn` as identity: no compression, rewriting, or memory injection yet.  
-The boundary exists now because later context compression, memory, RAG, and tool effects need it.
+A tool has two contracts:
 
 ```text
-messages
--> prepare_next_turn(messages)
--> messages for next LLM turn
+ToolSpec       -> model-visible: name, description, JSON parameter schema
+ToolMetadata   -> runtime-visible: risk, parallelism, approval, timeout, output budget, trust
 ```
 
-Klara learns: next-turn context needs a deliberate preparation phase.
+The main example is `current_time`. It has no network dependency, no key, stable output, and controlled errors, so it is the cleanest template.
 
 Code:
 
 ```text
-src/klara/core/loop.py
+src/klara/core/tools.py
+src/klara/tools/builtin/current_time/schema.py
 ```
 
 <details>
-<summary>Expand: the minimal prepare_next_turn step</summary>
+<summary>Expand: current_time Spec and Metadata</summary>
 
-Real code:
+`ToolSpec` is model-visible. It answers "how can the model request this tool?"
 
 ```python
-# The minimal loop keeps preparation as identity until context policy exists.
-self._emit(
-    active_run_id,
-    "prepare_next_turn.started",
-    {"turn_index": turn_index},
+CURRENT_TIME_SPEC = ToolSpec(
+    name="current_time",
+    description=(
+        "Return the current date, time, weekday, and UTC offset for a requested "
+        "timezone. Use for current-time questions, not historical or web facts."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "timezone": {
+                "type": "string",
+                "description": (
+                    "Optional IANA timezone, such as Asia/Shanghai or UTC. "
+                    "Use local time when omitted."
+                ),
+            },
+        },
+        "required": [],
+        "additionalProperties": False,
+    },
 )
-messages = self.prepare_next_turn(messages)
-self._emit(
-    active_run_id,
-    "prepare_next_turn.completed",
-    {"turn_index": turn_index, "message_count": len(messages)},
-)
-self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
 ```
 
-This chapter does not compress context yet, but the event boundary already exists. Later chapters can add real context preparation without rewriting the loop shape.
+How to read it:
+
+- `name="current_time"` is the exact string the model must produce in `tool_call.name`.
+- `description` says it handles current time, not historical facts or web facts.
+- `input_schema` constrains JSON arguments.
+- `additionalProperties=False` tells the model not to send unsupported fields like `city`, `locale`, or `format`.
+
+`ToolMetadata` is runtime-visible. It answers "how should runtime manage this tool?"
+
+```python
+CURRENT_TIME_METADATA = ToolMetadata(
+    label="Current Time",
+    category="time",
+    side_effect=ToolSideEffect.NONE,
+    parallel_safe=True,
+    timeout_seconds=1.0,
+    max_output_chars=1000,
+)
+```
+
+Field flow:
+
+| Field | Reader | Current behavior |
+| --- | --- | --- |
+| `ToolSpec.name` | LLM / executor | Model requests this name; executor looks it up |
+| `ToolSpec.description` | LLM | Helps the model decide when to use the tool |
+| `ToolSpec.input_schema` | LLM adapter | Converted to provider tool schema |
+| `metadata.parallel_safe` | `ToolExecutor` | Determines whether a call can join a parallel wave |
+| `metadata.requires_approval` | `ToolExecutor` | Splits the wave when approval is needed |
+| `metadata.timeout_seconds` | tool/service | Passed to concrete tools or network services |
+| `metadata.max_output_chars` | `ToolExecutor` | Truncates model-visible observations |
+| `metadata.output_trust` | trace / future guard | Marks external observations as untrusted |
+
+State changes:
+
+- The model sees only `ToolSpec`.
+- Runtime keeps `ToolMetadata`.
+- The executor consumes metadata for parallelism and truncation.
+
+Reader takeaway: Spec is the model manual; Metadata is the runtime scheduling and safety signal.
 
 </details>
 
-## 7. The Loop Must Explain Why It Stopped
+## 4. Each Tool Is A Package
 
-Klara should not merely be "done." She should know why the loop ended.
+Klara uses one package per tool:
 
 ```text
-no tool calls -> StopReason.FINAL
-max turns -> StopReason.MAX_TURNS
-unexpected error -> run.failed
+src/klara/tools/builtin/
+  current_time/
+    __init__.py
+    schema.py
+    timezones.py
+    tool.py
+  image_generate/
+    __init__.py
+    schema.py
+    tool.py
+  web_search/
+    __init__.py
+    schema.py
+    tool.py
+  web_fetch/
+    __init__.py
+    schema.py
+    tool.py
 ```
 
-Klara learns: stopping is part of runtime policy.
+Klara learns: a tool is not a loose function; it is a declared, registered, testable capability package.
 
 Code:
 
 ```text
-src/klara/core/loop.py
-src/klara/core/policies.py
+src/klara/tools/base.py
+src/klara/tools/builtin/current_time/
+src/klara/tools/builtin/image_generate/
+src/klara/tools/builtin/web_search/
+src/klara/tools/builtin/web_fetch/
+tests/klara/architecture/test_boundaries.py
 ```
 
 <details>
-<summary>Expand: final and max-turn stopping</summary>
+<summary>Expand: why BaseTool is an authoring template, not a core dependency</summary>
 
-If the model keeps requesting tools until the turn budget is exhausted:
-
-```python
-# At max turns, expose the last visible content and explicit stop reason.
-final_answer = messages[-1].content if messages else ""
-return self._complete(
-    active_run_id,
-    messages,
-    final_answer,
-    StopReason.MAX_TURNS,
-)
-```
-
-Completion is still emitted as an event:
+Core only requires the structural `KlaraTool` protocol. Local tools inherit `BaseTool` to share argument validation and result construction. The loop does not depend on this inheritance tree.
 
 ```python
-self._emit(run_id, "run.completed", {"stop_reason": stop_reason.value})
-```
+class BaseTool:
+    spec: ToolSpec
+    metadata: ToolMetadata
 
-The stop reason enters trace and the final `KlaraRunResult`.
-
-</details>
-
-## 8. Hooks Attach Trace And UI
-
-Chapter 1 uses hooks as observers: hooks receive events but do not change loop behavior.
-
-```text
-KlaraLoop._emit(...)
--> HookManager.emit(event)
--> JsonlTraceHook.on_event(event)
--> frontend bridge on_event(event)
-```
-
-Klara learns: trace is not hardcoded logging. It is the first hook implementation.
-
-Code:
-
-```text
-src/klara/core/events.py
-src/klara/core/hooks.py
-apps/api/services/run_service.py
-tests/klara/core/test_hooks.py
-```
-
-<details>
-<summary>Expand: HookManager and JsonlTraceHook</summary>
-
-Real code:
-
-```python
-class KlaraHook(Protocol):
-    """Protocol for observers or guards attached to loop lifecycle events."""
-
-    def on_event(self, event: KlaraEvent) -> None:
-        """Handle one loop event."""
-
-        ...
-```
-
-Chapter 1 only uses observer hooks. Later chapters can introduce `PreToolUse`, `PostToolUse`, and `Stop` lifecycle hooks.
-
-Real code:
-
-```python
-def emit(self, event: KlaraEvent) -> None:
-    """Send an event to every hook and record hook-level failures."""
-
-    # Visit hooks sequentially so trace and policy hooks see stable order.
-    for hook in self._hooks:
+    def execute(self, arguments: JsonObject) -> ToolResult:
         try:
-            hook.on_event(event)
-        except Exception as exc:  # pragma: no cover - exact hook errors vary
-            # Hook failures are runtime observations, not loop failures.
-            self.failures.append((event.type, f"{type(exc).__name__}: {exc}"))
+            return self.run(arguments)
+        except ToolInputError as exc:
+            return self.failure(arguments, str(exc))
+
+    def run(self, arguments: JsonObject) -> ToolResult:
+        raise NotImplementedError
 ```
 
-Hook failure does not crash the loop. It becomes hook failure data.
+How to read it:
 
-Real code:
+1. The executor calls `tool.execute(arguments)`.
+2. `BaseTool.execute()` catches `ToolInputError` and turns invalid arguments into failed observations.
+3. Concrete tools implement `run()`.
+4. Core does not import `BaseTool`, so future MCP tools, remote tools, or sandboxed tools can implement only the protocol.
+
+Failure path in `current_time`:
 
 ```python
-class JsonlTraceHook:
-    """Persist public lifecycle events as newline-delimited JSON."""
-
-    def on_event(self, event: KlaraEvent) -> None:
-        """Append one public event to the JSONL trace file."""
-
-        # Ensure local trace directories exist before appending the event.
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(event.to_public_dict(), ensure_ascii=False) + "\n")
+timezone_name = str(arguments.get("timezone") or "").strip()
+try:
+    resolved_name, resolved_timezone = resolve_timezone(timezone_name)
+except ValueError as exc:
+    return self.failure(arguments, str(exc))
 ```
 
-Core principle:
+Concrete example:
 
 ```text
-loop emits events
-hook consumes events
-trace is one hook implementation
+arguments={"timezone": "Mars/Olympus"}
+-> resolve_timezone raises ValueError
+-> CurrentTimeTool returns ok=False
+-> loop appends role="tool" with the error
+-> next model turn can explain the invalid timezone
 ```
 
-The frontend event stream follows the same idea. The API layer attaches `_RunEventBridge` and `JsonlTraceHook` to one `HookManager`:
-
-```python
-usage_totals = _UsageTotals()
-bridge = _RunEventBridge(self, run_id, usage_totals)
-hooks = HookManager([bridge, JsonlTraceHook(Path(self.trace_path))])
-```
+Reader takeaway: invalid tool arguments are model-visible observations, not backend crashes.
 
 </details>
 
-## 9. Real LLM Config Lives In Infra
+## 5. Registry Discovers The Tools Visible To This Run
 
-Chapter 1 can use real models, but providers stay in infra. Core only knows the `LlmClient` protocol.
+The model should not see every future capability. Each run exposes the tools selected by the registry.
 
 ```text
-.env
--> config/models.toml
--> RoutedLlmClient
--> OpenAICompatibleLlmClient
--> KlaraLoop
+klara.tools.builtin.*
+-> discover child package
+-> import <tool_package>.tool
+-> find exactly one BaseTool subclass
+-> instantiate
+-> visible_tools()
 ```
-
-Klara learns: DeepSeek and Qwen are replaceable providers, not part of the loop.
 
 Code:
 
 ```text
-config/models.toml
-config/README.md
-src/klara/infra/llm/openai_compatible.py
-src/klara/infra/llm/routed_client.py
+src/klara/tools/registry.py
+tests/klara/tools/test_tool_registry.py
 ```
 
 <details>
-<summary>Expand: why real LLM support does not change the loop</summary>
+<summary>Expand: why discovery is better than a handwritten list for this course</summary>
 
-The core loop only needs:
+Real code:
 
-```text
-complete(system_prompt, messages, tools, model) -> ModelResponse
+```python
+def discover_local_tool_classes() -> tuple[type[BaseTool], ...]:
+    discovered: list[type[BaseTool]] = []
+    for module_info in sorted(
+        pkgutil.iter_modules(
+            builtin_tools_package.__path__,
+            builtin_tools_package.__name__ + ".",
+        ),
+        key=lambda item: item.name,
+    ):
+        if not module_info.ispkg:
+            continue
+        tool_module = importlib.import_module(f"{module_info.name}.tool")
+        candidates = [
+            value
+            for _, value in inspect.getmembers(tool_module, inspect.isclass)
+            if value is not BaseTool
+            and issubclass(value, BaseTool)
+            and value.__module__ == tool_module.__name__
+        ]
+        if len(candidates) != 1:
+            raise RuntimeError(
+                f"{module_info.name}.tool must define exactly one BaseTool subclass"
+            )
+        discovered.append(candidates[0])
+    return tuple(discovered)
 ```
 
-Provider details stay outside core:
+How to read it:
 
-- API key
-- base URL
-- provider name
-- HTTP response shape
-- retry strategy
-- model routing
+1. `pkgutil.iter_modules(...)` scans built-in tool packages.
+2. `sorted(..., key=lambda item: item.name)` makes tool order deterministic.
+3. `if not module_info.ispkg` accepts only package directories, so each tool must own a folder.
+4. `importlib.import_module(f"{module_info.name}.tool")` imports only each package's `tool.py`.
+5. `issubclass(value, BaseTool)` confirms this is a local tool template.
+6. `value.__module__ == tool_module.__name__` excludes imported helper classes.
+7. `len(candidates) != 1` fails fast when a package exposes zero or multiple concrete tools.
 
-Required keys:
+The default set is locked by a test:
 
-```text
-DEEPSEEK_API_KEY
-DASHSCOPE_API_KEY
+```python
+assert names == {"current_time", "image_generate", "web_fetch", "web_search"}
 ```
 
-Current chat models:
+State changes:
 
-```text
-deepseek/deepseek-v4-flash
-deepseek/deepseek-v4-pro
-qwen/qwen3.6-flash
-qwen/qwen3.6-plus
-```
+- A new tool that follows the package shape is discovered by the default registry.
+- The registry returns concrete tools.
+- The harness passes those tools into `ToolExecutor`.
+- The loop still only uses the `ToolRunner` protocol.
 
-The Qwen image model is configured in `config/images.toml`, but image generation is not part of the Chapter 1 loop. Later it should enter as a tool or capability.
+Reader takeaway: the registry is a tool visibility boundary, not a keyword router.
 
 </details>
 
-## Run And Verify
+## 6. Executor Turns Tool Requests Into Stable Observations
 
-1. Install Python dependencies:
-
-```powershell
-python -m pip install -e ".[dev]"
-```
-
-2. Create `.env` at the repo root:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-3. Fill in your keys:
+`ToolExecutor` is the narrow gate between model requests and concrete tools.
 
 ```text
-DEEPSEEK_API_KEY=...
-DASHSCOPE_API_KEY=...
+ToolCall(id, name, arguments)
+-> lookup visible tool by name
+-> tool.execute(arguments)
+-> normalize id/name
+-> limit output
+-> ToolResult
 ```
 
-4. Start backend and frontend together:
+Code:
+
+```text
+src/klara/tools/executor.py
+tests/klara/tools/test_tool_executor.py
+```
+
+<details>
+<summary>Expand: how a single tool call executes</summary>
+
+Real code:
+
+```python
+def execute(self, call: ToolCall) -> ToolResult:
+    tool = self._tools.get(call.name)
+    if tool is None:
+        return ToolResult(
+            tool_call_id=call.id,
+            name=call.name,
+            content="",
+            ok=False,
+            error=f"Unknown tool: {call.name}",
+        )
+    try:
+        result = tool.execute(call.arguments)
+    except Exception as exc:
+        return ToolResult(
+            tool_call_id=call.id,
+            name=call.name,
+            content="",
+            ok=False,
+            error=f"{type(exc).__name__}: {exc}",
+        )
+    normalized = self._normalize_result(call, result)
+    return self._limit_result(normalized, max_chars=tool.metadata.max_output_chars)
+```
+
+How to read it:
+
+1. `call.name` comes from the model's tool call.
+2. The executor searches only the tools visible in this run.
+3. Unknown tools return `ok=False` instead of raising.
+4. Concrete tool exceptions also become failed observations.
+5. `_normalize_result()` joins the returned result back to the original request id and name.
+6. `_limit_result()` truncates by metadata so web or image tools cannot blow up context.
+
+Concrete example:
+
+```text
+call = ToolCall(id="call-9", name="read_file", arguments={"path": "x"})
+
+executor cannot find read_file, so it returns:
+ToolResult(
+  tool_call_id="call-9",
+  name="read_file",
+  content="",
+  ok=False,
+  error="Unknown tool: read_file",
+)
+```
+
+State changes:
+
+- Unknown tools do not crash FastAPI.
+- Tool exceptions do not terminate the whole run.
+- Failures still enter the next model turn.
+
+Reader takeaway: tool failure is an observable agent state.
+
+</details>
+
+<details>
+<summary>Expand: how multiple tool calls become serial/parallel waves</summary>
+
+The model may return multiple tool calls in one assistant turn. Klara does not hardcode order by tool name; it partitions by metadata.
+
+Real code:
+
+```python
+def execute_many(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
+    results: list[ToolResult] = []
+    parallel_wave: list[ToolCall] = []
+    for call in calls:
+        if self._can_run_in_parallel(call):
+            parallel_wave.append(call)
+            continue
+        results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
+        parallel_wave = []
+        results.append(self.execute(call))
+    results.extend(self._execute_parallel_wave(tuple(parallel_wave)))
+    return tuple(results)
+
+def _can_run_in_parallel(self, call: ToolCall) -> bool:
+    tool = self._tools.get(call.name)
+    if tool is None:
+        return False
+    return tool.metadata.parallel_safe and not tool.metadata.requires_approval
+```
+
+Algorithm:
+
+```text
+parallel_safe=True and requires_approval=False
+-> join current parallel wave
+
+parallel_safe=False
+or requires_approval=True
+or unknown tool
+-> flush current wave, then execute current call alone
+```
+
+Concrete trace:
+
+```text
+[safe A, safe B, serial C, safe D, unknown E]
+-> A/B run concurrently in one wave
+-> C runs alone
+-> D runs in the next wave
+-> E runs alone and returns a failed observation
+```
+
+Why the image tool is serial:
+
+```text
+image_generate:
+  side_effect=NETWORK
+  parallel_safe=False
+  timeout_seconds=180.0
+```
+
+Image generation may be slow, expensive, network-dependent, and produce local asset links, so it starts as a serial tool.
+
+Reader takeaway: serial/parallel behavior reads metadata instead of hardcoding tool names.
+
+</details>
+
+## 7. Web And Image: Tool Results Are Observations, Not Facts
+
+`web_search`, `web_fetch`, and `image_generate` are all tools, but their risks differ.
+
+```text
+web_search     -> find title / URL / snippet
+web_fetch      -> read one public HTTP(S) page
+image_generate -> call Qwen image model, store local asset, return Markdown image link
+```
+
+Klara learns: external I/O can be exposed as tools, but provider calls, safety checks, and asset storage do not belong in the core loop.
+
+Code:
+
+```text
+src/klara/tools/builtin/web_search/schema.py
+src/klara/tools/builtin/web_fetch/schema.py
+src/klara/tools/builtin/image_generate/schema.py
+src/klara/services/web/search.py
+src/klara/services/web/fetcher.py
+src/klara/services/web/safety.py
+src/klara/services/images/qwen.py
+src/klara/services/images/storage.py
+src/klara/services/images/types.py
+src/klara/infra/config/images.py
+```
+
+<details>
+<summary>Expand: why web_fetch has a safety boundary</summary>
+
+`web_fetch` can access external URLs, so the tool wrapper owns arguments and observations while network safety lives in the service layer.
+
+Tool wrapper:
+
+```python
+page = self.page_fetcher(
+    url,
+    max_chars=max_chars,
+    timeout_seconds=self.metadata.timeout_seconds,
+)
+return self.json_success(arguments, {...})
+```
+
+Safety validation:
+
+```python
+def validate_public_http_url(raw_url: str) -> str:
+    ...
+    if parsed.scheme not in {"http", "https"}:
+        raise WebSafetyError("URL must use http or https")
+    if parsed.username or parsed.password:
+        raise WebSafetyError("URL must not include credentials")
+    ...
+    _reject_local_hostname(host)
+    _reject_private_addresses(host)
+```
+
+Runtime behavior:
+
+- `http://localhost:8011` is rejected.
+- private IPs, loopback addresses, and credential-bearing URLs are rejected.
+- page text returns with `untrusted_external_content`.
+
+Reader takeaway: web tool output is not a system instruction; it is an untrusted observation.
+
+</details>
+
+<details>
+<summary>Expand: why image_generate can affect later context</summary>
+
+The image tool returns Markdown image links, so the final answer can interleave images and text:
+
+```text
+![Generated image](/api/assets/local?path=data/assets/images/20260617/xxx.png)
+```
+
+That is good for the frontend, but not always useful for future model history. The model does not need to repeatedly see local asset URLs, and those URLs can bias unrelated later questions toward image context.
+
+So this chapter adds a minimal history sanitizer:
+
+```python
+GENERATED_IMAGE_PLACEHOLDER = "[generated image omitted from prior context]"
+
+def prepare_conversation_history(
+    messages: Iterable[KlaraMessage],
+    *,
+    max_messages: int,
+) -> tuple[KlaraMessage, ...]:
+    prepared: list[KlaraMessage] = []
+    for message in messages:
+        prepared.append(
+            KlaraMessage(
+                role=message.role,
+                content=sanitize_history_content(message.content),
+                name=message.name,
+                tool_call_id=message.tool_call_id,
+                tool_calls=message.tool_calls,
+            )
+        )
+    return tuple(prepared[-max_messages:])
+```
+
+The API layer calls it:
+
+```python
+MAX_HISTORY_MESSAGES = 12
+...
+return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
+```
+
+There are two different 12s:
+
+- `LoopPolicy.max_turns = 12`: one run can have at most 12 model turns, preventing infinite tool loops.
+- `MAX_HISTORY_MESSAGES = 12`: the next run receives at most the latest 12 completed user/assistant messages from the current session.
+
+State changes:
+
+- History is read per session, so chat windows do not share transcript state.
+- Only completed user/assistant messages are replayed.
+- Local image links become a short placeholder.
+- This is not full context compression yet; compression, source summaries, and memory come later.
+
+Reader takeaway: the more tools Klara has, the more carefully it must separate user-visible content from model-visible future context.
+
+</details>
+
+## Evidence Guards In This Chapter
+
+Chapter 2 keeps the agent as one loop. It does not add an intent router for World Cup, news, or any specific keyword. The current implementation adds a small set of source-state guards through `WebEvidenceGuard`, which is injected into the loop through the generic `final_answer_guard` extension point:
+
+```text
+web_search candidates only
+-> model tries to final
+-> runtime_tool_guard asks for web_fetch
+
+preferred_source exists in search results
+-> model fetched only candidate_source
+-> runtime_preferred_source_guard asks it to fetch preferred_source
+
+preferred_source and candidate_source were both fetched
+-> model tries to final
+-> runtime_source_guard masks candidate_source page text before final synthesis
+
+web_fetch page text exists
+-> model tries to final
+-> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
+   navigation, and ads before final synthesis
+```
+
+This is the core teaching point: tools are not facts. Search returns candidates, fetch returns untrusted page text, and the loop may need small evidence guards before the final answer.
+
+## 8. Run And Verify
+
+Start:
 
 ```powershell
-.\scripts\dev.ps1
+.\scripts\dev.ps1 -Restart
 ```
 
 Default URLs:
 
 ```text
-API: http://127.0.0.1:8011
 Web: http://127.0.0.1:5123
+API: http://127.0.0.1:8011
 ```
 
-5. Run core tests:
+Recommended checks:
 
 ```powershell
-python -m pytest tests\klara\core\test_hooks.py tests\klara\app\test_harness.py
+python -m pytest tests\klara tests\apps\api
+cd apps\web
+npm.cmd test
+npm.cmd run build
 ```
 
-These tests confirm:
+Frontend signals to inspect:
 
-- hook failures do not crash the loop
-- JSONL trace is written through hooks
-- the harness assembles persona, tools, user context, and trace hook
+```text
+llm_call_completed.tool_call_count
+tool_call_started
+tool_call_completed
+run_completed.stop_reason
+```
+
+To reproduce the "World Cup" question, open a new chat and ask:
+
+```text
+Please search for the latest World Cup report and open one page to summarize it.
+```
+
+Then follow up:
+
+```text
+What about Argentina?
+```
+
+Inspect whether the second question produces `web_search` / `web_fetch` events. If it does not, this is not a place for a keyword if-statement; it is future work for context policy, tool-use evaluation, and source grounding.
+
+## What This Chapter Leaves Open
+
+Having tools does not mean every factual claim has been verified. A real example:
+
+```text
+User asks: summarize every World Cup match so far, each match recap,
+highlights, commentary, and player performance.
+
+Klara may get the score right, such as "Argentina 3-0 Algeria",
+but then write "Messi had one goal and one assist" in the player notes.
+If the actual match was a Messi hat trick, the score is right but the detail is still wrong.
+```
+
+This is not primarily a `web_search`, `web_fetch`, or tool-registration problem. It shows that the model can turn observations into final prose without claim-level evidence checking.
+
+The fuller solution belongs in later chapters:
+
+```text
+Chapter 3: Hooks And Trace
+-> first make every tool call, fetched source, and final answer observable and replayable.
+
+Source Grounding / Evidence Ledger / Claim Verification
+-> then bind factual claims such as scores, scorers, assists, quotes, and commentary
+   to concrete sources.
+-> unsupported details should either be omitted or marked as unconfirmed.
+```
+
+Reader takeaway: Chapter 2 solves how tools enter the loop; factual verification needs observable trace plus evidence grounding.
 
 ## Small Experiments
 
-- Lower `KlaraHarnessConfig.max_turns`, then observe `StopReason.MAX_TURNS`.
-- Ask the model to use `debug_echo`, then inspect `tool.started` and `tool.completed` order in the event area.
-- Open the local trace JSONL and confirm one `run_id` joins `run.started`, `llm.completed`, `tool.completed`, and `run.completed`.
+1. Lower `current_time` `max_output_chars` and observe executor truncation.
+2. Build two parallel-safe test tools and one serial test tool, then inspect `execute_many()` wave partitioning.
+3. Request a nonexistent tool name and confirm the loop returns a failed observation.
+4. Ask `web_fetch` to read `http://localhost:8011` and confirm the safety layer rejects it.
+5. Generate an image, then ask a search question and inspect how the history sanitizer replaces local image links with a placeholder.
 
 ## Next Chapter
 
-Chapter 2 upgrades this minimal tool path into complete tool calling: tool packages, schemas, metadata, registry, executor, serial/parallel execution, and error observations.
-
-Klara will learn:
-
-- how to expose tool schemas to the LLM
-- how runtime executes tool calls
-- how tool results return as observations for the next turn
-- how to select chapter-visible tools from a larger registry
-- how to trace tool selection, tool start, tool result, and tool error
-
-Chapter 1's rule remains: the loop owns runtime shape, capabilities attach through boundaries, and trace observes through hooks.
+Chapter 3 covers Hooks And Trace: tool calls can now happen, so the next step is projecting runtime lifecycle events into hooks, trace, UI, and guards without writing observation logic into the loop body.

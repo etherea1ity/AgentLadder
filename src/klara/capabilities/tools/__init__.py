@@ -1,1 +1,0 @@
-"""Deterministic demonstration tools."""

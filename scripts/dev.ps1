@@ -2,6 +2,7 @@
 param(
     [int]$ApiPort = 8011,
     [int]$WebPort = 5123,
+    [switch]$Restart,
     [switch]$Open
 )
 
@@ -65,12 +66,17 @@ function Stop-Listener {
     if (-not $listener) {
         return
     }
-    $pid = [int]$listener.OwningProcess
-    if ($pid -le 0) {
+    $processId = [int]$listener.OwningProcess
+    if ($processId -le 0) {
         throw "Port $Port is busy, but no owning process could be resolved."
     }
-    Write-Host "Stopping process $pid on port ${Port}: $Reason"
-    Stop-Process -Id $pid -Force
+    Write-Host "Stopping process $processId on port ${Port}: $Reason"
+    try {
+        Stop-Process -Id $processId -Force -ErrorAction Stop
+    }
+    catch [Microsoft.PowerShell.Commands.ProcessCommandException] {
+        Write-Warning "Port $Port reports PID $processId, but that process is not visible. It may be a stale Windows TCP entry; continuing."
+    }
     Start-Sleep -Seconds 1
 }
 
@@ -98,6 +104,11 @@ New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 Assert-Command "python"
 Assert-Command "npm"
 
+if ($Restart) {
+    Stop-Listener $ApiPort "restart requested"
+    Stop-Listener $WebPort "restart requested"
+}
+
 if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ".env"))) {
     Write-Warning "No .env file found at repo root. Real LLM calls need DEEPSEEK_API_KEY or DASHSCOPE_API_KEY."
 }
@@ -117,6 +128,7 @@ $apiProcess = $null
 $apiListener = Get-Listener $ApiPort
 if ($apiListener) {
     Write-Host "API already listening on http://127.0.0.1:$ApiPort (PID $($apiListener.OwningProcess))."
+    Write-Host "Use .\scripts\dev.ps1 -Restart after backend code changes."
 }
 else {
     $apiCommand = @"
@@ -140,6 +152,7 @@ if ($webListener) {
     }
     else {
         Write-Host "Web app already listening on http://127.0.0.1:$WebPort (PID $($webListener.OwningProcess))."
+        Write-Host "Use .\scripts\dev.ps1 -Restart after frontend env or backend proxy changes."
     }
 }
 

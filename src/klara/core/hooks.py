@@ -25,7 +25,7 @@ class KlaraHook(Protocol):
 class HookManager:
     """Fan out events while isolating hook failures from loop execution.
 
-    The minimal runtime uses hooks mainly for trace output. Later extensions can
+    The runtime uses hooks mainly for trace output. Later extensions can
     attach policy checks, compaction, memory review, or streaming projectors
     without changing the loop contract.
     """

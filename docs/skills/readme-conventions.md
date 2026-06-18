@@ -149,7 +149,7 @@ Start with a compact teaching block:
 | --- | --- |
 | 有 `tool_calls` | 执行工具，把结果放回上下文，继续下一轮 |
 | 没有 `tool_calls` | 返回最终答案，停止 |
-| 达到 `max_turns` | 按 policy 停止，并展示停止原因 |
+| 达到 `max_turns` | 不再暴露工具，最后做一次无工具 LLM 总结，并展示停止原因 |
 ````
 
 This block should appear before harness, provider, frontend, RAG, memory, or
@@ -182,7 +182,7 @@ Use this shape:
 再问：
 
 ```text
-调用 fake tool 帮我查一下 klara-loop。
+调用 current_time 告诉我 Asia/Shanghai 现在几点。
 ```
 
 你应该看到：模型请求工具，runtime 执行工具，然后把 observation 放回下一轮。
@@ -211,6 +211,79 @@ LoopPolicy modules.
 
 The module names can appear after the reader understands what runtime action
 they serve.
+
+## Real Incident -> Mechanism -> Source
+
+When a chapter grows out of a real bug, confusing demo, or failed user run,
+teach from that incident. Do not write it as a changelog or a confession. Use it
+as the smallest visible case that makes the runtime boundary necessary.
+
+Use this order:
+
+```text
+1. 现场：用户问了什么，Klara 做错了什么，或者 trace 显示了什么。
+2. 判断：这不是哪个表面模块的问题，而是哪条 runtime 边界不清。
+3. 机制：本章新增或收紧哪条机制。
+4. 源码：对应的真实文件、关键分支、状态变化。
+5. 验证：读者怎么在前端、trace、tests 或 prompts 里复现。
+6. 预告：完整解法若属于后续章节，只讲当前章节的边界。
+```
+
+For Chapter 2, the real incident pattern is:
+
+```text
+用户先问世界杯战报，Klara 能走 web_search -> web_fetch。
+之后加入 image_generate，并在同一类聊天里继续问最新战报或追问阿根廷。
+有些 run 没有稳定继续调用搜索工具，或者把低质量网页 observation 当成事实。
+```
+
+The teaching point is not "add a keyword router". The teaching point is:
+
+```text
+ToolSpec tells the model what actions exist.
+ToolMetadata tells runtime how risky and schedulable those actions are.
+ToolExecutor turns success and failure into observations.
+Conversation-history preparation removes stale local asset links and bounds the
+history before the next run.
+```
+
+This incident should point to source:
+
+```text
+src/klara/core/loop.py
+src/klara/core/tools.py
+src/klara/tools/registry.py
+src/klara/tools/executor.py
+src/klara/context/history.py
+apps/api/services/run_service.py
+data/app/run_events.jsonl
+```
+
+Use short trace excerpts, not giant logs. A good excerpt shows the decision
+signal:
+
+```text
+llm_call_completed: tool_call_count=1
+tool_call_started: web_search
+tool_call_completed: web_search
+tool_call_started: web_fetch
+...
+follow-up run: tool_call_count=0
+```
+
+Anti-pattern:
+
+```text
+We fixed image pollution and added web tools.
+```
+
+Better:
+
+```text
+The model can only decide well when the current run exposes a clear tool
+contract and a clean recent history. This chapter builds the tool boundary; full
+context compression and memory policy are deferred.
+```
 
 ## Concept -> Mechanism -> Code -> Experiment
 
@@ -250,7 +323,7 @@ Example for Chapter 2:
 ```text
 Existing loop stays the same.
 Only tool execution changes:
-hardcoded fake tool -> registry lookup -> selected tool handler.
+hardcoded placeholder branch -> registry lookup -> selected tool handler.
 ```
 
 Example for hooks:
@@ -344,15 +417,84 @@ For each code walkthrough:
 
 1. Explain why this code appears at this point in the run.
 2. Show a real code block from the repository.
-3. Explain important parameters, variables, emitted events, and returned values.
-4. State the architecture boundary protected by the code.
-5. State the reader takeaway in one sentence.
+3. Explain the input and output of the code before walking through it.
+4. Explain important parameters, variables, emitted events, returned values, and
+   failure branches.
+5. State the runtime state change after each important branch.
+6. State the architecture boundary protected by the code.
+7. State the reader takeaway in one sentence.
 
 Do not paste code as decoration. Every code block must answer:
 
 ```text
 What has changed in runtime state after this block runs?
 ```
+
+## Code Explanation Depth
+
+Klara chapters are teaching chapters, so details blocks must teach the code, not
+merely prove that code exists.
+
+Every non-trivial details block should use this order:
+
+```text
+Why this code is here
+-> Input / output contract
+-> Real code excerpt
+-> How to read this code step by step
+-> Concrete example
+-> Runtime state changes
+-> Boundary protected
+-> Takeaway
+```
+
+The step-by-step explanation should be explicit enough that a reader can follow
+the execution without opening the source file in another tab. Include:
+
+- what each important variable represents
+- who constructed that value
+- who reads it next
+- which branch is the success path
+- which branch is the failure or fallback path
+- how ids, names, messages, events, or observations are joined together
+- which metadata fields are consumed now and which are only future-facing signals
+
+Prefer prose around the code over adding many tutorial comments into production
+source. Short comments inside README code excerpts are allowed when they make the
+excerpt easier to teach, but the repository source should stay production-grade.
+
+For example, an executor walkthrough should not stop at:
+
+```text
+unknown tool becomes failed observation
+```
+
+It should say:
+
+```text
+`call.name` comes from the model's tool call. The executor looks it up in the
+visible tool map for this run. If the name is absent, the executor still returns
+`ToolResult(tool_call_id=call.id, name=call.name, ok=False, error=...)` so the
+loop can append a model-visible tool message joined to the original request id.
+```
+
+For algorithms, include one small trace example. For example:
+
+```text
+[safe A, safe B, serial C, safe D]
+-> run A/B in one wave
+-> run C alone
+-> run D in the next wave
+```
+
+For metadata-driven sections, include a field table:
+
+```text
+field -> who reads it -> current behavior -> future behavior if any
+```
+
+This is especially important when a metadata field exists for future policy but
+is not yet consumed by the current algorithm.
 
 For Chapter 1, `KlaraLoop.run()` must be explained in this order:
 
@@ -364,7 +506,7 @@ For Chapter 1, `KlaraLoop.run()` must be explained in this order:
 6. If there are tool calls, execute each tool.
 7. Append each tool result as a model-visible observation.
 8. Prepare the next turn.
-9. Stop with `StopReason.MAX_TURNS` when policy is exhausted.
+9. When policy is exhausted, stop exposing tools, make one no-tool finalization call, then stop with `StopReason.MAX_TURNS`.
 
 ## Images
 
@@ -466,6 +608,18 @@ Write Chinese first unless asked otherwise, then create the English mirror.
 The English version must preserve structure, diagrams, code blocks, paths,
 commands, and section order. Translate prose; do not invent new technical
 claims.
+
+Code explanations must stay in the document language:
+
+- Chinese README files use Chinese prose for walkthroughs, branch explanations,
+  examples, and takeaways.
+- English README files use English prose for the same walkthroughs.
+- Code blocks, identifiers, paths, commands, and literal error strings remain as
+  they appear in the repository.
+
+Do not leave English teaching prose inside the Chinese README, and do not leave
+Chinese teaching prose inside the English README except when quoting user-facing
+prompts that are intentionally Chinese.
 
 ## Run And Verification
 

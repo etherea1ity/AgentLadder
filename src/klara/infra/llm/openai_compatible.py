@@ -25,8 +25,8 @@ class LlmProviderError(RuntimeError):
 class OpenAICompatibleSettings:
     """Per-request settings for OpenAI-compatible chat completions."""
 
-    # Maximum output tokens requested from the provider.
-    max_tokens: int = 1200
+    # Optional provider output cap. None means Klara does not impose a cap.
+    max_tokens: int | None = None
     # Sampling temperature for the provider.
     temperature: float = 0.4
     # Network timeout for one blocking provider request.
@@ -107,6 +107,7 @@ class OpenAICompatibleLlmClient:
             model=model_ref.model,
             settings=self.settings,
             include_reasoning_content=model_ref.provider == "deepseek",
+            enable_thinking=self._enable_thinking(model_ref.model),
         )
         request = self._build_http_request(payload)
         raw = _urlopen_with_retries(
@@ -121,6 +122,12 @@ class OpenAICompatibleLlmClient:
         except json.JSONDecodeError as exc:
             raise LlmProviderError(f"unexpected provider response: {raw[:500]}") from exc
         return response_from_completion_data(data, model_ref=model_ref, raw_preview=raw[:500])
+
+    def _enable_thinking(self, model_id: str) -> bool | None:
+        """Return provider-specific thinking mode when configured."""
+
+        model = self.provider.model_entry(model_id)
+        return model.enable_thinking if model is not None else None
 
     def _build_http_request(self, payload: dict[str, Any]) -> urllib.request.Request:
         """Build one authenticated HTTP request for chat completions."""
@@ -150,6 +157,7 @@ def build_chat_completion_payload(
     model: str,
     settings: OpenAICompatibleSettings,
     include_reasoning_content: bool = False,
+    enable_thinking: bool | None = None,
 ) -> dict[str, Any]:
     """Build the provider JSON payload from Klara loop contracts.
 
@@ -175,12 +183,15 @@ def build_chat_completion_payload(
         "model": model,
         "messages": provider_messages,
         "temperature": settings.temperature,
-        "max_tokens": settings.max_tokens,
         "stream": False,
     }
+    if settings.max_tokens is not None:
+        payload["max_tokens"] = settings.max_tokens
     if tools:
         payload["tools"] = [_tool_to_openai_schema(tool) for tool in tools]
         payload["tool_choice"] = "auto"
+    if enable_thinking is not None:
+        payload["enable_thinking"] = enable_thinking
     return payload
 
 

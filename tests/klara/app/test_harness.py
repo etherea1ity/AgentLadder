@@ -1,12 +1,34 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 
 from klara.app.harness import KlaraHarness, KlaraHarnessConfig
-from klara.capabilities.registry import CapabilityRegistry
-from klara.capabilities.tools.fake_tool import DebugEchoTool
 from klara.core.messages import KlaraMessage, ModelResponse
-from klara.core.tools import ToolCall, ToolSpec
+from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
+from klara.tools.base import BaseTool
+from klara.tools.registry import ToolRegistry
+
+
+@dataclass(frozen=True)
+class EchoFixtureTool(BaseTool):
+    """Test-only echo fixture for harness wiring."""
+
+    spec: ToolSpec = ToolSpec(
+        name="test_echo",
+        description="Echo text for tests.",
+        input_schema={
+            "type": "object",
+            "properties": {"text": {"type": "string"}},
+            "additionalProperties": False,
+        },
+    )
+    metadata: ToolMetadata = ToolMetadata(label="Test Echo", category="test")
+
+    def run(self, arguments: JsonObject) -> ToolResult:
+        """Return the requested text as a tool observation."""
+
+        return self.success(arguments, str(arguments.get("text", "")))
 
 
 class HarnessLlm:
@@ -44,7 +66,7 @@ class HarnessLlm:
                 tool_calls=(
                     ToolCall(
                         id="echo-1",
-                        name="debug_echo",
+                        name="test_echo",
                         arguments={"text": "from harness"},
                     ),
                 ),
@@ -57,7 +79,7 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     trace_path = tmp_path / "run.jsonl"
     harness = KlaraHarness(
         llm=llm,
-        registry=CapabilityRegistry([DebugEchoTool()]),
+        registry=ToolRegistry([EchoFixtureTool()]),
         config=KlaraHarnessConfig(trace_path=trace_path),
     )
 
@@ -65,8 +87,18 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
 
     assert result.final_answer == "harness final"
     assert "You are Klara" in llm.system_prompt
-    assert "display_name: Local User" in llm.system_prompt
-    assert [tool.name for tool in llm.tools] == ["debug_echo"]
+    assert "must call the image-generation tool" in llm.system_prompt
+    assert "Never invent local image URLs" in llm.system_prompt
+    assert "<runtime_context>" in llm.system_prompt
+    assert "Conversation date:" in llm.system_prompt
+    assert "Call current_time only for exact wall-clock time" in llm.system_prompt
+    assert "call web_search before answering from memory" in llm.system_prompt
+    assert "keep the user's original scope and named entities" in llm.system_prompt
+    assert "Fetch at least one relevant source page" in llm.system_prompt
+    assert "corroboration across relevant sources" in llm.system_prompt
+    assert "preferred_source" not in llm.system_prompt
+    assert "Runtime user context" not in llm.system_prompt
+    assert [tool.name for tool in llm.tools] == ["test_echo"]
     assert llm.messages_seen[1][-1].content == "from harness"
 
     # Parse trace lines to verify the harness attached a working trace hook.
@@ -79,9 +111,16 @@ def test_harness_defaults_to_default_registry() -> None:
     """Harness should be runnable without manually passing a registry."""
 
     llm = HarnessLlm()
+    llm.call_count = 1
     harness = KlaraHarness(llm=llm)
 
     result = harness.run("hello", run_id="default-registry-run")
 
     assert result.final_answer == "harness final"
-    assert [tool.name for tool in llm.tools] == ["debug_echo"]
+    assert {tool.name for tool in llm.tools} == {
+        "current_time",
+        "image_generate",
+        "web_fetch",
+        "web_search",
+    }
+    assert "Visible tool guidance" not in llm.system_prompt

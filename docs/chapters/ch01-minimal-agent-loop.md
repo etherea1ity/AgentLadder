@@ -45,10 +45,10 @@ http://127.0.0.1:5123
 再问：
 
 ```text
-请使用 debug_echo 工具回显 klara-loop，然后告诉我你看到了什么。
+请使用 current_time 工具查询 Asia/Shanghai 的当前时间，然后告诉我你看到了什么。
 ```
 
-你应该看到：模型请求 `debug_echo`，runtime 执行工具，把 observation 放回上下文，然后进入下一轮或返回最终答案。
+你应该看到：模型请求 `current_time`，runtime 执行工具，把 observation 放回上下文，然后进入下一轮或返回最终答案。
 
 ## 为什么从 loop 开始
 
@@ -292,8 +292,8 @@ Klara 学到：模型只能请求工具，真正执行工具的是 runtime。
 
 ```text
 src/klara/core/loop.py
-src/klara/core/tool_executor.py
-src/klara/capabilities/tools/fake_tool.py
+src/klara/tools/executor.py
+src/klara/tools/builtin/current_time/tool.py
 ```
 
 <details>
@@ -418,14 +418,8 @@ src/klara/core/policies.py
 如果模型一直请求工具，超过最大轮数时，loop 用 `max_turns` 停止：
 
 ```python
-# At max turns, expose the last visible content and explicit stop reason.
-final_answer = messages[-1].content if messages else ""
-return self._complete(
-    active_run_id,
-    messages,
-    final_answer,
-    StopReason.MAX_TURNS,
-)
+# At max turns, stop exposing tools and ask for one final answer.
+return self._finalize_after_max_turns(active_run_id, messages)
 ```
 
 完成时，loop 仍然只是发事件：
@@ -580,11 +574,13 @@ DASHSCOPE_API_KEY
 ```text
 deepseek/deepseek-v4-flash
 deepseek/deepseek-v4-pro
-qwen/qwen3.6-flash
+qwen/qwen-flash
+qwen/qwen3.7-plus
+qwen/qwen3.7-max
 qwen/qwen3.6-plus
 ```
 
-Qwen image model 已经放在 `config/images.toml`，但本章不把生图接入 loop。以后它应该作为 tool 或 capability 进入，而不是混进 chat model picker。
+默认 `agent` profile 使用 `qwen/qwen-flash`，用于快速普通对话和工具调用；`qwen/qwen3.7-plus` 仍然作为可选的视觉 chat model。Qwen image model 放在 `config/images.toml`，并通过后续工具章节里的 `image_generate` capability 进入 loop，而不是混进 chat model picker。
 
 </details>
 
@@ -637,7 +633,7 @@ python -m pytest tests\klara\core\test_hooks.py tests\klara\app\test_harness.py
 ## 小实验
 
 - 把 `KlaraHarnessConfig.max_turns` 调小，再观察 `StopReason.MAX_TURNS`。
-- 问模型明确使用 `debug_echo`，观察右侧事件里 `tool.started` 和 `tool.completed` 的顺序。
+- 问模型明确使用 `current_time`，观察右侧事件里 `tool.started` 和 `tool.completed` 的顺序。
 - 打开本地 trace JSONL，确认同一个 `run_id` 串起 `run.started`、`llm.completed`、`tool.completed` 和 `run.completed`。
 
 ## 下一章预告

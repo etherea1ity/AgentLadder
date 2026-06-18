@@ -1,14 +1,14 @@
 import type { KlaraCapabilityChip, KlaraRunEvent, KlaraRunEventKind } from '../../types/domain';
 
-type Scenario = 'runtime' | 'calculator' | 'rag' | 'web' | 'error' | 'loop';
+type Scenario = 'runtime' | 'time' | 'rag' | 'web' | 'error' | 'loop';
 type Step = [KlaraRunEventKind, string, KlaraCapabilityChip[]?, number?];
 
 const scenarios: Record<Scenario, Step[]> = {
   runtime: [
     ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['answer.completed', 'AnswerState completed'], ['run.completed', 'Completed', ['model']]
   ],
-  calculator: [
-    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['tool.call.started', 'Calling calculator...', ['tool']], ['tool.call.completed', 'Calculator returned observation', ['tool']], ['observation.created', 'Observation created', ['tool']], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['run.completed', 'Completed', ['model']]
+  time: [
+    ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['tool.call.started', 'Calling current_time...', ['tool']], ['tool.call.completed', 'current_time returned observation', ['tool']], ['observation.created', 'Observation created', ['tool']], ['model.call.started', 'Calling model...', ['model']], ['answer.started', 'Writing answer...', ['model']], ['run.completed', 'Completed', ['model']]
   ],
   rag: [
     ['run.started', 'Received question'], ['ask.created', 'Created AskState'], ['retrieval.started', 'Searching local knowledge...', ['rag']], ['chunk.retrieved', 'Reading retrieved chunks...', ['rag']], ['source.selected', 'Selecting useful source...', ['rag']], ['sourcecard.created', 'Source card created', ['rag']], ['answer.started', 'Grounding answer in sources...', ['model', 'rag']], ['citation.created', 'Adding citations...', ['rag']], ['run.completed', 'Completed', ['model']]
@@ -42,7 +42,7 @@ export function createMockKlaraEvents(scenario: Scenario, runId = `mock_${scenar
   }));
 }
 
-export const mockKlaraScenarios: Scenario[] = ['runtime', 'calculator', 'rag', 'web', 'error', 'loop'];
+export const mockKlaraScenarios: Scenario[] = ['runtime', 'time', 'rag', 'web', 'error', 'loop'];
 
 function conceptForKind(kind: KlaraRunEventKind) {
   if (kind.startsWith('model') || kind.startsWith('answer')) return 'LLMClient';

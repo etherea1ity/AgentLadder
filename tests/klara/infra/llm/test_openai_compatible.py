@@ -8,6 +8,7 @@ import pytest
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.tools import ToolCall, ToolSpec
 from klara.infra.config.models import ProviderConfig
+from klara.infra.config.models import ProviderModel
 from klara.infra.llm.model_ref import ModelRef
 from klara.infra.llm.openai_compatible import (
     LlmProviderError,
@@ -29,20 +30,20 @@ def test_payload_maps_messages_tools_and_tool_results() -> None:
                 role="assistant",
                 content="",
                 tool_calls=(
-                    ToolCall(id="call-1", name="debug_echo", arguments={"text": "x"}),
+                    ToolCall(id="call-1", name="lookup", arguments={"text": "x"}),
                 ),
             ),
             KlaraMessage(
                 role="tool",
                 content="x",
-                name="debug_echo",
+                name="lookup",
                 tool_call_id="call-1",
             ),
         ),
         tools=(
             ToolSpec(
-                name="debug_echo",
-                description="Echo",
+                name="lookup",
+                description="Lookup",
                 input_schema={"type": "object", "properties": {"text": {"type": "string"}}},
             ),
         ),
@@ -52,14 +53,44 @@ def test_payload_maps_messages_tools_and_tool_results() -> None:
 
     assert payload["model"] == "deepseek-v4-flash"
     assert payload["messages"][0] == {"role": "system", "content": "system"}
-    assert payload["messages"][2]["tool_calls"][0]["function"]["name"] == "debug_echo"
+    assert payload["messages"][2]["tool_calls"][0]["function"]["name"] == "lookup"
     assert payload["messages"][3] == {
         "role": "tool",
         "tool_call_id": "call-1",
         "content": "x",
     }
-    assert payload["tools"][0]["function"]["name"] == "debug_echo"
+    assert payload["tools"][0]["function"]["name"] == "lookup"
     assert payload["tool_choice"] == "auto"
+    assert payload["max_tokens"] == 99
+
+
+def test_payload_omits_max_tokens_by_default() -> None:
+    """Klara should not impose an output cap unless a caller configures one."""
+
+    payload = build_chat_completion_payload(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen-flash",
+        settings=OpenAICompatibleSettings(),
+    )
+
+    assert "max_tokens" not in payload
+
+
+def test_payload_can_disable_qwen_thinking_for_tool_calls() -> None:
+    """Qwen tool calling should be able to opt out of thinking mode."""
+
+    payload = build_chat_completion_payload(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen3.7-plus",
+        settings=OpenAICompatibleSettings(),
+        enable_thinking=False,
+    )
+
+    assert payload["enable_thinking"] is False
 
 
 def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None:
@@ -75,7 +106,7 @@ def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None
                             {
                                 "id": "call-1",
                                 "function": {
-                                    "name": "debug_echo",
+                                    "name": "lookup",
                                     "arguments": "{\"text\":\"x\"}",
                                 },
                             }
@@ -90,7 +121,7 @@ def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None
     )
 
     assert isinstance(response, ModelResponse)
-    assert response.tool_calls[0].name == "debug_echo"
+    assert response.tool_calls[0].name == "lookup"
     assert response.tool_calls[0].arguments == {"text": "x"}
     assert response.usage == {"total_tokens": 12}
 
@@ -132,8 +163,7 @@ def test_openai_compatible_client_builds_authenticated_request(monkeypatch) -> N
             api="openai-completions",
             base_url="https://api.deepseek.com/v1",
             api_key_env="DEEPSEEK_API_KEY",
-            models=(),
-            allow_unlisted_models=True,
+            models=(ProviderModel(id="deepseek-v4-flash"),),
         ),
         settings=OpenAICompatibleSettings(timeout_seconds=7, retry_attempts=1),
     )
@@ -149,6 +179,7 @@ def test_openai_compatible_client_builds_authenticated_request(monkeypatch) -> N
     assert captured["url"] == "https://api.deepseek.com/v1/chat/completions"
     assert captured["timeout"] == 7
     assert captured["payload"]["model"] == "deepseek-v4-flash"
+    assert "max_tokens" not in captured["payload"]
     assert captured["headers"]["Authorization"] == "Bearer test-key"
 
 

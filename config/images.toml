@@ -4,10 +4,19 @@ endpoint = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-gener
 api_key_env = "DASHSCOPE_API_KEY"
 
 [[images.providers.qwen.models]]
+id = "qwen-image-2.0-pro"
+label = "Qwen Image 2.0 Pro"
+supports_text_to_image = true
+supports_image_editing = true
+default_size = "1024*1024"
+verified = true
+verified_note = "Official recommended Qwen-Image 2.0 Pro model; local wiring verified with DASHSCOPE_API_KEY on 2026-06-17."
+
+[[images.providers.qwen.models]]
 id = "qwen-image-2.0"
 label = "Qwen Image 2.0"
 supports_text_to_image = true
 supports_image_editing = true
-default_size = "512*512"
+default_size = "1024*1024"
 verified = true
 verified_note = "Verified with the local DASHSCOPE_API_KEY on 2026-06-16."

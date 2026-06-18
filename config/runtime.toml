@@ -1,0 +1,9 @@
+[runtime.loop]
+# Final fuse for model turns in one Klara run.
+max_turns = 24
+
+# Normal protection against broad tool use.
+max_tool_calls = 48
+
+# Repeated identical tool calls are usually retry loops.
+max_repeated_tool_calls = 3

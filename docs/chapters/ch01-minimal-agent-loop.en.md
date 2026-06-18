@@ -45,10 +45,10 @@ You should see: the model answers directly and the run ends.
 Then ask:
 
 ```text
-Please use the debug_echo tool to echo klara-loop, then tell me what you saw.
+Please use the current_time tool to check the current time in Asia/Shanghai, then tell me what you saw.
 ```
 
-You should see: the model requests `debug_echo`, runtime executes the tool, the observation returns to context, and the loop either continues or returns the final answer.
+You should see: the model requests `current_time`, runtime executes the tool, the observation returns to context, and the loop either continues or returns the final answer.
 
 ## Why Start With A Loop
 
@@ -292,8 +292,8 @@ Code:
 
 ```text
 src/klara/core/loop.py
-src/klara/core/tool_executor.py
-src/klara/capabilities/tools/fake_tool.py
+src/klara/tools/executor.py
+src/klara/tools/builtin/current_time/tool.py
 ```
 
 <details>
@@ -418,14 +418,8 @@ src/klara/core/policies.py
 If the model keeps requesting tools until the turn budget is exhausted:
 
 ```python
-# At max turns, expose the last visible content and explicit stop reason.
-final_answer = messages[-1].content if messages else ""
-return self._complete(
-    active_run_id,
-    messages,
-    final_answer,
-    StopReason.MAX_TURNS,
-)
+# At max turns, stop exposing tools and ask for one final answer.
+return self._finalize_after_max_turns(active_run_id, messages)
 ```
 
 Completion is still emitted as an event:
@@ -580,11 +574,13 @@ Current chat models:
 ```text
 deepseek/deepseek-v4-flash
 deepseek/deepseek-v4-pro
-qwen/qwen3.6-flash
+qwen/qwen-flash
+qwen/qwen3.7-plus
+qwen/qwen3.7-max
 qwen/qwen3.6-plus
 ```
 
-The Qwen image model is configured in `config/images.toml`, but image generation is not part of the Chapter 1 loop. Later it should enter as a tool or capability.
+The default `agent` profile uses `qwen/qwen-flash` for fast normal chat and tool calling. `qwen/qwen3.7-plus` remains the selectable vision-capable chat model. Qwen image models live in `config/images.toml` and enter the loop through the later `image_generate` capability rather than the chat model picker.
 
 </details>
 
@@ -637,7 +633,7 @@ These tests confirm:
 ## Small Experiments
 
 - Lower `KlaraHarnessConfig.max_turns`, then observe `StopReason.MAX_TURNS`.
-- Ask the model to use `debug_echo`, then inspect `tool.started` and `tool.completed` order in the event area.
+- Ask the model to use `current_time`, then inspect `tool.started` and `tool.completed` order in the event area.
 - Open the local trace JSONL and confirm one `run_id` joins `run.started`, `llm.completed`, `tool.completed`, and `run.completed`.
 
 ## Next Chapter

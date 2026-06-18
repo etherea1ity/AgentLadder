@@ -98,7 +98,9 @@ back into observations?
 
 Runnable result:
 
-- model can call local time and utility tools
+- model can call a local current-time tool
+- model can search the public web and fetch a chosen page through read-only
+  network tools
 - tool errors return model-visible observations
 - registry exposes only visible tools
 - tool traces show start/result/error
@@ -113,13 +115,17 @@ Includes:
 - tool result/error contract
 - unknown tool handling
 - serial versus parallel execution planning
-- starter tools such as current time, calculator, debug echo, fake search, web
-  search/fetch when available
+- starter local current-time tool
+- starter read-only network tools: `web_search` for ranked URLs and `web_fetch`
+  for reading one public page
+- network tool metadata such as `side_effect=network` and
+  `output_trust=untrusted`
 
 Excludes:
 
 - full permission approval
 - shell/filesystem mutation tools
+- paid or account-backed search provider routing
 - MCP transport
 - real RAG
 

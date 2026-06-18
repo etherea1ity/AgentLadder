@@ -9,14 +9,16 @@ const now = new Date("2026-06-16T08:00:00.000Z").toISOString();
 
 const modelOptions: ModelOption[] = [
   {
-    id: "deepseek/deepseek-v4-flash",
-    model: "deepseek/deepseek-v4-flash",
-    label: "DeepSeek V4 Flash",
+    id: "qwen/qwen-flash",
+    model: "qwen/qwen-flash",
+    label: "Qwen 3.7 Flash",
+    use_when: "qwen provider",
   },
   {
-    id: "qwen/qwen3.6-flash",
-    model: "qwen/qwen3.6-flash",
-    label: "Qwen 3.6 Flash",
+    id: "qwen/qwen3.7-max",
+    model: "qwen/qwen3.7-max",
+    label: "Qwen 3.7 Max",
+    use_when: "qwen provider",
   },
 ];
 
@@ -46,7 +48,7 @@ describe("popover dismissal", () => {
         onSend={vi.fn()}
         onStop={vi.fn()}
         modelOptions={modelOptions}
-        selectedModel="deepseek/deepseek-v4-flash"
+        selectedModel="qwen/qwen-flash"
         onModelChange={onModelChange}
         theme="light"
         onToggleTheme={vi.fn()}
@@ -64,9 +66,9 @@ describe("popover dismissal", () => {
 
     await user.click(pickerSummary);
     expect(picker).toHaveAttribute("open");
-    await user.click(screen.getByRole("button", { name: /Qwen 3.6 Flash/i }));
+    await user.click(screen.getByRole("button", { name: /Qwen 3.7 Max/i }));
 
-    expect(onModelChange).toHaveBeenCalledWith("qwen/qwen3.6-flash");
+    expect(onModelChange).toHaveBeenCalledWith("qwen/qwen3.7-max");
     await waitFor(() => expect(picker).not.toHaveAttribute("open"));
   });
 

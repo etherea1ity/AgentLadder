@@ -3,10 +3,68 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any, Protocol
 
 
 JsonObject = dict[str, Any]
+
+
+class ToolSideEffect(StrEnum):
+    """Side-effect class used by the runtime to plan tool execution."""
+
+    NONE = "none"
+    READ = "read"
+    WRITE = "write"
+    NETWORK = "network"
+    CONTROL = "control"
+
+
+class ToolOutputTrust(StrEnum):
+    """Trust class for model-visible tool observations."""
+
+    TRUSTED = "trusted"
+    UNTRUSTED = "untrusted"
+
+
+@dataclass(frozen=True)
+class ToolMetadata:
+    """Klara-visible metadata for planning and guarding a concrete tool.
+
+    Tool metadata is not sent to the model. It gives the runtime enough
+    information to decide whether a tool may run in parallel, whether it needs
+    approval, how much output can be exposed, and whether the observation came
+    from a trusted local source or untrusted external content.
+    """
+
+    # Label is human-facing and can be shown in trace/UI surfaces.
+    label: str
+    # Category groups tools without leaking package or teaching structure.
+    category: str
+    # Side effect tells the runtime how risky the tool is.
+    side_effect: ToolSideEffect = ToolSideEffect.NONE
+    # Parallel-safe tools may share an execution wave with other safe tools.
+    parallel_safe: bool = True
+    # Approval is reserved for mutating, control-plane, or high-risk tools.
+    requires_approval: bool = False
+    # Timeout is a per-tool execution budget for future executors/adapters.
+    timeout_seconds: float = 10.0
+    # Max output bounds the model-visible observation size.
+    max_output_chars: int = 4000
+    # Output trust lets later prompt wrappers treat web content as untrusted.
+    output_trust: ToolOutputTrust = ToolOutputTrust.TRUSTED
+
+    def __post_init__(self) -> None:
+        """Validate runtime metadata when a concrete tool is declared."""
+
+        if not self.label.strip():
+            raise ValueError("tool metadata label must not be empty")
+        if not self.category.strip():
+            raise ValueError("tool metadata category must not be empty")
+        if self.timeout_seconds <= 0:
+            raise ValueError("tool metadata timeout_seconds must be positive")
+        if self.max_output_chars < 1:
+            raise ValueError("tool metadata max_output_chars must be at least 1")
 
 
 @dataclass(frozen=True)
@@ -14,8 +72,8 @@ class ToolCall:
     """A model-requested tool invocation.
 
     Core records the request but does not know whether the tool is RAG, memory,
-    web, or a deterministic demonstration capability. Concrete ability
-    ownership stays in `klara.capabilities` and service layers.
+    web, or a deterministic demonstration tool. Concrete tool ownership stays
+    in `klara.tools` and service layers.
     """
 
     # Id joins this request with the tool result observation.
@@ -87,7 +145,7 @@ class ToolSpec:
 
     # Name is the stable call target used by ToolCall.
     name: str
-    # Description tells the model when the tool is useful.
+    # Description states the capability and returned observation shape.
     description: str
     # Input schema describes the expected JSON arguments.
     input_schema: JsonObject
@@ -107,9 +165,10 @@ class ToolSpec:
 
 
 class KlaraTool(Protocol):
-    """Protocol implemented by concrete capabilities that core may execute."""
+    """Protocol implemented by concrete tools that a runner may execute."""
 
     spec: ToolSpec
+    metadata: ToolMetadata
 
     def execute(self, arguments: JsonObject) -> ToolResult:
         """Run the concrete capability with JSON-compatible arguments.
@@ -120,5 +179,20 @@ class KlaraTool(Protocol):
         Returns:
             A model-visible tool observation.
         """
+
+        ...
+
+
+class ToolRunner(Protocol):
+    """Protocol for the injected tool executor used by the loop."""
+
+    @property
+    def specs(self) -> tuple[ToolSpec, ...]:
+        """Return model-visible tool specifications for this run."""
+
+        ...
+
+    def execute_many(self, calls: tuple[ToolCall, ...]) -> tuple[ToolResult, ...]:
+        """Execute one assistant tool-call batch and preserve request order."""
 
         ...
