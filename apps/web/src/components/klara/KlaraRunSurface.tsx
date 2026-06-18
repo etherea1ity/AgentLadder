@@ -26,6 +26,7 @@ export function KlaraRunSurface({ run }: { run?: Run }) {
   );
   const toolCards = useMemo(() => buildToolCards(visibleEvents), [visibleEvents]);
   const hookBadges = useMemo(() => buildHookBadges(visibleEvents), [visibleEvents]);
+  const workstreamNotes = useMemo(() => buildWorkstreamNotes(visibleEvents), [visibleEvents]);
   const timeline = useMemo(() => buildTimeline(visibleEvents), [visibleEvents]);
   const traceSaved = Boolean(
     run?.trace_saved ||
@@ -54,6 +55,13 @@ export function KlaraRunSurface({ run }: { run?: Run }) {
       </button>
       {expanded ? (
         <div className="klara-run-surface-body">
+          {workstreamNotes.length ? (
+            <div className="klara-workstream-notes" aria-label="Runtime notes">
+              {workstreamNotes.map((note) => (
+                <p key={note.key}>{note.text}</p>
+              ))}
+            </div>
+          ) : null}
           {hookBadges.length ? (
             <div className="klara-hook-badges" aria-label="Hook placement events">
               {hookBadges.map((badge) => (
@@ -173,6 +181,16 @@ function buildHookBadges(events: RunEvent[]) {
         label: `${placement} ${status}`,
       };
     });
+}
+
+function buildWorkstreamNotes(events: RunEvent[]) {
+  return events
+    .filter((event) => event.event_type === "workstream_note")
+    .map((event) => ({
+      key: event.event_id,
+      text: String(event.payload?.text ?? event.message),
+    }))
+    .filter((note) => note.text.trim());
 }
 
 function buildTimeline(events: RunEvent[]) {

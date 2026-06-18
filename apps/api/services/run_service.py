@@ -19,6 +19,10 @@ from apps.api.schemas import (
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_event_projector import RunEventProjector
 from apps.api.services.sse_bus import SSEBus
+from apps.api.services.workstream_narrator import (
+    WorkstreamNarrator,
+    WorkstreamNarratorInput,
+)
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
 from klara.context.runtime import build_system_prompt
@@ -48,6 +52,9 @@ class RunService:
         default_model: str | None = None,
         loop_policy: LoopPolicy | None = None,
         user_context: UserContext | None = None,
+        narrator_client: LlmClient | None = None,
+        narrator_model: str | None = None,
+        enable_workstream_narrator: bool = False,
     ) -> None:
         """Create the local run service.
 
@@ -60,6 +67,9 @@ class RunService:
             default_model: Model ref used when a run does not select one.
             loop_policy: Bounded execution policy for loop safety.
             user_context: Local user partition and prompt timezone context.
+            narrator_client: Optional second model client for runtime notes.
+            narrator_model: Model ref used by the optional narrator.
+            enable_workstream_narrator: Whether runtime notes should emit.
         """
 
         self.store = store
@@ -69,6 +79,9 @@ class RunService:
         self.default_model = default_model
         self.loop_policy = loop_policy or LoopPolicy()
         self.user_context = user_context or UserContext.local_default()
+        self.narrator_client = narrator_client
+        self.narrator_model = narrator_model
+        self.enable_workstream_narrator = enable_workstream_narrator
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -167,6 +180,12 @@ class RunService:
         hooks = HookManager(
             [RunProjectionHook(self, run_id, projector), JsonlTraceHook(Path(self.trace_path))]
         )
+        narrator_stop, narrator_thread = self._start_workstream_narrator(
+            run_id=run_id,
+            user_request=user_message.content,
+            selected_model=selected_model,
+            started=started,
+        )
 
         try:
             registry = ToolRegistry.with_default_tools()
@@ -191,6 +210,7 @@ class RunService:
             if run_id in self._cancel_requested:
                 return
 
+            self._stop_workstream_narrator(narrator_stop, narrator_thread)
             final_text = result.final_answer
             self._emit(run_id, "answer_streaming_started", "Klara is writing the final answer.", {})
             self.store.update_message(assistant_message.model_copy(update={"content": final_text, "status": "running"}))
@@ -230,6 +250,7 @@ class RunService:
                 },
             )
         except Exception as exc:
+            self._stop_workstream_narrator(narrator_stop, narrator_thread)
             latency_ms = int((perf_counter() - started) * 1000)
             error = RunError(code=_error_code(exc), message=str(exc), stage="runtime_loop")
             failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
@@ -237,6 +258,7 @@ class RunService:
             self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
             self._emit(run_id, "run_failed", "Run failed.", {"error": error.model_dump(mode="json")})
         finally:
+            self._stop_workstream_narrator(narrator_stop, narrator_thread)
             self._cleanup_run_runtime(run_id)
 
     def _emit(self, run_id: str, event_type, message: str, payload: dict[str, Any]) -> None:
@@ -263,6 +285,88 @@ class RunService:
                 if record.get("run_id") == run_id:
                     return True
         return False
+
+    def _start_workstream_narrator(
+        self,
+        *,
+        run_id: str,
+        user_request: str,
+        selected_model: str,
+        started: float,
+    ) -> tuple[threading.Event | None, threading.Thread | None]:
+        """Start the optional evidence-bound narrator for this run."""
+
+        if (
+            not self.enable_workstream_narrator
+            or self.narrator_client is None
+            or not self.narrator_model
+        ):
+            return None, None
+
+        stop_event = threading.Event()
+        narrator = WorkstreamNarrator(
+            client=self.narrator_client,
+            model=self.narrator_model,
+        )
+        previous_notes: list[str] = []
+
+        def emit_once() -> bool:
+            try:
+                events = tuple(self.store.list_events(run_id)[-12:])
+                note = narrator.create_note(
+                    WorkstreamNarratorInput(
+                        user_request=user_request,
+                        selected_model=selected_model,
+                        run_status="thinking",
+                        phase="thinking",
+                        elapsed_ms=int((perf_counter() - started) * 1000),
+                        recent_events=events,
+                        previous_notes=tuple(previous_notes),
+                    )
+                )
+            except Exception:
+                return False
+            if note is None:
+                return False
+            previous_notes.append(note.text)
+            self._emit(
+                run_id,
+                "workstream_note",
+                "Klara runtime note.",
+                {
+                    "text": note.text,
+                    "source": "narrator_model",
+                    "phase": "thinking",
+                    "evidence_event_ids": list(note.evidence_event_ids),
+                    "confidence": note.confidence,
+                    "display": {"ephemeral": False},
+                },
+            )
+            return True
+
+        emitted = 1 if emit_once() else 0
+
+        def worker() -> None:
+            nonlocal emitted
+            while emitted < 3 and not stop_event.wait(4.0):
+                if emit_once():
+                    emitted += 1
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+        return stop_event, thread
+
+    def _stop_workstream_narrator(
+        self,
+        stop_event: threading.Event | None,
+        thread: threading.Thread | None,
+    ) -> None:
+        """Stop the optional narrator without blocking the main run."""
+
+        if stop_event is not None:
+            stop_event.set()
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=0.2)
 
     def _cleanup_run_runtime(self, run_id: str) -> None:
         """Remove per-run cancellation and thread bookkeeping."""

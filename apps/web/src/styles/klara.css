@@ -415,6 +415,20 @@
   border-top: 1px solid rgba(221, 209, 189, 0.62);
   padding: 10px;
 }
+.klara-workstream-notes {
+  display: grid;
+  gap: 6px;
+}
+.klara-workstream-notes p {
+  margin: 0;
+  border-left: 3px solid rgba(100, 123, 100, 0.28);
+  border-radius: 6px;
+  background: rgba(100, 123, 100, 0.07);
+  color: var(--text-secondary);
+  padding: 7px 9px;
+  font-size: 12px;
+  line-height: 1.45;
+}
 .klara-hook-badges {
   display: flex;
   flex-wrap: wrap;

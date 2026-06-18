@@ -56,6 +56,7 @@ export const api = {
       'policy_stop',
       'hook_placement_started',
       'hook_placement_completed',
+      'workstream_note',
       'run_completed',
       'run_failed',
       'run_cancelled',

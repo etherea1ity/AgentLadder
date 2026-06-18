@@ -92,6 +92,25 @@ describe("KlaraRunSurface", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders workstream notes as runtime surface content", () => {
+    render(
+      <KlaraRunSurface
+        run={{
+          ...baseRun,
+          events: [
+            evt("workstream_note", {
+              text: "Klara is preparing the observable run.",
+              source: "narrator_model",
+              evidence_event_ids: ["evt_1"],
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Klara is preparing the observable run.")).toBeInTheDocument();
+  });
+
   it("collapses completed runs by default", () => {
     render(
       <KlaraRunSurface

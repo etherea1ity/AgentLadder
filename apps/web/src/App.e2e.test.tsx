@@ -133,6 +133,15 @@ describe("Klara app flow", () => {
 
     const source = MockEventSource.instances[0];
     source.emit("thinking_started", evt("thinking_started", "Klara is preparing the runtime loop."));
+    source.emit(
+      "workstream_note",
+      evt("workstream_note", "Klara runtime note.", {
+        text: "Klara is preparing the observable run.",
+        source: "narrator_model",
+        evidence_event_ids: ["evt_thinking_started"],
+      }),
+    );
+    expect(await screen.findByText("Klara is preparing the observable run.")).toBeInTheDocument();
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
       "tool_call_started",
@@ -165,6 +174,9 @@ describe("Klara app flow", () => {
     );
 
     expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
+    expect(container.querySelector(".assistant-content")?.textContent).not.toContain(
+      "Klara is preparing the observable run.",
+    );
     const generatedImage = container.querySelector(".generated-image");
     expect(generatedImage).toHaveAttribute("src", generatedImageUrl);
     fireEvent.error(generatedImage as Element);

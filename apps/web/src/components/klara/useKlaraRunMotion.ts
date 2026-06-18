@@ -92,6 +92,8 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
     }
     case 'policy_stop':
       return { ...base, kind: 'policy.stopped', status: 'completed', publicLabel: 'Tool policy stopped', publicDetail: String(event.payload?.reason ?? 'A runtime tool policy stopped additional tool calls.'), concept: 'LoopPolicy', capabilities: ['policy'] };
+    case 'workstream_note':
+      return { ...base, kind: 'workstream.note', status: 'progress', publicLabel: 'Runtime note', publicDetail: String(event.payload?.text ?? event.message), concept: 'RunEvent', capabilities: ['trace'] };
     case 'hook_placement_started':
     case 'hook_placement_completed': {
       const placement = String(event.payload?.placement ?? 'Hook');
