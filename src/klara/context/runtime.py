@@ -32,10 +32,21 @@ def build_runtime_context_prompt(
             f"Conversation date: {local_now:%A, %B %d, %Y}",
             f"User timezone: {prompt_timezone.name}",
             f"UTC date: {current_utc.date().isoformat()}",
-            "For exact current time, call current_time.",
+            (
+                "The conversation date is already provided here; do not call "
+                "current_time only to learn today's date."
+            ),
             (
                 "For live/current/latest/today/news/sports/schedules/prices, "
-                "use available time/web tools before answering."
+                "call web_search before answering from memory."
+            ),
+            (
+                "Call current_time only for exact wall-clock time, weekday, "
+                "timezone conversion, or relative date/time arithmetic."
+            ),
+            (
+                "Call web_fetch only when you need to read a specific public URL "
+                "returned by search or provided by the user."
             ),
             "</runtime_context>",
         ]

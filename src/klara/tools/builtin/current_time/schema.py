@@ -9,8 +9,11 @@ from klara.core.tools import ToolMetadata, ToolSideEffect, ToolSpec
 CURRENT_TIME_SPEC = ToolSpec(
     name="current_time",
     description=(
-        "Return the current date, time, weekday, and UTC offset for a requested "
-        "timezone. Use for current-time questions, not historical or web facts."
+        "Return exact current wall-clock date, time, weekday, and UTC offset "
+        "for a requested timezone. Use for exact current time, weekday checks, "
+        "timezone conversion, and relative date/time arithmetic. Do not use "
+        "for live news, sports results, schedules, prices, versions, or other "
+        "web facts; use web_search for those."
     ),
     input_schema={
         "type": "object",

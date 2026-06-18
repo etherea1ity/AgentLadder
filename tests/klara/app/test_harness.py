@@ -91,7 +91,8 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     assert "Never invent local image URLs" in llm.system_prompt
     assert "<runtime_context>" in llm.system_prompt
     assert "Conversation date:" in llm.system_prompt
-    assert "For exact current time, call current_time." in llm.system_prompt
+    assert "Call current_time only for exact wall-clock time" in llm.system_prompt
+    assert "call web_search before answering from memory" in llm.system_prompt
     assert "Runtime user context" not in llm.system_prompt
     assert [tool.name for tool in llm.tools] == ["test_echo"]
     assert llm.messages_seen[1][-1].content == "from harness"
