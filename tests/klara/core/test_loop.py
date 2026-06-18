@@ -467,6 +467,20 @@ def test_unknown_tool_returns_observation_error() -> None:
     assert result.messages[2].content == "Unknown tool: missing_tool"
 
 
+def test_tool_result_public_payload_includes_preview_and_length() -> None:
+    result = ToolResult(
+        tool_call_id="call-long",
+        name="test_echo",
+        content="x" * 650,
+    )
+
+    public = result.to_public_dict()
+
+    assert public["content_length"] == 650
+    assert public["content_preview"] == "x" * 500
+    assert public["content"] == "x" * 650
+
+
 def test_current_fact_request_requires_initial_web_search_before_final() -> None:
     """The loop should not ask permission instead of searching current facts."""
 

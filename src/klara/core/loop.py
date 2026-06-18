@@ -7,7 +7,7 @@ import json
 from typing import Protocol
 from uuid import uuid4
 
-from klara.core.events import KlaraEvent
+from klara.core.events import EventKind, EventSequencer, KlaraEvent
 from klara.core.hooks import HookManager
 from klara.core.messages import KlaraMessage, ModelResponse
 from klara.core.policies import LoopPolicy, StopReason
@@ -136,6 +136,8 @@ class KlaraLoop:
 
         # Active run id is the trace join key across all lifecycle events.
         active_run_id = run_id or str(uuid4())
+        # Sequence numbers are scoped to this run for deterministic replay order.
+        sequencer = EventSequencer()
         # Messages begin with optional app-provided history, then this user turn.
         messages: list[KlaraMessage] = [
             *prior_messages,
@@ -143,13 +145,18 @@ class KlaraLoop:
         ]
         tool_call_count = 0
         tool_call_signatures: dict[str, int] = {}
-        self._emit(active_run_id, "run.started", {"model": self.model})
+        self._emit(sequencer, active_run_id, EventKind.RUN_STARTED, {"model": self.model})
 
         try:
             # Iterate through bounded turns so a model cannot request tools forever.
             for turn_index in range(1, self.policy.max_turns + 1):
-                self._emit(active_run_id, "turn.started", {"turn_index": turn_index})
-                self._emit(active_run_id, "llm.started", {"turn_index": turn_index})
+                self._emit(sequencer, active_run_id, EventKind.TURN_STARTED, {"turn_index": turn_index})
+                self._emit(
+                    sequencer,
+                    active_run_id,
+                    EventKind.LLM_STARTED,
+                    {"turn_index": turn_index, "model": self.model},
+                )
                 # Ask the injected model using only the prompt, transcript, and specs.
                 response = self.llm.complete(
                     system_prompt=self.system_prompt,
@@ -158,8 +165,9 @@ class KlaraLoop:
                     model=self.model,
                 )
                 self._emit(
+                    sequencer,
                     active_run_id,
-                    "llm.completed",
+                    EventKind.LLM_COMPLETED,
                     {
                         "turn_index": turn_index,
                         "tool_call_count": len(response.tool_calls),
@@ -178,14 +186,16 @@ class KlaraLoop:
                     if guarded_messages is not None:
                         messages = guarded_messages
                         self._emit(
+                            sequencer,
                             active_run_id,
-                            "prepare_next_turn.started",
+                            EventKind.PREPARE_NEXT_TURN_STARTED,
                             {"turn_index": turn_index, "guard": "final_answer"},
                         )
                         messages = self.prepare_next_turn(messages)
                         self._emit(
+                            sequencer,
                             active_run_id,
-                            "prepare_next_turn.completed",
+                            EventKind.PREPARE_NEXT_TURN_COMPLETED,
                             {
                                 "turn_index": turn_index,
                                 "message_count": len(messages),
@@ -193,8 +203,9 @@ class KlaraLoop:
                             },
                         )
                         self._emit(
+                            sequencer,
                             active_run_id,
-                            "turn.completed",
+                            EventKind.TURN_COMPLETED,
                             {"turn_index": turn_index, "guard": "final_answer"},
                         )
                         continue
@@ -203,14 +214,16 @@ class KlaraLoop:
                     if guarded_messages is not None:
                         messages = guarded_messages
                         self._emit(
+                            sequencer,
                             active_run_id,
-                            "prepare_next_turn.started",
+                            EventKind.PREPARE_NEXT_TURN_STARTED,
                             {"turn_index": turn_index, "guard": "final_answer"},
                         )
                         messages = self.prepare_next_turn(messages)
                         self._emit(
+                            sequencer,
                             active_run_id,
-                            "prepare_next_turn.completed",
+                            EventKind.PREPARE_NEXT_TURN_COMPLETED,
                             {
                                 "turn_index": turn_index,
                                 "message_count": len(messages),
@@ -218,8 +231,9 @@ class KlaraLoop:
                             },
                         )
                         self._emit(
+                            sequencer,
                             active_run_id,
-                            "turn.completed",
+                            EventKind.TURN_COMPLETED,
                             {"turn_index": turn_index, "guard": "final_answer"},
                         )
                         continue
@@ -229,14 +243,16 @@ class KlaraLoop:
                             KlaraMessage(role="assistant", content=fallback_answer)
                         )
                         self._emit(
+                            sequencer,
                             active_run_id,
-                            "turn.completed",
+                            EventKind.TURN_COMPLETED,
                             {
                                 "turn_index": turn_index,
                                 "guard": "fallback_answer",
                             },
                         )
                         return self._complete(
+                            sequencer,
                             active_run_id,
                             messages,
                             fallback_answer,
@@ -244,8 +260,9 @@ class KlaraLoop:
                         )
                     messages.append(assistant_message)
                     # No tool calls means the assistant content is the final answer.
-                    self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
+                    self._emit(sequencer, active_run_id, EventKind.TURN_COMPLETED, {"turn_index": turn_index})
                     return self._complete(
+                        sequencer,
                         active_run_id,
                         messages,
                         response.content,
@@ -262,8 +279,9 @@ class KlaraLoop:
                 if tool_policy_stop is not None:
                     stop_reason, policy_context = tool_policy_stop
                     self._emit(
+                        sequencer,
                         active_run_id,
-                        "tool_policy.stopped",
+                        EventKind.TOOL_POLICY_STOPPED,
                         {
                             "turn_index": turn_index,
                             "stop_reason": stop_reason.value,
@@ -271,6 +289,7 @@ class KlaraLoop:
                         },
                     )
                     return self._finalize_without_tools(
+                        sequencer,
                         active_run_id,
                         messages,
                         stop_reason=stop_reason,
@@ -280,8 +299,9 @@ class KlaraLoop:
                 # Execute every requested tool before preparing the next model turn.
                 for call in response.tool_calls:
                     self._emit(
+                        sequencer,
                         active_run_id,
-                        "tool.started",
+                        EventKind.TOOL_STARTED,
                         {"turn_index": turn_index, "tool_call": call.to_public_dict()},
                     )
 
@@ -295,8 +315,9 @@ class KlaraLoop:
                     )
                 for result in tool_results:
                     self._emit(
+                        sequencer,
                         active_run_id,
-                        "tool.completed",
+                        EventKind.TOOL_COMPLETED,
                         {
                             "turn_index": turn_index,
                             "tool_result": result.to_public_dict(),
@@ -313,25 +334,28 @@ class KlaraLoop:
 
                 # Preparation stays as identity until context policy exists.
                 self._emit(
+                    sequencer,
                     active_run_id,
-                    "prepare_next_turn.started",
+                    EventKind.PREPARE_NEXT_TURN_STARTED,
                     {"turn_index": turn_index},
                 )
                 messages = self.prepare_next_turn(messages)
                 self._emit(
+                    sequencer,
                     active_run_id,
-                    "prepare_next_turn.completed",
+                    EventKind.PREPARE_NEXT_TURN_COMPLETED,
                     {"turn_index": turn_index, "message_count": len(messages)},
                 )
-                self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
+                self._emit(sequencer, active_run_id, EventKind.TURN_COMPLETED, {"turn_index": turn_index})
 
             # At max turns, stop exposing tools and ask for one final answer.
-            return self._finalize_after_max_turns(active_run_id, messages)
+            return self._finalize_after_max_turns(sequencer, active_run_id, messages)
         except Exception as exc:
             # Unexpected failures are traced, then re-raised for caller visibility.
             self._emit(
+                sequencer,
                 active_run_id,
-                "run.failed",
+                EventKind.RUN_FAILED,
                 {"error": f"{type(exc).__name__}: {exc}"},
             )
             raise
@@ -379,12 +403,14 @@ class KlaraLoop:
 
     def _finalize_after_max_turns(
         self,
+        sequencer: EventSequencer,
         run_id: str,
         messages: list[KlaraMessage],
     ) -> KlaraRunResult:
         """Ask the model for a final no-tool answer after tool turns are exhausted."""
 
         return self._finalize_without_tools(
+            sequencer,
             run_id,
             messages,
             stop_reason=StopReason.MAX_TURNS,
@@ -396,6 +422,7 @@ class KlaraLoop:
 
     def _finalize_without_tools(
         self,
+        sequencer: EventSequencer,
         run_id: str,
         messages: list[KlaraMessage],
         *,
@@ -425,9 +452,14 @@ class KlaraLoop:
             ]
         ).strip()
         self._emit(
+            sequencer,
             run_id,
-            "llm.started",
-            {"turn_index": final_turn_index, "finalization": True},
+            EventKind.LLM_STARTED,
+            {
+                "turn_index": final_turn_index,
+                "finalization": True,
+                "model": self.model,
+            },
         )
         response = self.llm.complete(
             system_prompt=finalization_prompt,
@@ -437,8 +469,9 @@ class KlaraLoop:
         )
         ignored_tool_call_count = len(response.tool_calls)
         self._emit(
+            sequencer,
             run_id,
-            "llm.completed",
+            EventKind.LLM_COMPLETED,
             {
                 "turn_index": final_turn_index,
                 "tool_call_count": 0,
@@ -465,11 +498,13 @@ class KlaraLoop:
             messages.append(retry_prompt)
             retry_turn_index = final_turn_index + 1
             self._emit(
+                sequencer,
                 run_id,
-                "llm.started",
+                EventKind.LLM_STARTED,
                 {
                     "turn_index": retry_turn_index,
                     "finalization": True,
+                    "model": self.model,
                     "retry_after_ignored_tools": True,
                 },
             )
@@ -481,8 +516,9 @@ class KlaraLoop:
             )
             ignored_tool_call_count = len(response.tool_calls)
             self._emit(
+                sequencer,
                 run_id,
-                "llm.completed",
+                EventKind.LLM_COMPLETED,
                 {
                     "turn_index": retry_turn_index,
                     "tool_call_count": 0,
@@ -498,7 +534,7 @@ class KlaraLoop:
         if not final_answer:
             final_answer = _empty_final_answer_for_stop(stop_reason)
         messages.append(KlaraMessage(role="assistant", content=final_answer))
-        return self._complete(run_id, messages, final_answer, stop_reason)
+        return self._complete(sequencer, run_id, messages, final_answer, stop_reason)
 
     def _tool_policy_stop(
         self,
@@ -540,6 +576,7 @@ class KlaraLoop:
 
     def _complete(
         self,
+        sequencer: EventSequencer,
         run_id: str,
         messages: list[KlaraMessage],
         final_answer: str,
@@ -547,7 +584,12 @@ class KlaraLoop:
     ) -> KlaraRunResult:
         """Emit completion and build the final run result."""
 
-        self._emit(run_id, "run.completed", {"stop_reason": stop_reason.value})
+        self._emit(
+            sequencer,
+            run_id,
+            EventKind.RUN_COMPLETED,
+            {"stop_reason": stop_reason.value},
+        )
         return KlaraRunResult(
             run_id=run_id,
             messages=tuple(messages),
@@ -556,10 +598,23 @@ class KlaraLoop:
             hook_failures=tuple(self.hooks.failures),
         )
 
-    def _emit(self, run_id: str, event_type: str, payload: dict[str, object]) -> None:
+    def _emit(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        event_type: str | EventKind,
+        payload: dict[str, object],
+    ) -> None:
         """Create and emit one lifecycle event through the hook manager."""
 
-        self.hooks.emit(KlaraEvent(type=event_type, run_id=run_id, payload=payload))
+        self.hooks.emit(
+            KlaraEvent(
+                type=event_type,
+                run_id=run_id,
+                payload=payload,
+                seq=sequencer.next(),
+            )
+        )
 
 
 def _tool_call_signature(call: ToolCall) -> str:

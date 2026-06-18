@@ -8,6 +8,7 @@ from typing import Any, Protocol
 
 
 JsonObject = dict[str, Any]
+TOOL_RESULT_PREVIEW_CHARS = 500
 
 
 class ToolSideEffect(StrEnum):
@@ -124,10 +125,13 @@ class ToolResult:
         """
 
         # Keep the public payload compact while preserving failure semantics.
+        content_preview = self.content[:TOOL_RESULT_PREVIEW_CHARS]
         data: JsonObject = {
             "tool_call_id": self.tool_call_id,
             "name": self.name,
             "content": self.content,
+            "content_preview": content_preview,
+            "content_length": len(self.content),
             "ok": self.ok,
         }
         if self.error is not None:
