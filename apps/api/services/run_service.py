@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -19,7 +20,8 @@ from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
 from klara.context.runtime import build_system_prompt
-from klara.context.timestamps import stamp_user_message_content
+from klara.context.timestamps import resolve_prompt_timezone, stamp_user_message_content
+from klara.context.web_evidence import WebEvidenceGuard
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
@@ -171,6 +173,7 @@ class RunService:
                 policy=self.loop_policy,
                 model=current.model or self.default_model or "fake-model",
                 system_prompt=_system_prompt(self.user_context),
+                final_answer_guard=_web_evidence_guard(self.user_context),
             )
             model_visible_user_input = self._model_visible_content(user_message)
             result = loop.run(
@@ -371,6 +374,17 @@ def _system_prompt(user_context: UserContext) -> str:
 
     persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8")
     return build_system_prompt(persona=persona, timezone_name=user_context.timezone)
+
+
+def _web_evidence_guard(user_context: UserContext) -> WebEvidenceGuard:
+    """Build the web evidence guard with the same prompt-facing date."""
+
+    prompt_timezone = resolve_prompt_timezone(user_context.timezone)
+    current_date = datetime.now(UTC).astimezone(prompt_timezone.tzinfo).date()
+    return WebEvidenceGuard(
+        current_date=current_date,
+        timezone_name=prompt_timezone.name,
+    )
 
 
 def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:

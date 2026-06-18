@@ -69,6 +69,17 @@ Add helper files inside the tool package when they make one concern easier to
 teach, such as `timezones.py`, `query.py`, or `result_parser.py`. Do not create
 generic `utils.py`, `helpers.py`, or `common.py`.
 
+Tool authoring follows this boundary:
+
+- `src/klara/core/tools.py` defines the `KlaraTool` protocol consumed by runtime.
+- `src/klara/tools/base.py` defines `BaseTool` only as a local authoring
+  template for built-in tools.
+- `schema.py` declares `ToolSpec` and `ToolMetadata`.
+- `tool.py` implements exactly one concrete `BaseTool` subclass.
+- tool-local parsing can live in focused helper files; broad routing, few-shot
+  prompting, source-ranking policy, and chapter prose must not live in tool
+  schemas or concrete tool classes.
+
 ## Comments And Docstrings
 
 Klara uses high teaching density:

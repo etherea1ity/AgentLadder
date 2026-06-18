@@ -117,6 +117,13 @@ Use this package shape by default:
 - focused helper files: parsing, normalization, adapters, or domain helpers.
 - package `__init__.py`: export the concrete tool class only.
 
+`BaseTool` is an authoring helper for local built-in tools, not the runtime
+contract. The loop and executor should depend on the structural `KlaraTool`
+protocol from `src/klara/core/tools.py`; `BaseTool` only shares argument
+validation and observation-building helpers for concrete local packages. This
+keeps the path open for future remote, MCP, sandboxed, or generated tools that
+implement the protocol without inheriting the local template.
+
 Concrete tools may import `klara.core` contracts and tool-local helpers.
 They must not import the loop, backend, frontend, or trace sinks. External
 provider clients belong in `src/klara/services/`; the tool package should wrap
@@ -137,6 +144,24 @@ Tool contracts and tool-use policy are separate:
 - general tool-use discipline lives in `src/klara/prompts/persona.md` and
   `src/klara/context/runtime.py`
 - execution remains a narrow `run(arguments)` method
+
+Web evidence has runtime guards because prompt text alone was not reliable
+enough for current/news/sports questions:
+
+- `web_search` returns candidate snippets only, with `evidence_status` and
+  `source_tier` fields on each result.
+- If a model tries to answer after candidate snippets without `web_fetch`,
+  `WebEvidenceGuard` injects a `runtime_tool_guard` through the loop's
+  `final_answer_guard` extension point.
+- If search found a `preferred_source` URL but only candidate pages were
+  fetched, `WebEvidenceGuard` injects a `runtime_preferred_source_guard`.
+- If both preferred and candidate pages were fetched, `WebEvidenceGuard`
+  injects a `runtime_source_guard` and masks candidate page text before final
+  synthesis.
+- If fetched page text is available and no stronger source guard applies,
+  `WebEvidenceGuard` injects a `runtime_web_synthesis_guard` so stale schedule
+  copy, navigation text, and ads are not treated as the latest report.
+- These guards are source-state policies, not intent routers or keyword rules.
 
 Tool execution uses metadata-driven waves:
 

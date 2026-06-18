@@ -355,6 +355,8 @@ src/klara/tools/builtin/
 
 Klara 学到：工具不是散落函数，而是一个可声明、可注册、可测试的能力包。
 
+这里有一个重要边界：`BaseTool` 只是本地工具的写作模板；真正的 runtime 契约是 `KlaraTool` protocol。也就是说，loop/executor 不需要知道一个工具是不是继承了 `BaseTool`，只需要它能提供 `spec`、`metadata` 和 `execute()`。
+
 对应代码：
 
 ```text
@@ -771,6 +773,36 @@ return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
 读者 takeaway：工具越多，越需要清楚地区分“用户可见内容”和“下一轮模型应该看见的上下文”。
 
 </details>
+
+## Evidence guards in this chapter
+
+Chapter 2 keeps the agent as one loop. It does not add an intent router for
+World Cup, news, or any specific keyword. The current implementation adds a
+small set of source-state guards through `WebEvidenceGuard`, which is injected
+into the loop through the generic `final_answer_guard` extension point:
+
+```text
+web_search candidates only
+-> model tries to final
+-> runtime_tool_guard asks for web_fetch
+
+preferred_source exists in search results
+-> model fetched only candidate_source
+-> runtime_preferred_source_guard asks it to fetch preferred_source
+
+preferred_source and candidate_source were both fetched
+-> model tries to final
+-> runtime_source_guard masks candidate_source page text before final synthesis
+
+web_fetch page text exists
+-> model tries to final
+-> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
+   navigation, and ads before final synthesis
+```
+
+This is the core teaching point: tools are not facts. Search returns
+candidates, fetch returns untrusted page text, and the loop may need small
+evidence guards before the final answer.
 
 ## 8. 运行与验证
 

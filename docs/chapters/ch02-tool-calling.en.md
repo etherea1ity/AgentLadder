@@ -357,6 +357,8 @@ src/klara/tools/builtin/
 
 Klara learns: a tool is not a loose function; it is a declared, registered, testable capability package.
 
+One boundary matters here: `BaseTool` is only the authoring template for local tools; the real runtime contract is the `KlaraTool` protocol. In other words, the loop and executor do not need to know whether a tool inherits `BaseTool`; they only need `spec`, `metadata`, and `execute()`.
+
 Code:
 
 ```text
@@ -773,6 +775,36 @@ State changes:
 Reader takeaway: the more tools Klara has, the more carefully it must separate user-visible content from model-visible future context.
 
 </details>
+
+## Evidence Guards In This Chapter
+
+Chapter 2 keeps the agent as one loop. It does not add an intent router for
+World Cup, news, or any specific keyword. The current implementation adds a
+small set of source-state guards through `WebEvidenceGuard`, which is injected
+into the loop through the generic `final_answer_guard` extension point:
+
+```text
+web_search candidates only
+-> model tries to final
+-> runtime_tool_guard asks for web_fetch
+
+preferred_source exists in search results
+-> model fetched only candidate_source
+-> runtime_preferred_source_guard asks it to fetch preferred_source
+
+preferred_source and candidate_source were both fetched
+-> model tries to final
+-> runtime_source_guard masks candidate_source page text before final synthesis
+
+web_fetch page text exists
+-> model tries to final
+-> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
+   navigation, and ads before final synthesis
+```
+
+This is the core teaching point: tools are not facts. Search returns
+candidates, fetch returns untrusted page text, and the loop may need small
+evidence guards before the final answer.
 
 ## 8. Run And Verify
 

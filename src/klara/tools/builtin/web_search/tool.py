@@ -8,11 +8,21 @@ from typing import Callable
 
 from klara.tools.base import BaseTool, ToolInputError
 from klara.tools.builtin.web_search.schema import WEB_SEARCH_METADATA, WEB_SEARCH_SPEC
+from klara.tools.source_quality import source_tier
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
-from klara.services.web import SearchResponse, WebSearchError, search_web
+from klara.services.web import SearchHit, SearchResponse, WebSearchError, search_web
 
 
 Searcher = Callable[..., SearchResponse]
+
+WEB_SEARCH_EVIDENCE_NOTE = (
+    "Search results are candidate links and snippets, not verified source text. "
+    "For current/latest/news/sports/scores or other web-backed facts, call "
+    "web_fetch on at least one relevant reliable result before writing the "
+    "final answer. Prefer results marked preferred_source when they are relevant. "
+    "If these results look weak, stale, schedule-only, or SEO-like, retry "
+    "web_search once with a narrower query or source/domain hint."
+)
 
 
 @dataclass(frozen=True)
@@ -70,18 +80,38 @@ class WebSearchTool(BaseTool):
         except WebSearchError as exc:
             return self.failure(arguments, str(exc))
 
+        ranked_hits = _rank_search_hits(response.results)
         return self.json_success(
             arguments,
             {
+                "observation_kind": "web_search_candidates",
+                "evidence_status": "candidate_snippets_only",
+                "next_step": WEB_SEARCH_EVIDENCE_NOTE,
                 "query": response.query,
                 "original_query": query,
                 "effective_query": effective_query,
                 "search_hints": search_hints,
+                "provider_limitations": (
+                    "The no-key search provider may not enforce freshness or "
+                    "language hints. Treat snippets as candidates and verify "
+                    "time-sensitive facts with fetched source text."
+                ),
+                "source_selection": (
+                    "Prefer relevant preferred_source results for web_fetch. "
+                    "Use ordinary candidate_source results only when no better "
+                    "source is available or when they add clearly needed detail."
+                ),
                 "provider": response.provider,
-                "result_count": len(response.results),
+                "result_count": len(ranked_hits),
                 "results": [
-                    {"title": hit.title, "url": hit.url, "snippet": hit.snippet}
-                    for hit in response.results
+                    {
+                        "title": hit.title,
+                        "url": hit.url,
+                        "snippet": hit.snippet,
+                        "source_tier": source_tier(hit.url),
+                        "original_rank": original_rank,
+                    }
+                    for original_rank, hit in ranked_hits
                 ],
                 "searched_url": response.searched_url,
                 "truncated": response.truncated,
@@ -199,21 +229,25 @@ def _apply_search_hints(query: str, search_hints: dict[str, str]) -> str:
     """Fold portable search hints into the query for no-key providers."""
 
     extras: list[str] = []
-    freshness_terms = {
-        "day": "past day",
-        "week": "past week",
-        "month": "past month",
-        "year": "past year",
-    }
-    freshness = search_hints.get("freshness")
-    if freshness:
-        extras.append(freshness_terms[freshness])
+    # Freshness and language are reported in the observation, but DuckDuckGo
+    # Lite does not give us a stable no-key way to enforce them. Appending
+    # phrases such as "past day" or "language:zh" pollutes some real queries.
     if date_after := search_hints.get("date_after"):
         extras.append(f"after:{date_after}")
     if date_before := search_hints.get("date_before"):
         extras.append(f"before:{date_before}")
-    if language := search_hints.get("language"):
-        extras.append(f"language:{language}")
     if not extras:
         return query
     return " ".join([query, *extras])
+
+
+def _rank_search_hits(hits: tuple[SearchHit, ...]) -> list[tuple[int, SearchHit]]:
+    """Prefer known reliable domains while preserving provider rank inside tiers."""
+
+    return sorted(
+        enumerate(hits, start=1),
+        key=lambda item: (
+            0 if source_tier(item[1].url) == "preferred_source" else 1,
+            item[0],
+        ),
+    )

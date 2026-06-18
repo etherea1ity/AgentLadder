@@ -8,8 +8,8 @@ from klara.core.tools import ToolMetadata, ToolOutputTrust, ToolSideEffect, Tool
 WEB_SEARCH_SPEC = ToolSpec(
     name="web_search",
     description=(
-        "Search the public web and return ranked result cards with titles, "
-        "URLs, snippets, provider, and searched_at metadata."
+        "Search the public web and return ranked result cards as candidate "
+        "links with titles, URLs, snippets, provider, and searched_at metadata."
     ),
     input_schema={
         "type": "object",

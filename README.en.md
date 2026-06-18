@@ -20,7 +20,7 @@ Tool calling means: the model produces `tool_calls`, the runtime executes tools,
 | assistant has no `tool_calls` | Return the final answer and stop |
 | tool is unknown, arguments are invalid, or execution fails | Return a failed observation visible to the next model turn |
 | tool output is too long | Truncate by metadata before it enters context |
-| `max_turns` is reached | Stop by `LoopPolicy` to avoid infinite tool loops |
+| `max_turns` is reached | Stop exposing tools, make one final no-tool LLM call, then stop by `LoopPolicy` |
 
 ## Quick Experience
 
@@ -771,6 +771,31 @@ State changes:
 Reader takeaway: the more tools Klara has, the more carefully it must separate user-visible content from model-visible future context.
 
 </details>
+
+## Evidence Guards In This Chapter
+
+Chapter 2 keeps the agent as one loop. It does not add an intent router for World Cup, news, or any specific keyword. The current implementation adds a small set of source-state guards through `WebEvidenceGuard`, which is injected into the loop through the generic `final_answer_guard` extension point:
+
+```text
+web_search candidates only
+-> model tries to final
+-> runtime_tool_guard asks for web_fetch
+
+preferred_source exists in search results
+-> model fetched only candidate_source
+-> runtime_preferred_source_guard asks it to fetch preferred_source
+
+preferred_source and candidate_source were both fetched
+-> model tries to final
+-> runtime_source_guard masks candidate_source page text before final synthesis
+
+web_fetch page text exists
+-> model tries to final
+-> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
+   navigation, and ads before final synthesis
+```
+
+This is the core teaching point: tools are not facts. Search returns candidates, fetch returns untrusted page text, and the loop may need small evidence guards before the final answer.
 
 ## 8. Run And Verify
 

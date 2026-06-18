@@ -772,6 +772,31 @@ return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
 
 </details>
 
+## 本章的证据 Guard
+
+Chapter 2 仍然只有一个 loop。它不为世界杯、新闻或任何关键词增加 intent router。当前实现通过 `WebEvidenceGuard` 增加一组 source-state guard，并通过通用的 `final_answer_guard` 扩展点注入 loop：
+
+```text
+web_search candidates only
+-> model tries to final
+-> runtime_tool_guard asks for web_fetch
+
+preferred_source exists in search results
+-> model fetched only candidate_source
+-> runtime_preferred_source_guard asks it to fetch preferred_source
+
+preferred_source and candidate_source were both fetched
+-> model tries to final
+-> runtime_source_guard masks candidate_source page text before final synthesis
+
+web_fetch page text exists
+-> model tries to final
+-> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
+   navigation, and ads before final synthesis
+```
+
+这一节的核心点是：工具结果不是事实本身。Search 返回候选网页，fetch 返回不可信网页正文，最终回答前可能还需要一点证据状态 guard。
+
 ## 8. 运行与验证
 
 启动：

@@ -39,14 +39,24 @@ def build_runtime_context_prompt(
             (
                 "For live/current/latest/today/so-far/news/sports/scores/"
                 "schedules/prices/versions, call web_search before answering "
-                "from memory."
+                "from memory, then fetch at least one relevant result before "
+                "writing a web-backed final answer unless the user only asked "
+                "for links."
+            ),
+            (
+                "Search snippets are candidates, not evidence. Do not conclude "
+                "from snippets alone."
+            ),
+            (
+                "If fetched sources conflict, prefer preferred_source pages and "
+                "call out unresolved conflicts instead of merging claims."
             ),
             (
                 "Call current_time only for exact wall-clock time, weekday, "
                 "timezone conversion, or relative date/time arithmetic."
             ),
             (
-                "Call web_fetch only when you need to read a specific public URL "
+                "Call web_fetch for source text from a specific public URL "
                 "returned by search or provided by the user."
             ),
             "</runtime_context>",

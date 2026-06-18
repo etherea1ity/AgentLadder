@@ -16,9 +16,12 @@ def test_runtime_context_includes_date_without_minute_precision() -> None:
     assert "UTC date: 2026-06-18" in prompt
     assert "do not call current_time only to learn today's date" in prompt
     assert "call web_search before answering from memory" in prompt
+    assert "fetch at least one relevant result" in prompt
+    assert "Search snippets are candidates, not evidence" in prompt
+    assert "If fetched sources conflict, prefer preferred_source pages" in prompt
     assert "sports/scores/schedules" in prompt
     assert "Call current_time only for exact wall-clock time" in prompt
-    assert "Call web_fetch only when you need to read a specific public URL" in prompt
+    assert "Call web_fetch for source text from a specific public URL" in prompt
     assert "12:34" not in prompt
     assert "20:34" not in prompt
 

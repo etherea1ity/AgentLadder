@@ -68,6 +68,29 @@ class ParallelProbeTool:
         )
 
 
+@dataclass(frozen=True)
+class MismatchedResultTool:
+    """Tool fixture that proves executor-level request/result normalization."""
+
+    # Spec exposes one public name even though the fixture returns another name.
+    spec: ToolSpec = ToolSpec(
+        name="mismatched_result",
+        description="Returns a deliberately mismatched tool result.",
+        input_schema={"type": "object", "properties": {}},
+    )
+    # Metadata uses a generous output cap so normalization is the only behavior.
+    metadata: ToolMetadata = ToolMetadata(label="Mismatched Result", category="test")
+
+    def execute(self, arguments: JsonObject) -> ToolResult:
+        """Return a result that does not match the incoming tool call."""
+
+        return ToolResult(
+            tool_call_id="internal-id",
+            name="internal_name",
+            content="normalized content",
+        )
+
+
 def test_executor_exposes_tool_metadata_in_spec_order() -> None:
     """Executor should keep model specs and runtime metadata aligned."""
 
@@ -87,6 +110,19 @@ def test_executor_limits_model_visible_tool_output() -> None:
 
     assert result.tool_call_id == "long-1"
     assert result.content == "abcde\n[tool output truncated after 5 characters]"
+
+
+def test_executor_normalizes_result_identity_to_original_tool_call() -> None:
+    """Executor should preserve the model request join key over tool internals."""
+
+    executor = ToolExecutor([MismatchedResultTool()])
+    call = ToolCall(id="request-1", name="mismatched_result", arguments={})
+
+    result = executor.execute(call)
+
+    assert result.tool_call_id == "request-1"
+    assert result.name == "mismatched_result"
+    assert result.content == "normalized content"
 
 
 def test_executor_runs_parallel_safe_batch_and_preserves_order() -> None:

@@ -39,6 +39,18 @@ class LlmClient(Protocol):
         ...
 
 
+class FinalAnswerGuard(Protocol):
+    """Protocol for context policy that can delay a final answer."""
+
+    def apply(
+        self,
+        messages: tuple[KlaraMessage, ...],
+    ) -> tuple[KlaraMessage, ...] | None:
+        """Return replacement messages when the loop should continue."""
+
+        ...
+
+
 @dataclass(frozen=True)
 class KlaraRunResult:
     """Final public result of one Klara loop execution."""
@@ -73,6 +85,7 @@ class KlaraLoop:
         policy: LoopPolicy | None = None,
         model: str = "fake-model",
         system_prompt: str = "",
+        final_answer_guard: FinalAnswerGuard | None = None,
     ) -> None:
         """Create a loop with injected model, tools, hooks, and policy.
 
@@ -83,6 +96,8 @@ class KlaraLoop:
             policy: Optional stop/bounds policy.
             model: Model identifier passed through to the LLM client.
             system_prompt: Prompt assembled outside core by the harness.
+            final_answer_guard: Optional context policy that can delay final
+                answers by returning a guarded transcript.
         """
 
         # Dependencies are injected so core stays independent of providers/services.
@@ -92,6 +107,7 @@ class KlaraLoop:
         self.policy = policy or LoopPolicy()
         self.model = model
         self.system_prompt = system_prompt
+        self.final_answer_guard = final_answer_guard
 
     def run(
         self,
@@ -148,9 +164,33 @@ class KlaraLoop:
                     content=response.content,
                     tool_calls=response.tool_calls,
                 )
-                messages.append(assistant_message)
 
                 if not response.tool_calls:
+                    guarded_messages = self._apply_final_answer_guard(messages)
+                    if guarded_messages is not None:
+                        messages = guarded_messages
+                        self._emit(
+                            active_run_id,
+                            "prepare_next_turn.started",
+                            {"turn_index": turn_index, "guard": "final_answer"},
+                        )
+                        messages = self.prepare_next_turn(messages)
+                        self._emit(
+                            active_run_id,
+                            "prepare_next_turn.completed",
+                            {
+                                "turn_index": turn_index,
+                                "message_count": len(messages),
+                                "guard": "final_answer",
+                            },
+                        )
+                        self._emit(
+                            active_run_id,
+                            "turn.completed",
+                            {"turn_index": turn_index, "guard": "final_answer"},
+                        )
+                        continue
+                    messages.append(assistant_message)
                     # No tool calls means the assistant content is the final answer.
                     self._emit(active_run_id, "turn.completed", {"turn_index": turn_index})
                     return self._complete(
@@ -159,6 +199,8 @@ class KlaraLoop:
                         response.content,
                         StopReason.FINAL,
                     )
+
+                messages.append(assistant_message)
 
                 # Execute every requested tool before preparing the next model turn.
                 for call in response.tool_calls:
@@ -224,6 +266,19 @@ class KlaraLoop:
         """
 
         return messages
+
+    def _apply_final_answer_guard(
+        self,
+        messages: list[KlaraMessage],
+    ) -> list[KlaraMessage] | None:
+        """Return guarded messages when final answer policy needs another turn."""
+
+        if self.final_answer_guard is None:
+            return None
+        guarded = self.final_answer_guard.apply(tuple(messages))
+        if guarded is None:
+            return None
+        return list(guarded)
 
     def _finalize_after_max_turns(
         self,

@@ -56,6 +56,7 @@ class ToolRegistry:
 
         return tuple(self._tools)
 
+
 def discover_local_tools() -> list[KlaraTool]:
     """Discover concrete local tools from built-in tool packages.
 

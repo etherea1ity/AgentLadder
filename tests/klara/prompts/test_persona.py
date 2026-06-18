@@ -23,5 +23,8 @@ def test_persona_prompt_requires_source_urls_for_web_answers() -> None:
         encoding="utf-8"
     )
 
+    assert "After web_search for web-backed factual answers" in prompt
+    assert "web_fetch to read at least one specific public URL" in prompt
     assert "mention the exact source URLs used" in prompt
+    assert "prefer fetched preferred_source pages over candidate_source pages" in prompt
     assert "keep the answer narrow" in prompt
