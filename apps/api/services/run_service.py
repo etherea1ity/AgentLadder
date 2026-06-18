@@ -17,6 +17,7 @@ from apps.api.schemas import (
     now_iso,
 )
 from apps.api.services.app_store import JsonlAppStore
+from apps.api.services.run_event_projector import RunEventProjector
 from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
@@ -161,9 +162,11 @@ class RunService:
         self.store.save_run(current)
         self._emit(run_id, "thinking_started", "Klara is preparing the runtime loop.", {})
 
-        usage_totals = _UsageTotals()
-        bridge = _RunEventBridge(self, run_id, usage_totals)
-        hooks = HookManager([bridge, JsonlTraceHook(Path(self.trace_path))])
+        selected_model = current.model or self.default_model or "fake-model"
+        projector = RunEventProjector(selected_model=selected_model)
+        hooks = HookManager(
+            [RunProjectionHook(self, run_id, projector), JsonlTraceHook(Path(self.trace_path))]
+        )
 
         try:
             registry = ToolRegistry.with_default_tools()
@@ -172,7 +175,7 @@ class RunService:
                 tool_executor=ToolExecutor(list(registry.visible_tools())),
                 hooks=hooks,
                 policy=self.loop_policy,
-                model=current.model or self.default_model or "fake-model",
+                model=selected_model,
                 system_prompt=_system_prompt(self.user_context),
                 final_answer_guard=_web_evidence_guard(self.user_context),
             )
@@ -194,6 +197,7 @@ class RunService:
             self._emit(run_id, "answer_delta", "", {"delta": final_text, "streamed_chars": len(final_text)})
 
             latency_ms = int((perf_counter() - started) * 1000)
+            usage_totals = projector.usage_totals
             token_source: TokenSource = "reported" if usage_totals.has_reported else "unknown"
             trace_saved = self._trace_has_run_events(run_id)
             completed = current.model_copy(
@@ -310,95 +314,31 @@ class RunService:
         )
 
 
-class _RunEventBridge:
-    """Convert core lifecycle events into compact frontend-visible events."""
+class RunProjectionHook:
+    """Thin hook adapter that emits projected API run events."""
 
-    def __init__(self, service: RunService, run_id: str, usage_totals: "_UsageTotals") -> None:
-        """Create a bridge bound to one app run."""
+    def __init__(
+        self,
+        service: RunService,
+        run_id: str,
+        projector: RunEventProjector,
+    ) -> None:
+        """Create a projection hook bound to one app run."""
 
         self.service = service
         self.run_id = run_id
-        self.usage_totals = usage_totals
+        self.projector = projector
 
     def on_event(self, event: KlaraEvent) -> None:
         """Project selected core events into the SSE stream."""
 
-        if event.type == "llm.started":
+        for projected in self.projector.project(event):
             self.service._emit(
                 self.run_id,
-                "llm_call_started",
-                "Klara is calling the model.",
-                {
-                    "turn_index": event.payload.get("turn_index"),
-                    "model": self._model(),
-                },
+                projected.event_type,
+                projected.message,
+                projected.payload,
             )
-            return
-        if event.type == "llm.completed":
-            usage = event.payload.get("usage") if isinstance(event.payload.get("usage"), dict) else {}
-            self.usage_totals.add(usage)
-            self.service._emit(
-                self.run_id,
-                "llm_call_completed",
-                "Model call completed.",
-                {
-                    "turn_index": event.payload.get("turn_index"),
-                    "tool_call_count": event.payload.get("tool_call_count"),
-                    "usage": usage,
-                    **_usage_payload(usage),
-                },
-            )
-            return
-        if event.type == "tool.started":
-            tool_call = event.payload.get("tool_call") if isinstance(event.payload.get("tool_call"), dict) else {}
-            name = str(tool_call.get("name") or "tool")
-            self.service._emit(
-                self.run_id,
-                "tool_call_started",
-                f"Klara is using {name}.",
-                {"turn_index": event.payload.get("turn_index"), "tool_call": tool_call},
-            )
-            return
-        if event.type == "tool.completed":
-            tool_result = event.payload.get("tool_result") if isinstance(event.payload.get("tool_result"), dict) else {}
-            name = str(tool_result.get("name") or "tool")
-            self.service._emit(
-                self.run_id,
-                "tool_call_completed",
-                f"{name} returned an observation.",
-                {"turn_index": event.payload.get("turn_index"), "tool_result": tool_result},
-            )
-
-
-    def _model(self) -> str | None:
-        """Return the selected model for this projected run."""
-
-        run = self.service.store.get_run(self.run_id)
-        if run and run.model:
-            return run.model
-        return self.service.default_model
-
-
-class _UsageTotals:
-    """Accumulate provider token usage across loop turns."""
-
-    def __init__(self) -> None:
-        """Create an empty usage accumulator."""
-
-        self.prompt_tokens = 0
-        self.completion_tokens = 0
-        self.total_tokens = 0
-        self.has_reported = False
-
-    def add(self, usage: dict[str, Any]) -> None:
-        """Add one provider usage payload when token fields are present."""
-
-        payload = _usage_payload(usage)
-        if any(value is not None for value in payload.values()):
-            self.has_reported = True
-        self.prompt_tokens += payload["prompt_tokens"] or 0
-        self.completion_tokens += payload["completion_tokens"] or 0
-        self.total_tokens += payload["total_tokens"] or 0
 
 
 def _system_prompt(user_context: UserContext) -> str:
@@ -417,27 +357,6 @@ def _web_evidence_guard(user_context: UserContext) -> WebEvidenceGuard:
         current_date=current_date,
         timezone_name=prompt_timezone.name,
     )
-
-
-def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:
-    """Normalize common OpenAI-compatible usage field names."""
-
-    prompt = _int_or_none(usage.get("prompt_tokens") or usage.get("input_tokens"))
-    completion = _int_or_none(usage.get("completion_tokens") or usage.get("output_tokens"))
-    total = _int_or_none(usage.get("total_tokens"))
-    if total is None and (prompt is not None or completion is not None):
-        total = (prompt or 0) + (completion or 0)
-    return {"prompt_tokens": prompt, "completion_tokens": completion, "total_tokens": total}
-
-
-def _int_or_none(value: Any) -> int | None:
-    """Return an integer token count when the value is numeric."""
-
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    return None
 
 
 def _title_from_question(question: str) -> str:
