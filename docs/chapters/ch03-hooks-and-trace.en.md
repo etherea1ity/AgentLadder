@@ -1,6 +1,6 @@
 # Chapter 3: Hooks and Trace
 
-Language: [中文](./ch03-hooks-and-trace.md) | English
+Language: [Chinese](./ch03-hooks-and-trace.md) | English
 
 Previous: [Chapter 2: Tool Calling](./ch02-tool-calling.en.md)
 
@@ -12,24 +12,26 @@ Roadmap: [Klara Roadmap](../skills/roadmap.md)
 
 ## The Chapter In One Sentence
 
-Klara does not turn the loop into a black-box function; it emits public events at key lifecycle points, hooks can observe or lightly influence those events, and trace, API, and the frontend run surface are all projections from the same event stream.
+Klara does not hide the loop inside one opaque function; it emits public lifecycle events, lets hooks observe or lightly influence selected placements, and projects the same event stream into JSONL trace, API/SSE events, the frontend thinking block, and the developer trace panel.
 
 ![Klara Chapter 3 Hooks and Trace](../assets/ch03-hooks-and-trace.svg)
 
 | What you see | What Klara does |
 | --- | --- |
-| `user_prompt_submit.*` | The user request enters runtime, and hooks can observe the submit boundary |
-| `llm.started/completed` | A model call starts/ends, and trace plus UI update from the same event |
-| `pre_tool_use.*` | A hook placement runs before a tool; it can allow/block, but it is not a full permission engine |
-| `tool.started/completed/failed` | Every tool call has pairable started and terminal events |
-| `post_tool_use.*` | After the tool observation exists, hooks can observe the result |
-| `stop.*` | The loop is about to stop, and hooks can observe cleanup |
-| JSONL trace | Developers can replay the public lifecycle of a run |
-| frontend run surface | Users can see tool cards and runtime status |
+| `user_prompt_submit.*` | Marks the boundary where a user request enters runtime |
+| `llm.started/completed` | Records model calls with duration and usage metadata |
+| `pre_tool_use.*` | Runs a hook placement before execution; it can allow or block one call |
+| `tool.started/completed/failed` | Gives every tool call one real start and one terminal event |
+| `post_tool_use.*` | Lets hooks observe the model-visible tool observation |
+| `stop.*` | Marks the loop stop boundary before `run.completed` |
+| JSONL trace | Stores replayable public events plus metrics |
+| API/SSE projection | Shapes core events into product-facing run events |
+| Thinking block | Shows `Thinking...`, then `Thought for Xs`, with an optional trace-grounded summary |
+| Web evidence guard | Treats search as candidates, fetch as evidence, and fixtures as not results |
 
 ## Quick Experience
 
-Start backend and frontend:
+Start the app:
 
 ```powershell
 .\scripts\dev.ps1
@@ -47,59 +49,45 @@ Ask a stable tool question:
 Please use current_time to check the current time in Asia/Shanghai, then answer in one sentence.
 ```
 
-You should see a run surface under the assistant label with a model call, a `current_time` tool card, hook placement badges, and trace state after completion.
+You should see a compact thinking block under the assistant label. While the run is active it says `Thinking...` with a timer and an event-grounded stream. When the run completes it says `Thought for Xs`; only the right-side chevron expands the details.
 
-Then open the API run detail:
+Then inspect the developer view:
 
 ```text
 http://127.0.0.1:8011/api/runs/{run_id}
 ```
 
-You should see the same run events. After deleting the session, related messages, runs, events, and JSONL trace lines are purged.
+The API events and JSONL trace come from the same public lifecycle stream. Deleting a session also purges the related run events and trace lines.
 
-## 3.1 Why Chapter 2's tool loop is not enough
+## 3.1 Why Chapter 2's Tool Loop Was Not Enough
 
-Chapter 2 lets the model request tools, lets runtime execute tools, and feeds observations back into context. But at that point the loop still behaves like an opaque function:
-
-```text
-user request
--> loop
--> maybe tools
--> final answer
-```
-
-When a user asks "why did it not keep searching?" or "which tool was blocked?", scattering more logging through the loop is the wrong shape. Klara needs a stable lifecycle event layer:
+Chapter 2 made this real:
 
 ```text
-loop emits public lifecycle events
--> hooks observe or lightly decide
--> JSONL trace stores public replay data
--> API/SSE projects user-visible events
--> frontend run surface renders tool cards and hook badges
+model requests tool_calls
+-> runtime executes tools
+-> observations return to the next model turn
+-> model writes a final answer
 ```
 
-Code:
+That is enough for tool calling, but not enough for observability. A user can ask why a search stopped, which tool failed, whether a hook blocked something, or whether the answer used fetched evidence rather than search snippets. Plain logging would make the loop noisy and brittle.
+
+Chapter 3 adds a lifecycle layer:
 
 ```text
-src/klara/core/events.py
-src/klara/core/hooks.py
-src/klara/core/loop.py
-apps/api/services/run_event_projector.py
-apps/web/src/components/klara/KlaraRunSurface.tsx
+KlaraLoop
+-> public KlaraEvent
+-> HookManager
+-> JsonlTraceHook
+-> RunEventProjector
+-> SSE / frontend thinking block / developer trace
 ```
 
-Reader takeaway: Chapter 3 is not adding UI to the loop; it turns the loop lifecycle into an observable, testable, projectable public event stream.
+Reader takeaway: the loop remains the runtime center, but lifecycle facts now have a stable public shape.
 
-## 3.2 KlaraEvent: public lifecycle events
+## 3.2 KlaraEvent: Public Lifecycle Events
 
-`KlaraEvent` is the core contract in this chapter. It turns "something happened inside runtime" into a stable public event.
-
-Two fields define the important boundary:
-
-```text
-public_payload      -> trace / API / UI may use it
-private_payload_ref -> future reference to private material, without embedding that material
-```
+`KlaraEvent` is the core contract for this chapter. It gives each public event a schema version, `event_id`, run-local `seq`, type, run id, timestamp, public payload, and an optional private payload reference.
 
 Code:
 
@@ -109,70 +97,66 @@ tests/klara/core/test_hooks.py
 tests/klara/core/test_loop.py
 ```
 
-<details>
-<summary>Expand: how to read KlaraEvent and EventSequencer</summary>
-
-`EventKind` centralizes public event names, while `EventSequencer` assigns monotonically increasing `seq` values within one run.
-
-```python
-class EventSequencer:
-    def __init__(self) -> None:
-        self._next_value = 1
-
-    def next(self) -> int:
-        value = self._next_value
-        self._next_value += 1
-        return value
-
-@dataclass(frozen=True)
-class KlaraEvent:
-    type: str | EventKind
-    run_id: str
-    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
-    payload: dict[str, Any] = field(default_factory=dict)
-    schema_version: int = 1
-    event_id: str = field(default_factory=lambda: f"evt_{uuid4().hex}")
-    seq: int | None = None
-    public_payload: dict[str, Any] | None = None
-    private_payload_ref: str | None = None
-
-    def to_public_dict(self) -> dict[str, Any]:
-        return {
-            "schema_version": self.schema_version,
-            "event_id": self.event_id,
-            "seq": self.seq,
-            "type": self.type,
-            "run_id": self.run_id,
-            "timestamp": self.timestamp,
-            "payload": self.public_payload or {},
-            **({"private_payload_ref": self.private_payload_ref} if self.private_payload_ref else {}),
-        }
-```
-
-How to read it:
-
-1. `type` names the lifecycle point, such as `tool.started` or `stop.completed`.
-2. `run_id` joins all events from one loop execution.
-3. `event_id` gives trace replay, API projection, and tests a stable join key.
-4. `seq` is run-local ordering; tests confirm it starts at 1 and increases monotonically.
-5. `public_payload` is externally visible; old call sites that pass only `payload` remain compatible.
-6. `private_payload_ref` stores only a reference, not private content.
-
-State change: every loop `_emit` creates an event with `event_id` and `seq`; hooks, trace, and API projection all see the same public event.
-
-Boundary: core may expose tool name, tool call id, short preview, and content length, but it should not push future private payloads or full long tool content directly to UI.
-
-</details>
-
-## 3.3 Observer hook: trace should not affect loop correctness
-
-An observer hook is the lightest extension point: it receives events and does not decide loop behavior. `JsonlTraceHook` is an observer.
+Important boundary:
 
 ```text
-KlaraLoop._emit(...)
+public_payload      -> trace, API, and UI may project this
+private_payload_ref -> a future pointer to private material, not private material itself
+```
+
+`EventSequencer` starts at `1` for each run and increments monotonically. That makes trace replay and teaching simple: read the JSONL lines for one `run_id`, sort by `seq`, and you have the public lifecycle.
+
+Tool payloads use compact public shapes. A tool result may expose `name`, `ok`, `error`, `content_preview`, and `content_length`, but the frontend should not render long raw tool content as answer text.
+
+## 3.3 Trace Has Events And Metrics
+
+Chapter 3 trace is not just "what happened"; it also records how long it took and what token usage the provider reported.
+
+Event-level metrics:
+
+```json
+{
+  "type": "llm.completed",
+  "payload": {
+    "turn_index": 0,
+    "tool_call_count": 1,
+    "usage": {
+      "prompt_tokens": 128,
+      "completion_tokens": 64,
+      "total_tokens": 192
+    },
+    "metrics": {
+      "duration_ms": 924,
+      "prompt_tokens": 128,
+      "completion_tokens": 64,
+      "total_tokens": 192,
+      "token_source": "reported"
+    }
+  }
+}
+```
+
+Tool terminal events also include `metrics.duration_ms`. Blocked tools use a zero duration because no execution started. Run completion includes run-level latency and usage totals.
+
+`token_source` can be:
+
+```text
+reported  -> the provider returned usage
+estimated -> reserved for a future estimator
+unknown   -> no reliable usage was available
+```
+
+Reader takeaway: event trace says what happened; metrics trace says how costly or slow it was.
+
+## 3.4 Observer Hooks Do Not Own Correctness
+
+An observer hook receives events and should not decide whether the loop succeeds. `JsonlTraceHook` is the simplest example:
+
+```text
+KlaraLoop._emit(event)
 -> HookManager.emit(event)
 -> JsonlTraceHook.on_event(event)
--> event.to_public_dict() is written to JSONL
+-> event.to_public_dict() is appended to JSONL
 ```
 
 Code:
@@ -183,19 +167,19 @@ apps/api/services/app_store.py
 tests/apps/api/test_app_store_delete.py
 ```
 
-This chapter fixes the teaching boundary of trace shape: each JSONL line uses top-level `run_id`, so app-store lookup and purge also use `record.get("run_id")`. Deleting a session therefore removes related trace lines instead of leaving orphan trace data.
+The JSONL shape uses top-level `run_id`. App-store lookup and purge therefore use `record.get("run_id") == run_id`. That keeps session deletion aligned with trace deletion.
 
-Reader takeaway: trace is the developer-facing public lifecycle record; it should not decide whether the loop succeeds.
+Hook failure isolation matters: if an observer hook raises, `HookManager.failures` records it and the loop continues.
 
-## 3.4 Lifecycle placement: UserPromptSubmit / PreToolUse / PostToolUse / Stop
+## 3.5 Lifecycle Placements: Submit, PreToolUse, PostToolUse, Stop
 
-The main line of Chapter 3 is not "permissions"; it is placement. Klara gives hooks stable entry points at important lifecycle positions:
+Hooks can also opt into lifecycle placements:
 
 ```text
-user prompt enters runtime -> UserPromptSubmit
-before a tool executes     -> PreToolUse
-after tool observation     -> PostToolUse
-before run completed       -> Stop
+UserPromptSubmit -> when the user request enters runtime
+PreToolUse       -> before one tool call executes
+PostToolUse      -> after a tool observation exists
+Stop             -> before the run completes
 ```
 
 Code:
@@ -207,10 +191,7 @@ tests/klara/core/test_hooks.py
 tests/klara/core/test_loop.py
 ```
 
-<details>
-<summary>Expand: HookManager's minimal decision model</summary>
-
-This chapter introduces one small decision object:
+The decision object is intentionally small:
 
 ```python
 @dataclass(frozen=True)
@@ -220,68 +201,22 @@ class HookDecision:
     public_metadata: dict[str, object] = field(default_factory=dict)
 ```
 
-`HookManager` still supports observer hooks:
+`HookManager` discovers optional methods with `getattr`, so a hook can implement only `on_event` or also implement `on_pre_tool_use`, `on_post_tool_use`, and friends.
 
-```python
-def emit(self, event: KlaraEvent) -> None:
-    for hook in self._hooks:
-        try:
-            hook.on_event(event)
-        except Exception as exc:
-            self.failures.append((event.type, f"{type(exc).__name__}: {exc}"))
-```
-
-It also discovers optional placement methods with `getattr`:
-
-```python
-def pre_tool_use(self, context: PreToolUseContext) -> HookDecision:
-    return self._decision_placement(
-        "pre_tool_use",
-        "on_pre_tool_use",
-        context,
-    )
-```
-
-How to read it:
-
-1. A hook may implement only `on_event`.
-2. A hook may also implement `on_pre_tool_use`.
-3. If any PreToolUse hook returns `allowed=False`, the current tool call is blocked.
-4. If a hook raises, the failure is recorded in `HookManager.failures` and does not crash the loop.
-
-State change: placement hooks do not change messages unless PreToolUse explicitly blocks a tool; a block produces a model-visible failed observation.
-
-Boundary: this is not a full approval UI or human-in-the-loop system. It only makes lifecycle positions real.
-
-</details>
-
-## 3.5 PreToolUse is not a permission engine
-
-PreToolUse can `allow` or `block` the current tool call, but Chapter 3 deliberately stops short of a complete permission system.
-
-When a hook blocks a tool:
+If a PreToolUse hook returns `allowed=False`, the current tool is blocked. The tool is not executed, no `tool.started` event is emitted, and the model receives a failed tool observation:
 
 ```text
 pre_tool_use.started
 pre_tool_use.completed allowed=false
 tool.failed blocked=true
-role="tool" failed observation enters the next model turn
+role="tool" observation: "Tool blocked by hook: ..."
 ```
 
-It does not:
+This is not a permission engine. It does not show approval UI, wait for a person, mutate durable policy, or rewrite the tool registry.
 
-```text
-open an approval modal
-wait for human confirmation
-write durable policy
-mutate the tool registry
-```
+## 3.6 Tool Lifecycle Exactly Once
 
-This matters. Chapter 3 answers "where can lifecycle behavior be influenced?" Full permission/approval belongs later, when MCP, external tools, background work, and production risk make it meaningful.
-
-## 3.6 Tool lifecycle exactly-once
-
-Every tool call should be easy to teach and test:
+Tool events are deliberately pairable:
 
 ```text
 successful tool  -> one tool.started + one tool.completed
@@ -299,55 +234,20 @@ src/klara/tools/executor.py
 tests/klara/core/test_loop.py
 ```
 
-Reader takeaway: `tool.started` means the tool actually began executing; a PreToolUse-blocked call should not pretend it started.
+`tool.started` means execution really began. If a hook blocks a tool, the terminal failure is still visible, but the start event does not pretend the tool ran.
 
-## 3.7 JSONL trace: developer view
+## 3.7 API/SSE Projection
 
-JSONL trace stores the public event schema. It is not UI state and it is not provider hidden reasoning.
-
-A trace event looks like:
-
-```json
-{
-  "schema_version": 1,
-  "event_id": "evt_...",
-  "seq": 7,
-  "type": "tool.completed",
-  "run_id": "run_...",
-  "timestamp": "2026-06-18T...",
-  "payload": {
-    "turn_index": 0,
-    "tool_result": {
-      "name": "current_time",
-      "ok": true,
-      "content_preview": "...",
-      "content_length": 128
-    }
-  }
-}
-```
-
-Notice `content_preview/content_length`: trace can record compact observations, but UI should not display full tool content as answer text.
-
-Code:
+The API does not stream raw core events directly. `RunEventProjector` turns public lifecycle events into product-facing run events:
 
 ```text
-src/klara/core/hooks.py
-apps/api/services/app_store.py
-```
-
-## 3.8 API/SSE projection: product view
-
-The API does not send every core event raw to the frontend. `RunEventProjector` projects public lifecycle events into product-facing run events:
-
-```text
-llm.started        -> llm_call_started
-llm.completed      -> llm_call_completed
-tool.started       -> tool_call_started
-tool.completed     -> tool_call_completed
-tool.failed        -> tool_call_failed
-pre_tool_use.*     -> hook_placement_*
-tool_policy.stopped -> policy_stop
+llm.started          -> llm_call_started
+llm.completed        -> llm_call_completed
+tool.started         -> tool_call_started
+tool.completed       -> tool_call_completed
+tool.failed          -> tool_call_failed
+pre/post hook events -> hook_placement_started/completed
+tool_policy.stopped  -> policy_stop
 ```
 
 Code:
@@ -360,77 +260,137 @@ apps/api/schemas.py
 tests/apps/api/test_run_event_projector.py
 ```
 
-`RunService` now keeps only a thin adapter: the core hook receives `KlaraEvent`, the projector returns one or more `ProjectedRunEvent` values, and the service persists and streams them over SSE.
+The projector also owns product-facing usage accumulation. `answer_delta` remains answer streaming; it is not trace. `thinking_summary_delta` remains visible thinking summary content; it is not assistant message content and is not sent back into model-visible history.
 
-Reader takeaway: trace and frontend come from the same public event stream, but the projection layer decides what is appropriate for users.
+## 3.8 GPT-Style Thinking Block
 
-## 3.9 Frontend run surface: tools and status for users
-
-The frontend in Chapter 3 is not a Thinking UI and not a RAG module timeline. It renders runtime public projection as a lightweight run surface:
+The main user-facing surface is now a GPT-style thinking block:
 
 ```text
-assistant label
--> KlaraRunStatus
--> KlaraRunSurface
-   -> compact lifecycle timeline
-   -> tool cards
-   -> hook badges
-   -> trace saved state
--> assistant answer markdown
+active run:
+  Thinking... 4.2s
+  small event-grounded stream when expanded
+
+completed run:
+  Thought for 23.9s
+  right-side chevron expands details
 ```
 
 Code:
 
 ```text
-apps/web/src/components/ChatWorkspace.tsx
+apps/web/src/components/klara/KlaraThinkingBlock.tsx
 apps/web/src/components/klara/KlaraRunSurface.tsx
 apps/web/src/components/klara/useKlaraRunMotion.ts
+apps/web/src/components/ChatWorkspace.tsx
 apps/web/src/types/domain.ts
 apps/web/src/api/client.ts
 ```
 
-`answer_delta` still only updates the assistant answer. `workstream_note` and tool cards do not enter assistant message content.
+The block is not raw chain-of-thought. During the run it derives a small visible stream from public events such as model started, tool started, tool completed, hook completed, and run completed. After the run, an optional narrator can generate one short summary from the completed public trace.
 
-## 3.10 Optional narrator: translating real runtime events into one natural note
+If narrator is unavailable, Klara still emits:
 
-The narrator is the final capstone of this chapter, not the main feature. It is default-off, lives in the API/app projection layer, and does not belong to core.
-
-It can only generate short notes from real `RunEventRecord` evidence:
-
-```json
-{
-  "event_type": "workstream_note",
-  "payload": {
-    "text": "...",
-    "source": "narrator_model",
-    "phase": "thinking",
-    "evidence_event_ids": ["evt_..."],
-    "display": {"ephemeral": false}
-  }
-}
+```text
+thinking_summary_started
+thinking_summary_completed has_summary=false
 ```
+
+The UI then shows `Thought for Xs` without inventing a fake summary.
+
+The developer trace panel stays separate and visually weaker:
+
+```text
+Developer trace · 38 events · 3 tools
+```
+
+Tool cards and hook badges belong there, not inside the main thinking summary.
+
+## 3.9 Thinking Summary Narrator
+
+The thinking summary narrator is a capstone, not the core mechanism. It runs after the main loop completes and before answer streaming starts. Its input is the completed public run event list, not private scratchpad text.
+
+Prompt:
+
+```text
+src/klara/prompts/thinking_summary_narrator.md
+```
+
+Service:
+
+```text
+apps/api/services/workstream_narrator.py
+tests/apps/api/test_thinking_summary.py
+```
+
+Rules:
+
+- summarize what the runtime actually did
+- use evidence event ids
+- match the user's language
+- do not answer the user's question
+- do not expose raw tool arguments, secrets, full URLs, file contents, hidden reasoning, or chain-of-thought
+- reject unsupported action claims
+- ignore invalid JSON, empty text, or forbidden reasoning language
+
+`workstream_note` remains as a legacy-compatible event type, but the default Chapter 3 user surface is the completed-run thinking summary.
+
+## 3.10 Web Evidence Boundaries
+
+The web tools in Chapter 3 teach an important trace lesson: search results are candidates, not facts.
 
 Code:
 
 ```text
-apps/api/services/workstream_narrator.py
-src/klara/prompts/workstream_narrator.md
-tests/apps/api/test_workstream_narrator.py
+src/klara/tools/builtin/web_search/tool.py
+src/klara/tools/builtin/web_fetch/tool.py
+src/klara/services/web/source_quality.py
+src/klara/services/web/search.py
+src/klara/context/web_evidence.py
+tests/klara/services/test_web_search.py
+tests/klara/tools/test_web_tools.py
+tests/klara/context/test_web_evidence.py
 ```
 
-Limits:
+For current sports queries, Klara now annotates search results:
 
-- it does not enter `MessageRecord.content`
-- it does not enter later main-model messages
-- it does not reveal raw chain-of-thought
-- it cannot claim search, reading, running, verification, or edits unless recent events prove them
-- narrator failure does not fail the main run
+```text
+official      -> fifa.com
+wire          -> reuters.com, apnews.com
+sports_media  -> ESPN, Guardian football, BBC Sport, Fox Sports
+aggregator    -> SEO or score-aggregation style sites
+unknown       -> everything else
+```
 
-Reader takeaway: natural-language runtime notes are an experience enhancement over event projection, not hidden reasoning display.
+This is not an allowlist and it does not forbid other sources. It is a quality signal for evidence selection and trace teaching.
 
-## 3.11 What this chapter does not do
+The guard reminds the model:
 
-This chapter explicitly does not include:
+- search snippets are not enough for concrete facts
+- fetch at least relevant sources for current sports unless one official page directly contains the needed fact
+- aggregator-only evidence cannot support concrete scores
+- fixtures are not results
+- a scheduled match with no verified score is not `0:0`
+- separate completed results, scheduled or in-progress fixtures, and source limitations
+
+For the teaching prompt:
+
+```text
+帮我搜一下世界杯最新进展
+```
+
+Expected behavior in the June 18 scenario:
+
+- call `web_search`
+- fetch the FIFA schedule and at least one news, wire, or sports-media source when latest results are needed
+- distinguish completed June 17 results from June 18 scheduled or in-progress fixtures
+- include source URLs in the answer
+- show `web_search` and `web_fetch` tool events with latency in trace
+- let the thinking summary describe evidence selection at a high level, without claiming unsupported work
+
+## 3.11 What This Chapter Does Not Do
+
+Chapter 3 does not include:
 
 - complete permission engine
 - Todo Planning
@@ -442,7 +402,7 @@ This chapter explicitly does not include:
 - OpenAI/Claude/DeepSeek reasoning stream integration
 - raw chain-of-thought display
 
-These capabilities need the hooks/trace event layer first, but they should not steal Chapter 3's main line.
+Todo belongs to Chapter 5. RAG/module pipelines belong to later chapters. The thinking summary is only a public-trace projection, not hidden reasoning.
 
 ## Code Index
 
@@ -450,11 +410,18 @@ These capabilities need the hooks/trace event layer first, but they should not s
 src/klara/core/events.py
 src/klara/core/hooks.py
 src/klara/core/loop.py
+src/klara/core/tools.py
+src/klara/tools/executor.py
+src/klara/context/web_evidence.py
+src/klara/services/web/source_quality.py
 apps/api/services/run_event_projector.py
 apps/api/services/app_store.py
 apps/api/services/run_service.py
+apps/api/services/workstream_narrator.py
+apps/web/src/components/klara/KlaraThinkingBlock.tsx
 apps/web/src/components/klara/KlaraRunSurface.tsx
 apps/web/src/components/klara/useKlaraRunMotion.ts
+apps/web/src/components/ChatWorkspace.tsx
 ```
 
 ## Run And Verify
@@ -474,22 +441,22 @@ npm run build
 npm audit --omit=dev
 ```
 
-Suggested manual check:
+Manual checks:
 
 1. Start `.\scripts\dev.ps1`.
-2. Ask a `current_time` question.
-3. Confirm the run surface shows tool cards and hook badges.
-4. Open `/api/runs/{run_id}` and inspect events.
-5. Delete the session and confirm related trace lines are purged.
+2. Ask a `current_time` question and confirm the thinking block timer, chevron behavior, tool card, and trace panel.
+3. Ask `帮我搜一下世界杯最新进展` and confirm the answer separates fetched evidence, completed results, fixtures, and source limitations.
+4. Open `/api/runs/{run_id}` and inspect events plus metrics.
+5. Delete the session and confirm related trace data is purged.
 
 ## Small Experiments
 
-1. Write a hook that implements only `on_event`, and confirm it receives every lifecycle event.
-2. Write an `on_pre_tool_use` hook that returns `allowed=False`, and confirm the tool does not execute while the model sees a failed observation.
-3. Make a hook raise, and confirm the run still completes while the failure is recorded in `HookManager.failures`.
-4. Open the JSONL trace and replay one run by `seq`.
-5. Observe that active runs are expanded by default and completed runs are collapsed by default.
+1. Write a hook that implements only `on_event` and confirm it receives lifecycle events.
+2. Write an `on_pre_tool_use` hook that returns `allowed=False` and confirm the tool does not execute.
+3. Make a hook raise and confirm the run still completes while the failure is recorded.
+4. Open JSONL trace and replay one run by `seq`.
+5. Compare search-only evidence with fetched evidence on a current sports query.
 
 ## Next Chapter
 
-Chapter 4 covers Harness And Config: now that loop, tools, hooks, and trace have boundaries, the next step is assembling provider, model, prompt, tools, hooks, and trace sink through one clear harness entry point.
+Chapter 4 covers Harness And Config: once loop, tools, hooks, trace, metrics, and projections have clear boundaries, the next step is assembling provider, model, prompt, tools, hooks, policies, and trace sinks through one harness entry point.

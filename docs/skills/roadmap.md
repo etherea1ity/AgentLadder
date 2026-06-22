@@ -139,10 +139,13 @@ Runnable result:
 - hooks receive lifecycle events
 - trace and frontend projections are produced from the same public events
 - tool start/result cards appear in the run surface
+- trace records per-run, per-turn, and per-tool duration/usage metrics
+- GPT-style thinking block shows `Thinking...`, then `Thought for Xs`
 - hook failure does not crash the loop
 - `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop` placements are real
 - public/private hook payload boundary is explicit
 - trace event schema is stable enough for teaching and replay
+- current web-evidence queries separate search candidates, fetched evidence, fixtures, and results
 
 Includes:
 
@@ -154,9 +157,11 @@ Includes:
 - hook failure isolation
 - public versus private hook payloads
 - trace event schema
+- trace metrics: duration, latency, usage totals, token source
 - API/SSE projection from public events
-- frontend run surface / tool cards
-- optional evidence-bound narrator model as a final capstone only
+- frontend GPT-style thinking block plus developer trace panel
+- source-quality signals for current web evidence
+- optional evidence-bound thinking summary narrator as a final capstone only
 
 Excludes:
 
@@ -166,6 +171,7 @@ Excludes:
 - context compression implementation
 - memory write policy
 - full provider streaming adapter
+- fake periodic thinking text
 - raw chain-of-thought display
 
 ### Chapter 4 - Harness And Config
