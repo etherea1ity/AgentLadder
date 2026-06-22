@@ -10,11 +10,12 @@ from klara.core.loop import LlmClient
 from klara.core.messages import KlaraMessage
 
 MAX_NOTE_CHARS = 180
+MAX_SUMMARY_CHARS = 260
 
 
 @dataclass(frozen=True)
 class WorkstreamNarratorInput:
-    """Public runtime state available to the optional narrator."""
+    """Public runtime state available to the optional legacy narrator."""
 
     user_request: str
     selected_model: str
@@ -27,15 +28,40 @@ class WorkstreamNarratorInput:
 
 @dataclass(frozen=True)
 class WorkstreamNote:
-    """Validated narrator note ready for RunEvent persistence."""
+    """Validated legacy narrator note ready for RunEvent persistence."""
 
     text: str
     evidence_event_ids: tuple[str, ...]
     confidence: float
 
 
+@dataclass(frozen=True)
+class ThinkingSummaryInput:
+    """Completed public trace available to the thinking summary narrator."""
+
+    user_request: str
+    selected_model: str
+    run_status: str
+    duration_ms: int
+    events: tuple[RunEventRecord, ...]
+    tool_summaries: tuple[dict[str, Any], ...] = ()
+
+
+@dataclass(frozen=True)
+class ThinkingSummaryResult:
+    """Validated visible thinking summary ready for RunEvent persistence."""
+
+    summary: str
+    evidence_event_ids: tuple[str, ...]
+    confidence: float
+
+
 class WorkstreamNarrator:
-    """Generate short evidence-bound notes from public run events."""
+    """Generate short evidence-bound notes from public run events.
+
+    This class is kept for compatibility with existing workstream_note events.
+    The default RunService path uses ThinkingSummaryNarrator instead.
+    """
 
     def __init__(
         self,
@@ -60,7 +86,7 @@ class WorkstreamNarrator:
             messages=(
                 KlaraMessage(
                     role="user",
-                    content=json.dumps(_input_payload(payload), ensure_ascii=False),
+                    content=json.dumps(_workstream_input_payload(payload), ensure_ascii=False),
                 ),
             ),
             tools=(),
@@ -81,16 +107,14 @@ class WorkstreamNarrator:
             return None
         if not _claims_have_evidence(text, payload.recent_events):
             return None
-        evidence_ids = _valid_evidence_ids(raw.get("evidence_event_ids"), payload)
+        evidence_ids = _valid_evidence_ids(raw.get("evidence_event_ids"), payload.recent_events)
         if not evidence_ids:
             return None
-        confidence = raw.get("confidence")
-        if not isinstance(confidence, int | float) or isinstance(confidence, bool):
-            confidence = 0.0
+        confidence = _confidence(raw.get("confidence"))
         return WorkstreamNote(
             text=text[:MAX_NOTE_CHARS],
             evidence_event_ids=tuple(evidence_ids),
-            confidence=max(0.0, min(float(confidence), 1.0)),
+            confidence=confidence,
         )
 
     def _prompt(self) -> str:
@@ -99,8 +123,71 @@ class WorkstreamNarrator:
         return self.prompt_path.read_text(encoding="utf-8")
 
 
-def _input_payload(payload: WorkstreamNarratorInput) -> dict[str, Any]:
-    """Build the strict public JSON input for the narrator model."""
+class ThinkingSummaryNarrator:
+    """Generate a completed-run summary from public trace events."""
+
+    def __init__(
+        self,
+        *,
+        client: LlmClient,
+        model: str,
+        prompt_path: Path | None = None,
+    ) -> None:
+        """Create a thinking summary narrator backed by an injected model."""
+
+        self.client = client
+        self.model = model
+        self.prompt_path = prompt_path or (
+            Path("src") / "klara" / "prompts" / "thinking_summary_narrator.md"
+        )
+
+    def create_summary(
+        self,
+        payload: ThinkingSummaryInput,
+    ) -> ThinkingSummaryResult | None:
+        """Return a validated visible summary or None."""
+
+        response = self.client.complete(
+            system_prompt=self._prompt(),
+            messages=(
+                KlaraMessage(
+                    role="user",
+                    content=json.dumps(_thinking_summary_input_payload(payload), ensure_ascii=False),
+                ),
+            ),
+            tools=(),
+            model=self.model,
+        )
+        try:
+            raw = json.loads(response.content)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(raw, dict):
+            return None
+        summary = str(raw.get("summary") or "").strip()
+        if not summary:
+            return None
+        if _contains_forbidden_reasoning_terms(summary):
+            return None
+        if not _claims_have_evidence(summary, payload.events):
+            return None
+        evidence_ids = _valid_evidence_ids(raw.get("evidence_event_ids"), payload.events)
+        if not evidence_ids:
+            return None
+        return ThinkingSummaryResult(
+            summary=summary[:MAX_SUMMARY_CHARS],
+            evidence_event_ids=tuple(evidence_ids),
+            confidence=_confidence(raw.get("confidence")),
+        )
+
+    def _prompt(self) -> str:
+        """Read the thinking summary narrator instruction prompt."""
+
+        return self.prompt_path.read_text(encoding="utf-8")
+
+
+def _workstream_input_payload(payload: WorkstreamNarratorInput) -> dict[str, Any]:
+    """Build the strict public JSON input for the legacy narrator model."""
 
     return {
         "user_request": payload.user_request,
@@ -121,6 +208,28 @@ def _input_payload(payload: WorkstreamNarratorInput) -> dict[str, Any]:
     }
 
 
+def _thinking_summary_input_payload(payload: ThinkingSummaryInput) -> dict[str, Any]:
+    """Build the strict public JSON input for the thinking summary narrator."""
+
+    return {
+        "user_request": payload.user_request,
+        "selected_model": payload.selected_model,
+        "run_status": payload.run_status,
+        "duration_ms": payload.duration_ms,
+        "events": [
+            {
+                "event_id": event.event_id,
+                "event_type": event.event_type,
+                "message": event.message,
+                "safe_summary": _safe_event_summary(event),
+                "metrics": _safe_event_metrics(event),
+            }
+            for event in payload.events
+        ],
+        "tool_summaries": list(payload.tool_summaries),
+    }
+
+
 def _safe_event_summary(event: RunEventRecord) -> str:
     """Return a compact event summary without raw content payloads."""
 
@@ -133,21 +242,45 @@ def _safe_event_summary(event: RunEventRecord) -> str:
         if isinstance(tool_result, dict):
             name = str(tool_result.get("name") or "tool")
             ok = tool_result.get("ok")
+            preview = str(tool_result.get("content_preview") or "")[:120]
+            if preview:
+                return f"tool result: {name}, ok={ok}, preview={preview}"
             return f"tool result: {name}, ok={ok}"
     return event.message[:160]
 
 
-def _valid_evidence_ids(value: object, payload: WorkstreamNarratorInput) -> list[str]:
-    """Filter evidence ids to ids that exist in recent public events."""
+def _safe_event_metrics(event: RunEventRecord) -> dict[str, Any]:
+    """Return compact public metrics for narrator input."""
+
+    raw_metrics = event.payload.get("metrics")
+    metrics = dict(raw_metrics) if isinstance(raw_metrics, dict) else {}
+    public: dict[str, Any] = {}
+    for key in (
+        "duration_ms",
+        "latency_ms",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "token_source",
+    ):
+        if key in metrics:
+            public[key] = metrics[key]
+        elif key in event.payload:
+            public[key] = event.payload[key]
+    return public
+
+
+def _valid_evidence_ids(value: object, events: tuple[RunEventRecord, ...]) -> list[str]:
+    """Filter evidence ids to ids that exist in public events."""
 
     if not isinstance(value, list):
         return []
-    known = {event.event_id for event in payload.recent_events}
+    known = {event.event_id for event in events}
     return [item for item in value if isinstance(item, str) and item in known]
 
 
 def _contains_forbidden_reasoning_terms(text: str) -> bool:
-    """Return whether the note exposes or imitates hidden reasoning."""
+    """Return whether text exposes or imitates hidden reasoning."""
 
     lowered = text.lower()
     forbidden = (
@@ -156,24 +289,23 @@ def _contains_forbidden_reasoning_terms(text: str) -> bool:
         "scratchpad",
         "hidden reasoning",
         "raw reasoning",
+        "my chain-of-thought",
         "i realized",
         "i inferred",
-        "我意识到",
-        "我推理",
     )
     return any(term in lowered for term in forbidden)
 
 
 def _claims_have_evidence(text: str, events: tuple[RunEventRecord, ...]) -> bool:
-    """Reject action claims that are unsupported by recent public events."""
+    """Reject action claims that are unsupported by public events."""
 
     lowered = text.lower()
     checks = [
-        (("search", "searched", "搜索", "检索"), _has_search_event),
-        (("read", "opened", "fetched", "读取", "打开"), _has_read_event),
-        (("edit", "edited", "modify", "modified", "修改", "编辑"), _has_edit_event),
-        (("verify", "verified", "test", "tested", "验证", "测试"), _has_verify_event),
-        (("tool", "called", "调用工具"), _has_tool_event),
+        (("search", "searched"), _has_search_event),
+        (("read", "opened", "fetched"), _has_read_event),
+        (("edit", "edited", "modify", "modified"), _has_edit_event),
+        (("verify", "verified", "test", "tested"), _has_verify_event),
+        (("tool",), _has_tool_event),
     ]
     for terms, predicate in checks:
         if any(term in lowered for term in terms) and not predicate(events):
@@ -182,28 +314,52 @@ def _claims_have_evidence(text: str, events: tuple[RunEventRecord, ...]) -> bool
 
 
 def _has_tool_event(events: tuple[RunEventRecord, ...]) -> bool:
+    """Return whether public events show tool activity."""
+
     return any(event.event_type.startswith("tool_call_") for event in events)
 
 
 def _has_search_event(events: tuple[RunEventRecord, ...]) -> bool:
-    return any(_event_mentions(event, ("search", "web_search", "搜索")) for event in events)
+    """Return whether public events show search activity."""
+
+    return any(_event_mentions(event, ("search", "web_search")) for event in events)
 
 
 def _has_read_event(events: tuple[RunEventRecord, ...]) -> bool:
-    return any(_event_mentions(event, ("read", "fetch", "open", "web_fetch", "读取", "打开")) for event in events)
+    """Return whether public events show read/fetch activity."""
+
+    return any(_event_mentions(event, ("read", "fetch", "open", "web_fetch")) for event in events)
 
 
 def _has_edit_event(events: tuple[RunEventRecord, ...]) -> bool:
-    return any(_event_mentions(event, ("edit", "modify", "write", "修改", "编辑")) for event in events)
+    """Return whether public events show edit activity."""
+
+    return any(_event_mentions(event, ("edit", "modify", "write")) for event in events)
 
 
 def _has_verify_event(events: tuple[RunEventRecord, ...]) -> bool:
-    return any(_event_mentions(event, ("verify", "test", "check", "验证", "测试")) for event in events)
+    """Return whether public events show verification activity."""
+
+    return any(_event_mentions(event, ("verify", "test", "check")) for event in events)
 
 
 def _event_mentions(event: RunEventRecord, needles: tuple[str, ...]) -> bool:
+    """Return whether an event's public shape contains any needle."""
+
     text = json.dumps(
-        {"event_type": event.event_type, "message": event.message, "payload": event.payload},
+        {
+            "event_type": event.event_type,
+            "message": event.message,
+            "payload": event.payload,
+        },
         ensure_ascii=False,
     ).lower()
     return any(needle in text for needle in needles)
+
+
+def _confidence(value: object) -> float:
+    """Normalize model-provided confidence."""
+
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        return 0.0
+    return max(0.0, min(float(value), 1.0))

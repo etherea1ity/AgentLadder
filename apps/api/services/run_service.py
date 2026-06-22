@@ -20,6 +20,9 @@ from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_event_projector import RunEventProjector
 from apps.api.services.sse_bus import SSEBus
 from apps.api.services.workstream_narrator import (
+    ThinkingSummaryInput,
+    ThinkingSummaryNarrator,
+    ThinkingSummaryResult,
     WorkstreamNarrator,
     WorkstreamNarratorInput,
 )
@@ -174,18 +177,23 @@ class RunService:
         current = run.model_copy(update={"status": "thinking", "started_at": now_iso()})
         self.store.save_run(current)
         self._emit(run_id, "thinking_started", "Klara is preparing the runtime loop.", {})
+        self._emit(
+            run_id,
+            "thinking_summary_started",
+            "Klara is thinking.",
+            {
+                "started_at": now_iso(),
+                "presentation": "gpt_style_collapsible",
+            },
+        )
 
         selected_model = current.model or self.default_model or "fake-model"
         projector = RunEventProjector(selected_model=selected_model)
         hooks = HookManager(
             [RunProjectionHook(self, run_id, projector), JsonlTraceHook(Path(self.trace_path))]
         )
-        narrator_stop, narrator_thread = self._start_workstream_narrator(
-            run_id=run_id,
-            user_request=user_message.content,
-            selected_model=selected_model,
-            started=started,
-        )
+        narrator_stop: threading.Event | None = None
+        narrator_thread: threading.Thread | None = None
 
         try:
             registry = ToolRegistry.with_default_tools()
@@ -211,6 +219,34 @@ class RunService:
                 return
 
             self._stop_workstream_narrator(narrator_stop, narrator_thread)
+            summary = self._create_thinking_summary(
+                run_id=run_id,
+                user_request=user_message.content,
+                selected_model=selected_model,
+                duration_ms=int((perf_counter() - started) * 1000),
+            )
+            if summary is not None:
+                self._emit(
+                    run_id,
+                    "thinking_summary_delta",
+                    "Thinking summary generated.",
+                    {
+                        "text": summary.summary,
+                        "source": "narrator_model",
+                        "evidence_event_ids": list(summary.evidence_event_ids),
+                        "confidence": summary.confidence,
+                    },
+                )
+            thinking_duration_ms = int((perf_counter() - started) * 1000)
+            self._emit(
+                run_id,
+                "thinking_summary_completed",
+                "Thinking summary completed.",
+                {
+                    "duration_ms": thinking_duration_ms,
+                    "has_summary": summary is not None,
+                },
+            )
             final_text = result.final_answer
             self._emit(run_id, "answer_streaming_started", "Klara is writing the final answer.", {})
             self.store.update_message(assistant_message.model_copy(update={"content": final_text, "status": "running"}))
@@ -376,6 +412,41 @@ class RunService:
         if thread is not None and thread.is_alive():
             thread.join(timeout=0.2)
 
+    def _create_thinking_summary(
+        self,
+        *,
+        run_id: str,
+        user_request: str,
+        selected_model: str,
+        duration_ms: int,
+    ) -> ThinkingSummaryResult | None:
+        """Return an optional completed-run thinking summary."""
+
+        if (
+            not self.enable_workstream_narrator
+            or self.narrator_client is None
+            or not self.narrator_model
+        ):
+            return None
+        try:
+            events = tuple(self.store.list_events(run_id))
+            narrator = ThinkingSummaryNarrator(
+                client=self.narrator_client,
+                model=self.narrator_model,
+            )
+            return narrator.create_summary(
+                ThinkingSummaryInput(
+                    user_request=user_request,
+                    selected_model=selected_model,
+                    run_status="completed",
+                    duration_ms=duration_ms,
+                    events=events,
+                    tool_summaries=_tool_summaries_from_events(events),
+                )
+            )
+        except Exception:
+            return None
+
     def _cleanup_run_runtime(self, run_id: str) -> None:
         """Remove per-run cancellation and thread bookkeeping."""
 
@@ -469,6 +540,40 @@ def _web_evidence_guard(user_context: UserContext) -> WebEvidenceGuard:
         current_date=current_date,
         timezone_name=prompt_timezone.name,
     )
+
+
+def _tool_summaries_from_events(
+    events: tuple[RunEventRecord, ...],
+) -> tuple[dict[str, Any], ...]:
+    """Return compact tool summaries for the thinking narrator."""
+
+    summaries: list[dict[str, Any]] = []
+    for event in events:
+        if event.event_type not in {"tool_call_completed", "tool_call_failed"}:
+            continue
+        tool_result = event.payload.get("tool_result")
+        if not isinstance(tool_result, dict):
+            continue
+        duration_ms = event.payload.get("duration_ms")
+        if not isinstance(duration_ms, int):
+            metrics = event.payload.get("metrics")
+            if isinstance(metrics, dict) and isinstance(metrics.get("duration_ms"), int):
+                duration_ms = metrics["duration_ms"]
+            else:
+                duration_ms = 0
+        summaries.append(
+            {
+                "tool": str(tool_result.get("name") or "tool"),
+                "status": "failed" if event.event_type == "tool_call_failed" else "completed",
+                "safe_preview": str(
+                    tool_result.get("content_preview")
+                    or tool_result.get("error")
+                    or ""
+                )[:240],
+                "duration_ms": duration_ms,
+            }
+        )
+    return tuple(summaries)
 
 
 def _title_from_question(question: str) -> str:

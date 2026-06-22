@@ -152,7 +152,7 @@ def test_narrator_unsupported_claims_are_rejected(tmp_path) -> None:
     assert note is None
 
 
-def test_run_service_persists_note_without_updating_assistant_content(tmp_path) -> None:
+def test_run_service_no_longer_emits_periodic_workstream_note(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()
     main_llm = RecordingFinalLlm()
@@ -171,15 +171,17 @@ def test_run_service_persists_note_without_updating_assistant_content(tmp_path) 
     service._threads[created.run_id].join(timeout=5)
 
     events = store.list_events(created.run_id)
-    note = next(event for event in events if event.event_type == "workstream_note")
     answer_delta = next(event for event in events if event.event_type == "answer_delta")
     assistant = store.get_message(created.assistant_message_id)
 
-    assert note.payload["text"] == "Klara is preparing the runtime."
-    assert events.index(note) < events.index(answer_delta)
+    assert not [event for event in events if event.event_type == "workstream_note"]
+    assert any(event.event_type == "thinking_summary_completed" for event in events)
     assert assistant is not None
     assert assistant.content == "final answer"
     assert "Klara is preparing the runtime." not in main_llm.calls[0][0].content
+    assert events.index(
+        next(event for event in events if event.event_type == "thinking_summary_completed")
+    ) < events.index(answer_delta)
 
 
 def test_narrator_failure_does_not_fail_run(tmp_path) -> None:
