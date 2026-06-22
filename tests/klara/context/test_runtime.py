@@ -17,6 +17,8 @@ def test_runtime_context_includes_date_without_minute_precision() -> None:
     assert "do not call current_time only to learn today's date" in prompt
     assert "call web_search before answering from memory" in prompt
     assert "fetch at least one relevant result" in prompt
+    assert "Treat equivalent non-English recency phrasing the same way" in prompt
+    assert "最近" in prompt
     assert "Search snippets are candidates, not evidence" in prompt
     assert "If fetched pages disagree" in prompt
     assert "corroborated by more than one relevant source" in prompt

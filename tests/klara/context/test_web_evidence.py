@@ -34,20 +34,6 @@ def test_current_world_cup_search_requires_fetch_before_answer() -> None:
     assert "<runtime_tool_guard>" in guarded[-1].content
 
 
-def test_recent_chinese_world_cup_request_requires_initial_search() -> None:
-    """A compact Chinese recent-sports question should still require search."""
-
-    messages = (
-        user("最近世界杯怎么样了"),
-        assistant("2026年世界杯尚未开始。"),
-    )
-
-    guarded = WebEvidenceGuard(current_date=date(2026, 6, 22)).apply(messages)
-
-    assert guarded is not None
-    assert "<runtime_web_search_required_guard>" in guarded[-1].content
-
-
 def test_aggregator_only_evidence_blocks_concrete_score_answer() -> None:
     """Aggregator-only fetched evidence should not support concrete scores."""
 

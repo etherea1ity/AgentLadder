@@ -44,6 +44,11 @@ def build_runtime_context_prompt(
                 "for links."
             ),
             (
+                "Treat equivalent non-English recency phrasing the same way, "
+                "including Chinese terms such as 最近, 近况, 这几天, 最新, "
+                "目前, and 现在."
+            ),
+            (
                 "Search snippets are candidates, not evidence. Do not conclude "
                 "from snippets alone."
             ),
