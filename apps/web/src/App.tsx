@@ -610,6 +610,28 @@ export default function App() {
       const events = [...current.events, event];
       const next: Run = { ...current, events };
       if (event.event_type === "thinking_started") next.status = "thinking";
+      if (event.event_type === "thinking_summary_started") {
+        next.status = "thinking";
+        next.live = {
+          elapsed_ms: current.live?.elapsed_ms,
+          streamed_chars: current.live?.streamed_chars ?? 0,
+          current_label: "Thinking...",
+        };
+      }
+      if (event.event_type === "thinking_summary_delta") {
+        next.live = {
+          elapsed_ms: current.live?.elapsed_ms,
+          streamed_chars: current.live?.streamed_chars ?? 0,
+          current_label: "Thinking summary updated",
+        };
+      }
+      if (event.event_type === "thinking_summary_completed") {
+        next.live = {
+          elapsed_ms: nullableNumber(event.payload?.duration_ms) ?? current.live?.elapsed_ms,
+          streamed_chars: current.live?.streamed_chars ?? 0,
+          current_label: "Thinking summary completed",
+        };
+      }
       if (event.event_type === "answer_streaming_started")
         next.status = "streaming";
       if (
@@ -669,7 +691,7 @@ export default function App() {
             event.payload?.streamed_chars ??
               (current.live?.streamed_chars ?? 0) + delta.length,
           ),
-          current_label: "Answer is streaming...",
+          current_label: "Answer updated",
         };
       }
       if (event.event_type === "module_started") {

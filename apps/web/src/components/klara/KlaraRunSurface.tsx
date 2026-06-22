@@ -12,13 +12,19 @@ type ToolCard = {
   contentLength: number | null;
 };
 
-export function KlaraRunSurface({ run }: { run?: Run }) {
+export function KlaraRunSurface({
+  run,
+  developerCollapsed = false,
+}: {
+  run?: Run;
+  developerCollapsed?: boolean;
+}) {
   const active = isKlaraRunActive(run);
-  const [expanded, setExpanded] = useState(active);
+  const [expanded, setExpanded] = useState(developerCollapsed ? false : active);
 
   useEffect(() => {
-    setExpanded(active);
-  }, [active, run?.run_id]);
+    setExpanded(developerCollapsed ? false : active);
+  }, [active, developerCollapsed, run?.run_id]);
 
   const visibleEvents = useMemo(
     () => (run?.events ?? []).filter((event) => event.event_type !== "answer_delta"),
@@ -46,10 +52,10 @@ export function KlaraRunSurface({ run }: { run?: Run }) {
 
   if (!run) return null;
 
-  const title = `Run trace · ${visibleEvents.length} events · ${toolCards.length} ${toolCards.length === 1 ? "tool" : "tools"}`;
+  const title = `Developer trace - ${visibleEvents.length} events - ${toolCards.length} ${toolCards.length === 1 ? "tool" : "tools"}`;
 
   return (
-    <section className={`klara-run-surface ${active ? "is-active" : "is-compact"}`} aria-label="Run trace">
+    <section className={`klara-run-surface ${active ? "is-active" : "is-compact"}`} aria-label="Developer trace">
       <button
         className="klara-run-surface-toggle"
         type="button"

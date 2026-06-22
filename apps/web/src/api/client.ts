@@ -46,6 +46,9 @@ export const api = {
     const eventTypes: RunEvent['event_type'][] = [
       'run_created',
       'thinking_started',
+      'thinking_summary_started',
+      'thinking_summary_delta',
+      'thinking_summary_completed',
       'llm_call_started',
       'answer_streaming_started',
       'answer_delta',

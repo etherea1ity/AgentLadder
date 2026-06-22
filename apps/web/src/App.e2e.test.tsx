@@ -138,7 +138,7 @@ describe("Klara app flow", () => {
     expect(
       await screen.findByText("Klara completed the runtime loop."),
     ).toBeInTheDocument();
-    expect(await screen.findByText(/Run trace.*3 events.*1 tool/)).toBeInTheDocument();
+    expect(await screen.findByText(/Developer trace.*3 events.*1 tool/)).toBeInTheDocument();
     expect(screen.getByText("Trace saved")).toBeInTheDocument();
   });
 
@@ -154,14 +154,20 @@ describe("Klara app flow", () => {
     const source = MockEventSource.instances[0];
     source.emit("thinking_started", evt("thinking_started", "Klara is preparing the runtime loop."));
     source.emit(
-      "workstream_note",
-      evt("workstream_note", "Klara runtime note.", {
-        text: "Klara is preparing the observable run.",
-        source: "narrator_model",
+      "thinking_summary_started",
+      evt("thinking_summary_started", "Klara is tracking visible thinking.", {
+        started_at: now,
+        presentation: "gpt_style_collapsible",
+      }),
+    );
+    source.emit(
+      "thinking_summary_delta",
+      evt("thinking_summary_delta", "Klara visible thinking summary.", {
+        text: "Klara is preparing the observable run from public events.",
         evidence_event_ids: ["evt_thinking_started"],
       }),
     );
-    expect(await screen.findByText("Klara is preparing the observable run.")).toBeInTheDocument();
+    expect(await screen.findByText("Klara is preparing the observable run from public events.")).toBeInTheDocument();
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
       "tool_call_started",
@@ -173,6 +179,13 @@ describe("Klara app flow", () => {
       "tool_call_completed",
       evt("tool_call_completed", "current_time returned.", {
         tool_result: { name: "current_time", ok: true },
+      }),
+    );
+    source.emit(
+      "thinking_summary_completed",
+      evt("thinking_summary_completed", "Thinking summary completed.", {
+        duration_ms: 1200,
+        has_summary: true,
       }),
     );
     source.emit("answer_streaming_started", evt("answer_streaming_started", "Klara is writing."));
@@ -195,7 +208,7 @@ describe("Klara app flow", () => {
 
     expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
     expect(container.querySelector(".assistant-content")?.textContent).not.toContain(
-      "Klara is preparing the observable run.",
+      "Klara is preparing the observable run from public events.",
     );
     const generatedImage = container.querySelector(".generated-image");
     expect(generatedImage).toHaveAttribute("src", generatedImageUrl);

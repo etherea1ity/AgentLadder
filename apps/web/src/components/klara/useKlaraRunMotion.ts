@@ -66,13 +66,19 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
       return { ...base, kind: 'run.started', status: 'started', publicLabel: 'Received question', publicDetail: 'The run was created for this question.', concept: 'Run' };
     case 'thinking_started':
       return { ...base, kind: 'ask.created', status: 'completed', publicLabel: 'Created AskState', publicDetail: 'Klara structured the user question as AskState.', concept: 'AskState', capabilities: ['model'] };
+    case 'thinking_summary_started':
+      return { ...base, kind: 'thinking.summary.started', status: 'started', publicLabel: 'Thinking summary started', publicDetail: 'Klara started tracking a visible summary from public run events.', concept: 'ThinkingSummary', capabilities: ['trace'] };
+    case 'thinking_summary_delta':
+      return { ...base, kind: 'thinking.summary.delta', status: 'progress', publicLabel: 'Thinking summary updated', publicDetail: String(event.payload?.text ?? event.message), concept: 'ThinkingSummary', capabilities: ['trace'] };
+    case 'thinking_summary_completed':
+      return { ...base, kind: 'thinking.summary.completed', status: 'completed', publicLabel: 'Thinking summary completed', publicDetail: 'Klara finished the visible summary for this run.', concept: 'ThinkingSummary', capabilities: ['trace'] };
     case 'llm_call_started':
       return { ...base, kind: 'model.call.started', status: 'started', publicLabel: 'Calling model...', publicDetail: `${String(event.payload?.model ?? run.model ?? 'Selected model')} is generating a response.`, concept: 'LLMClient', capabilities: ['model'] };
     case 'answer_streaming_started':
-      return { ...base, kind: 'answer.started', status: 'started', publicLabel: 'Writing answer...', publicDetail: 'The model started streaming the public answer.', concept: 'AnswerState', capabilities: ['model'] };
+      return { ...base, kind: 'answer.started', status: 'started', publicLabel: 'Preparing answer...', publicDetail: 'Klara is preparing the public answer.', concept: 'AnswerState', capabilities: ['model'] };
     case 'answer_delta':
       if (answerStarted) return null;
-      return { ...base, kind: 'answer.started', status: 'progress', publicLabel: 'Writing answer...', publicDetail: 'The model is streaming answer tokens.', concept: 'AnswerState', capabilities: ['model'] };
+      return { ...base, kind: 'answer.started', status: 'progress', publicLabel: 'Answer updated', publicDetail: 'The public answer was updated.', concept: 'AnswerState', capabilities: ['model'] };
     case 'llm_call_completed':
       return { ...base, kind: 'model.call.completed', status: 'completed', publicLabel: 'Model call completed', publicDetail: 'The selected model finished returning the answer.', concept: 'LLMClient', capabilities: ['model'] };
     case 'tool_call_started': {
@@ -180,6 +186,7 @@ function phaseForRun(run: Run, kind?: KlaraRunEventKind): KlaraVisualPhase {
   if (run.status === 'completed') return 'completed';
   if (run.status === 'failed' || run.status === 'cancelled') return 'error';
   if (kind === 'trace.saved') return 'saving';
+  if (kind === 'thinking.summary.started' || kind === 'thinking.summary.delta') return 'thinking';
   if (kind === 'tool.call.started') return 'acting';
   if (kind === 'tool.call.failed' || kind === 'policy.stopped') return 'checking';
   if (kind === 'retrieval.started' || kind === 'chunk.retrieved') return 'searching';
@@ -209,7 +216,7 @@ function labelForStatus(status: RunStatus) {
 function detailForRun(run: Run) {
   if (run.status === 'queued') return 'Klara is preparing the observable run.';
   if (run.status === 'thinking') return `${run.model ?? 'The selected model'} is being called.`;
-  if (run.status === 'streaming') return 'The answer is streaming into the chat.';
+  if (run.status === 'streaming') return 'The answer is being written into the chat.';
   if (run.status === 'completed') return 'The answer is ready in the conversation.';
   if (run.status === 'failed') return run.error?.message ?? 'The run failed.';
   return 'The run was stopped and partial output was preserved.';
@@ -239,7 +246,7 @@ function answerChars(run: Run) {
 function tokenSummary(run: Run) {
   const source = run.token_source === 'estimated' ? ' estimated' : '';
   if (run.total_tokens != null) return `${run.total_tokens}${source}`;
-  if (run.prompt_tokens != null || run.completion_tokens != null) return `${run.prompt_tokens ?? '—'} in / ${run.completion_tokens ?? '—'} out${source}`;
+  if (run.prompt_tokens != null || run.completion_tokens != null) return `${run.prompt_tokens ?? '?'} in / ${run.completion_tokens ?? '?'} out${source}`;
   return undefined;
 }
 

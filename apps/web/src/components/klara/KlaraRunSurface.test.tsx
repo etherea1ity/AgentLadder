@@ -149,15 +149,43 @@ describe("KlaraRunSurface", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: /run trace/i })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /developer trace/i })).toHaveAttribute(
       "aria-expanded",
       "false",
     );
     expect(screen.queryByText("current_time")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /run trace/i }));
+    fireEvent.click(screen.getByRole("button", { name: /developer trace/i }));
 
     expect(screen.getByText("current_time")).toBeInTheDocument();
+  });
+
+  it("can stay collapsed as a developer panel during active runs", () => {
+    render(
+      <KlaraRunSurface
+        developerCollapsed
+        run={{
+          ...baseRun,
+          events: [
+            evt("tool_call_completed", {
+              tool_result: {
+                tool_call_id: "call_1",
+                name: "current_time",
+                content_preview: "done",
+                content_length: 4,
+                ok: true,
+              },
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /developer trace/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.queryByText("current_time")).not.toBeInTheDocument();
   });
 });
 
