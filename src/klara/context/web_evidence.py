@@ -285,6 +285,9 @@ def _looks_time_sensitive_web_request(content: str) -> bool:
         "match summary",
     )
     chinese_recency_terms = (
+        "\u6700\u8fd1",
+        "\u8fd1\u51b5",
+        "\u8fd9\u51e0\u5929",
         "\u6700\u65b0",
         "\u5f53\u524d",
         "\u76ee\u524d",
