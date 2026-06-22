@@ -61,6 +61,13 @@ def build_runtime_context_prompt(
                 "list from source-limited analysis."
             ),
             (
+                "For current sports updates, separate confirmed completed "
+                "results, today's scheduled or in-progress fixtures, and source "
+                "limitations. Fixtures are not results; do not write 0:0 unless "
+                "fetched evidence explicitly reports a live or full-time 0-0 "
+                "score."
+            ),
+            (
                 "Call current_time only for exact wall-clock time, weekday, "
                 "timezone conversion, or relative date/time arithmetic."
             ),

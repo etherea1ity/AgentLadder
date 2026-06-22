@@ -18,6 +18,7 @@ def test_web_fetch_tool_declares_network_untrusted_metadata() -> None:
     assert tool.metadata.category == "web"
     assert tool.metadata.side_effect == ToolSideEffect.NETWORK
     assert tool.metadata.parallel_safe is True
+    assert tool.spec.input_schema["properties"]["max_chars"]["maximum"] == 12000
     assert tool.metadata.output_trust == ToolOutputTrust.UNTRUSTED
 
 
@@ -60,6 +61,76 @@ def test_web_fetch_tool_returns_failed_observation_for_fetch_errors() -> None:
     assert result.ok is False
     assert result.content == ""
     assert result.error == "URL must use http or https"
+
+
+def test_web_fetch_tool_supports_relevant_snippets() -> None:
+    """Relevant snippet mode should extract windows around query terms."""
+
+    def page_fetcher(url: str, *, max_chars: int, timeout_seconds: float) -> FetchedPage:
+        return FetchedPage(
+            url=url,
+            final_url="https://www.reuters.com/sports/soccer/world-cup-report",
+            status=200,
+            content_type="text/html",
+            title="Reuters World Cup report",
+            text=(
+                "Opening navigation. "
+                + ("filler " * 120)
+                + "England beat Croatia 4-2 in Dallas. "
+                + ("more filler " * 120)
+            ),
+            truncated=False,
+        )
+
+    tool = WebFetchTool(page_fetcher=page_fetcher)
+
+    result = tool.execute(
+        {
+            "url": "https://www.reuters.com/sports/soccer/world-cup-report",
+            "max_chars": 12000,
+            "extract_mode": "relevant_snippets",
+            "query_terms": ["England", "Croatia"],
+        }
+    )
+
+    payload = json.loads(result.content)
+    assert result.ok is True
+    assert "England beat Croatia 4-2" in payload["text"]
+    assert payload["extract_mode"] == "relevant_snippets"
+    assert payload["query_terms"] == ["England", "Croatia"]
+    assert payload["no_relevant_terms_found"] is False
+    assert payload["source_quality"] == "wire"
+    assert payload["is_preferred_for_current_sports"] is True
+
+
+def test_web_fetch_tool_marks_missing_relevant_terms() -> None:
+    """Snippet mode should say when query terms were not found."""
+
+    def page_fetcher(url: str, *, max_chars: int, timeout_seconds: float) -> FetchedPage:
+        return FetchedPage(
+            url=url,
+            final_url=url,
+            status=200,
+            content_type="text/html",
+            title="Schedule page",
+            text="Today fixture list only.",
+            truncated=False,
+        )
+
+    tool = WebFetchTool(page_fetcher=page_fetcher)
+
+    result = tool.execute(
+        {
+            "url": "https://example.com/schedule",
+            "extract_mode": "relevant_snippets",
+            "query_terms": ["England"],
+        }
+    )
+
+    payload = json.loads(result.content)
+    assert result.ok is True
+    assert payload["text"] == "Today fixture list only."
+    assert payload["no_relevant_terms_found"] is True
 
 
 def test_web_search_tool_declares_network_untrusted_metadata() -> None:
@@ -119,13 +190,15 @@ def test_web_search_tool_returns_ranked_results() -> None:
             "url": "https://example.com",
             "snippet": "",
             "original_rank": 1,
+            "source_quality": "unknown",
+            "is_preferred_for_current_sports": False,
         }
     ]
     assert payload["trust"] == "untrusted_external_content"
 
 
-def test_web_search_tool_preserves_provider_result_order() -> None:
-    """Search results should not be reordered by local domain preferences."""
+def test_web_search_tool_preserves_provider_order_for_generic_queries() -> None:
+    """Generic search results should not be reordered by sports preferences."""
 
     def searcher(
         query: str,
@@ -139,8 +212,43 @@ def test_web_search_tool_preserves_provider_result_order() -> None:
             query=query,
             provider="duckduckgo_lite",
             results=(
-                SearchHit(title="SEO Site", url="https://example.com/worldcup"),
-                SearchHit(title="BBC Scores", url="https://www.bbc.com/sport/football"),
+                SearchHit(title="Package Mirror", url="https://example.com/python"),
+                SearchHit(title="Python Docs", url="https://docs.python.org/3/"),
+            ),
+            searched_url="https://lite.duckduckgo.com/lite/?q=python",
+            truncated=False,
+        )
+
+    tool = WebSearchTool(searcher=searcher)
+
+    result = tool.execute({"query": "python docs", "count": 2})
+
+    payload = json.loads(result.content)
+    assert result.ok is True
+    assert [hit["title"] for hit in payload["results"]] == ["Package Mirror", "Python Docs"]
+    assert [hit["original_rank"] for hit in payload["results"]] == [1, 2]
+    assert payload["ranked_for_current_sports"] is False
+
+
+def test_web_search_tool_reranks_current_sports_sources() -> None:
+    """Current sports searches should prefer official and wire sources."""
+
+    def searcher(
+        query: str,
+        *,
+        allowed_domains: tuple[str, ...],
+        blocked_domains: tuple[str, ...],
+        count: int,
+        timeout_seconds: float,
+    ) -> SearchResponse:
+        assert count == 8
+        return SearchResponse(
+            query=query,
+            provider="duckduckgo_lite",
+            results=(
+                SearchHit(title="SEO Site", url="https://www.fifawatch.com/worldcup"),
+                SearchHit(title="FIFA fixtures", url="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026"),
+                SearchHit(title="Reuters report", url="https://www.reuters.com/sports/soccer/world-cup-report"),
             ),
             searched_url="https://lite.duckduckgo.com/lite/?q=worldcup",
             truncated=False,
@@ -148,13 +256,22 @@ def test_web_search_tool_preserves_provider_result_order() -> None:
 
     tool = WebSearchTool(searcher=searcher)
 
-    result = tool.execute({"query": "world cup scores", "count": 2})
+    result = tool.execute({"query": "latest world cup scores", "count": 3})
 
     payload = json.loads(result.content)
     assert result.ok is True
-    assert [hit["title"] for hit in payload["results"]] == ["SEO Site", "BBC Scores"]
-    assert [hit["original_rank"] for hit in payload["results"]] == [1, 2]
-    assert all("source_tier" not in hit for hit in payload["results"])
+    assert payload["ranked_for_current_sports"] is True
+    assert [hit["title"] for hit in payload["results"]] == [
+        "FIFA fixtures",
+        "Reuters report",
+        "SEO Site",
+    ]
+    assert [hit["original_rank"] for hit in payload["results"]] == [2, 3, 1]
+    assert [hit["source_quality"] for hit in payload["results"]] == [
+        "official",
+        "wire",
+        "aggregator",
+    ]
 
 
 def test_web_search_tool_applies_portable_search_hints() -> None:

@@ -1117,7 +1117,10 @@ def test_repeated_failed_search_guard_returns_safe_fallback() -> None:
     )
 
     assert result.stop_reason == StopReason.FINAL
-    assert result.final_answer.startswith("我这轮已经尝试检索当前网页证据")
+    assert result.final_answer.startswith(
+        "\u6211\u8fd9\u8f6e\u5df2\u7ecf\u5c1d\u8bd5\u68c0\u7d22"
+        "\u5f53\u524d\u7f51\u9875\u8bc1\u636e"
+    )
     assert result.messages[-1].role == "assistant"
     assert result.messages[-1].content == result.final_answer
 
@@ -1164,8 +1167,20 @@ def test_temporal_guard_rejects_not_started_draft_after_dated_web_evidence() -> 
         [
             ModelResponse(content="", tool_calls=(fetch_call,)),
             ModelResponse(content="The tournament has not started."),
-            ModelResponse(content="目前世界杯尚未开始，没有实际进行过的比赛。"),
-            ModelResponse(content="已有比赛日期；结果可列，评论证据不足。"),
+            ModelResponse(
+                content=(
+                    "\u76ee\u524d\u4e16\u754c\u676f\u5c1a\u672a\u5f00"
+                    "\u59cb\uff0c\u6ca1\u6709\u5b9e\u9645\u8fdb\u884c"
+                    "\u8fc7\u7684\u6bd4\u8d5b\u3002"
+                )
+            ),
+            ModelResponse(
+                content=(
+                    "\u5df2\u6709\u6bd4\u8d5b\u65e5\u671f\uff1b\u7ed3"
+                    "\u679c\u53ef\u5217\uff0c\u8bc4\u8bba\u8bc1\u636e"
+                    "\u4e0d\u8db3\u3002"
+                )
+            ),
         ]
     )
     loop = KlaraLoop(
@@ -1178,7 +1193,11 @@ def test_temporal_guard_rejects_not_started_draft_after_dated_web_evidence() -> 
     result = loop.run("latest World Cup report", run_id="run-temporal-guard")
 
     assert result.stop_reason == StopReason.FINAL
-    assert result.final_answer == "已有比赛日期；结果可列，评论证据不足。"
+    assert result.final_answer == (
+        "\u5df2\u6709\u6bd4\u8d5b\u65e5\u671f\uff1b\u7ed3"
+        "\u679c\u53ef\u5217\uff0c\u8bc4\u8bba\u8bc1\u636e"
+        "\u4e0d\u8db3\u3002"
+    )
     assert "<runtime_web_synthesis_guard>" in llm.calls[2][0][-1].content
     temporal_guard = llm.calls[3][0][-1].content
     assert "<runtime_temporal_consistency_guard>" in temporal_guard

@@ -21,8 +21,18 @@ WEB_FETCH_SPEC = ToolSpec(
             "max_chars": {
                 "type": "integer",
                 "minimum": 200,
-                "maximum": 6000,
+                "maximum": 12000,
                 "description": "Optional maximum page text characters to return.",
+            },
+            "query_terms": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Optional terms used to extract relevant snippets.",
+            },
+            "extract_mode": {
+                "type": "string",
+                "enum": ["plain", "relevant_snippets"],
+                "description": "Optional text extraction mode.",
             },
         },
         "required": ["url"],
@@ -36,7 +46,7 @@ WEB_FETCH_METADATA = ToolMetadata(
     side_effect=ToolSideEffect.NETWORK,
     parallel_safe=True,
     timeout_seconds=10.0,
-    max_output_chars=7000,
+    max_output_chars=14000,
     output_trust=ToolOutputTrust.UNTRUSTED,
 )
 

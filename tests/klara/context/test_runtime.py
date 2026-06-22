@@ -25,6 +25,8 @@ def test_runtime_context_includes_date_without_minute_precision() -> None:
     assert "do not invent quotes, numeric ratings" in prompt
     assert "separate the complete factual list from source-limited analysis" in prompt
     assert "sports/scores/schedules" in prompt
+    assert "Fixtures are not results" in prompt
+    assert "do not write 0:0 unless fetched evidence explicitly reports" in prompt
     assert "Call current_time only for exact wall-clock time" in prompt
     assert "Call web_fetch for source text from a specific public URL" in prompt
     assert "12:34" not in prompt
