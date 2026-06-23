@@ -444,43 +444,18 @@
   background: rgba(184, 129, 47, 0.08);
   outline: none;
 }
-.klara-thinking-live-list {
-  list-style: none;
-  display: grid;
-  gap: 10px;
-  max-width: min(680px, 100%);
-  margin: 8px 0 0 21px;
-  padding: 0;
-}
-.klara-thinking-live-list li {
-  display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
-  gap: 9px;
-  align-items: start;
-}
-.klara-thinking-live-list li > span {
-  width: 6px;
-  height: 6px;
-  margin-top: 8px;
-  border-radius: 999px;
-  background: rgba(184, 129, 47, 0.72);
-  box-shadow: 0 0 0 4px rgba(184, 129, 47, 0.08);
-}
-.klara-thinking-live-list article {
-  min-width: 0;
-}
-.klara-thinking-live-list h4 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.35;
-}
-.klara-thinking-live-list p {
-  margin: 2px 0 0;
+.klara-thinking-preamble {
+  max-width: min(720px, 100%);
+  margin: 6px 0 0 21px;
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.55;
+}
+.klara-activity-preamble {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
 }
 .klara-activity-layer {
   position: fixed;

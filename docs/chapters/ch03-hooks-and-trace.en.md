@@ -12,54 +12,77 @@ Roadmap: [Klara Roadmap](../skills/roadmap.md)
 
 ## The Chapter In One Sentence
 
-Chapter 3 does not add business rules to the loop. It separates Klara's runtime into three surfaces: a GPT-like Thinking Trigger, an Activity Drawer, and Developer Debug.
+Chapter 3 does not add business rules to the loop. It separates one Klara assistant turn into three surfaces: user-facing Thinking, an expandable Activity Drawer, and developer-only Debug.
 
 ![Klara Chapter 3 Hooks and Trace](../assets/ch03-hooks-and-trace.svg)
 
+## Where Thinking Lives
+
+Thinking belongs inside the assistant message, before the final answer body.
+
+It is not a global page status, not the bottom debug panel, and not a large runtime trace box.
+
+During a run, it should feel like this:
+
+```text
+Klara · Thinking... 3.2s
+I first understood that you are asking for the latest World Cup status, so this needs current sources rather than model memory alone.
+
+The final answer starts appearing progressively...
+```
+
+After completion, it should collapse to:
+
+```text
+Klara · Thought for 24.2s >
+Final answer body
+Developer debug · collapsed
+```
+
+`Thought for X` must be backed by real visible content: provider/model reasoning, a Klara preamble, or narrator-generated Klara activity. If all three are absent, Klara does not show an empty `Thought for X`; duration remains available in Developer Debug.
+
 ## The Three Surfaces
 
-### 1. Top Thinking Trigger
+### 1. Thinking Trigger
 
-The main user path stays lightweight:
+The main path stays lightweight:
 
 ```text
 active:    Klara · Thinking... 1.2s
 complete:  Klara · Thought for 24.2s >
 ```
 
-A completed `Thought for X` is content-backed. It appears only when Klara has at least one visible item from:
+During an active run, if `thinking_preamble_delta` is available, Klara renders one compact preamble below the row. It explains what Klara publicly understands about the request and the high-level approach. It does not answer the question and does not show a tool chain.
 
-- provider/model reasoning summary; or
-- narrator-generated Klara activity items.
-
-If neither exists, Klara does not show an empty `Thought for X`. Runtime duration still appears in Developer Debug.
-
-Interaction is explicit: the left side is mini Klara icon + label, and the right chevron is the only drawer trigger. Clicking the label does not open the drawer.
+Interaction is explicit: the left side is mini Klara icon + label, and the right chevron is the only drawer trigger. Clicking the label or preamble does not open the drawer.
 
 ### 2. Activity Drawer
 
-The drawer has two public sections:
+The drawer is detail, not the main live experience. It can show three content sources:
 
 ```text
+Klara preamble  -> thinking_preamble_delta.text
 Model thinking  -> provider_reasoning summary; hidden when absent
-Klara activity  -> narrator_model workstream items generated from facts
+Klara activity  -> narrator_model public activity generated from facts
 ```
 
 "Real thinking" here does not mean raw chain-of-thought:
 
 - `Model thinking` comes from a provider/model-visible reasoning summary. Klara shows it only when the provider returns it.
-- `Klara activity` comes from `activity_fact_recorded` plus a narrator model. Runtime records facts; the narrator writes public activity prose.
+- `Klara activity` comes from `activity_fact_recorded` plus a narrator model. Runtime records structured facts; the narrator writes public activity prose.
 - If the narrator is unavailable, returns invalid JSON, or fails validation, Klara does not invent template prose. The failure is visible only in Developer Debug.
 
 ### 3. Developer Debug
 
-Developer Debug is collapsed by default and is for engineering/teaching:
+Developer Debug is collapsed by default and is for engineering and teaching:
 
 - LLM rounds: turn, model, duration, input/output/total tokens, token source.
 - Tools: tool name, status, duration, arguments preview, observation preview.
 - Activity facts: structured facts, request preview, evidence ids.
 - Narrator diagnostics: started, completed, rejected, failed.
 - Trace: event id, created_at, event_type, raw payload.
+
+Developer Debug may show raw payloads because it is a developer surface. Thinking Trigger and Activity Drawer never show raw traces, tool cards, or event lists.
 
 ## The Two Real Sources
 
@@ -118,8 +141,14 @@ The earlier version had several wrong signals:
 - `provider_reasoning_delta` existed as a type but no backend emitted it.
 - The drawer could open into an empty public state.
 - Runtime events were directly templated into phrases like "Reading request" or "Writing answer".
+- The active phase had no live preamble inside the assistant message.
+- `answer_delta` sent the full final text at once, so the answer appeared all at once.
 
-The corrected rule is simple: if there is no provider reasoning and no safe narrator item, do not show `Thought for X`.
+The corrected rule is:
+
+- Active runs may show `Thinking...` and should quickly try to generate one live preamble.
+- Completed runs show `Thought for X` only when backed by preamble, provider reasoning, or narrator activity.
+- The final answer is chunked into answer deltas, but thinking/preamble/activity never mixes into answer chunks.
 
 ## Quick Experience
 
@@ -145,12 +174,12 @@ Generate an image of Klara.
 
 Check:
 
-1. The top row does not show an empty `Thought for X`.
-2. Activity Drawer only shows `Model thinking` or `Klara activity`, never raw trace.
+1. The assistant message shows `Thinking...` first, and a short preamble when available.
+2. A completed turn does not show an empty `Thought for X`.
 3. Developer Debug is the only place for tools, facts, narrator diagnostics, raw payloads, and metrics.
 
 ## Out Of Scope
 
 Chapter 3 does not add raw chain-of-thought display, intent routing, domain guards, keyword search rules, source ranking, grounding verification, memory, or context compression.
 
-Those belong to later chapters. This chapter locks the boundary between thinking, activity, and debug.
+Those belong to later chapters. This chapter locks the boundary between Thinking, Activity, and Debug.

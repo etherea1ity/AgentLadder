@@ -1,10 +1,11 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Run, RunEvent, ThinkingActivityItem } from "../../types/domain";
+import type { Run, RunEvent } from "../../types/domain";
 import { KlaraActivityDrawer } from "./KlaraActivityDrawer";
 import {
   visibleNarratorActivityItems,
   visibleProviderReasoningItems,
+  visibleThinkingPreamble,
 } from "./activityItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
@@ -39,13 +40,11 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
   );
   const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
   const narratorItems = useMemo(() => visibleNarratorActivityItems(events), [events]);
-  const visibleItems = useMemo(
-    () => [...providerItems, ...narratorItems],
-    [providerItems, narratorItems],
-  );
+  const preamble = useMemo(() => visibleThinkingPreamble(events), [events]);
 
   if (!run) return null;
-  const hasVisibleActivity = visibleItems.length > 0;
+  const hasVisibleActivity =
+    providerItems.length > 0 || narratorItems.length > 0 || Boolean(preamble);
   if (!active && !hasVisibleActivity) return null;
 
   const durationMs = thinkingDurationMs(
@@ -84,8 +83,8 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
           </button>
         ) : null}
       </div>
-      {active && hasVisibleActivity ? (
-        <LiveActivityPreview items={visibleItems} />
+      {active && preamble ? (
+        <p className="klara-thinking-preamble">{preamble.text}</p>
       ) : null}
       {drawerOpen ? (
         <KlaraActivityDrawer
@@ -95,23 +94,6 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
         />
       ) : null}
     </section>
-  );
-}
-
-function LiveActivityPreview({ items }: { items: ThinkingActivityItem[] }) {
-  const latestItems = items.slice(-2);
-  return (
-    <ol className="klara-thinking-live-list" aria-label="Live activity">
-      {latestItems.map((item) => (
-        <li key={item.id}>
-          <span aria-hidden="true" />
-          <article>
-            <h4>{item.title}</h4>
-            <p>{item.body}</p>
-          </article>
-        </li>
-      ))}
-    </ol>
   );
 }
 

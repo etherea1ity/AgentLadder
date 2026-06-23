@@ -149,6 +149,73 @@ def test_response_from_completion_data_extracts_provider_reasoning_summary() -> 
     assert response.reasoning_source == "message.reasoning_content"
 
 
+def test_response_from_completion_data_extracts_message_thinking() -> None:
+    """Qwen-style thinking fields should become UI-only reasoning metadata."""
+
+    response = response_from_completion_data(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": "final answer",
+                        "thinking": "The provider returned a public thinking summary.",
+                    }
+                }
+            ],
+        },
+        model_ref=ModelRef(provider="qwen", model="qwen3.7-flash"),
+        raw_preview="{}",
+    )
+
+    assert response.content == "final answer"
+    assert response.reasoning_summary == "The provider returned a public thinking summary."
+    assert response.reasoning_source == "message.thinking"
+
+
+def test_response_from_completion_data_extracts_data_reasoning() -> None:
+    """Top-level reasoning fields are accepted when message-level fields are absent."""
+
+    response = response_from_completion_data(
+        {
+            "choices": [{"message": {"content": "final answer"}}],
+            "reasoning": "The provider returned top-level reasoning metadata.",
+        },
+        model_ref=ModelRef(provider="qwen", model="qwen3.7-flash"),
+        raw_preview="{}",
+    )
+
+    assert response.content == "final answer"
+    assert response.reasoning_summary == "The provider returned top-level reasoning metadata."
+    assert response.reasoning_source == "data.reasoning"
+
+
+def test_response_from_completion_data_sanitizes_provider_reasoning() -> None:
+    """Reasoning metadata should not expose full URLs or secret-shaped values."""
+
+    response = response_from_completion_data(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": "final answer",
+                        "reasoning_content": (
+                            "I checked https://example.com/private and token=abc123 "
+                            "with sk-abcdefghijklmnopqrstuvwxyz."
+                        ),
+                    }
+                }
+            ],
+        },
+        model_ref=ModelRef(provider="deepseek", model="deepseek-v4-flash"),
+        raw_preview="{}",
+    )
+
+    assert response.reasoning_summary is not None
+    assert "https://example.com/private" not in response.reasoning_summary
+    assert "token=abc123" not in response.reasoning_summary
+    assert "sk-abcdefghijklmnopqrstuvwxyz" not in response.reasoning_summary
+
+
 def test_openai_compatible_client_builds_authenticated_request(monkeypatch) -> None:
     """The provider client should call the configured endpoint without real network."""
 

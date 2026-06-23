@@ -30,7 +30,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
   });
 
-  it("shows live activity preview while a run is still thinking", () => {
+  it("shows a live preamble while a run is still thinking", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -38,16 +38,11 @@ describe("KlaraThinkingBlock", () => {
           status: "thinking",
           events: [
             evt("thinking_summary_started", { started_at: "2026-06-18T12:00:00Z" }),
-            evt("thinking_summary_delta", {
-              phase: "live",
-              items: [
-                activity(
-                  "act_live_1",
-                  "Request understood",
-                  "Klara identified the request goal and is preparing the response direction.",
-                  "narrator_model",
-                ),
-              ],
+            evt("thinking_preamble_delta", {
+              text: "我先理解了你是在问世界杯的最新进展，所以会先明确目标再回答。",
+              source: "narrator_model",
+              evidence_event_ids: ["evt_1"],
+              confidence: 0.8,
             }),
           ],
         }}
@@ -55,11 +50,10 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.getByText(/Thinking\.\.\./)).toBeInTheDocument();
-    expect(screen.getByLabelText("Live activity")).toBeInTheDocument();
-    expect(screen.getByText("Request understood")).toBeInTheDocument();
     expect(
-      screen.getByText("Klara identified the request goal and is preparing the response direction."),
+      screen.getByText("我先理解了你是在问世界杯的最新进展，所以会先明确目标再回答。"),
     ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Live activity")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
   });
 
@@ -123,6 +117,29 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByText("Thought for 800ms")).toBeInTheDocument();
   });
 
+  it("shows completed Thought when only a preamble exists", () => {
+    render(
+      <KlaraThinkingBlock
+        run={{
+          ...baseRun,
+          status: "completed",
+          events: [
+            evt("thinking_preamble_delta", {
+              text: "我先理解了你是在问一个简短问题，我会把目标整理成回答。",
+              source: "narrator_model",
+              evidence_event_ids: ["evt_1"],
+              confidence: 0.8,
+            }),
+            evt("thinking_summary_completed", { duration_ms: 1200, has_summary: false }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Thought for 1.2s")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+  });
+
   it("opens activity only from the right chevron button", () => {
     render(
       <KlaraThinkingBlock
@@ -178,6 +195,32 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByText("Klara activity")).toBeInTheDocument();
     expect(screen.getByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
     expect(screen.getByText("Request understood")).toBeInTheDocument();
+  });
+
+  it("renders preamble inside the drawer without activity items", () => {
+    render(
+      <KlaraThinkingBlock
+        run={{
+          ...baseRun,
+          status: "completed",
+          events: [
+            evt("thinking_preamble_delta", {
+              text: "我先理解了你是在问一个简短问题，我会把目标整理成回答。",
+              source: "narrator_model",
+              evidence_event_ids: ["evt_1"],
+              confidence: 0.8,
+            }),
+            evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
+          ],
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
+
+    expect(screen.getByText("Klara preamble")).toBeInTheDocument();
+    expect(screen.getByText("我先理解了你是在问一个简短问题，我会把目标整理成回答。")).toBeInTheDocument();
+    expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
   });
 
   it("does not render unsafe narrator payload as a public Thought", () => {

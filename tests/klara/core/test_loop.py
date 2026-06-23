@@ -9,7 +9,7 @@ from klara.core.hooks import (
     PreToolUseContext,
 )
 from klara.core.loop import KlaraLoop
-from klara.core.messages import KlaraMessage, ModelResponse
+from klara.core.messages import KlaraMessage, ModelResponse, ModelStreamEvent
 from klara.core.policies import LoopPolicy, StopReason
 from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
 from klara.tools.base import BaseTool
@@ -83,6 +83,20 @@ class ScriptedLlm:
         if not self.responses:
             raise AssertionError("No scripted LLM response left")
         return self.responses.pop(0)
+
+
+class FakeStreamingLlm(ScriptedLlm):
+    """Fake client that exposes the reserved streaming protocol surface."""
+
+    def stream_complete(self, **_: object):
+        """Yield one provider reasoning delta and a terminal response."""
+
+        response = ModelResponse(content="streamed final")
+        yield ModelStreamEvent(
+            type="provider_reasoning_delta",
+            delta="provider-visible reasoning summary",
+        )
+        yield ModelStreamEvent(type="completed", response=response)
 
 
 class EventRecorder:
@@ -198,6 +212,18 @@ def test_no_tool_run_returns_final_answer() -> None:
     assert result.final_answer == "Hello from Klara."
     assert result.stop_reason == StopReason.FINAL
     assert [message.role for message in result.messages] == ["user", "assistant"]
+
+
+def test_streaming_protocol_can_represent_provider_reasoning_delta() -> None:
+    client = FakeStreamingLlm([ModelResponse(content="unused")])
+
+    events = tuple(client.stream_complete())
+
+    assert events[0].type == "provider_reasoning_delta"
+    assert events[0].delta == "provider-visible reasoning summary"
+    assert events[1].type == "completed"
+    assert events[1].response is not None
+    assert events[1].response.content == "streamed final"
 
 
 def test_llm_completed_event_includes_duration_ms() -> None:

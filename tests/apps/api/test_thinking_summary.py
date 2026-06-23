@@ -10,6 +10,8 @@ from apps.api.services.sse_bus import SSEBus
 from apps.api.services.workstream_narrator import (
     ThinkingActivityInput,
     ThinkingActivityNarrator,
+    ThinkingPreambleInput,
+    ThinkingPreambleNarrator,
 )
 from klara.core.messages import KlaraMessage, ModelResponse
 
@@ -23,6 +25,14 @@ class RecordingFinalLlm:
     def complete(self, **kwargs: object) -> ModelResponse:
         self.calls.append(kwargs["messages"])  # type: ignore[index]
         return ModelResponse(content="final answer")
+
+
+class SlowRecordingFinalLlm(RecordingFinalLlm):
+    """Main model fixture that leaves room for live preamble emission."""
+
+    def complete(self, **kwargs: object) -> ModelResponse:
+        time.sleep(0.15)
+        return super().complete(**kwargs)
 
 
 class SummaryNarratorLlm:
@@ -84,6 +94,32 @@ class SummaryNarratorLlm:
         )
 
 
+class PreambleNarratorLlm(SummaryNarratorLlm):
+    """Narrator fixture that can return both preamble and summary JSON."""
+
+    def __init__(self, summary: str, preamble: str) -> None:
+        super().__init__(summary)
+        self.preamble = preamble
+
+    def complete(self, **kwargs: object) -> ModelResponse:
+        messages = kwargs["messages"]  # type: ignore[index]
+        payload = json.loads(messages[0].content)
+        self.inputs.append(payload)
+        if "available_facts" in payload:
+            return ModelResponse(
+                content=json.dumps(
+                    {
+                        "text": self.preamble,
+                        "evidence_event_ids": payload["evidence_event_ids"],
+                        "confidence": 0.86,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+        self.inputs.pop()
+        return super().complete(**kwargs)
+
+
 class StaticNarratorLlm:
     """Narrator fixture that returns one fixed response."""
 
@@ -111,6 +147,18 @@ class ReasoningFinalLlm(RecordingFinalLlm):
             reasoning_summary="The provider returned a safe summary of model thinking.",
             reasoning_source="message.reasoning_content",
         )
+
+
+class LongFinalLlm(RecordingFinalLlm):
+    """Main model fixture that returns a long answer for chunking tests."""
+
+    def __init__(self, answer: str) -> None:
+        super().__init__()
+        self.answer = answer
+
+    def complete(self, **kwargs: object) -> ModelResponse:
+        self.calls.append(kwargs["messages"])  # type: ignore[index]
+        return ModelResponse(content=self.answer)
 
 
 def test_thinking_summary_started_emitted_near_run_start(tmp_path) -> None:
@@ -160,6 +208,169 @@ def test_thinking_summary_completed_before_answer_streaming_started(tmp_path) ->
     assert events.index(completed) < events.index(answer_started)
     assert isinstance(completed.payload["duration_ms"], int)
     assert completed.payload["has_summary"] is False
+
+
+def test_thinking_preamble_emitted_before_answer_streaming_started(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    narrator = PreambleNarratorLlm(
+        "Klara summarized the public run trace.",
+        "我先理解了你是在问一个简短问题，我会把目标整理成回答。",
+    )
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=SlowRecordingFinalLlm(),
+        default_model="main-model",
+        narrator_client=narrator,
+        narrator_model="narrator-model",
+        enable_workstream_narrator=True,
+        answer_chunk_delay_ms=0,
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+
+    created = service.create_run(session.session_id, "你好，介绍一下你自己")
+    service._threads[created.run_id].join(timeout=5)
+    _wait_for_event(store, created.run_id, "thinking_preamble_delta")
+
+    events = store.list_events(created.run_id)
+    preamble = next(
+        event for event in events if event.event_type == "thinking_preamble_delta"
+    )
+    answer_started = next(
+        event for event in events if event.event_type == "answer_streaming_started"
+    )
+
+    assert events.index(preamble) < events.index(answer_started)
+    assert preamble.payload["text"].startswith("我先理解了")
+
+
+def test_thinking_preamble_does_not_enter_assistant_content_or_history(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    main_llm = RecordingFinalLlm()
+    preamble_text = "我先理解了你是在问一个简短问题，我会把目标整理成回答。"
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=main_llm,
+        default_model="main-model",
+        narrator_client=PreambleNarratorLlm(
+            "Klara summarized the public run trace.",
+            preamble_text,
+        ),
+        narrator_model="narrator-model",
+        enable_workstream_narrator=True,
+        answer_chunk_delay_ms=0,
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+
+    first = service.create_run(session.session_id, "你好")
+    service._threads[first.run_id].join(timeout=5)
+    _wait_for_event(store, first.run_id, "thinking_preamble_delta")
+    second = service.create_run(session.session_id, "继续")
+    service._threads[second.run_id].join(timeout=5)
+
+    first_assistant = store.get_message(first.assistant_message_id)
+    second_call_messages = main_llm.calls[-1]
+
+    assert first_assistant is not None
+    assert preamble_text not in first_assistant.content
+    assert all(preamble_text not in message.content for message in second_call_messages)
+
+
+def test_long_final_answer_emits_multiple_answer_deltas(tmp_path) -> None:
+    answer = (
+        "Klara will split this answer into several visible chunks so the chat "
+        "surface can render a GPT-like progressive response instead of one "
+        "large final payload appearing all at once."
+    )
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=LongFinalLlm(answer),
+        default_model="main-model",
+        answer_chunk_delay_ms=0,
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+
+    created = service.create_run(session.session_id, "hello")
+    service._threads[created.run_id].join(timeout=5)
+
+    events = store.list_events(created.run_id)
+    deltas = [event for event in events if event.event_type == "answer_delta"]
+    assistant = store.get_message(created.assistant_message_id)
+
+    assert len(deltas) > 1
+    assert "".join(str(event.payload["delta"]) for event in deltas) == answer
+    assert deltas[-1].payload["streamed_chars"] == len(answer)
+    assert assistant is not None
+    assert assistant.content == answer
+
+
+def test_thinking_preamble_failure_does_not_fail_run(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=RecordingFinalLlm(),
+        default_model="main-model",
+        narrator_client=BrokenNarratorLlm(),
+        narrator_model="narrator-model",
+        enable_workstream_narrator=True,
+        answer_chunk_delay_ms=0,
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+
+    created = service.create_run(session.session_id, "hello")
+    service._threads[created.run_id].join(timeout=5)
+
+    run = store.get_run(created.run_id)
+    events = store.list_events(created.run_id)
+
+    assert run is not None
+    assert run.status == "completed"
+    assert [event for event in events if event.event_type == "thinking_preamble_failed"]
+
+
+def test_thinking_preamble_rejects_search_claim_without_tool_fact(tmp_path) -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="thinking_summary_started",
+        message="Klara is thinking.",
+        payload={"request": {"preview": "世界杯最新赛程", "language": "zh"}},
+    )
+    narrator = ThinkingPreambleNarrator(
+        client=StaticNarratorLlm(
+            json.dumps(
+                {
+                    "text": "我先搜索了世界杯最新赛程，再把结果整理给你。",
+                    "evidence_event_ids": [event.event_id],
+                    "confidence": 0.8,
+                },
+                ensure_ascii=False,
+            )
+        ),
+        model="narrator-model",
+        prompt_path=_prompt(tmp_path),
+    )
+
+    preamble = narrator.create_preamble(
+        ThinkingPreambleInput(
+            user_request="世界杯最新赛程",
+            selected_model="main-model",
+            run_id=event.run_id,
+            event_id=event.event_id,
+            request_preview="世界杯最新赛程",
+            request_language="zh",
+        )
+    )
+
+    assert preamble is None
+    assert narrator.last_rejection_reason == "unsupported_claim"
 
 
 def test_provider_reasoning_delta_does_not_enter_assistant_content(tmp_path) -> None:
@@ -787,3 +998,19 @@ def _activity_fact_record(run_id: str, fact: dict[str, object]) -> RunEventRecor
         message="Activity fact recorded.",
         payload={"fact": fact},
     )
+
+
+def _wait_for_event(
+    store: JsonlAppStore,
+    run_id: str,
+    event_type: str,
+    *,
+    timeout: float = 2.0,
+) -> RunEventRecord:
+    deadline = time.perf_counter() + timeout
+    while time.perf_counter() < deadline:
+        for event in store.list_events(run_id):
+            if event.event_type == event_type:
+                return event
+        time.sleep(0.02)
+    raise AssertionError(f"event {event_type} was not emitted")

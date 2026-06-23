@@ -4,7 +4,7 @@ import json
 import re
 import threading
 from pathlib import Path
-from time import perf_counter
+from time import perf_counter, sleep
 from typing import Any
 
 from apps.api.schemas import (
@@ -27,6 +27,8 @@ from apps.api.services.workstream_narrator import (
     ThinkingActivityInput,
     ThinkingActivityNarrator,
     ThinkingActivityResult,
+    ThinkingPreambleInput,
+    ThinkingPreambleNarrator,
 )
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
@@ -59,6 +61,8 @@ class RunService:
         narrator_client: LlmClient | None = None,
         narrator_model: str | None = None,
         enable_workstream_narrator: bool = False,
+        answer_chunking_enabled: bool = True,
+        answer_chunk_delay_ms: int = 15,
     ) -> None:
         """Create the local run service.
 
@@ -74,6 +78,8 @@ class RunService:
             narrator_client: Optional second model client for runtime notes.
             narrator_model: Model ref used by the optional narrator.
             enable_workstream_narrator: Whether runtime notes should emit.
+            answer_chunking_enabled: Whether blocking answers should emit chunks.
+            answer_chunk_delay_ms: Delay between answer chunks for live UX.
         """
 
         self.store = store
@@ -86,6 +92,8 @@ class RunService:
         self.narrator_client = narrator_client
         self.narrator_model = narrator_model
         self.enable_workstream_narrator = enable_workstream_narrator
+        self.answer_chunking_enabled = answer_chunking_enabled
+        self.answer_chunk_delay_ms = max(0, answer_chunk_delay_ms)
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -177,8 +185,9 @@ class RunService:
 
         current = run.model_copy(update={"status": "thinking", "started_at": now_iso()})
         self.store.save_run(current)
+        selected_model = current.model or self.default_model or "fake-model"
         self._emit(run_id, "thinking_started", "Klara is preparing the runtime loop.", {})
-        self._emit(
+        summary_started_event = self._emit(
             run_id,
             "thinking_summary_started",
             "Klara is thinking.",
@@ -191,8 +200,13 @@ class RunService:
                 },
             },
         )
+        self._start_thinking_preamble_narrator(
+            run_id=run_id,
+            user_request=user_message.content,
+            selected_model=selected_model,
+            summary_started_event=summary_started_event,
+        )
 
-        selected_model = current.model or self.default_model or "fake-model"
         projector = RunEventProjector(selected_model=selected_model)
         hooks = HookManager(
             [RunProjectionHook(self, run_id, projector), JsonlTraceHook(Path(self.trace_path))]
@@ -260,8 +274,11 @@ class RunService:
             )
             final_text = result.final_answer
             self._emit(run_id, "answer_streaming_started", "Klara is writing the final answer.", {})
-            self.store.update_message(assistant_message.model_copy(update={"content": final_text, "status": "running"}))
-            self._emit(run_id, "answer_delta", "", {"delta": final_text, "streamed_chars": len(final_text)})
+            self._stream_answer_chunks(
+                run_id=run_id,
+                assistant_message=assistant_message,
+                final_text=final_text,
+            )
 
             latency_ms = int((perf_counter() - started) * 1000)
             usage_totals = projector.usage_totals
@@ -377,6 +394,110 @@ class RunService:
                 if record.get("run_id") == run_id:
                     return True
         return False
+
+    def _start_thinking_preamble_narrator(
+        self,
+        *,
+        run_id: str,
+        user_request: str,
+        selected_model: str,
+        summary_started_event: RunEventRecord,
+    ) -> threading.Thread | None:
+        """Start the optional public live preamble narrator."""
+
+        if not self.enable_workstream_narrator:
+            return None
+        if self.narrator_client is None or not self.narrator_model:
+            self._emit(
+                run_id,
+                "thinking_preamble_failed",
+                "Thinking preamble unavailable.",
+                {"reason": "unavailable"},
+            )
+            return None
+        started_event = self._emit(
+            run_id,
+            "thinking_preamble_started",
+            "Thinking preamble started.",
+            {
+                "source": "narrator_model",
+                "evidence_event_ids": [summary_started_event.event_id],
+            },
+        )
+        narrator = ThinkingPreambleNarrator(
+            client=self.narrator_client,
+            model=self.narrator_model,
+        )
+
+        def worker() -> None:
+            try:
+                if run_id in self._cancel_requested:
+                    return
+                request_payload = summary_started_event.payload.get("request")
+                request = request_payload if isinstance(request_payload, dict) else {}
+                preamble = narrator.create_preamble(
+                    ThinkingPreambleInput(
+                        user_request=user_request,
+                        selected_model=selected_model,
+                        run_id=run_id,
+                        event_id=summary_started_event.event_id,
+                        request_preview=str(request.get("preview") or _request_preview(user_request)),
+                        request_language=str(request.get("language") or _detect_language(user_request)),
+                    )
+                )
+                if run_id in self._cancel_requested:
+                    return
+                if preamble is None:
+                    self._emit(
+                        run_id,
+                        "thinking_preamble_failed",
+                        "Thinking preamble rejected.",
+                        {
+                            "reason": narrator.last_rejection_reason
+                            or "unknown_validation_failure",
+                            "evidence_event_ids": [summary_started_event.event_id],
+                            "started_event_id": started_event.event_id,
+                        },
+                    )
+                    return
+                self._emit(
+                    run_id,
+                    "thinking_preamble_delta",
+                    "Thinking preamble generated.",
+                    {
+                        "text": preamble.text,
+                        "source": "narrator_model",
+                        "evidence_event_ids": list(preamble.evidence_event_ids),
+                        "confidence": preamble.confidence,
+                        "started_event_id": started_event.event_id,
+                    },
+                )
+                self._emit(
+                    run_id,
+                    "thinking_preamble_completed",
+                    "Thinking preamble completed.",
+                    {
+                        "has_preamble": True,
+                        "evidence_event_ids": list(preamble.evidence_event_ids),
+                        "started_event_id": started_event.event_id,
+                    },
+                )
+            except Exception as exc:
+                self._emit(
+                    run_id,
+                    "thinking_preamble_failed",
+                    "Thinking preamble failed.",
+                    {
+                        "code": _error_code(exc),
+                        "message": _safe_error_message(exc),
+                        "evidence_event_ids": [summary_started_event.event_id],
+                        "started_event_id": started_event.event_id,
+                    },
+                )
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
+        return thread
 
     def _start_live_activity_narrator(
         self,
@@ -514,6 +635,41 @@ class RunService:
             stop_event.set()
         if thread is not None and thread.is_alive():
             thread.join(timeout=0.2)
+
+    def _stream_answer_chunks(
+        self,
+        *,
+        run_id: str,
+        assistant_message: MessageRecord,
+        final_text: str,
+    ) -> None:
+        """Emit answer_delta chunks while keeping final message content exact."""
+
+        chunks = tuple(_answer_chunks(final_text, enabled=self.answer_chunking_enabled))
+        if not chunks:
+            chunks = ("",)
+        streamed_chars = 0
+        accumulated: list[str] = []
+        for index, chunk in enumerate(chunks):
+            streamed_chars += len(chunk)
+            accumulated.append(chunk)
+            self.store.update_message(
+                assistant_message.model_copy(
+                    update={"content": "".join(accumulated), "status": "running"}
+                )
+            )
+            self._emit(
+                run_id,
+                "answer_delta",
+                "",
+                {"delta": chunk, "streamed_chars": streamed_chars},
+            )
+            if (
+                index < len(chunks) - 1
+                and self.answer_chunking_enabled
+                and self.answer_chunk_delay_ms > 0
+            ):
+                sleep(self.answer_chunk_delay_ms / 1000)
 
     def _create_thinking_summary(
         self,
@@ -711,6 +867,31 @@ def _narratable_activity_facts(
     """Return only facts meaningful enough for public activity narration."""
 
     return tuple(fact for fact in facts if _is_narratable_activity_fact(fact))
+
+
+def _answer_chunks(
+    text: str,
+    *,
+    enabled: bool,
+    target_chars: int = 72,
+) -> tuple[str, ...]:
+    """Split a final answer into display chunks without changing content."""
+
+    if not enabled or len(text) <= target_chars:
+        return (text,)
+    chunks: list[str] = []
+    buffer = ""
+    for piece in re.split(r"(\s+)", text):
+        if not piece:
+            continue
+        if buffer and len(buffer) + len(piece) > target_chars:
+            chunks.append(buffer)
+            buffer = piece
+            continue
+        buffer += piece
+    if buffer:
+        chunks.append(buffer)
+    return tuple(chunks) or (text,)
 
 
 def _activity_items_signature(items: tuple[dict[str, Any], ...]) -> str:

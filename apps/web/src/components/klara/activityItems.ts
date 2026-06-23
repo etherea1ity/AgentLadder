@@ -2,6 +2,7 @@ import type {
   RunEvent,
   ThinkingActivityItem,
   ThinkingActivityKind,
+  ThinkingPreamble,
   ThinkingActivityStatus,
 } from "../../types/domain";
 
@@ -35,6 +36,26 @@ export function visibleNarratorActivityItems(events: RunEvent[]) {
     .filter(isActivityItem)
     .filter((item) => item.source === "narrator_model")
     .filter(isSafeNarratorItem);
+}
+
+export function visibleThinkingPreamble(events: RunEvent[]): ThinkingPreamble | null {
+  const latest = [...events]
+    .reverse()
+    .find((event) => event.event_type === "thinking_preamble_delta");
+  const text = stringField(latest?.payload?.text);
+  if (!text || !isSafePreamble(text)) return null;
+  const evidence = latest?.payload?.evidence_event_ids;
+  return {
+    text,
+    evidence_event_ids: Array.isArray(evidence)
+      ? evidence.filter((item): item is string => typeof item === "string")
+      : [],
+    confidence:
+      typeof latest?.payload?.confidence === "number" &&
+      Number.isFinite(latest.payload.confidence)
+        ? latest.payload.confidence
+        : undefined,
+  };
 }
 
 function normalizeActivityItem(value: unknown): ThinkingActivityItem | null {
@@ -109,6 +130,15 @@ function isSafeNarratorItem(item: ThinkingActivityItem) {
   );
 }
 
+function isSafePreamble(text: string) {
+  return (
+    !containsFullUrl(text) &&
+    !containsRawPayloadTerms(text) &&
+    !containsPrivateReasoningTerms(text) &&
+    !containsGenericPreambleTerms(text)
+  );
+}
+
 function containsFullUrl(...parts: string[]) {
   const text = parts.join("\n").toLowerCase();
   return text.includes("http://") || text.includes("https://");
@@ -142,6 +172,33 @@ function containsPublicThinkingTerms(...parts: string[]) {
     "\u601d\u8003",
     "\u63a8\u7406",
     "\u601d\u7ef4\u94fe",
+  ].some((term) => text.includes(term));
+}
+
+function containsPrivateReasoningTerms(...parts: string[]) {
+  const text = parts.join("\n").toLowerCase();
+  return [
+    "chain-of-thought",
+    "chain of thought",
+    "scratchpad",
+    "hidden reasoning",
+    "raw reasoning",
+    "private thinking",
+    "\u601d\u7ef4\u94fe",
+    "\u63a8\u7406\u94fe",
+  ].some((term) => text.includes(term));
+}
+
+function containsGenericPreambleTerms(...parts: string[]) {
+  const text = parts.join("\n").toLowerCase();
+  return [
+    "i am thinking",
+    "i'm thinking",
+    "thinking about your request",
+    "preparing an answer",
+    "\u6211\u6b63\u5728\u601d\u8003",
+    "\u6b63\u5728\u601d\u8003",
+    "\u51c6\u5907\u56de\u7b54",
   ].some((term) => text.includes(term));
 }
 

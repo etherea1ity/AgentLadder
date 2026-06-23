@@ -26,6 +26,10 @@ export type RunEventType =
   | 'run_created'
   | 'thinking_started'
   | 'thinking_summary_started'
+  | 'thinking_preamble_started'
+  | 'thinking_preamble_delta'
+  | 'thinking_preamble_completed'
+  | 'thinking_preamble_failed'
   | 'thinking_summary_delta'
   | 'thinking_summary_completed'
   | 'provider_reasoning_delta'
@@ -98,6 +102,12 @@ export type ThinkingActivityItem = {
   kind: ThinkingActivityKind;
   source: ThinkingActivitySource;
   evidence_fact_ids?: string[];
+  evidence_event_ids: string[];
+  confidence?: number;
+};
+
+export type ThinkingPreamble = {
+  text: string;
   evidence_event_ids: string[];
   confidence?: number;
 };
