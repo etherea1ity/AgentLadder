@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from klara.services.web.fetcher import HttpDocument, fetch_page
+from klara.services.web import safety
 from klara.services.web.safety import WebSafetyError, validate_public_http_url
 
 
@@ -60,4 +61,26 @@ def test_validate_public_http_url_rejects_local_addresses() -> None:
 
     with pytest.raises(WebSafetyError, match="public IP"):
         validate_public_http_url("http://127.0.0.1:8000")
+
+    with pytest.raises(WebSafetyError, match="public IP"):
+        validate_public_http_url("http://198.18.0.32/proxy-literal")
+
+
+def test_validate_public_http_url_allows_dns_benchmark_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """External domains may resolve through a local benchmark proxy in dev."""
+
+    def fake_getaddrinfo(host: str, port: int | None):
+        return [
+            (
+                safety.socket.AF_INET,
+                safety.socket.SOCK_STREAM,
+                6,
+                "",
+                ("198.18.0.32", 443),
+            )
+        ]
+
+    monkeypatch.setattr(safety.socket, "getaddrinfo", fake_getaddrinfo)
+
+    assert validate_public_http_url("https://example.com/path#frag") == "https://example.com/path"
 

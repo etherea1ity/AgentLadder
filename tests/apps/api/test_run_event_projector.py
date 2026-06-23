@@ -207,6 +207,58 @@ def test_policy_and_hook_events_project_to_visible_run_events() -> None:
     assert hook.payload["reason"] == "blocked for test"
 
 
+def test_web_tool_started_projects_specific_web_event() -> None:
+    projector = RunEventProjector()
+
+    projected = projector.project(
+        KlaraEvent(
+            type="tool.started",
+            run_id="run-1",
+            payload={
+                "turn_index": 1,
+                "tool_call": {
+                    "id": "call-search",
+                    "name": "web_search",
+                    "arguments": {"query": "private query"},
+                },
+                "started_at": "2026-06-23T00:00:00Z",
+            },
+        )
+    )
+
+    assert [event.event_type for event in projected] == [
+        "tool_call_started",
+        "web_search.started",
+    ]
+    assert projected[1].payload == {
+        "turn_index": 1,
+        "tool_call_id": "call-search",
+        "started_at": "2026-06-23T00:00:00Z",
+    }
+
+
+def test_web_research_controller_events_project_to_run_events() -> None:
+    projector = RunEventProjector()
+
+    projected = projector.project(
+        KlaraEvent(
+            type="evidence.readiness_evaluated",
+            run_id="run-1",
+            payload={
+                "ready": False,
+                "status": "need_more_fetch",
+                "decision_reason": "no_fetched_sources",
+                "gaps": ["Need at least one fetched source before answering."],
+            },
+        )
+    )
+
+    assert len(projected) == 1
+    assert projected[0].event_type == "evidence.readiness_evaluated"
+    assert projected[0].payload["ready"] is False
+    assert projected[0].payload["decision_reason"] == "no_fetched_sources"
+
+
 def test_projector_does_not_expose_raw_answer_delta_or_chain_of_thought() -> None:
     projector = RunEventProjector()
     event = KlaraEvent(

@@ -10,6 +10,7 @@ from klara.context.runtime import build_system_prompt
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient
 from klara.core.policies import LoopPolicy
+from klara.services.web import WebResearchController
 from klara.tools.executor import ToolExecutor
 from klara.tools.registry import ToolRegistry
 
@@ -89,6 +90,9 @@ class KlaraHarness:
                 max_turns=self.config.max_turns,
                 max_tool_calls=self.config.max_tool_calls,
                 max_repeated_tool_calls=self.config.max_repeated_tool_calls,
+            ),
+            controllers=(
+                WebResearchController(user_timezone=self.config.user_context.timezone),
             ),
             model=self.config.model,
             system_prompt=self._system_prompt(),

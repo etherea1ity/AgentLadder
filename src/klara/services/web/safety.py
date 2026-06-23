@@ -11,6 +11,11 @@ class WebSafetyError(ValueError):
     """Raised when a requested web URL is outside the public web boundary."""
 
 
+_BENCHMARK_PROXY_NETWORKS = (
+    ipaddress.ip_network("198.18.0.0/15"),
+)
+
+
 def validate_public_http_url(raw_url: str) -> str:
     """Validate and normalize a public HTTP(S) URL.
 
@@ -85,10 +90,12 @@ def _reject_private_addresses(host: str) -> None:
     """Reject literal or resolved non-public IP addresses."""
 
     try:
-        _reject_if_not_public_ip(ipaddress.ip_address(host))
-        return
+        literal_address = ipaddress.ip_address(host)
     except ValueError:
-        pass
+        literal_address = None
+    if literal_address is not None:
+        _reject_if_not_public_ip(literal_address, allow_benchmark_proxy=False)
+        return
 
     try:
         addresses = socket.getaddrinfo(host, None)
@@ -100,14 +107,28 @@ def _reject_private_addresses(host: str) -> None:
     for address in addresses:
         sockaddr = address[4]
         ip_text = str(sockaddr[0])
-        _reject_if_not_public_ip(ipaddress.ip_address(ip_text))
+        _reject_if_not_public_ip(ipaddress.ip_address(ip_text), allow_benchmark_proxy=True)
 
 
-def _reject_if_not_public_ip(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> None:
+def _reject_if_not_public_ip(
+    address: ipaddress.IPv4Address | ipaddress.IPv6Address,
+    *,
+    allow_benchmark_proxy: bool,
+) -> None:
     """Reject IP ranges that should not be reachable through public web tools."""
 
     if not address.is_global:
+        if allow_benchmark_proxy and _is_benchmark_proxy_address(address):
+            return
         raise WebSafetyError("URL host must resolve to a public IP address")
+
+
+def _is_benchmark_proxy_address(
+    address: ipaddress.IPv4Address | ipaddress.IPv6Address,
+) -> bool:
+    """Return whether DNS points through a local external-web proxy range."""
+
+    return any(address in network for network in _BENCHMARK_PROXY_NETWORKS)
 
 
 def _normalize_domain(domain: str) -> str:

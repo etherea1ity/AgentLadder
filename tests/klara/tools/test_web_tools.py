@@ -44,6 +44,10 @@ def test_web_fetch_tool_returns_page_observation() -> None:
     assert result.ok is True
     assert payload["title"] == "Fetched"
     assert payload["text"] == "Page text"
+    assert payload["observation_kind"] == "web_fetched_source"
+    assert payload["source_id"].startswith("src_")
+    assert payload["text_length"] == len("Page text")
+    assert payload["extraction_quality"]["score"] >= 0
     assert "source_tier" not in payload
     assert payload["trust"] == "untrusted_external_content"
 
@@ -99,6 +103,7 @@ def test_web_fetch_tool_supports_relevant_snippets() -> None:
     assert payload["extract_mode"] == "relevant_snippets"
     assert payload["query_terms"] == ["England", "Croatia"]
     assert payload["no_relevant_terms_found"] is False
+    assert payload["extraction_quality"]["has_relevant_terms"] is True
     assert "source_quality" not in payload
 
 
@@ -182,14 +187,15 @@ def test_web_search_tool_returns_candidate_results() -> None:
     assert "may not enforce freshness or language hints" in payload["provider_limitations"]
     assert "source_selection" not in payload
     assert payload["provider"] == "duckduckgo_lite"
-    assert payload["results"] == [
-        {
-            "title": "Example",
-            "url": "https://example.com",
-            "snippet": "",
-            "original_rank": 1,
-        }
-    ]
+    result_card = payload["results"][0]
+    assert result_card["candidate_id"].startswith("cand_")
+    assert result_card["title"] == "Example"
+    assert result_card["url"] == "https://example.com"
+    assert result_card["canonical_url"] == "https://example.com/"
+    assert result_card["snippet"] == ""
+    assert result_card["rank"] == 1
+    assert result_card["original_rank"] == 1
+    assert result_card["must_fetch_before_citing"] is True
     assert payload["trust"] == "untrusted_external_content"
 
 
@@ -323,7 +329,7 @@ def test_web_search_tool_rejects_invalid_search_hints() -> None:
     result = tool.execute({"query": "example", "freshness": "hour"})
 
     assert result.ok is False
-    assert result.error == "freshness must be day, week, month, or year"
+    assert result.error == "freshness must be day, week, month, year, or any"
 
     result = tool.execute({"query": "example", "date_after": "06/18/2026"})
 

@@ -18,6 +18,14 @@ WEB_FETCH_SPEC = ToolSpec(
                 "type": "string",
                 "description": "Public http or https URL to fetch.",
             },
+            "candidate_id": {
+                "type": "string",
+                "description": "Optional candidate id from a prior web_search result.",
+            },
+            "source_id": {
+                "type": "string",
+                "description": "Optional caller-provided source id for evidence joins.",
+            },
             "max_chars": {
                 "type": "integer",
                 "minimum": 200,
@@ -31,7 +39,7 @@ WEB_FETCH_SPEC = ToolSpec(
             },
             "extract_mode": {
                 "type": "string",
-                "enum": ["plain", "relevant_snippets"],
+                "enum": ["plain", "relevant_snippets", "summary_snippets"],
                 "description": "Optional text extraction mode.",
             },
         },

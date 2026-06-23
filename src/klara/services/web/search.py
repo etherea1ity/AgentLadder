@@ -12,7 +12,7 @@ from klara.services.web.fetcher import DEFAULT_TIMEOUT_SECONDS, HttpDocument, re
 from klara.services.web.safety import host_matches_domain_list
 
 
-DEFAULT_RESULT_COUNT = 8
+DEFAULT_RESULT_COUNT = 20
 DEFAULT_SEARCH_MAX_BYTES = 300_000
 DUCKDUCKGO_HTML_URL = "https://lite.duckduckgo.com/lite/"
 

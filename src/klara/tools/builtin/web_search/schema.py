@@ -31,13 +31,13 @@ WEB_SEARCH_SPEC = ToolSpec(
             "count": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 8,
+                "maximum": 20,
                 "description": "Optional maximum result count.",
             },
             "freshness": {
                 "type": "string",
-                "enum": ["day", "week", "month", "year"],
-                "description": "Optional freshness hint: day, week, month, or year.",
+                "enum": ["day", "week", "month", "year", "any"],
+                "description": "Optional freshness hint: day, week, month, year, or any.",
             },
             "date_after": {
                 "type": "string",
@@ -50,6 +50,19 @@ WEB_SEARCH_SPEC = ToolSpec(
             "language": {
                 "type": "string",
                 "description": "Optional ISO language hint.",
+            },
+            "country": {
+                "type": "string",
+                "description": "Optional ISO country hint.",
+            },
+            "search_depth": {
+                "type": "string",
+                "enum": ["basic", "advanced"],
+                "description": "Optional search-depth hint for providers that support it.",
+            },
+            "require_freshness_enforced": {
+                "type": "boolean",
+                "description": "Require a provider that can enforce freshness hints.",
             },
         },
         "required": ["query"],

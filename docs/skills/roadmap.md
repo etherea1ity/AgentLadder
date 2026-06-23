@@ -435,6 +435,10 @@ Includes:
 
 - web search
 - page fetch/read
+- WebResearchState
+- EvidenceLedger
+- search provider abstraction
+- final-readiness policy
 - source ranking
 - evidence table
 - contradiction handling

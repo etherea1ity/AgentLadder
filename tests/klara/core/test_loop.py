@@ -8,7 +8,7 @@ from klara.core.hooks import (
     PostToolUseContext,
     PreToolUseContext,
 )
-from klara.core.loop import KlaraLoop
+from klara.core.loop import FinalAnswerDecision, KlaraLoop, LoopControllerEvent
 from klara.core.messages import KlaraMessage, ModelResponse, ModelStreamEvent
 from klara.core.policies import LoopPolicy, StopReason
 from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
@@ -115,6 +115,56 @@ class EventRecorder:
         self.event_types.append(str(getattr(event, "type")))
 
 
+class BlockingFinalController:
+    """Test controller that rejects the first no-tool final answer."""
+
+    def __init__(self) -> None:
+        """Create controller state for assertions."""
+
+        self.started = False
+        self.block_count = 0
+        self.events = [LoopControllerEvent(type="controller.started", payload={})]
+
+    def on_run_start(self, *, user_input: str, run_id: str) -> None:
+        """Record that the controller saw run start."""
+
+        self.started = True
+
+    def system_prompt_suffix(self) -> str:
+        """Expose feedback after blocking a final answer."""
+
+        if self.block_count:
+            return "<controller_feedback>continue after blocked final</controller_feedback>"
+        return ""
+
+    def on_tool_results(self, *, results: tuple[ToolResult, ...]) -> None:
+        """No-op for this integration test."""
+
+    def before_final_answer(self, *, content: str) -> FinalAnswerDecision:
+        """Block exactly the first final answer."""
+
+        if self.block_count == 0:
+            self.block_count += 1
+            return FinalAnswerDecision(
+                allowed=False,
+                reason="not_ready",
+                feedback="Need another model turn.",
+            )
+        return FinalAnswerDecision(allowed=True, reason="ready")
+
+    def prepare_next_turn(self, messages: list[KlaraMessage]) -> list[KlaraMessage]:
+        """No-op transcript preparation."""
+
+        return messages
+
+    def drain_events(self) -> tuple[LoopControllerEvent, ...]:
+        """Return queued controller events."""
+
+        events = tuple(self.events)
+        self.events.clear()
+        return events
+
+
 class BlockingPreToolHook:
     """Hook that blocks one tool before execution."""
 
@@ -212,6 +262,38 @@ def test_no_tool_run_returns_final_answer() -> None:
     assert result.final_answer == "Hello from Klara."
     assert result.stop_reason == StopReason.FINAL
     assert [message.role for message in result.messages] == ["user", "assistant"]
+
+
+def test_controller_can_block_premature_no_tool_final_answer() -> None:
+    recorder = EventRecorder()
+    controller = BlockingFinalController()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="premature final"),
+            ModelResponse(content="final after feedback"),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+        controllers=(controller,),
+    )
+
+    result = loop.run("latest information please", run_id="run-controller")
+
+    assert controller.started is True
+    assert result.final_answer == "final after feedback"
+    assert result.messages[0].content == "latest information please"
+    assert result.messages[1].role == "user"
+    assert "<runtime_policy_feedback>" in result.messages[1].content
+    assert "Need another model turn." in result.messages[1].content
+    assert result.messages[2].content == "final after feedback"
+    assert "premature final" not in [message.content for message in result.messages]
+    assert "final_answer.blocked" in recorder.event_types
+    assert "controller.started" in recorder.event_types
+    assert "<controller_feedback>" in llm.system_prompts[1]
+    assert "<runtime_policy_feedback>" in llm.calls[1][0][-1].content
 
 
 def test_streaming_protocol_can_represent_provider_reasoning_delta() -> None:

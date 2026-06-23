@@ -113,6 +113,57 @@ class _RunMetrics:
         }
 
 
+@dataclass(frozen=True)
+class FinalAnswerDecision:
+    """Generic controller decision before accepting a no-tool assistant answer."""
+
+    allowed: bool = True
+    reason: str = ""
+    feedback: str = ""
+
+
+@dataclass(frozen=True)
+class LoopControllerEvent:
+    """Public trace event emitted by a loop controller through core hooks."""
+
+    type: str
+    payload: dict[str, object] = field(default_factory=dict)
+
+
+class LoopController(Protocol):
+    """Optional policy/context controller attached around the core loop."""
+
+    def on_run_start(self, *, user_input: str, run_id: str) -> None:
+        """Observe the start of one run."""
+
+        ...
+
+    def system_prompt_suffix(self) -> str:
+        """Return extra model-visible runtime context for this turn."""
+
+        ...
+
+    def on_tool_results(self, *, results: tuple[ToolResult, ...]) -> None:
+        """Observe tool results after execution."""
+
+        ...
+
+    def before_final_answer(self, *, content: str) -> FinalAnswerDecision:
+        """Return whether a no-tool assistant answer may finalize the run."""
+
+        ...
+
+    def prepare_next_turn(self, messages: list[KlaraMessage]) -> list[KlaraMessage]:
+        """Prepare the model-visible transcript for the next turn."""
+
+        ...
+
+    def drain_events(self) -> tuple[LoopControllerEvent, ...]:
+        """Return pending public trace events from controller-owned state."""
+
+        ...
+
+
 class KlaraLoop:
     """Execute bounded model turns, tool observations, and lifecycle events.
 
@@ -129,6 +180,7 @@ class KlaraLoop:
         tool_executor: ToolRunner,
         hooks: HookManager | None = None,
         policy: LoopPolicy | None = None,
+        controllers: tuple[LoopController, ...] = (),
         model: str = "fake-model",
         system_prompt: str = "",
     ) -> None:
@@ -139,6 +191,7 @@ class KlaraLoop:
             tool_executor: Executor for tools visible in this run.
             hooks: Optional hook manager for lifecycle events.
             policy: Optional stop/bounds policy.
+            controllers: Optional runtime controllers around the loop.
             model: Model identifier passed through to the LLM client.
             system_prompt: Prompt assembled outside core by the harness.
         """
@@ -148,6 +201,7 @@ class KlaraLoop:
         self.tool_executor = tool_executor
         self.hooks = hooks or HookManager()
         self.policy = policy or LoopPolicy()
+        self.controllers = controllers
         self.model = model
         self.system_prompt = system_prompt
 
@@ -184,6 +238,9 @@ class KlaraLoop:
         run_started = perf_counter()
         run_metrics = _RunMetrics()
         self._emit(sequencer, active_run_id, EventKind.RUN_STARTED, {"model": self.model})
+        for controller in self.controllers:
+            controller.on_run_start(user_input=user_input, run_id=active_run_id)
+        self._emit_controller_events(sequencer, active_run_id)
         self._emit(
             sequencer,
             active_run_id,
@@ -213,7 +270,7 @@ class KlaraLoop:
                 # Ask the injected model using only the prompt, transcript, and specs.
                 llm_started = perf_counter()
                 response = self.llm.complete(
-                    system_prompt=self.system_prompt,
+                    system_prompt=self._system_prompt_for_turn(),
                     messages=tuple(messages),
                     tools=self.tool_executor.specs,
                     model=self.model,
@@ -242,6 +299,39 @@ class KlaraLoop:
                 )
 
                 if not response.tool_calls:
+                    final_decision = self._before_final_answer(response.content)
+                    self._emit_controller_events(sequencer, active_run_id)
+                    if not final_decision.allowed:
+                        feedback_message = _runtime_feedback_message(final_decision)
+                        if feedback_message and _last_message_content(messages) != feedback_message:
+                            messages.append(KlaraMessage(role="user", content=feedback_message))
+                        self._emit(
+                            sequencer,
+                            active_run_id,
+                            "final_answer.blocked",
+                            {
+                                "turn_index": turn_index,
+                                "reason": final_decision.reason,
+                                "feedback": final_decision.feedback,
+                            },
+                        )
+                        self._emit(
+                            sequencer,
+                            active_run_id,
+                            EventKind.TURN_COMPLETED,
+                            {"turn_index": turn_index, "final_blocked": True},
+                        )
+                        continue
+                    if self.controllers:
+                        self._emit(
+                            sequencer,
+                            active_run_id,
+                            "final_answer.allowed",
+                            {
+                                "turn_index": turn_index,
+                                "reason": final_decision.reason,
+                            },
+                        )
                     messages.append(assistant_message)
                     # No tool calls means the assistant content is the final answer.
                     self._emit(sequencer, active_run_id, EventKind.TURN_COMPLETED, {"turn_index": turn_index})
@@ -291,6 +381,9 @@ class KlaraLoop:
                     turn_index,
                     response.tool_calls,
                 )
+                for controller in self.controllers:
+                    controller.on_tool_results(results=tool_results)
+                self._emit_controller_events(sequencer, active_run_id)
                 tool_call_count += len(response.tool_calls)
                 for call in response.tool_calls:
                     signature = _tool_call_signature(call)
@@ -315,6 +408,7 @@ class KlaraLoop:
                     {"turn_index": turn_index},
                 )
                 messages = self.prepare_next_turn(messages)
+                self._emit_controller_events(sequencer, active_run_id)
                 self._emit(
                     sequencer,
                     active_run_id,
@@ -351,7 +445,10 @@ class KlaraLoop:
             Transcript to expose to the next model call.
         """
 
-        return messages
+        prepared = messages
+        for controller in self.controllers:
+            prepared = controller.prepare_next_turn(prepared)
+        return prepared
 
     def _finalize_after_max_turns(
         self,
@@ -399,7 +496,7 @@ class KlaraLoop:
         )
         finalization_prompt = "\n\n".join(
             [
-                self.system_prompt,
+                self._system_prompt_for_turn(),
                 (
                     "<finalization_context>\n"
                     f"{reason} Do not request more tools. "
@@ -761,6 +858,38 @@ class KlaraLoop:
             hook_failures=tuple(self.hooks.failures),
         )
 
+    def _system_prompt_for_turn(self) -> str:
+        """Return base prompt plus controller-owned runtime context."""
+
+        suffixes = [
+            suffix.strip()
+            for controller in self.controllers
+            if (suffix := controller.system_prompt_suffix()).strip()
+        ]
+        if not suffixes:
+            return self.system_prompt
+        return "\n\n".join([self.system_prompt, *suffixes]).strip()
+
+    def _before_final_answer(self, content: str) -> FinalAnswerDecision:
+        """Aggregate controller decisions before finalization."""
+
+        for controller in self.controllers:
+            decision = controller.before_final_answer(content=content)
+            if not decision.allowed:
+                return decision
+        return FinalAnswerDecision(allowed=True, reason="ready")
+
+    def _emit_controller_events(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+    ) -> None:
+        """Emit pending controller-origin public events."""
+
+        for controller in self.controllers:
+            for event in controller.drain_events():
+                self._emit(sequencer, run_id, event.type, event.payload)
+
     def _emit(
         self,
         sequencer: EventSequencer,
@@ -882,6 +1011,31 @@ def _tool_call_signature(call: ToolCall) -> str:
         default=str,
     )
     return f"{call.name}:{arguments}"
+
+
+def _runtime_feedback_message(decision: FinalAnswerDecision) -> str:
+    """Return model-visible feedback after a controller blocks finalization."""
+
+    feedback = decision.feedback.strip()
+    if not feedback:
+        return ""
+    return (
+        "<runtime_policy_feedback>\n"
+        "The previous assistant draft was rejected by runtime policy and was not "
+        "shown to the user. Continue the task from this feedback instead of "
+        "repeating the rejected draft. If tools are available and the feedback "
+        "asks for evidence, call the appropriate tool before answering.\n\n"
+        f"{feedback}\n"
+        "</runtime_policy_feedback>"
+    )
+
+
+def _last_message_content(messages: list[KlaraMessage]) -> str:
+    """Return the last transcript content, or an empty string."""
+
+    if not messages:
+        return ""
+    return messages[-1].content
 
 
 def _blocked_tool_result(call: ToolCall, reason: str) -> ToolResult:

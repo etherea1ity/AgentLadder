@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from hashlib import sha256
 from typing import Callable
+from urllib.parse import urlparse, urlunparse
 
 from klara.tools.base import BaseTool, ToolInputError
 from klara.tools.builtin.web_search.schema import WEB_SEARCH_METADATA, WEB_SEARCH_SPEC
@@ -45,18 +47,27 @@ class WebSearchTool(BaseTool):
         allowed_domains = _optional_string_tuple(arguments, "allowed_domains")
         blocked_domains = _optional_string_tuple(arguments, "blocked_domains")
         count = _optional_int(arguments, "count", default=8)
-        if count < 1 or count > 8:
-            raise ToolInputError("count must be between 1 and 8")
+        if count < 1 or count > 20:
+            raise ToolInputError("count must be between 1 and 20")
         freshness = _optional_freshness(arguments)
         date_after = _optional_iso_date(arguments, "date_after")
         date_before = _optional_iso_date(arguments, "date_before")
         language = _optional_language(arguments)
+        country = _optional_compact_hint(arguments, "country")
+        search_depth = _optional_search_depth(arguments)
+        require_freshness_enforced = _optional_bool(arguments, "require_freshness_enforced")
         search_hints = _search_hints(
             freshness=freshness,
             date_after=date_after,
             date_before=date_before,
             language=language,
+            country=country,
+            search_depth=search_depth,
         )
+        if require_freshness_enforced:
+            raise ToolInputError(
+                "configured web_search provider cannot enforce freshness hints"
+            )
         effective_query = _apply_search_hints(query, search_hints)
 
         try:
@@ -69,13 +80,16 @@ class WebSearchTool(BaseTool):
             )
         except WebSearchError as exc:
             return self.failure(arguments, str(exc))
-        results = _result_cards(response)[:count]
+        searched_at = datetime.now(UTC).isoformat(timespec="seconds")
+        search_id = _stable_id("search", response.provider, response.query, searched_at)
+        results = _result_cards(response, search_id=search_id)[:count]
 
         return self.json_success(
             arguments,
             {
                 "observation_kind": "web_search_candidates",
                 "evidence_status": "candidate_snippets_only",
+                "search_id": search_id,
                 "query": response.query,
                 "original_query": query,
                 "effective_query": effective_query,
@@ -86,11 +100,12 @@ class WebSearchTool(BaseTool):
                     "time-sensitive facts with fetched source text."
                 ),
                 "provider": response.provider,
+                "freshness_enforced": False,
                 "result_count": len(results),
                 "results": results,
                 "searched_url": response.searched_url,
                 "truncated": response.truncated,
-                "searched_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                "searched_at": searched_at,
                 "trust": "untrusted_external_content",
             },
         )
@@ -137,8 +152,8 @@ def _optional_freshness(arguments: JsonObject) -> str:
     freshness = value.strip().lower()
     if not freshness:
         return ""
-    if freshness not in {"day", "week", "month", "year"}:
-        raise ToolInputError("freshness must be day, week, month, or year")
+    if freshness not in {"day", "week", "month", "year", "any"}:
+        raise ToolInputError("freshness must be day, week, month, year, or any")
     return freshness
 
 
@@ -163,20 +178,51 @@ def _optional_iso_date(arguments: JsonObject, key: str) -> str:
 def _optional_language(arguments: JsonObject) -> str:
     """Read an optional compact language hint."""
 
-    value = arguments.get("language")
+    return _optional_compact_hint(arguments, "language")
+
+
+def _optional_compact_hint(arguments: JsonObject, key: str) -> str:
+    """Read an optional compact provider hint."""
+
+    value = arguments.get(key)
     if value is None:
         return ""
     if not isinstance(value, str):
-        raise ToolInputError("language must be a string")
-    language = value.strip().lower()
-    if not language:
+        raise ToolInputError(f"{key} must be a string")
+    hint = value.strip().lower()
+    if not hint:
         return ""
-    if len(language) > 16 or not all(
+    if len(hint) > 24 or not all(
         char.isascii() and (char.isalnum() or char in {"-", "_"})
-        for char in language
+        for char in hint
     ):
-        raise ToolInputError("language must be a compact ISO-style hint")
-    return language
+        raise ToolInputError(f"{key} must be a compact ISO-style hint")
+    return hint
+
+
+def _optional_search_depth(arguments: JsonObject) -> str:
+    """Read an optional search depth hint."""
+
+    value = arguments.get("search_depth")
+    if value is None:
+        return "basic"
+    if not isinstance(value, str):
+        raise ToolInputError("search_depth must be a string")
+    depth = value.strip().lower()
+    if depth not in {"basic", "advanced"}:
+        raise ToolInputError("search_depth must be basic or advanced")
+    return depth
+
+
+def _optional_bool(arguments: JsonObject, key: str) -> bool:
+    """Read an optional boolean argument."""
+
+    value = arguments.get(key)
+    if value is None:
+        return False
+    if not isinstance(value, bool):
+        raise ToolInputError(f"{key} must be a boolean")
+    return value
 
 
 def _search_hints(
@@ -185,6 +231,8 @@ def _search_hints(
     date_after: str,
     date_before: str,
     language: str,
+    country: str,
+    search_depth: str,
 ) -> dict[str, str]:
     """Return only caller-provided search hints for transparent observations."""
 
@@ -197,6 +245,10 @@ def _search_hints(
         hints["date_before"] = date_before
     if language:
         hints["language"] = language
+    if country:
+        hints["country"] = country
+    if search_depth and search_depth != "basic":
+        hints["search_depth"] = search_depth
     return hints
 
 
@@ -216,17 +268,44 @@ def _apply_search_hints(query: str, search_hints: dict[str, str]) -> str:
     return " ".join([query, *extras])
 
 
-def _result_cards(response: SearchResponse) -> list[dict[str, object]]:
+def _result_cards(response: SearchResponse, *, search_id: str) -> list[dict[str, object]]:
     """Return search cards in provider order."""
 
     cards: list[dict[str, object]] = []
     for original_rank, hit in enumerate(response.results, start=1):
+        canonical_url = _canonical_url(hit.url)
         cards.append(
             {
+                "candidate_id": _stable_id("cand", search_id, str(original_rank), canonical_url),
                 "title": hit.title,
                 "url": hit.url,
+                "canonical_url": canonical_url,
                 "snippet": hit.snippet,
+                "rank": original_rank,
                 "original_rank": original_rank,
+                "published_at": None,
+                "source_type": "unknown",
+                "must_fetch_before_citing": True,
             }
         )
     return cards
+
+
+def _canonical_url(url: str) -> str:
+    """Return a stable URL form for evidence joins."""
+
+    parsed = urlparse(url.strip())
+    scheme = parsed.scheme.lower()
+    hostname = (parsed.hostname or "").lower()
+    netloc = hostname
+    if parsed.port:
+        netloc = f"{netloc}:{parsed.port}"
+    path = parsed.path or "/"
+    return urlunparse((scheme, netloc, path, "", parsed.query, ""))
+
+
+def _stable_id(prefix: str, *parts: str) -> str:
+    """Return a compact deterministic id from public fields."""
+
+    digest = sha256("\n".join(parts).encode("utf-8")).hexdigest()[:16]
+    return f"{prefix}_{digest}"

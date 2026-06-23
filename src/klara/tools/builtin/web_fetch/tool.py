@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 from typing import Callable
 
 from klara.tools.base import BaseTool, ToolInputError
@@ -41,6 +42,8 @@ class WebFetchTool(BaseTool):
         url = self.optional_string(arguments, "url")
         if not url:
             raise ToolInputError("url must not be empty")
+        candidate_id = self.optional_string(arguments, "candidate_id") or None
+        requested_source_id = self.optional_string(arguments, "source_id") or None
         max_chars = _optional_int(arguments, "max_chars", default=4000)
         if max_chars < 200 or max_chars > 12000:
             raise ToolInputError("max_chars must be between 200 and 12000")
@@ -61,20 +64,32 @@ class WebFetchTool(BaseTool):
             extract_mode=extract_mode,
             max_chars=max_chars,
         )
+        quality = _extraction_quality(
+            page=page,
+            text=text,
+            query_terms=query_terms,
+            no_relevant_terms_found=no_relevant_terms_found,
+        )
+        source_id = requested_source_id or _stable_id("src", page.final_url or page.url)
 
         return self.json_success(
             arguments,
             {
+                "observation_kind": "web_fetched_source",
+                "source_id": source_id,
+                "candidate_id": candidate_id,
                 "url": page.url,
                 "final_url": page.final_url,
                 "status": page.status,
                 "content_type": page.content_type,
                 "title": page.title,
                 "text": text,
+                "text_length": len(text),
                 "truncated": page.truncated,
                 "extract_mode": extract_mode,
                 "query_terms": query_terms,
                 "no_relevant_terms_found": no_relevant_terms_found,
+                "extraction_quality": quality,
                 "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
                 "trust": "untrusted_external_content",
             },
@@ -119,8 +134,12 @@ def _optional_extract_mode(arguments: JsonObject) -> str:
     if not isinstance(value, str):
         raise ToolInputError("extract_mode must be a string")
     mode = value.strip()
-    if mode not in {"plain", "relevant_snippets"}:
-        raise ToolInputError("extract_mode must be plain or relevant_snippets")
+    if mode not in {"plain", "relevant_snippets", "summary_snippets"}:
+        raise ToolInputError(
+            "extract_mode must be plain, relevant_snippets, or summary_snippets"
+        )
+    if mode == "summary_snippets":
+        return "relevant_snippets"
     return mode
 
 
@@ -172,4 +191,68 @@ def _merge_windows(windows: list[tuple[int, int]]) -> list[tuple[int, int]]:
         previous_start, previous_end = merged[-1]
         merged[-1] = (previous_start, max(previous_end, end))
     return merged
+
+
+def _extraction_quality(
+    *,
+    page: FetchedPage,
+    text: str,
+    query_terms: list[str],
+    no_relevant_terms_found: bool,
+) -> dict[str, object]:
+    """Score generic readable-text quality for research readiness."""
+
+    text_length = len(text)
+    looks_like_js_shell = _looks_like_js_shell(text)
+    has_title = bool(page.title.strip())
+    has_relevant_terms = bool(query_terms) and not no_relevant_terms_found
+    score = 0.0
+    if page.status is not None and 200 <= page.status < 300:
+        score += 0.25
+    if has_title:
+        score += 0.15
+    if text_length >= 1200:
+        score += 0.35
+    elif text_length >= 400:
+        score += 0.22
+    elif text_length >= 120:
+        score += 0.08
+    if query_terms:
+        score += 0.2 if has_relevant_terms else -0.15
+    else:
+        score += 0.05
+    if looks_like_js_shell:
+        score -= 0.3
+    score = max(0.0, min(1.0, round(score, 2)))
+    return {
+        "score": score,
+        "looks_like_js_shell": looks_like_js_shell,
+        "has_title": has_title,
+        "has_relevant_terms": has_relevant_terms,
+        "text_length": text_length,
+    }
+
+
+def _looks_like_js_shell(text: str) -> bool:
+    """Return whether readable text looks like a navigation or JS shell."""
+
+    compact = " ".join(text.lower().split())
+    if len(compact) < 160:
+        return True
+    shell_markers = (
+        "enable javascript",
+        "please enable javascript",
+        "app shell",
+        "navigation",
+        "login",
+        "cookie",
+    )
+    return any(marker in compact for marker in shell_markers) and len(compact) < 600
+
+
+def _stable_id(prefix: str, *parts: str) -> str:
+    """Return a compact deterministic id from public source fields."""
+
+    digest = sha256("\n".join(parts).encode("utf-8")).hexdigest()[:16]
+    return f"{prefix}_{digest}"
 

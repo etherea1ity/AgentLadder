@@ -216,6 +216,7 @@ architecture.md
 roadmap.md
 coding-conventions.md
 readme-conventions.md
+web-research-state-machine.md
 ```
 
 Chapter teaching belongs in `docs/chapters/`. Generated or hand-made chapter

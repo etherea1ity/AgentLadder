@@ -39,6 +39,7 @@ from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
 from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
+from klara.services.web import WebResearchController
 from klara.tools.executor import ToolExecutor
 from klara.tools.registry import ToolRegistry
 
@@ -221,6 +222,9 @@ class RunService:
                 tool_executor=ToolExecutor(list(registry.visible_tools())),
                 hooks=hooks,
                 policy=self.loop_policy,
+                controllers=(
+                    WebResearchController(user_timezone=self.user_context.timezone),
+                ),
                 model=selected_model,
                 system_prompt=_system_prompt(self.user_context),
             )

@@ -3,10 +3,26 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import re
-from typing import Any
+from typing import Any, cast
 
 from apps.api.schemas import RunEventRecord, RunEventType
 from klara.core.events import KlaraEvent
+
+
+WEB_RESEARCH_EVENT_MESSAGES = {
+    "web_research.started": "Web research state started.",
+    "web_research.state_updated": "Web research state updated.",
+    "web_search.started": "Web search started.",
+    "web_search.completed": "Web search completed.",
+    "web_fetch.started": "Web fetch started.",
+    "web_fetch.completed": "Web fetch completed.",
+    "evidence.candidate_recorded": "Search candidate recorded.",
+    "evidence.source_recorded": "Fetched source recorded.",
+    "evidence.readiness_evaluated": "Evidence readiness evaluated.",
+    "final_answer.blocked": "Final answer blocked by runtime policy.",
+    "final_answer.allowed": "Final answer allowed by runtime policy.",
+    "context.compacted": "Model-visible context compacted.",
+}
 
 
 @dataclass(frozen=True)
@@ -106,17 +122,29 @@ class RunEventProjector:
         if event.type == "tool.started":
             tool_call = _dict_payload(event.payload.get("tool_call"))
             name = str(tool_call.get("name") or "tool")
-            return (
-                ProjectedRunEvent(
-                    event_type="tool_call_started",
-                    message=f"Klara is using {name}.",
-                    payload={
-                        "turn_index": event.payload.get("turn_index"),
-                        "tool_call": tool_call,
-                        "started_at": event.payload.get("started_at"),
-                    },
-                ),
+            started = ProjectedRunEvent(
+                event_type="tool_call_started",
+                message=f"Klara is using {name}.",
+                payload={
+                    "turn_index": event.payload.get("turn_index"),
+                    "tool_call": tool_call,
+                    "started_at": event.payload.get("started_at"),
+                },
             )
+            if name in {"web_search", "web_fetch"}:
+                return (
+                    started,
+                    ProjectedRunEvent(
+                        event_type=cast(RunEventType, f"{name}.started"),
+                        message=WEB_RESEARCH_EVENT_MESSAGES[f"{name}.started"],
+                        payload={
+                            "turn_index": event.payload.get("turn_index"),
+                            "tool_call_id": tool_call.get("id"),
+                            "started_at": event.payload.get("started_at"),
+                        },
+                    ),
+                )
+            return (started,)
         if event.type in {"tool.completed", "tool.failed"}:
             tool_result = _compact_tool_result(
                 _dict_payload(event.payload.get("tool_result"))
@@ -158,6 +186,15 @@ class RunEventProjector:
                         "stop_reason": event.payload.get("stop_reason"),
                         "reason": event.payload.get("reason"),
                     },
+                ),
+            )
+
+        if str(event.type) in WEB_RESEARCH_EVENT_MESSAGES:
+            return (
+                ProjectedRunEvent(
+                    event_type=cast(RunEventType, str(event.type)),
+                    message=WEB_RESEARCH_EVENT_MESSAGES[str(event.type)],
+                    payload=dict(event.payload),
                 ),
             )
 
@@ -472,20 +509,34 @@ def _structured_tool_summary(name: str, content: object) -> dict[str, Any]:
     if not isinstance(value, dict):
         return {}
     if name == "web_search":
+        results = value.get("results")
         return {
             "provider": _string_or_none(value.get("provider")),
             "result_count": _int_or_none(value.get("result_count")),
             "truncated": bool(value.get("truncated", False)),
             "evidence_status": _string_or_none(value.get("evidence_status")),
+            "search_id": _string_or_none(value.get("search_id")),
+            "freshness_enforced": bool(value.get("freshness_enforced", False)),
+            "candidate_count": len(results) if isinstance(results, list) else None,
         }
     if name == "web_fetch":
         text = value.get("text")
+        quality = value.get("extraction_quality")
+        quality_score = (
+            quality.get("score")
+            if isinstance(quality, dict) and not isinstance(quality.get("score"), dict)
+            else None
+        )
         return {
+            "source_id": _string_or_none(value.get("source_id")),
+            "candidate_id": _string_or_none(value.get("candidate_id")),
             "status": _int_or_none(value.get("status")),
             "content_type": _string_or_none(value.get("content_type")),
             "title": _sanitize_preview(value.get("title")),
             "text_length": len(text) if isinstance(text, str) else None,
             "truncated": bool(value.get("truncated", False)),
+            "quality": quality_score,
+            "no_relevant_terms_found": bool(value.get("no_relevant_terms_found", False)),
         }
     if name == "image_generate":
         images = value.get("images")
