@@ -232,6 +232,7 @@ class RunService:
                     "Thinking summary generated.",
                     {
                         "text": summary.summary,
+                        "items": list(summary.items),
                         "source": "narrator_model",
                         "evidence_event_ids": list(summary.evidence_event_ids),
                         "confidence": summary.confidence,

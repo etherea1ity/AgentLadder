@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import json
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from apps.api.schemas import RunEventRecord
 from klara.core.loop import LlmClient
@@ -11,6 +12,17 @@ from klara.core.messages import KlaraMessage
 
 MAX_NOTE_CHARS = 180
 MAX_SUMMARY_CHARS = 260
+MAX_ACTIVITY_TITLE_CHARS = 90
+MAX_ACTIVITY_BODY_CHARS = 240
+MIN_ACTIVITY_ITEMS = 2
+MAX_ACTIVITY_ITEMS = 5
+ACTIVITY_KINDS = {
+    "orientation",
+    "evidence",
+    "tool_activity",
+    "composition",
+    "finalization",
+}
 
 
 @dataclass(frozen=True)
@@ -54,6 +66,7 @@ class ThinkingSummaryResult:
     summary: str
     evidence_event_ids: tuple[str, ...]
     confidence: float
+    items: tuple[dict[str, Any], ...] = ()
 
 
 class WorkstreamNarrator:
@@ -164,20 +177,22 @@ class ThinkingSummaryNarrator:
             return None
         if not isinstance(raw, dict):
             return None
-        summary = str(raw.get("summary") or "").strip()
+        summary = str(raw.get("text") or raw.get("summary") or "").strip()
         if not summary:
             return None
         if _contains_forbidden_reasoning_terms(summary):
             return None
         if not _claims_have_evidence(summary, payload.events):
             return None
-        evidence_ids = _valid_evidence_ids(raw.get("evidence_event_ids"), payload.events)
-        if not evidence_ids:
+        items = _summary_activity_items(raw.get("items"), payload.events)
+        if not items:
             return None
+        evidence_ids = _aggregate_evidence_ids(items)
         return ThinkingSummaryResult(
             summary=summary[:MAX_SUMMARY_CHARS],
             evidence_event_ids=tuple(evidence_ids),
-            confidence=_confidence(raw.get("confidence")),
+            confidence=_average_confidence(items),
+            items=tuple(items),
         )
 
     def _prompt(self) -> str:
@@ -277,6 +292,99 @@ def _valid_evidence_ids(value: object, events: tuple[RunEventRecord, ...]) -> li
         return []
     known = {event.event_id for event in events}
     return [item for item in value if isinstance(item, str) and item in known]
+
+
+def _summary_activity_items(
+    value: object,
+    events: tuple[RunEventRecord, ...],
+) -> list[dict[str, Any]]:
+    """Validate narrator activity items against public evidence."""
+
+    if not isinstance(value, list):
+        return []
+    if not MIN_ACTIVITY_ITEMS <= len(value) <= MAX_ACTIVITY_ITEMS:
+        return []
+    items: list[dict[str, Any]] = []
+    for raw_item in value:
+        if not isinstance(raw_item, dict):
+            return []
+        item = _summary_activity_item(raw_item, events)
+        if item is None:
+            return []
+        items.append(item)
+    return items
+
+
+def _summary_activity_item(
+    raw_item: dict[str, Any],
+    events: tuple[RunEventRecord, ...],
+) -> dict[str, Any] | None:
+    """Return one sanitized narrator activity item."""
+
+    title = str(raw_item.get("title") or "").strip()
+    body = str(raw_item.get("body") or "").strip()
+    kind = str(raw_item.get("kind") or "orientation").strip()
+    if not title or not body:
+        return None
+    if kind not in ACTIVITY_KINDS:
+        return None
+    if _contains_forbidden_reasoning_terms(f"{title}\n{body}"):
+        return None
+    if not _claims_have_evidence(f"{title}\n{body}", events):
+        return None
+    evidence_ids = _strict_evidence_ids(raw_item.get("evidence_event_ids"), events)
+    if not evidence_ids:
+        return None
+    return {
+        "id": f"act_{uuid4().hex}",
+        "title": title[:MAX_ACTIVITY_TITLE_CHARS],
+        "body": body[:MAX_ACTIVITY_BODY_CHARS],
+        "status": "completed",
+        "kind": kind,
+        "source": "narrator_model",
+        "evidence_event_ids": evidence_ids,
+        "confidence": _confidence(raw_item.get("confidence")),
+    }
+
+
+def _strict_evidence_ids(
+    value: object,
+    events: tuple[RunEventRecord, ...],
+) -> list[str]:
+    """Return evidence ids only when all supplied ids exist."""
+
+    if not isinstance(value, list) or not value:
+        return []
+    known = {event.event_id for event in events}
+    ids = [item for item in value if isinstance(item, str)]
+    if len(ids) != len(value):
+        return []
+    if any(item not in known for item in ids):
+        return []
+    return ids
+
+
+def _aggregate_evidence_ids(items: list[dict[str, Any]]) -> list[str]:
+    """Return stable unique evidence ids cited by activity items."""
+
+    seen: set[str] = set()
+    evidence_ids: list[str] = []
+    for item in items:
+        for evidence_id in item["evidence_event_ids"]:
+            if evidence_id in seen:
+                continue
+            seen.add(evidence_id)
+            evidence_ids.append(evidence_id)
+    return evidence_ids
+
+
+def _average_confidence(items: list[dict[str, Any]]) -> float:
+    """Return the average confidence across validated activity items."""
+
+    if not items:
+        return 0.0
+    total = sum(float(item.get("confidence") or 0.0) for item in items)
+    return round(total / len(items), 4)
 
 
 def _contains_forbidden_reasoning_terms(text: str) -> bool:

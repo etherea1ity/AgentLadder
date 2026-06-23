@@ -35,13 +35,28 @@ class SummaryNarratorLlm:
         messages = kwargs["messages"]  # type: ignore[index]
         payload = json.loads(messages[0].content)
         self.inputs.append(payload)
-        evidence_id = payload["events"][0]["event_id"]
+        first_evidence_id = payload["events"][0]["event_id"]
+        second_evidence_id = payload["events"][1]["event_id"]
         return ModelResponse(
             content=json.dumps(
                 {
-                    "summary": self.summary,
-                    "evidence_event_ids": [evidence_id],
-                    "confidence": 0.82,
+                    "text": self.summary,
+                    "items": [
+                        {
+                            "title": "Preparing the run",
+                            "body": "Klara set up the runtime for this request.",
+                            "kind": "orientation",
+                            "evidence_event_ids": [first_evidence_id],
+                            "confidence": 0.82,
+                        },
+                        {
+                            "title": "Writing the answer",
+                            "body": "Klara moved from the runtime path into the final response.",
+                            "kind": "composition",
+                            "evidence_event_ids": [second_evidence_id],
+                            "confidence": 0.78,
+                        },
+                    ],
                 }
             )
         )
@@ -140,6 +155,9 @@ def test_fake_narrator_summary_appears_as_thinking_summary_delta(tmp_path) -> No
     )
 
     assert delta.payload["text"] == "Klara reviewed the public run trace before writing the answer."
+    assert len(delta.payload["items"]) == 2
+    assert delta.payload["items"][0]["source"] == "narrator_model"
+    assert delta.payload["items"][0]["status"] == "completed"
     assert delta.payload["source"] == "narrator_model"
     assert completed.payload["has_summary"] is True
     assert narrator.inputs[0]["run_status"] == "completed"
@@ -258,9 +276,70 @@ def test_thinking_summary_rejects_unsupported_claims(tmp_path) -> None:
         client=StaticNarratorLlm(
             json.dumps(
                 {
-                    "summary": "Klara searched the web and compared current sources.",
-                    "evidence_event_ids": [event.event_id],
-                    "confidence": 0.9,
+                    "text": "Klara searched the web and compared current sources.",
+                    "items": [
+                        {
+                            "title": "Searched the web",
+                            "body": "Klara searched the web and compared current sources.",
+                            "kind": "evidence",
+                            "evidence_event_ids": [event.event_id],
+                            "confidence": 0.9,
+                        },
+                        {
+                            "title": "Writing the answer",
+                            "body": "Klara prepared the final response.",
+                            "kind": "composition",
+                            "evidence_event_ids": [event.event_id],
+                            "confidence": 0.6,
+                        },
+                    ],
+                }
+            )
+        ),
+        model="narrator-model",
+        prompt_path=_prompt(tmp_path),
+    )
+
+    summary = narrator.create_summary(
+        ThinkingSummaryInput(
+            user_request="hello",
+            selected_model="main-model",
+            run_status="completed",
+            duration_ms=10,
+            events=(event,),
+        )
+    )
+
+    assert summary is None
+
+
+def test_thinking_summary_rejects_unknown_evidence_ids(tmp_path) -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="thinking_started",
+        message="Klara is preparing the runtime loop.",
+    )
+    narrator = ThinkingSummaryNarrator(
+        client=StaticNarratorLlm(
+            json.dumps(
+                {
+                    "text": "Klara summarized the public runtime events.",
+                    "items": [
+                        {
+                            "title": "Preparing the run",
+                            "body": "Klara set up the runtime for this request.",
+                            "kind": "orientation",
+                            "evidence_event_ids": [event.event_id],
+                            "confidence": 0.8,
+                        },
+                        {
+                            "title": "Writing the answer",
+                            "body": "Klara prepared the final response.",
+                            "kind": "composition",
+                            "evidence_event_ids": ["evt_missing"],
+                            "confidence": 0.7,
+                        },
+                    ],
                 }
             )
         ),
