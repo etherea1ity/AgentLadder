@@ -15,14 +15,57 @@ const baseRun: Run = {
 };
 
 describe("KlaraRunSurface", () => {
-  it("renders tool call started and completed cards", () => {
+  it("renders LLM token metrics when present", () => {
+    render(
+      <KlaraRunSurface
+        run={{
+          ...baseRun,
+          events: [
+            evt("llm_call_started", { turn_index: 0, model: "qwen/qwen-flash" }),
+            evt("llm_call_completed", {
+              turn_index: 0,
+              duration_ms: 123,
+              prompt_tokens: 7,
+              completion_tokens: 11,
+              total_tokens: 18,
+              token_source: "reported",
+              tool_call_count: 1,
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("LLM rounds")).toBeInTheDocument();
+    expect(screen.getByText("Turn 0")).toBeInTheDocument();
+    expect(screen.getByText("qwen/qwen-flash")).toBeInTheDocument();
+    expect(screen.getByText("input tokens")).toBeInTheDocument();
+    expect(screen.getByText("18")).toBeInTheDocument();
+    expect(screen.getByText("reported")).toBeInTheDocument();
+  });
+
+  it("shows unknown for missing LLM metrics", () => {
+    render(
+      <KlaraRunSurface
+        run={{
+          ...baseRun,
+          events: [evt("llm_call_started", { turn_index: 1 })],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Turn 1")).toBeInTheDocument();
+    expect(screen.getAllByText("unknown").length).toBeGreaterThan(1);
+  });
+
+  it("renders tool cards with arguments and observation previews", () => {
     render(
       <KlaraRunSurface
         run={{
           ...baseRun,
           events: [
             evt("tool_call_started", {
-              tool_call: { id: "call_1", name: "current_time" },
+              tool_call: { id: "call_1", name: "current_time", arguments: { timezone: "Asia/Shanghai" } },
             }),
             evt("tool_call_completed", {
               tool_result: {
@@ -32,6 +75,7 @@ describe("KlaraRunSurface", () => {
                 content_length: 16,
                 ok: true,
               },
+              duration_ms: 42,
             }),
           ],
         }}
@@ -40,7 +84,9 @@ describe("KlaraRunSurface", () => {
 
     expect(screen.getByText("current_time")).toBeInTheDocument();
     expect(screen.getByText("completed")).toBeInTheDocument();
+    expect(screen.getAllByText(/Asia\/Shanghai/).length).toBeGreaterThan(0);
     expect(screen.getByText("2026-06-18 20:30")).toBeInTheDocument();
+    expect(screen.getByText("42ms")).toBeInTheDocument();
   });
 
   it("renders failed tool cards", () => {
@@ -70,7 +116,7 @@ describe("KlaraRunSurface", () => {
     expect(screen.getByText("Tool blocked by hook: test")).toBeInTheDocument();
   });
 
-  it("renders hook placement badges without answer delta text", () => {
+  it("keeps answer delta out of developer debug", () => {
     render(
       <KlaraRunSurface
         run={{
@@ -86,29 +132,34 @@ describe("KlaraRunSurface", () => {
       />,
     );
 
-    expect(screen.getByText("PreToolUse allowed")).toBeInTheDocument();
+    expect(screen.getByText("hook_placement_completed")).toBeInTheDocument();
     expect(
       screen.queryByText("This belongs in the assistant answer."),
     ).not.toBeInTheDocument();
   });
 
-  it("renders workstream notes as runtime surface content", () => {
+  it("renders raw payload only inside Developer debug", () => {
     render(
       <KlaraRunSurface
         run={{
           ...baseRun,
           events: [
-            evt("workstream_note", {
-              text: "Klara is preparing the observable run.",
-              source: "narrator_model",
-              evidence_event_ids: ["evt_1"],
+            evt("tool_call_completed", {
+              tool_result: {
+                tool_call_id: "call_1",
+                name: "current_time",
+                content_preview: "done",
+                content_length: 4,
+                ok: true,
+              },
             }),
           ],
         }}
       />,
     );
 
-    expect(screen.getByText("Klara is preparing the observable run.")).toBeInTheDocument();
+    expect(screen.getAllByText("Raw payload").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/content_preview/).length).toBeGreaterThan(0);
   });
 
   it("does not label persisted public events as unavailable", () => {
@@ -149,13 +200,13 @@ describe("KlaraRunSurface", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: /developer trace/i })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /developer debug/i })).toHaveAttribute(
       "aria-expanded",
       "false",
     );
     expect(screen.queryByText("current_time")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /developer trace/i }));
+    fireEvent.click(screen.getByRole("button", { name: /developer debug/i }));
 
     expect(screen.getByText("current_time")).toBeInTheDocument();
   });
@@ -181,7 +232,7 @@ describe("KlaraRunSurface", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: /developer trace/i })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /developer debug/i })).toHaveAttribute(
       "aria-expanded",
       "false",
     );

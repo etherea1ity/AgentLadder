@@ -138,7 +138,7 @@ describe("Klara app flow", () => {
     expect(
       await screen.findByText("Klara completed the runtime loop."),
     ).toBeInTheDocument();
-    expect(await screen.findByText(/Developer trace.*3 events.*1 tool/)).toBeInTheDocument();
+    expect(await screen.findByText(/Developer debug.*3 events.*1 tool/)).toBeInTheDocument();
     expect(screen.getByText("Trace saved")).toBeInTheDocument();
   });
 

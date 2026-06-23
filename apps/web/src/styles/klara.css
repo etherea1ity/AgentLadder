@@ -602,6 +602,86 @@
   border-top: 1px solid rgba(221, 209, 189, 0.62);
   padding: 10px;
 }
+.klara-debug-section {
+  display: grid;
+  gap: 8px;
+}
+.klara-debug-section h4 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 720;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.klara-debug-card-grid {
+  display: grid;
+  gap: 8px;
+}
+.klara-debug-card {
+  border: 1px solid rgba(221, 209, 189, 0.78);
+  border-radius: 8px;
+  background: rgba(247, 240, 229, 0.45);
+  padding: 9px;
+}
+.klara-debug-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.klara-debug-card h5 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 680;
+}
+.klara-debug-card header span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.klara-debug-metrics {
+  display: grid;
+  grid-template-columns: minmax(86px, auto) minmax(0, 1fr);
+  gap: 4px 10px;
+  margin: 7px 0 0;
+}
+.klara-debug-metrics dt {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.klara-debug-metrics dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.klara-debug-raw {
+  margin-top: 8px;
+}
+.klara-debug-raw summary {
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
+.klara-debug-raw pre {
+  max-height: 220px;
+  margin: 6px 0 0;
+  overflow: auto;
+  border-radius: 7px;
+  background: rgba(44, 38, 30, 0.06);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 8px;
+  white-space: pre-wrap;
+}
 .klara-workstream-notes {
   display: grid;
   gap: 6px;
@@ -728,9 +808,13 @@
   line-height: 1.35;
 }
 .theme-dark .klara-run-surface,
-.theme-dark .klara-tool-card {
+.theme-dark .klara-tool-card,
+.theme-dark .klara-debug-card {
   background: rgba(36, 40, 33, 0.58);
   border-color: #3b4138;
+}
+.theme-dark .klara-debug-raw pre {
+  background: rgba(0, 0, 0, 0.18);
 }
 .theme-dark .klara-activity-drawer {
   background: rgba(24, 27, 23, 0.98);
