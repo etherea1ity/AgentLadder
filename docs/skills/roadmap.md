@@ -145,7 +145,7 @@ Runnable result:
 - `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop` placements are real
 - public/private hook payload boundary is explicit
 - trace event schema is stable enough for teaching and replay
-- current web-evidence queries separate search candidates, fetched evidence, fixtures, and results
+- current web-evidence traces separate search candidates from fetched page text without runtime semantic guards
 
 Includes:
 

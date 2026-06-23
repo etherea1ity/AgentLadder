@@ -14,7 +14,7 @@ MAX_NOTE_CHARS = 180
 MAX_SUMMARY_CHARS = 260
 MAX_ACTIVITY_TITLE_CHARS = 90
 MAX_ACTIVITY_BODY_CHARS = 240
-MIN_ACTIVITY_ITEMS = 2
+MIN_ACTIVITY_ITEMS = 1
 MAX_ACTIVITY_ITEMS = 5
 ACTIVITY_KINDS = {
     "orientation",
@@ -22,6 +22,7 @@ ACTIVITY_KINDS = {
     "tool_activity",
     "composition",
     "finalization",
+    "error",
 }
 
 
@@ -48,20 +49,20 @@ class WorkstreamNote:
 
 
 @dataclass(frozen=True)
-class ThinkingSummaryInput:
-    """Completed public trace available to the thinking summary narrator."""
+class ThinkingActivityInput:
+    """Completed public facts available to the activity narrator."""
 
     user_request: str
     selected_model: str
     run_status: str
     duration_ms: int
     events: tuple[RunEventRecord, ...]
-    tool_summaries: tuple[dict[str, Any], ...] = ()
+    activity_facts: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True)
-class ThinkingSummaryResult:
-    """Validated visible thinking summary ready for RunEvent persistence."""
+class ThinkingActivityResult:
+    """Validated visible activity summary ready for RunEvent persistence."""
 
     summary: str
     evidence_event_ids: tuple[str, ...]
@@ -73,7 +74,7 @@ class WorkstreamNarrator:
     """Generate short evidence-bound notes from public run events.
 
     This class is kept for compatibility with existing workstream_note events.
-    The default RunService path uses ThinkingSummaryNarrator instead.
+    The default RunService path uses ThinkingActivityNarrator instead.
     """
 
     def __init__(
@@ -136,8 +137,8 @@ class WorkstreamNarrator:
         return self.prompt_path.read_text(encoding="utf-8")
 
 
-class ThinkingSummaryNarrator:
-    """Generate a completed-run summary from public trace events."""
+class ThinkingActivityNarrator:
+    """Generate completed-run public activity from structured facts."""
 
     def __init__(
         self,
@@ -151,21 +152,23 @@ class ThinkingSummaryNarrator:
         self.client = client
         self.model = model
         self.prompt_path = prompt_path or (
-            Path("src") / "klara" / "prompts" / "thinking_summary_narrator.md"
+            Path("src") / "klara" / "prompts" / "thinking_activity_narrator.md"
         )
+        self.last_rejection_reason: str | None = None
 
     def create_summary(
         self,
-        payload: ThinkingSummaryInput,
-    ) -> ThinkingSummaryResult | None:
-        """Return a validated visible summary or None."""
+        payload: ThinkingActivityInput,
+    ) -> ThinkingActivityResult | None:
+        """Return validated public activity or None."""
 
+        self.last_rejection_reason = None
         response = self.client.complete(
             system_prompt=self._prompt(),
             messages=(
                 KlaraMessage(
                     role="user",
-                    content=json.dumps(_thinking_summary_input_payload(payload), ensure_ascii=False),
+                    content=json.dumps(_thinking_activity_input_payload(payload), ensure_ascii=False),
                 ),
             ),
             tools=(),
@@ -174,21 +177,25 @@ class ThinkingSummaryNarrator:
         try:
             raw = json.loads(response.content)
         except json.JSONDecodeError:
+            self.last_rejection_reason = "invalid_json"
             return None
         if not isinstance(raw, dict):
+            self.last_rejection_reason = "invalid_json"
             return None
         summary = str(raw.get("text") or raw.get("summary") or "").strip()
-        if not summary:
+        if summary and _contains_forbidden_reasoning_terms(summary):
+            self.last_rejection_reason = "unsupported_claim"
             return None
-        if _contains_forbidden_reasoning_terms(summary):
-            return None
-        if not _claims_have_evidence(summary, payload.events):
-            return None
-        items = _summary_activity_items(raw.get("items"), payload.events)
+        items = _summary_activity_items(
+            raw.get("items"),
+            payload.events,
+            payload.activity_facts,
+        )
         if not items:
+            self.last_rejection_reason = "no_items"
             return None
         evidence_ids = _aggregate_evidence_ids(items)
-        return ThinkingSummaryResult(
+        return ThinkingActivityResult(
             summary=summary[:MAX_SUMMARY_CHARS],
             evidence_event_ids=tuple(evidence_ids),
             confidence=_average_confidence(items),
@@ -199,6 +206,11 @@ class ThinkingSummaryNarrator:
         """Read the thinking summary narrator instruction prompt."""
 
         return self.prompt_path.read_text(encoding="utf-8")
+
+
+ThinkingSummaryInput = ThinkingActivityInput
+ThinkingSummaryResult = ThinkingActivityResult
+ThinkingSummaryNarrator = ThinkingActivityNarrator
 
 
 def _workstream_input_payload(payload: WorkstreamNarratorInput) -> dict[str, Any]:
@@ -223,25 +235,22 @@ def _workstream_input_payload(payload: WorkstreamNarratorInput) -> dict[str, Any
     }
 
 
-def _thinking_summary_input_payload(payload: ThinkingSummaryInput) -> dict[str, Any]:
-    """Build the strict public JSON input for the thinking summary narrator."""
+def _thinking_activity_input_payload(payload: ThinkingActivityInput) -> dict[str, Any]:
+    """Build the strict public JSON input for the activity narrator."""
 
     return {
         "user_request": payload.user_request,
         "selected_model": payload.selected_model,
         "run_status": payload.run_status,
         "duration_ms": payload.duration_ms,
-        "events": [
+        "activity_facts": list(payload.activity_facts),
+        "public_event_ids": [
             {
                 "event_id": event.event_id,
                 "event_type": event.event_type,
-                "message": event.message,
-                "safe_summary": _safe_event_summary(event),
-                "metrics": _safe_event_metrics(event),
             }
             for event in payload.events
         ],
-        "tool_summaries": list(payload.tool_summaries),
     }
 
 
@@ -297,6 +306,7 @@ def _valid_evidence_ids(value: object, events: tuple[RunEventRecord, ...]) -> li
 def _summary_activity_items(
     value: object,
     events: tuple[RunEventRecord, ...],
+    facts: tuple[dict[str, Any], ...],
 ) -> list[dict[str, Any]]:
     """Validate narrator activity items against public evidence."""
 
@@ -308,7 +318,7 @@ def _summary_activity_items(
     for raw_item in value:
         if not isinstance(raw_item, dict):
             return []
-        item = _summary_activity_item(raw_item, events)
+        item = _summary_activity_item(raw_item, events, facts)
         if item is None:
             return []
         items.append(item)
@@ -318,6 +328,7 @@ def _summary_activity_items(
 def _summary_activity_item(
     raw_item: dict[str, Any],
     events: tuple[RunEventRecord, ...],
+    facts: tuple[dict[str, Any], ...],
 ) -> dict[str, Any] | None:
     """Return one sanitized narrator activity item."""
 
@@ -328,12 +339,27 @@ def _summary_activity_item(
         return None
     if kind not in ACTIVITY_KINDS:
         return None
+    if _contains_full_url(f"{title}\n{body}"):
+        return None
     if _contains_forbidden_reasoning_terms(f"{title}\n{body}"):
         return None
-    if not _claims_have_evidence(f"{title}\n{body}", events):
+    if _contains_public_thinking_terms(f"{title}\n{body}"):
         return None
-    evidence_ids = _strict_evidence_ids(raw_item.get("evidence_event_ids"), events)
+    if _contains_raw_activity_detail_terms(f"{title}\n{body}"):
+        return None
+    if _contains_boilerplate_activity_terms(f"{title}\n{body}"):
+        return None
+    evidence_fact_ids = _strict_fact_ids(raw_item.get("evidence_fact_ids"), facts)
+    if not evidence_fact_ids:
+        return None
+    evidence_ids = _strict_fact_event_ids(
+        raw_item.get("evidence_event_ids"),
+        facts,
+        evidence_fact_ids,
+    )
     if not evidence_ids:
+        return None
+    if not _claims_have_fact_evidence(f"{title}\n{body}", facts, evidence_fact_ids):
         return None
     return {
         "id": f"act_{uuid4().hex}",
@@ -342,6 +368,7 @@ def _summary_activity_item(
         "status": "completed",
         "kind": kind,
         "source": "narrator_model",
+        "evidence_fact_ids": evidence_fact_ids,
         "evidence_event_ids": evidence_ids,
         "confidence": _confidence(raw_item.get("confidence")),
     }
@@ -360,6 +387,47 @@ def _strict_evidence_ids(
     if len(ids) != len(value):
         return []
     if any(item not in known for item in ids):
+        return []
+    return ids
+
+
+def _strict_fact_ids(
+    value: object,
+    facts: tuple[dict[str, Any], ...],
+) -> list[str]:
+    """Return fact ids only when all supplied ids exist."""
+
+    if not isinstance(value, list) or not value:
+        return []
+    known = {fact.get("id") for fact in facts if isinstance(fact.get("id"), str)}
+    ids = [item for item in value if isinstance(item, str)]
+    if len(ids) != len(value):
+        return []
+    if any(item not in known for item in ids):
+        return []
+    return ids
+
+
+def _strict_fact_event_ids(
+    value: object,
+    facts: tuple[dict[str, Any], ...],
+    evidence_fact_ids: list[str],
+) -> list[str]:
+    """Return event ids that are cited by the selected facts."""
+
+    fact_events: set[str] = set()
+    for fact in facts:
+        if fact.get("id") not in evidence_fact_ids:
+            continue
+        ids = fact.get("evidence_event_ids")
+        if isinstance(ids, list):
+            fact_events.update(item for item in ids if isinstance(item, str))
+    if not isinstance(value, list) or not value:
+        return sorted(fact_events)
+    ids = [item for item in value if isinstance(item, str)]
+    if len(ids) != len(value):
+        return []
+    if any(item not in fact_events for item in ids):
         return []
     return ids
 
@@ -404,6 +472,73 @@ def _contains_forbidden_reasoning_terms(text: str) -> bool:
     return any(term in lowered for term in forbidden)
 
 
+def _contains_public_thinking_terms(text: str) -> bool:
+    """Return whether public activity text blurs into private thinking."""
+
+    lowered = text.lower()
+    forbidden = (
+        "reasoning",
+        "thinking",
+        "thought process",
+        "reasoning round",
+        "llm reasoning",
+        "model reasoning",
+        "thinking process",
+        "private thinking",
+        "\u601d\u8003",
+        "\u63a8\u7406",
+        "\u601d\u7ef4\u94fe",
+        "\u601d\u8003\u6d41\u7a0b",
+        "\u63a8\u7406\u6d41\u7a0b",
+        "\u63a8\u7406\u8f6e\u6b21",
+        "\u6a21\u578b\u63a8\u7406",
+        "\u601d\u8003\u8fc7\u7a0b",
+    )
+    return any(term in lowered for term in forbidden)
+
+def _contains_full_url(text: str) -> bool:
+    """Return whether visible summary text exposes a full URL."""
+
+    return "http://" in text.lower() or "https://" in text.lower()
+
+
+def _contains_raw_activity_detail_terms(text: str) -> bool:
+    """Return whether text exposes raw tool-call detail wording."""
+
+    lowered = text.lower()
+    forbidden = (
+        "query",
+        "argument",
+        "arguments",
+        "raw args",
+        "raw payload",
+        "\u53c2\u6570",
+        "\u67e5\u8be2\u8bcd",
+        "\u641c\u7d22\u8bcd",
+    )
+    return any(term in lowered for term in forbidden)
+
+
+def _contains_boilerplate_activity_terms(text: str) -> bool:
+    """Return whether text is a generic lifecycle label, not real activity."""
+
+    lowered = text.lower()
+    forbidden = (
+        "preparing the run",
+        "reading the request",
+        "writing the answer",
+        "final response",
+        "set up the runtime",
+        "setting up the runtime",
+        "model response received",
+        "\u51c6\u5907\u8fd0\u884c",
+        "\u51c6\u5907\u56de\u7b54",
+        "\u6700\u7ec8\u56de\u7b54",
+        "\u8bfb\u53d6\u8bf7\u6c42",
+    )
+    return any(term in lowered for term in forbidden)
+
+
 def _claims_have_evidence(text: str, events: tuple[RunEventRecord, ...]) -> bool:
     """Reject action claims that are unsupported by public events."""
 
@@ -420,6 +555,31 @@ def _claims_have_evidence(text: str, events: tuple[RunEventRecord, ...]) -> bool
             return False
     return True
 
+
+def _claims_have_fact_evidence(
+    text: str,
+    facts: tuple[dict[str, Any], ...],
+    evidence_fact_ids: list[str],
+) -> bool:
+    """Reject visible action claims unsupported by selected facts."""
+
+    selected = [
+        fact for fact in facts if isinstance(fact.get("id"), str) and fact["id"] in evidence_fact_ids
+    ]
+    lowered = text.lower()
+    checks = [
+        (("understood", "request", "goal", "\u7406\u89e3", "\u8bf7\u6c42", "\u76ee\u6807"), {"request_orientation"}),
+        (("search", "searched", "\u68c0\u7d22", "\u641c\u7d22"), {"web_search_result"}),
+        (("read", "opened", "fetched", "\u8bfb\u53d6", "\u6253\u5f00"), {"web_fetch_result"}),
+        (("image", "generated image", "\u751f\u6210\u56fe\u7247", "\u56fe\u50cf"), {"image_generation"}),
+        (("tool", "\u5de5\u5177"), {"tool_call", "tool_result", "web_search_result", "web_fetch_result", "image_generation", "error"}),
+        (("verify", "verified", "checked", "\u9a8c\u8bc1", "\u6838\u5bf9"), {"web_fetch_result", "web_search_result"}),
+    ]
+    kinds = {str(fact.get("kind") or "") for fact in selected}
+    for terms, required_kinds in checks:
+        if any(term in lowered for term in terms) and not kinds.intersection(required_kinds):
+            return False
+    return True
 
 def _has_tool_event(events: tuple[RunEventRecord, ...]) -> bool:
     """Return whether public events show tool activity."""

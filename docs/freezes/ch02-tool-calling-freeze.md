@@ -36,10 +36,10 @@ The loop owns the run shape. Tools extend capability through explicit contracts.
 
 Chapter 2 does not rank websites by hardcoded domain quality.
 
-The web layer should not maintain `preferred_source`, `candidate_source`,
-`source_tier`, or source-quality allowlists. Search providers may return many
-useful pages, and Klara should inspect the evidence directly instead of
-discarding pages because they are not on a favored domain list.
+The web layer should not maintain source-ranking state or source-quality
+allowlists. Search providers may return many useful pages, and Klara should
+inspect the evidence directly instead of discarding pages because they are not
+on a favored domain list.
 
 The remaining guardrail is evidence discipline:
 

@@ -2,15 +2,6 @@ from __future__ import annotations
 
 from klara.services.web.fetcher import HttpDocument
 from klara.services.web.search import search_web
-from klara.services.web.source_quality import classify_source
-
-
-def test_source_quality_classifies_current_sports_sources() -> None:
-    """Source quality should distinguish official, wire, and aggregator pages."""
-
-    assert classify_source("https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026") == "official"
-    assert classify_source("https://www.reuters.com/sports/soccer/world-cup-report") == "wire"
-    assert classify_source("https://www.fifawatch.com/world-cup-2026-live") == "aggregator"
 
 
 def test_search_web_decodes_duckduckgo_redirects_and_filters_domains() -> None:

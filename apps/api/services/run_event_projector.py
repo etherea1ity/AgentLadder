@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+import re
 from typing import Any
 
 from apps.api.schemas import RunEventRecord, RunEventType
@@ -74,6 +76,7 @@ class RunEventProjector:
                 else {}
             )
             metrics = _dict_payload(event.payload.get("metrics"))
+            reasoning = _dict_payload(event.payload.get("reasoning"))
             usage_fields = _usage_payload(usage)
             token_source = _token_source(metrics, usage_fields)
             duration_ms = _int_or_none(metrics.get("duration_ms"))
@@ -96,6 +99,7 @@ class RunEventProjector:
                             "duration_ms": duration_ms,
                             "token_source": token_source,
                         },
+                        **({"reasoning": reasoning} if reasoning else {}),
                     },
                 ),
             )
@@ -164,172 +168,228 @@ class RunEventProjector:
         return ()
 
 
-def project_activity_item(event: RunEventRecord) -> ProjectedRunEvent | None:
-    """Return one public activity item derived from a persisted run event."""
+def project_activity_fact(event: RunEventRecord) -> ProjectedRunEvent | None:
+    """Return one structured public fact derived from a persisted run event."""
 
-    if event.event_type == "activity_item_upserted":
+    if event.event_type == "activity_fact_recorded":
         return None
-    item = _activity_item_for_event(event)
-    if item is None:
+    fact = _activity_fact_for_event(event)
+    if fact is None:
         return None
     return ProjectedRunEvent(
-        event_type="activity_item_upserted",
-        message=item["title"],
-        payload={"item": item},
+        event_type="activity_fact_recorded",
+        message="Activity fact recorded.",
+        payload={"fact": fact},
     )
 
 
-def _activity_item_for_event(event: RunEventRecord) -> dict[str, Any] | None:
-    """Build a sanitized GPT-like activity item from a public run event."""
+def project_provider_reasoning(event: RunEventRecord) -> tuple[ProjectedRunEvent, ...]:
+    """Return public provider reasoning events derived from one LLM completion."""
 
-    if event.event_type == "run_created":
-        return _activity_item(
-            event,
-            title="Preparing the run",
-            body="Klara is setting up the runtime for this request.",
-            status="running",
-            kind="orientation",
-        )
-    if event.event_type == "thinking_started":
-        return _activity_item(
-            event,
-            title="Preparing the run",
-            body="Klara is setting up the runtime for this request.",
-            status="running",
-            kind="orientation",
-        )
+    if event.event_type != "llm_call_completed":
+        return ()
+    reasoning = event.payload.get("reasoning")
+    if not isinstance(reasoning, dict):
+        return ()
+    summary = _safe_provider_reasoning(reasoning.get("summary"))
+    if not summary:
+        return ()
+    source = _string_or_none(reasoning.get("source")) or "provider_reasoning"
+    item = {
+        "id": f"provider_{event.event_id}",
+        "title": "Model thinking",
+        "body": summary,
+        "kind": "orientation",
+        "source": "provider_reasoning",
+        "status": "completed",
+        "evidence_event_ids": [event.event_id],
+        "confidence": 1.0,
+    }
+    return (
+        ProjectedRunEvent(
+            event_type="provider_reasoning_delta",
+            message="Provider reasoning summary received.",
+            payload={
+                "items": [item],
+                "source": source,
+                "evidence_event_ids": [event.event_id],
+            },
+        ),
+        ProjectedRunEvent(
+            event_type="provider_reasoning_completed",
+            message="Provider reasoning summary completed.",
+            payload={
+                "source": source,
+                "evidence_event_ids": [event.event_id],
+            },
+        ),
+    )
+
+
+def _activity_fact_for_event(event: RunEventRecord) -> dict[str, Any] | None:
+    """Build a sanitized structured fact without user-visible prose."""
+
+    if event.event_type == "thinking_summary_started":
+        return _request_orientation_fact(event)
     if event.event_type == "llm_call_started":
-        return _activity_item(
-            event,
-            title="Reading the request",
-            body="Klara is asking the selected model to process the request.",
-            status="running",
-            kind="orientation",
-        )
+        return _llm_activity_fact(event, status="started")
     if event.event_type == "llm_call_completed":
-        return _activity_item(
-            event,
-            title="Model response received",
-            body="The model returned a response for this step.",
-            status="completed",
-            kind="orientation",
-        )
+        return _llm_activity_fact(event, status="completed")
     if event.event_type == "tool_call_started":
-        return _tool_activity_started(event)
+        return _tool_activity_fact(event, status="started")
     if event.event_type == "tool_call_completed":
-        return _tool_activity_completed(event)
+        return _tool_result_activity_fact(event, status="completed")
     if event.event_type == "tool_call_failed":
-        return _tool_activity_failed(event)
+        return _tool_result_activity_fact(event, status="failed")
     if event.event_type == "answer_streaming_started":
-        return _activity_item(
+        return _base_fact(event, kind="answer_phase", status="started")
+    if event.event_type == "run_failed":
+        return _base_fact(
             event,
-            title="Writing the answer",
-            body="Klara is turning the verified context into the final response.",
-            status="running",
-            kind="composition",
+            kind="error",
+            status="failed",
+            error_preview=_sanitize_preview(event.payload.get("error")),
         )
-    if event.event_type == "run_completed":
-        return _activity_item(
+    if event.event_type == "policy_stop":
+        return _base_fact(
             event,
-            title="Run completed",
-            body="Klara finished the runtime path for this response.",
+            kind="policy_stop",
             status="completed",
-            kind="finalization",
+            policy={
+                "stop_reason": _string_or_none(event.payload.get("stop_reason")),
+                "reason_preview": _sanitize_preview(event.payload.get("reason")),
+            },
         )
     return None
 
 
-def _tool_activity_started(event: RunEventRecord) -> dict[str, Any]:
-    """Return a sanitized activity item for a tool start event."""
+def _request_orientation_fact(event: RunEventRecord) -> dict[str, Any] | None:
+    """Return a fact describing the request boundary without full prompt text."""
+
+    request = event.payload.get("request")
+    if not isinstance(request, dict):
+        return None
+    preview = _sanitize_preview(request.get("preview"), max_chars=120)
+    if not preview:
+        return None
+    return _base_fact(
+        event,
+        kind="request_orientation",
+        status="completed",
+        request={
+            "preview": preview,
+            "language": _string_or_none(request.get("language")) or "unknown",
+        },
+    )
+
+
+def _llm_activity_fact(event: RunEventRecord, *, status: str) -> dict[str, Any]:
+    """Return a structured fact for one LLM round."""
+
+    return _base_fact(
+        event,
+        kind="llm_round",
+        status=status,
+        llm={
+            "turn_index": event.payload.get("turn_index"),
+            "model": _string_or_none(event.payload.get("model")),
+            "finalization": bool(event.payload.get("finalization", False)),
+            "tool_call_count": event.payload.get("tool_call_count"),
+        },
+        metrics=_fact_metrics(event),
+    )
+
+
+def _tool_activity_fact(event: RunEventRecord, *, status: str) -> dict[str, Any]:
+    """Return a structured fact for a tool request without raw arguments."""
 
     name = _tool_call_name(event)
-    if name == "web_search":
-        return _activity_item(
-            event,
-            title="Looking up public information",
-            body="Klara is checking external sources before answering.",
-            status="running",
-            kind="evidence",
-        )
-    if name == "web_fetch":
-        return _activity_item(
-            event,
-            title="Opening source material",
-            body="Klara is reading a selected source to verify details.",
-            status="running",
-            kind="evidence",
-        )
-    return _activity_item(
+    return _base_fact(
         event,
-        title=f"Using {name}",
-        body="Klara is using a runtime tool for this step.",
-        status="running",
-        kind="tool_activity",
+        kind="tool_call",
+        status=status,
+        tool={"name": name},
     )
 
 
-def _tool_activity_completed(event: RunEventRecord) -> dict[str, Any]:
-    """Return a sanitized activity item for a tool completion event."""
+def _tool_result_activity_fact(event: RunEventRecord, *, status: str) -> dict[str, Any]:
+    """Return a structured fact for a tool result without raw observations."""
 
     name = _tool_result_name(event)
+    tool_result = event.payload.get("tool_result")
+    result = tool_result if isinstance(tool_result, dict) else {}
+    summary = result.get("structured_summary")
+    structured_summary = summary if isinstance(summary, dict) else {}
+    fact_kind = _tool_result_fact_kind(name, status)
+    extra: dict[str, Any] = {
+        "tool": {
+            "name": name,
+            "ok": bool(result.get("ok", status != "failed")),
+        },
+        "metrics": _fact_metrics(event),
+        "content_length": _int_or_none(result.get("content_length")),
+    }
+    if structured_summary:
+        extra["tool"]["structured_summary"] = structured_summary
     if name == "web_search":
-        return _activity_item(
-            event,
-            title="Search results returned",
-            body="Klara received candidate sources and can decide what to verify next.",
-            status="completed",
-            kind="evidence",
+        extra["web"] = {
+            "result_count": _int_or_none(structured_summary.get("result_count")),
+            "provider": _string_or_none(structured_summary.get("provider")),
+            "truncated": structured_summary.get("truncated"),
+        }
+    elif name == "web_fetch":
+        extra["web"] = {
+            "status": _int_or_none(structured_summary.get("status")),
+            "title_preview": _sanitize_preview(structured_summary.get("title")),
+            "text_length": _int_or_none(structured_summary.get("text_length")),
+        }
+    elif name == "image_generate":
+        extra["image"] = {
+            "image_count": _int_or_none(structured_summary.get("image_count")),
+            "provider": _string_or_none(structured_summary.get("provider")),
+            "model": _string_or_none(structured_summary.get("model")),
+        }
+    else:
+        extra["observation_preview"] = _sanitize_preview(
+            result.get("content_preview") or result.get("error")
         )
+    if status == "failed":
+        extra["error_preview"] = _sanitize_preview(result.get("error"))
+    return _base_fact(event, kind=fact_kind, status=status, **extra)
+
+
+def _tool_result_fact_kind(name: str, status: str) -> str:
+    """Return the structured fact kind for a tool result."""
+
+    if status == "failed":
+        return "error"
+    if name == "web_search":
+        return "web_search_result"
     if name == "web_fetch":
-        return _activity_item(
-            event,
-            title="Source material reviewed",
-            body="Klara received content from a selected source.",
-            status="completed",
-            kind="evidence",
-        )
-    return _activity_item(
-        event,
-        title=f"{name} returned",
-        body="Klara received an observation from a runtime tool.",
-        status="completed",
-        kind="tool_activity",
-    )
+        return "web_fetch_result"
+    if name == "image_generate":
+        return "image_generation"
+    return "tool_result"
 
 
-def _tool_activity_failed(event: RunEventRecord) -> dict[str, Any]:
-    """Return a sanitized activity item for a failed tool event."""
-
-    name = _tool_result_name(event)
-    return _activity_item(
-        event,
-        title=f"{name} failed",
-        body="A runtime tool did not return a usable observation for this step.",
-        status="failed",
-        kind="tool_activity",
-    )
-
-
-def _activity_item(
+def _base_fact(
     event: RunEventRecord,
     *,
-    title: str,
-    body: str,
-    status: str,
     kind: str,
+    status: str,
+    **extra: Any,
 ) -> dict[str, Any]:
-    """Return the shared public activity item shape."""
+    """Return the shared structured fact shape."""
 
-    return {
-        "id": f"act_{event.event_id}",
-        "title": title,
-        "body": body,
-        "status": status,
+    fact = {
+        "id": f"fact_{event.event_id}",
         "kind": kind,
-        "source": "runtime_event",
+        "status": status,
+        "source_event_type": event.event_type,
         "evidence_event_ids": [event.event_id],
-        "confidence": 1.0,
     }
+    fact.update({key: value for key, value in extra.items() if value not in (None, "", {})})
+    return fact
 
 
 def _tool_call_name(event: RunEventRecord) -> str:
@@ -386,11 +446,55 @@ def _hook_projection(event: KlaraEvent) -> ProjectedRunEvent | None:
 def _compact_tool_result(tool_result: dict[str, Any]) -> dict[str, Any]:
     """Remove full content from frontend-facing tool result projection."""
 
-    return {
+    compact = {
         key: value
         for key, value in tool_result.items()
         if key != "content"
     }
+    structured_summary = _structured_tool_summary(
+        str(tool_result.get("name") or "tool"),
+        tool_result.get("content"),
+    )
+    if structured_summary:
+        compact["structured_summary"] = structured_summary
+    return compact
+
+
+def _structured_tool_summary(name: str, content: object) -> dict[str, Any]:
+    """Return a safe structured summary from a JSON tool observation."""
+
+    if not isinstance(content, str) or not content.strip().startswith("{"):
+        return {}
+    try:
+        value = json.loads(content)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(value, dict):
+        return {}
+    if name == "web_search":
+        return {
+            "provider": _string_or_none(value.get("provider")),
+            "result_count": _int_or_none(value.get("result_count")),
+            "truncated": bool(value.get("truncated", False)),
+            "evidence_status": _string_or_none(value.get("evidence_status")),
+        }
+    if name == "web_fetch":
+        text = value.get("text")
+        return {
+            "status": _int_or_none(value.get("status")),
+            "content_type": _string_or_none(value.get("content_type")),
+            "title": _sanitize_preview(value.get("title")),
+            "text_length": len(text) if isinstance(text, str) else None,
+            "truncated": bool(value.get("truncated", False)),
+        }
+    if name == "image_generate":
+        images = value.get("images")
+        return {
+            "provider": _string_or_none(value.get("provider")),
+            "model": _string_or_none(value.get("model")),
+            "image_count": len(images) if isinstance(images, list) else _int_or_none(value.get("image_count")),
+        }
+    return {}
 
 
 def _dict_payload(value: object) -> dict[str, Any]:
@@ -399,6 +503,72 @@ def _dict_payload(value: object) -> dict[str, Any]:
     if isinstance(value, dict):
         return dict(value)
     return {}
+
+
+def _fact_metrics(event: RunEventRecord) -> dict[str, Any]:
+    """Return compact metrics for an activity fact."""
+
+    raw_metrics = event.payload.get("metrics")
+    metrics = dict(raw_metrics) if isinstance(raw_metrics, dict) else {}
+    public: dict[str, Any] = {}
+    for key in (
+        "duration_ms",
+        "latency_ms",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "token_source",
+    ):
+        value = metrics.get(key, event.payload.get(key))
+        if value is not None:
+            public[key] = value
+    return public
+
+
+def _sanitize_preview(value: object, *, max_chars: int = 180) -> str:
+    """Return compact text with URLs removed for public activity facts."""
+
+    if value is None:
+        return ""
+    text = " ".join(str(value).split())
+    text = _redact_public_text(text)
+    return text[:max_chars]
+
+
+def _safe_provider_reasoning(value: object, *, max_chars: int = 900) -> str:
+    """Return displayable provider reasoning summary text."""
+
+    if not isinstance(value, str):
+        return ""
+    text = _redact_public_text(" ".join(value.split()))
+    if not text:
+        return ""
+    lowered = text.lower()
+    if any(term in lowered for term in ("raw payload", "api key", "secret", "sk-")):
+        return ""
+    return text[:max_chars]
+
+
+def _redact_public_text(text: str) -> str:
+    """Redact URLs and common secret-shaped values from public summaries."""
+
+    redacted = re.sub(r"https?://\S+", "[url]", text)
+    redacted = re.sub(
+        r"(?i)\b(api[_-]?key|token|secret|password)\s*[:=]\s*\S+",
+        r"\1=[redacted]",
+        redacted,
+    )
+    redacted = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "sk-[redacted]", redacted)
+    return redacted
+
+
+def _string_or_none(value: object) -> str | None:
+    """Return a string value when present."""
+
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _usage_payload(usage: dict[str, Any]) -> dict[str, int | None]:

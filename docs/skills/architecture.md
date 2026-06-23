@@ -145,23 +145,31 @@ Tool contracts and tool-use policy are separate:
   `src/klara/context/runtime.py`
 - execution remains a narrow `run(arguments)` method
 
-Web evidence has runtime guards because prompt text alone was not reliable
-enough for current/news/sports questions:
+Runtime must stay free of semantic web guards:
 
-- `web_search` returns candidate snippets only, with `evidence_status` and
-  `source_tier` fields on each result.
-- If a model tries to answer after candidate snippets without `web_fetch`,
-  `WebEvidenceGuard` injects a `runtime_tool_guard` through the loop's
-  `final_answer_guard` extension point.
-- If search found a `preferred_source` URL but only candidate pages were
-  fetched, `WebEvidenceGuard` injects a `runtime_preferred_source_guard`.
-- If both preferred and candidate pages were fetched, `WebEvidenceGuard`
-  injects a `runtime_source_guard` and masks candidate page text before final
-  synthesis.
-- If fetched page text is available and no stronger source guard applies,
-  `WebEvidenceGuard` injects a `runtime_web_synthesis_guard` so stale schedule
-  copy, navigation text, and ads are not treated as the latest report.
-- These guards are source-state policies, not intent routers or keyword rules.
+- Core loop does not inspect user intent, keywords, domains, source counts, or
+  assistant draft claims to force another tool call.
+- `web_search` returns candidate links and snippets in provider order.
+- `web_fetch` returns fetched source text and metadata for one public URL.
+- Tool selection is model-led through the system prompt and tool schemas.
+- Future grounding, ranking, citation, and evaluation work belongs in later
+  services or eval layers, not in `src/klara/core` or generic runtime context.
+- Protocol and safety rules are still allowed: tool-call/result pairing,
+  timeouts, permission hooks, SSRF-safe fetching, final-turn no-tool synthesis,
+  and repeated-tool-call limits.
+
+Public activity must also stay layered:
+
+- API projection may derive `activity_fact_recorded` events from public run
+  events, but those facts are structured data only.
+- Activity facts must not contain user-visible `title` or `body` prose.
+- Activity facts may include tool names, result counts, metrics, short previews,
+  and `evidence_event_ids`, but not raw arguments, full URLs, full observations,
+  secrets, or hidden reasoning.
+- User-visible Activity Drawer items come only from safe provider reasoning
+  summaries or the narrator model validating against activity facts.
+- If the narrator is unavailable, show an empty public activity state; do not
+  fall back to runtime template sentences.
 
 Tool execution uses metadata-driven waves:
 

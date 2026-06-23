@@ -3,7 +3,11 @@ from __future__ import annotations
 import json
 
 from apps.api.schemas import RunEventRecord
-from apps.api.services.run_event_projector import RunEventProjector, project_activity_item
+from apps.api.services.run_event_projector import (
+    RunEventProjector,
+    project_activity_fact,
+    project_provider_reasoning,
+)
 from klara.core.events import KlaraEvent
 
 
@@ -169,7 +173,7 @@ def test_tool_completed_projection_includes_duration() -> None:
     assert projected.payload["metrics"]["duration_ms"] == 42
 
 
-def test_policy_and_hook_events_project_to_visible_runtime_events() -> None:
+def test_policy_and_hook_events_project_to_visible_run_events() -> None:
     projector = RunEventProjector()
 
     policy = projector.project(
@@ -227,7 +231,7 @@ def test_projector_does_not_expose_raw_answer_delta_or_chain_of_thought() -> Non
     ) == ()
 
 
-def test_llm_call_started_run_event_projects_activity_item() -> None:
+def test_llm_call_started_run_event_projects_activity_fact() -> None:
     event = RunEventRecord(
         run_id="run-1",
         event_type="llm_call_started",
@@ -235,17 +239,20 @@ def test_llm_call_started_run_event_projects_activity_item() -> None:
         payload={"model": "qwen/qwen-flash"},
     )
 
-    projected = project_activity_item(event)
+    projected = project_activity_fact(event)
 
     assert projected is not None
-    assert projected.event_type == "activity_item_upserted"
-    item = projected.payload["item"]
-    assert item["title"] == "Reading the request"
-    assert item["source"] == "runtime_event"
-    assert item["evidence_event_ids"] == [event.event_id]
+    assert projected.event_type == "activity_fact_recorded"
+    fact = projected.payload["fact"]
+    assert fact["kind"] == "llm_round"
+    assert fact["status"] == "started"
+    assert fact["llm"]["model"] == "qwen/qwen-flash"
+    assert fact["evidence_event_ids"] == [event.event_id]
+    assert "title" not in fact
+    assert "body" not in fact
 
 
-def test_web_search_activity_item_is_sanitized() -> None:
+def test_web_search_activity_fact_is_sanitized() -> None:
     event = RunEventRecord(
         run_id="run-1",
         event_type="tool_call_started",
@@ -259,18 +266,21 @@ def test_web_search_activity_item_is_sanitized() -> None:
         },
     )
 
-    projected = project_activity_item(event)
+    projected = project_activity_fact(event)
 
     assert projected is not None
-    item = projected.payload["item"]
-    serialized = json.dumps(item, ensure_ascii=False)
-    assert item["kind"] == "evidence"
-    assert item["status"] == "running"
-    assert item["evidence_event_ids"] == [event.event_id]
+    fact = projected.payload["fact"]
+    serialized = json.dumps(fact, ensure_ascii=False)
+    assert fact["kind"] == "tool_call"
+    assert fact["status"] == "started"
+    assert fact["tool"]["name"] == "web_search"
+    assert fact["evidence_event_ids"] == [event.event_id]
     assert "private raw query" not in serialized
+    assert "title" not in fact
+    assert "body" not in fact
 
 
-def test_web_fetch_completed_activity_item_is_completed_and_sanitized() -> None:
+def test_web_fetch_completed_activity_fact_is_completed_and_sanitized() -> None:
     event = RunEventRecord(
         run_id="run-1",
         event_type="tool_call_completed",
@@ -285,12 +295,102 @@ def test_web_fetch_completed_activity_item_is_completed_and_sanitized() -> None:
         },
     )
 
-    projected = project_activity_item(event)
+    projected = project_activity_fact(event)
 
     assert projected is not None
-    item = projected.payload["item"]
-    serialized = json.dumps(item, ensure_ascii=False)
-    assert item["title"] == "Source material reviewed"
-    assert item["status"] == "completed"
-    assert item["evidence_event_ids"] == [event.event_id]
+    fact = projected.payload["fact"]
+    serialized = json.dumps(fact, ensure_ascii=False)
+    assert fact["kind"] == "web_fetch_result"
+    assert fact["status"] == "completed"
+    assert fact["evidence_event_ids"] == [event.event_id]
     assert "https://example.com" not in serialized
+    assert "title" not in fact
+    assert "body" not in fact
+
+
+def test_web_search_completed_activity_fact_does_not_expose_query_preview() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="tool_call_completed",
+        message="web_search returned an observation.",
+        payload={
+            "tool_result": {
+                "tool_call_id": "call-1",
+                "name": "web_search",
+                "content_preview": '{"query": "private raw query", "results": []}',
+                "content_length": 120,
+                "ok": True,
+                "structured_summary": {
+                    "provider": "duckduckgo_lite",
+                    "result_count": 8,
+                    "truncated": False,
+                    "evidence_status": "candidate_snippets_only",
+                },
+            }
+        },
+    )
+
+    projected = project_activity_fact(event)
+
+    assert projected is not None
+    fact = projected.payload["fact"]
+    serialized = json.dumps(fact, ensure_ascii=False)
+    assert fact["kind"] == "web_search_result"
+    assert fact["web"]["result_count"] == 8
+    assert "private raw query" not in serialized
+    assert "observation_preview" not in fact
+    assert "title" not in fact
+    assert "body" not in fact
+
+
+def test_thinking_summary_started_projects_request_orientation_fact() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="thinking_summary_started",
+        message="Klara is thinking.",
+        payload={
+            "request": {
+                "preview": "请帮我处理 token=secret-value https://example.com/raw " + "x" * 160,
+                "language": "zh",
+            }
+        },
+    )
+
+    projected = project_activity_fact(event)
+
+    assert projected is not None
+    fact = projected.payload["fact"]
+    serialized = json.dumps(fact, ensure_ascii=False)
+    assert fact["kind"] == "request_orientation"
+    assert fact["status"] == "completed"
+    assert fact["request"]["language"] == "zh"
+    assert len(fact["request"]["preview"]) <= 120
+    assert "secret-value" not in serialized
+    assert "https://example.com" not in serialized
+    assert "title" not in fact
+    assert "body" not in fact
+
+
+def test_provider_reasoning_projects_delta_and_completed_events() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="llm_call_completed",
+        message="Model call completed.",
+        payload={
+            "reasoning": {
+                "source": "message.reasoning_content",
+                "summary": "I considered the request shape before answering.",
+            }
+        },
+    )
+
+    projected = project_provider_reasoning(event)
+
+    assert [item.event_type for item in projected] == [
+        "provider_reasoning_delta",
+        "provider_reasoning_completed",
+    ]
+    item = projected[0].payload["items"][0]
+    assert item["source"] == "provider_reasoning"
+    assert item["body"] == "I considered the request shape before answering."
+    assert item["evidence_event_ids"] == [event.event_id]

@@ -47,7 +47,7 @@ http://127.0.0.1:5123
 再问一个网络证据链问题：
 
 ```text
-请使用 web_search 搜索世界杯最新战报，再用 web_fetch 打开一个结果总结。
+请使用 web_search 搜索一个近期公共事件，再用 web_fetch 打开一个结果总结。
 ```
 
 你应该看到：`web_search` 只找候选网页，`web_fetch` 才读取其中一个 URL。网页内容会以不可信 observation 进入下一轮。
@@ -64,7 +64,7 @@ http://127.0.0.1:5123
 
 本章不是为了把函数包装成工具而包装。我们先看一个真实问题。
 
-同样是“世界杯最新战报”：
+同样是“近期公共事件”：
 
 ```text
 好的 run：
@@ -91,7 +91,7 @@ assistant 直接回答，没有重新建立搜索证据链
 -> 工具 observation 是否可信、可控、可回退
 ```
 
-Klara 不应该靠关键词规则修补，例如“看到世界杯就强制搜索”。那样很快会变成一堆脆弱的 if/else。Klara 要做的是把工具边界建清楚：
+Klara 不应该靠关键词规则修补，例如“看到某个话题就强制搜索”。那样很快会变成一堆脆弱的 if/else。Klara 要做的是把工具边界建清楚：
 
 ```text
 ToolSpec       -> 模型看见：我能调用什么，参数怎么写
@@ -116,7 +116,7 @@ apps/api/services/run_service.py
 <details>
 <summary>展开：这次事故应该怎么读</summary>
 
-第一条世界杯问题能正确走 `web_search -> web_fetch`，说明工具链本身能跑。后面追问出现不稳定，说明更深的问题在“模型可见状态”：
+第一条当前事件问题能正确走 `web_search -> web_fetch`，说明工具链本身能跑。后面追问出现不稳定，说明更深的问题在“模型可见状态”：
 
 1. 工具声明要足够清楚。模型只看 `ToolSpec`，如果工具描述含糊，它可能不调用工具，或者调用错工具。
 2. 工具结果不能直接等于事实。`web_search` 返回的是候选结果，`web_fetch` 返回的是外部网页正文，这些 observation 都可能过时、低质量或被网页内容污染。
@@ -774,35 +774,23 @@ return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
 
 </details>
 
-## Evidence guards in this chapter
+## Tool boundaries in this chapter
 
-Chapter 2 keeps the agent as one loop. It does not add an intent router for
-World Cup, news, or any specific keyword. The current implementation adds a
-small set of source-state guards through `WebEvidenceGuard`, which is injected
-into the loop through the generic `final_answer_guard` extension point:
+Chapter 2 keeps the agent as one loop. It does not add an intent router,
+keyword router, source-ranker, or answer-correction guard. The model chooses
+tools from the system prompt and tool schemas:
 
 ```text
-web_search candidates only
--> model tries to final
--> runtime_tool_guard asks for web_fetch
-
-preferred_source exists in search results
--> model fetched only candidate_source
--> runtime_preferred_source_guard asks it to fetch preferred_source
-
-preferred_source and candidate_source were both fetched
--> model tries to final
--> runtime_source_guard masks candidate_source page text before final synthesis
-
-web_fetch page text exists
--> model tries to final
--> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
-   navigation, and ads before final synthesis
+user
+-> LLM
+-> tool_calls? yes: execute tools and append observations
+-> tool_calls? no: return final answer
 ```
 
-This is the core teaching point: tools are not facts. Search returns
-candidates, fetch returns untrusted page text, and the loop may need small
-evidence guards before the final answer.
+The core teaching point is: tools expose capabilities, not facts. `web_search`
+returns candidate links and snippets. `web_fetch` returns untrusted page text.
+The loop does not inspect topics, dates, source counts, or draft answers to
+force another call. Source grounding and evaluation are later chapters.
 
 ## 8. 运行与验证
 
@@ -837,10 +825,10 @@ tool_call_completed
 run_completed.stop_reason
 ```
 
-如果你想复现“世界杯问题”，可以在一个新窗口里问：
+如果你想复现“当前事件问题”，可以在一个新窗口里问：
 
 ```text
-请搜索世界杯最新战报，并打开一个网页总结。
+请搜索一个近期公共事件，并打开一个网页总结。
 ```
 
 再追问：

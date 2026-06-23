@@ -162,6 +162,27 @@ describe("KlaraRunSurface", () => {
     expect(screen.getAllByText(/content_preview/).length).toBeGreaterThan(0);
   });
 
+  it("renders narrator diagnostics only inside Developer debug", () => {
+    render(
+      <KlaraRunSurface
+        run={{
+          ...baseRun,
+          events: [
+            evt("narrator_started", { phase: "completed", fact_count: 1 }),
+            evt("narrator_rejected", {
+              phase: "completed",
+              reason: "invalid_json",
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Narrator")).toBeInTheDocument();
+    expect(screen.getAllByText("narrator_started").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("narrator_rejected").length).toBeGreaterThan(0);
+  });
+
   it("does not label persisted public events as unavailable", () => {
     render(
       <KlaraRunSurface

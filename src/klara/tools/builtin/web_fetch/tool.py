@@ -10,10 +10,6 @@ from klara.tools.base import BaseTool, ToolInputError
 from klara.tools.builtin.web_fetch.schema import WEB_FETCH_METADATA, WEB_FETCH_SPEC
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 from klara.services.web import FetchedPage, WebFetchError, fetch_page
-from klara.services.web.source_quality import (
-    classify_source,
-    is_preferred_for_current_sports,
-)
 
 
 PageFetcher = Callable[..., FetchedPage]
@@ -65,7 +61,6 @@ class WebFetchTool(BaseTool):
             extract_mode=extract_mode,
             max_chars=max_chars,
         )
-        source_quality = classify_source(page.final_url or page.url, page.title)
 
         return self.json_success(
             arguments,
@@ -80,10 +75,6 @@ class WebFetchTool(BaseTool):
                 "extract_mode": extract_mode,
                 "query_terms": query_terms,
                 "no_relevant_terms_found": no_relevant_terms_found,
-                "source_quality": source_quality,
-                "is_preferred_for_current_sports": is_preferred_for_current_sports(
-                    source_quality
-                ),
                 "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
                 "trust": "untrusted_external_content",
             },

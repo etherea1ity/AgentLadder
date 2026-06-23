@@ -163,36 +163,28 @@ describe("Klara app flow", () => {
     source.emit(
       "thinking_summary_delta",
       evt("thinking_summary_delta", "Klara visible thinking summary.", {
-        text: "Klara is preparing the observable run from public events.",
+        text: "Klara summarized a public tool step.",
         items: [
           {
             id: "act_summary_1",
-            title: "Preparing the run",
-            body: "Klara is preparing the observable run from public events.",
+            title: "Tool step completed",
+            body: "Klara received a public observation from the selected tool.",
             status: "completed",
-            kind: "orientation",
+            kind: "tool_activity",
             source: "narrator_model",
-            evidence_event_ids: ["evt_thinking_started"],
-          },
-          {
-            id: "act_summary_2",
-            title: "Writing the answer",
-            body: "Klara is preparing the final response.",
-            status: "completed",
-            kind: "composition",
-            source: "narrator_model",
-            evidence_event_ids: ["evt_thinking_started"],
+            evidence_fact_ids: ["fact_tool_completed"],
+            evidence_event_ids: ["evt_tool_call_completed"],
           },
         ],
-        evidence_event_ids: ["evt_thinking_started"],
+        evidence_event_ids: ["evt_tool_call_completed"],
       }),
     );
     expect(
-      screen.queryByText("Klara is preparing the observable run from public events."),
+      screen.queryByText("Klara summarized a public tool step."),
     ).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: /open activity/i }));
-    expect(await screen.findByText("Klara thinking")).toBeInTheDocument();
-    expect(await screen.findByText("Preparing the run")).toBeInTheDocument();
+    expect(await screen.findByText("Klara activity")).toBeInTheDocument();
+    expect(await screen.findByText("Tool step completed")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close activity/i }));
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
@@ -234,7 +226,7 @@ describe("Klara app flow", () => {
 
     expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
     expect(container.querySelector(".assistant-content")?.textContent).not.toContain(
-      "Klara is preparing the observable run from public events.",
+      "Klara summarized a public tool step.",
     );
     const generatedImage = container.querySelector(".generated-image");
     expect(generatedImage).toHaveAttribute("src", generatedImageUrl);

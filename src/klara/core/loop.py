@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import json
 from time import perf_counter
-from typing import Any, Protocol
+from typing import Any, Iterator, Protocol
 from uuid import uuid4
 
 from klara.core.events import EventKind, EventSequencer, KlaraEvent
@@ -17,7 +17,7 @@ from klara.core.hooks import (
     StopContext,
     UserPromptSubmitContext,
 )
-from klara.core.messages import KlaraMessage, ModelResponse
+from klara.core.messages import KlaraMessage, ModelResponse, ModelStreamEvent
 from klara.core.policies import LoopPolicy, StopReason
 from klara.core.tools import ToolCall, ToolResult, ToolRunner, ToolSpec
 
@@ -51,19 +51,18 @@ class LlmClient(Protocol):
         ...
 
 
-class FinalAnswerGuard(Protocol):
-    """Protocol for context policy that can delay a final answer."""
+class StreamingLlmClient(LlmClient, Protocol):
+    """Optional future protocol for provider streaming without changing loop users."""
 
-    def apply(
+    def stream_complete(
         self,
+        *,
+        system_prompt: str,
         messages: tuple[KlaraMessage, ...],
-    ) -> tuple[KlaraMessage, ...] | None:
-        """Return replacement messages when the loop should continue."""
-
-        ...
-
-    def fallback_answer(self, messages: tuple[KlaraMessage, ...]) -> str | None:
-        """Return a safe final answer when repeated guards were ignored."""
+        tools: tuple[ToolSpec, ...],
+        model: str,
+    ) -> Iterator[ModelStreamEvent]:
+        """Yield provider reasoning/content/tool deltas and a final response."""
 
         ...
 
@@ -132,7 +131,6 @@ class KlaraLoop:
         policy: LoopPolicy | None = None,
         model: str = "fake-model",
         system_prompt: str = "",
-        final_answer_guard: FinalAnswerGuard | None = None,
     ) -> None:
         """Create a loop with injected model, tools, hooks, and policy.
 
@@ -143,8 +141,6 @@ class KlaraLoop:
             policy: Optional stop/bounds policy.
             model: Model identifier passed through to the LLM client.
             system_prompt: Prompt assembled outside core by the harness.
-            final_answer_guard: Optional context policy that can delay final
-                answers by returning a guarded transcript.
         """
 
         # Dependencies are injected so core stays independent of providers/services.
@@ -154,7 +150,6 @@ class KlaraLoop:
         self.policy = policy or LoopPolicy()
         self.model = model
         self.system_prompt = system_prompt
-        self.final_answer_guard = final_answer_guard
 
     def run(
         self,
@@ -236,6 +231,7 @@ class KlaraLoop:
                         "tool_call_count": len(response.tool_calls),
                         "usage": usage,
                         "metrics": llm_metrics,
+                        **_reasoning_payload(response),
                     },
                 )
                 # Store the assistant request before tools so replay matches transcript.
@@ -246,84 +242,6 @@ class KlaraLoop:
                 )
 
                 if not response.tool_calls:
-                    guarded_messages = self._apply_final_answer_guard(messages)
-                    if guarded_messages is not None:
-                        messages = guarded_messages
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            EventKind.PREPARE_NEXT_TURN_STARTED,
-                            {"turn_index": turn_index, "guard": "final_answer"},
-                        )
-                        messages = self.prepare_next_turn(messages)
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            EventKind.PREPARE_NEXT_TURN_COMPLETED,
-                            {
-                                "turn_index": turn_index,
-                                "message_count": len(messages),
-                                "guard": "final_answer",
-                            },
-                        )
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            EventKind.TURN_COMPLETED,
-                            {"turn_index": turn_index, "guard": "final_answer"},
-                        )
-                        continue
-                    drafted_messages = [*messages, assistant_message]
-                    guarded_messages = self._apply_final_answer_guard(drafted_messages)
-                    if guarded_messages is not None:
-                        messages = guarded_messages
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            EventKind.PREPARE_NEXT_TURN_STARTED,
-                            {"turn_index": turn_index, "guard": "final_answer"},
-                        )
-                        messages = self.prepare_next_turn(messages)
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            EventKind.PREPARE_NEXT_TURN_COMPLETED,
-                            {
-                                "turn_index": turn_index,
-                                "message_count": len(messages),
-                                "guard": "final_answer",
-                            },
-                        )
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            EventKind.TURN_COMPLETED,
-                            {"turn_index": turn_index, "guard": "final_answer"},
-                        )
-                        continue
-                    fallback_answer = self._fallback_final_answer(drafted_messages)
-                    if fallback_answer is not None:
-                        messages.append(
-                            KlaraMessage(role="assistant", content=fallback_answer)
-                        )
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            EventKind.TURN_COMPLETED,
-                            {
-                                "turn_index": turn_index,
-                                "guard": "fallback_answer",
-                            },
-                        )
-                        return self._complete(
-                            sequencer,
-                            active_run_id,
-                            messages,
-                            fallback_answer,
-                            StopReason.FINAL,
-                            run_started=run_started,
-                            run_metrics=run_metrics,
-                        )
                     messages.append(assistant_message)
                     # No tool calls means the assistant content is the final answer.
                     self._emit(sequencer, active_run_id, EventKind.TURN_COMPLETED, {"turn_index": turn_index})
@@ -435,35 +353,6 @@ class KlaraLoop:
 
         return messages
 
-    def _apply_final_answer_guard(
-        self,
-        messages: list[KlaraMessage],
-    ) -> list[KlaraMessage] | None:
-        """Return guarded messages when final answer policy needs another turn."""
-
-        if self.final_answer_guard is None:
-            return None
-        guarded = self.final_answer_guard.apply(tuple(messages))
-        if guarded is None:
-            return None
-        return list(guarded)
-
-    def _fallback_final_answer(
-        self,
-        messages: list[KlaraMessage],
-    ) -> str | None:
-        """Return a guard-owned safe answer when available."""
-
-        if self.final_answer_guard is None:
-            return None
-        fallback = getattr(self.final_answer_guard, "fallback_answer", None)
-        if fallback is None:
-            return None
-        answer = fallback(tuple(messages))
-        if answer is None or not answer.strip():
-            return None
-        return answer.strip()
-
     def _finalize_after_max_turns(
         self,
         sequencer: EventSequencer,
@@ -547,17 +436,18 @@ class KlaraLoop:
             sequencer,
             run_id,
             EventKind.LLM_COMPLETED,
-            {
-                "turn_index": final_turn_index,
-                "tool_call_count": 0,
-                "ignored_tool_call_count": ignored_tool_call_count,
-                "stop_reason": stop_reason.value,
-                "policy_context": policy_context,
-                "usage": usage,
-                "metrics": llm_metrics,
-                "finalization": True,
-            },
-        )
+                {
+                    "turn_index": final_turn_index,
+                    "tool_call_count": 0,
+                    "ignored_tool_call_count": ignored_tool_call_count,
+                    "stop_reason": stop_reason.value,
+                    "policy_context": policy_context,
+                    "usage": usage,
+                    "metrics": llm_metrics,
+                    "finalization": True,
+                    **_reasoning_payload(response),
+                },
+            )
         if not response.content.strip() and ignored_tool_call_count:
             retry_prompt = KlaraMessage(
                 role="user",
@@ -610,6 +500,7 @@ class KlaraLoop:
                     "metrics": llm_metrics,
                     "finalization": True,
                     "retry_after_ignored_tools": True,
+                    **_reasoning_payload(response),
                 },
             )
         final_answer = response.content.strip()
@@ -936,6 +827,21 @@ def _llm_metrics(
         "completion_tokens": usage.get("completion_tokens"),
         "total_tokens": usage.get("total_tokens"),
         "token_source": token_source,
+    }
+
+
+def _reasoning_payload(response: ModelResponse) -> dict[str, object]:
+    """Return public provider reasoning metadata for UI projection."""
+
+    summary = response.reasoning_summary
+    if not isinstance(summary, str) or not summary.strip():
+        return {}
+    return {
+        "reasoning": {
+            "source": response.reasoning_source or "provider_reasoning",
+            "summary": summary.strip(),
+            "display": "summarized",
+        }
     }
 
 

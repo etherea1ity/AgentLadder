@@ -27,9 +27,8 @@ def test_persona_prompt_requires_source_urls_for_web_answers() -> None:
     assert "web_fetch to read at least one specific public URL" in prompt
     assert "mention the exact source URLs used" in prompt
     assert "If fetched pages disagree" in prompt
-    assert "corroboration across relevant sources" in prompt
     assert "preferred_source" not in prompt
     assert "candidate_source" not in prompt
     assert "keep the answer narrow" in prompt
     assert "Do not invent quotes, numeric ratings" in prompt
-    assert "separate the complete factual list from source-limited analysis" in prompt
+    assert "source-limited analysis" not in prompt

@@ -12,11 +12,13 @@ export function KlaraRunStatus({
   handoffActive = false,
   visuallyActive = true,
   arrivalActive = false,
+  hideActivePhaseCopy = false,
 }: {
   run?: Run;
   handoffActive?: boolean;
   visuallyActive?: boolean;
   arrivalActive?: boolean;
+  hideActivePhaseCopy?: boolean;
 }) {
   if (!run)
     return (
@@ -27,6 +29,7 @@ export function KlaraRunStatus({
     );
   const view = useKlaraRunMotion(run);
   const active = isKlaraRunActive(run);
+  const quietCompleted = run.status === "completed";
   const showActivePresence = (active && visuallyActive) || arrivalActive;
   const visualPhase = active ? view.phase : arrivalActive ? "completed" : view.phase;
   const duration =
@@ -34,12 +37,13 @@ export function KlaraRunStatus({
     (run.live?.elapsed_ms ? formatLatency(run.live.elapsed_ms) : "");
   const statusText = active
     ? view.label
-    : run.status === "completed"
+    : quietCompleted
       ? "Completed"
       : run.status === "cancelled"
         ? "Stopped"
         : "Failed";
   const accessibleText = statusText;
+  const showStatusCopy = !quietCompleted && !(active && hideActivePhaseCopy);
   return (
     <div
       data-klara-run-anchor={run.run_id}
@@ -65,13 +69,14 @@ export function KlaraRunStatus({
         )}
       </span>
       <span className="klara-status-name">Klara</span>
-      <span className="klara-status-dot">·</span>
-      <span className="klara-status-copy">{statusText}</span>
+      {showStatusCopy ? <span className="klara-status-dot">&middot;</span> : null}
+      {showStatusCopy ? <span className="klara-status-copy">{statusText}</span> : null}
       <span className="klara-status-plain">{accessibleText}</span>
-      {duration ? <span className="klara-status-time">{duration}</span> : null}
+      {duration && showStatusCopy ? <span className="klara-status-time">{duration}</span> : null}
     </div>
   );
 }
+
 function semanticPulseKey(run: Run) {
   const semanticEvents = run.events.filter(
     (event) => event.event_type !== "answer_delta",

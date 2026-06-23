@@ -47,7 +47,7 @@ You should see: Klara calls `current_time`, the runtime returns a time observati
 Then ask for a web evidence chain:
 
 ```text
-Please use web_search to search for the latest World Cup report, then use web_fetch to open one result and summarize it.
+Please use web_search to search for a recent public event, then use web_fetch to open one result and summarize it.
 ```
 
 You should see: `web_search` finds candidate pages; `web_fetch` reads one URL. Page content enters the next turn as an untrusted observation.
@@ -64,7 +64,7 @@ You should see: Klara calls `image_generate`, the tool stores the image as a loc
 
 This chapter is not about wrapping functions for its own sake. Start with the real problem.
 
-For similar "latest World Cup report" questions:
+For similar "latest public event" questions:
 
 ```text
 good run:
@@ -91,7 +91,7 @@ current question
 -> are tool observations trustworthy, bounded, and recoverable?
 ```
 
-Klara should not patch this with keyword rules such as "if the user says World Cup, force search." That turns the runtime into fragile if/else routing. Klara instead builds clear tool boundaries:
+Klara should not patch this with keyword rules such as "if the user says this topic, force search." That turns the runtime into fragile if/else routing. Klara instead builds clear tool boundaries:
 
 ```text
 ToolSpec       -> model-visible: what can I call, and what arguments exist?
@@ -116,7 +116,7 @@ Reader takeaway: the tool chapter is about runtime boundaries, not one search AP
 <details>
 <summary>Expand: how to read this incident</summary>
 
-The first World Cup question could correctly run `web_search -> web_fetch`, so the tool chain itself works. The unstable follow-up points to model-visible state:
+The first current-event question could correctly run `web_search -> web_fetch`, so the tool chain itself works. The unstable follow-up points to model-visible state:
 
 1. Tool declarations must be clear. The model only sees `ToolSpec`; vague descriptions make tool selection unreliable.
 2. Tool results are not facts by themselves. `web_search` returns candidates, and `web_fetch` returns external page text; both can be stale, low quality, or prompt-injection-shaped.
@@ -776,35 +776,23 @@ Reader takeaway: the more tools Klara has, the more carefully it must separate u
 
 </details>
 
-## Evidence Guards In This Chapter
+## Tool Boundaries In This Chapter
 
-Chapter 2 keeps the agent as one loop. It does not add an intent router for
-World Cup, news, or any specific keyword. The current implementation adds a
-small set of source-state guards through `WebEvidenceGuard`, which is injected
-into the loop through the generic `final_answer_guard` extension point:
+Chapter 2 keeps the agent as one loop. It does not add an intent router,
+keyword router, source-ranker, or answer-correction guard. The model chooses
+tools from the system prompt and tool schemas:
 
 ```text
-web_search candidates only
--> model tries to final
--> runtime_tool_guard asks for web_fetch
-
-preferred_source exists in search results
--> model fetched only candidate_source
--> runtime_preferred_source_guard asks it to fetch preferred_source
-
-preferred_source and candidate_source were both fetched
--> model tries to final
--> runtime_source_guard masks candidate_source page text before final synthesis
-
-web_fetch page text exists
--> model tries to final
--> runtime_web_synthesis_guard reminds it to ignore stale schedule copy,
-   navigation, and ads before final synthesis
+user
+-> LLM
+-> tool_calls? yes: execute tools and append observations
+-> tool_calls? no: return final answer
 ```
 
-This is the core teaching point: tools are not facts. Search returns
-candidates, fetch returns untrusted page text, and the loop may need small
-evidence guards before the final answer.
+The core teaching point is: tools expose capabilities, not facts. `web_search`
+returns candidate links and snippets. `web_fetch` returns untrusted page text.
+The loop does not inspect topics, dates, source counts, or draft answers to
+force another call. Source grounding and evaluation are later chapters.
 
 ## 8. Run And Verify
 
@@ -839,10 +827,10 @@ tool_call_completed
 run_completed.stop_reason
 ```
 
-To reproduce the "World Cup" question, open a new chat and ask:
+To reproduce the current-event question, open a new chat and ask:
 
 ```text
-Please search for the latest World Cup report and open one page to summarize it.
+Please search for a recent public event and open one page to summarize it.
 ```
 
 Then follow up:

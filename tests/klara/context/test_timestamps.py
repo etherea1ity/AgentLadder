@@ -18,12 +18,12 @@ def test_message_timestamp_prefix_uses_message_creation_time_and_timezone() -> N
 
 def test_stamp_user_message_content_is_idempotent() -> None:
     stamped = stamp_user_message_content(
-        "World Cup overall performance?",
+        "Recent public event summary?",
         created_at="2026-06-18T12:34:56+00:00",
         timezone_name="Asia/Shanghai",
     )
 
-    assert stamped == "[Thu 2026-06-18 20:34 GMT+08] World Cup overall performance?"
+    assert stamped == "[Thu 2026-06-18 20:34 GMT+08] Recent public event summary?"
     assert (
         stamp_user_message_content(
             stamped,

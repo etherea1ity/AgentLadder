@@ -32,11 +32,11 @@ def test_prepare_conversation_history_sanitizes_and_bounds_messages() -> None:
             role="assistant",
             content="[Open generated image](/api/assets/local?path=data/assets/images/x.webp)",
         ),
-        KlaraMessage(role="user", content="search World Cup news"),
+        KlaraMessage(role="user", content="search recent public news"),
     ]
 
     history = prepare_conversation_history(messages, max_messages=2)
 
     assert [message.role for message in history] == ["assistant", "user"]
     assert history[0].content == GENERATED_IMAGE_PLACEHOLDER
-    assert history[1].content == "search World Cup news"
+    assert history[1].content == "search recent public news"

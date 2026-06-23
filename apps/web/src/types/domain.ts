@@ -28,7 +28,13 @@ export type RunEventType =
   | 'thinking_summary_started'
   | 'thinking_summary_delta'
   | 'thinking_summary_completed'
-  | 'activity_item_upserted'
+  | 'provider_reasoning_delta'
+  | 'provider_reasoning_completed'
+  | 'activity_fact_recorded'
+  | 'narrator_started'
+  | 'narrator_completed'
+  | 'narrator_failed'
+  | 'narrator_rejected'
   | 'llm_call_started'
   | 'answer_streaming_started'
   | 'answer_delta'
@@ -80,12 +86,9 @@ export type ThinkingActivityKind =
   | 'evidence'
   | 'tool_activity'
   | 'composition'
-  | 'finalization';
-export type ThinkingActivitySource =
-  | 'runtime_event'
-  | 'narrator_model'
-  | 'provider_reasoning'
-  | 'fallback';
+  | 'finalization'
+  | 'error';
+export type ThinkingActivitySource = 'narrator_model' | 'provider_reasoning';
 
 export type ThinkingActivityItem = {
   id: string;
@@ -94,8 +97,26 @@ export type ThinkingActivityItem = {
   status: ThinkingActivityStatus;
   kind: ThinkingActivityKind;
   source: ThinkingActivitySource;
+  evidence_fact_ids?: string[];
   evidence_event_ids: string[];
   confidence?: number;
+};
+
+export type ActivityFact = {
+  id: string;
+  kind: string;
+  status: 'started' | 'completed' | 'failed';
+  source_event_type: RunEventType;
+  evidence_event_ids: string[];
+  tool?: Record<string, unknown>;
+  llm?: Record<string, unknown>;
+  web?: Record<string, unknown>;
+  image?: Record<string, unknown>;
+  request?: Record<string, unknown>;
+  metrics?: Record<string, unknown>;
+  observation_preview?: string;
+  error_preview?: string;
+  content_length?: number | null;
 };
 
 export type Run = {

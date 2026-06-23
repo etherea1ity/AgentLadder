@@ -45,4 +45,17 @@ describe("KlaraRunStatus", () => {
     expect(screen.queryByText(/view run/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/klara status: completed/i)).toBeInTheDocument();
   });
+
+  it("can hide active phase copy when the thinking trigger owns that row", () => {
+    const { container } = render(
+      <KlaraRunStatus
+        run={baseRun}
+        visuallyActive
+        hideActivePhaseCopy
+      />,
+    );
+
+    expect(container.querySelector(".klara-status-copy")).toBeNull();
+    expect(screen.getByLabelText(/klara status: writing answer/i)).toBeInTheDocument();
+  });
 });

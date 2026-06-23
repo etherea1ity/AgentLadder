@@ -393,9 +393,10 @@ function AssistantMessage({
           handoffActive={handoffActive}
           visuallyActive={visuallyActive}
           arrivalActive={arrivalActive}
+          hideActivePhaseCopy
         />
+        <KlaraThinkingBlock run={run} />
       </div>
-      <KlaraThinkingBlock run={run} />
       <AssistantContent
         content={message.content}
         running={message.status === "running"}

@@ -143,7 +143,7 @@ toggle:   only the right-side chevron
 
 - search results 是 candidates，不是 facts
 - snippets 不能支撑具体比分
-- fixtures are not results
+- search candidates and fetched page text remain separate observations
 - scheduled match with no fetched verified score is not `0:0`
 - current results 优先 official、wire、sports-media evidence
 - aggregator-only evidence 不能支撑具体比分
@@ -151,10 +151,10 @@ toggle:   only the right-side chevron
 教学 demo：
 
 ```text
-帮我搜一下世界杯最新进展
+帮我搜索一个需要当前网页信息的问题
 ```
 
-Klara 应该 search，fetch 相关证据，区分 completed results 与 scheduled or in-progress fixtures，给 source URLs，并在 trace 里显示 `web_search` / `web_fetch` latency。
+Klara 可以由模型决定是否 search / fetch；trace 应该显示真实发生的 `web_search` / `web_fetch` 调用、latency 和 tool observations。
 
 ## 代码索引
 
@@ -163,8 +163,6 @@ src/klara/core/events.py
 src/klara/core/hooks.py
 src/klara/core/loop.py
 src/klara/tools/executor.py
-src/klara/context/web_evidence.py
-src/klara/services/web/source_quality.py
 apps/api/services/run_event_projector.py
 apps/api/services/app_store.py
 apps/api/services/run_service.py

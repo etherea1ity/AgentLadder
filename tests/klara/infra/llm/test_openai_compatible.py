@@ -126,6 +126,29 @@ def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None
     assert response.usage == {"total_tokens": 12}
 
 
+def test_response_from_completion_data_extracts_provider_reasoning_summary() -> None:
+    """Provider reasoning fields should be UI metadata, not assistant content."""
+
+    response = response_from_completion_data(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": "final answer",
+                        "reasoning_content": "I checked the request shape before answering.",
+                    }
+                }
+            ],
+        },
+        model_ref=ModelRef(provider="deepseek", model="deepseek-v4-flash"),
+        raw_preview="{}",
+    )
+
+    assert response.content == "final answer"
+    assert response.reasoning_summary == "I checked the request shape before answering."
+    assert response.reasoning_source == "message.reasoning_content"
+
+
 def test_openai_compatible_client_builds_authenticated_request(monkeypatch) -> None:
     """The provider client should call the configured endpoint without real network."""
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 CORE = ROOT / "src" / "klara" / "core"
+CONTEXT = ROOT / "src" / "klara" / "context"
 TOOLS = ROOT / "src" / "klara" / "tools" / "builtin"
 
 CORE_FILES = {
@@ -33,6 +34,19 @@ FORBIDDEN_CORE_IMPORT_PREFIXES = (
 
 ALLOWED_TOOL_TOP_LEVEL_FILES = {"__init__.py"}
 REQUIRED_TOOL_PACKAGE_FILES = {"__init__.py", "schema.py", "tool.py"}
+FORBIDDEN_RUNTIME_SEMANTIC_GUARD_TERMS = (
+    "WebEvidenceGuard",
+    "final_answer_guard",
+    "runtime_web_search_required_guard",
+    "runtime_web_synthesis_guard",
+    "runtime_current_sports_evidence_guard",
+    "runtime_temporal_consistency_guard",
+    "World Cup",
+    "fixture",
+    "fixtures",
+    "sports evidence",
+    "not started",
+)
 
 
 def test_core_does_not_import_future_layers() -> None:
@@ -67,6 +81,20 @@ def test_core_file_set_stays_explicit() -> None:
     actual = {path.name for path in CORE.glob("*.py")}
 
     assert actual == CORE_FILES
+
+
+def test_runtime_layers_do_not_contain_semantic_web_guards() -> None:
+    """Runtime must not carry domain or keyword answer-correction rules."""
+
+    violations: list[str] = []
+    for root in (CORE, CONTEXT):
+        for path in root.glob("*.py"):
+            text = path.read_text(encoding="utf-8")
+            for term in FORBIDDEN_RUNTIME_SEMANTIC_GUARD_TERMS:
+                if term in text:
+                    violations.append(f"{path.relative_to(ROOT)}: {term}")
+
+    assert violations == []
 
 
 def test_concrete_tools_use_package_layout() -> None:

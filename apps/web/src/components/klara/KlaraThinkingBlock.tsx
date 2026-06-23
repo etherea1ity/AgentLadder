@@ -1,7 +1,11 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Run, RunEvent } from "../../types/domain";
+import type { Run, RunEvent, ThinkingActivityItem } from "../../types/domain";
 import { KlaraActivityDrawer } from "./KlaraActivityDrawer";
+import {
+  visibleNarratorActivityItems,
+  visibleProviderReasoningItems,
+} from "./activityItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
 export function KlaraThinkingBlock({ run }: { run?: Run }) {
@@ -33,8 +37,16 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
         .find((event) => event.event_type === "thinking_summary_completed"),
     [events],
   );
+  const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
+  const narratorItems = useMemo(() => visibleNarratorActivityItems(events), [events]);
+  const visibleItems = useMemo(
+    () => [...providerItems, ...narratorItems],
+    [providerItems, narratorItems],
+  );
 
   if (!run) return null;
+  const hasVisibleActivity = visibleItems.length > 0;
+  if (!active && !hasVisibleActivity) return null;
 
   const durationMs = thinkingDurationMs(
     run,
@@ -54,22 +66,27 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
       aria-label="Thinking"
     >
       <div className="klara-thinking-row">
-        <div className="klara-thinking-title">
-          <span className="klara-thinking-mark" aria-hidden="true">
-            <span />
-          </span>
-          <span>{label}</span>
-        </div>
-        <button
-          type="button"
-          className="klara-thinking-toggle"
-          aria-label="Open activity"
-          aria-haspopup="dialog"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <ChevronRight size={16} />
-        </button>
+        <span
+          className={`klara-thinking-mini ${active ? "is-active" : "is-completed"}`}
+          aria-label="Mini Klara"
+          role="img"
+        />
+        <span className="klara-thinking-title">{label}</span>
+        {hasVisibleActivity ? (
+          <button
+            type="button"
+            className="klara-thinking-toggle"
+            aria-label="Open activity"
+            aria-haspopup="dialog"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
+      {active && hasVisibleActivity ? (
+        <LiveActivityPreview items={visibleItems} />
+      ) : null}
       {drawerOpen ? (
         <KlaraActivityDrawer
           run={run}
@@ -78,6 +95,23 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
         />
       ) : null}
     </section>
+  );
+}
+
+function LiveActivityPreview({ items }: { items: ThinkingActivityItem[] }) {
+  const latestItems = items.slice(-2);
+  return (
+    <ol className="klara-thinking-live-list" aria-label="Live activity">
+      {latestItems.map((item) => (
+        <li key={item.id}>
+          <span aria-hidden="true" />
+          <article>
+            <h4>{item.title}</h4>
+            <p>{item.body}</p>
+          </article>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -114,4 +148,3 @@ function formatThoughtDuration(ms: number) {
   const seconds = Math.round((ms % 60000) / 1000);
   return `${minutes}m ${seconds}s`;
 }
-

@@ -79,6 +79,18 @@ Tool authoring follows this boundary:
 - tool-local parsing can live in focused helper files; broad routing, few-shot
   prompting, source-ranking policy, and chapter prose must not live in tool
   schemas or concrete tool classes.
+- Tool selection strategy must not be implemented as keyword rules in runtime
+  code. Tools expose capability, schema, metadata, and execution only; the
+  model chooses tools from prompt and schema context.
+
+Activity and thinking UI follow the same separation:
+
+- Do not hardcode user-visible thinking/activity prose from runtime event types.
+- Projection code may emit structured facts such as `activity_fact_recorded`.
+- Facts use ids, kinds, status, tool names, metrics, previews, and evidence ids;
+  they do not use `title` or `body`.
+- Public activity text belongs to provider reasoning summaries or the narrator
+  validator, not to core, tools, or raw event projection.
 
 ## Comments And Docstrings
 

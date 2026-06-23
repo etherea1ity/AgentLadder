@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
-from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -17,20 +17,21 @@ from apps.api.schemas import (
     now_iso,
 )
 from apps.api.services.app_store import JsonlAppStore
-from apps.api.services.run_event_projector import RunEventProjector, project_activity_item
+from apps.api.services.run_event_projector import (
+    RunEventProjector,
+    project_activity_fact,
+    project_provider_reasoning,
+)
 from apps.api.services.sse_bus import SSEBus
 from apps.api.services.workstream_narrator import (
-    ThinkingSummaryInput,
-    ThinkingSummaryNarrator,
-    ThinkingSummaryResult,
-    WorkstreamNarrator,
-    WorkstreamNarratorInput,
+    ThinkingActivityInput,
+    ThinkingActivityNarrator,
+    ThinkingActivityResult,
 )
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
 from klara.context.runtime import build_system_prompt
-from klara.context.timestamps import resolve_prompt_timezone, stamp_user_message_content
-from klara.context.web_evidence import WebEvidenceGuard
+from klara.context.timestamps import stamp_user_message_content
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
@@ -184,6 +185,10 @@ class RunService:
             {
                 "started_at": now_iso(),
                 "presentation": "gpt_style_collapsible",
+                "request": {
+                    "preview": _request_preview(user_message.content),
+                    "language": _detect_language(user_message.content),
+                },
             },
         )
 
@@ -204,7 +209,12 @@ class RunService:
                 policy=self.loop_policy,
                 model=selected_model,
                 system_prompt=_system_prompt(self.user_context),
-                final_answer_guard=_web_evidence_guard(self.user_context),
+            )
+            narrator_stop, narrator_thread = self._start_live_activity_narrator(
+                run_id=run_id,
+                user_request=user_message.content,
+                selected_model=selected_model,
+                started=started,
             )
             model_visible_user_input = self._model_visible_content(user_message)
             result = loop.run(
@@ -218,7 +228,7 @@ class RunService:
             if run_id in self._cancel_requested:
                 return
 
-            self._stop_workstream_narrator(narrator_stop, narrator_thread)
+            self._stop_live_activity_narrator(narrator_stop, narrator_thread)
             summary = self._create_thinking_summary(
                 run_id=run_id,
                 user_request=user_message.content,
@@ -295,7 +305,7 @@ class RunService:
                 },
             )
         except Exception as exc:
-            self._stop_workstream_narrator(narrator_stop, narrator_thread)
+            self._stop_live_activity_narrator(narrator_stop, narrator_thread)
             latency_ms = int((perf_counter() - started) * 1000)
             error = RunError(code=_error_code(exc), message=str(exc), stage="runtime_loop")
             failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
@@ -303,7 +313,7 @@ class RunService:
             self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
             self._emit(run_id, "run_failed", "Run failed.", {"error": error.model_dump(mode="json")})
         finally:
-            self._stop_workstream_narrator(narrator_stop, narrator_thread)
+            self._stop_live_activity_narrator(narrator_stop, narrator_thread)
             self._cleanup_run_runtime(run_id)
 
     def _emit(
@@ -318,23 +328,37 @@ class RunService:
         event = RunEventRecord(run_id=run_id, event_type=event_type, message=message, payload=payload)
         self.store.append_event(event)
         self.bus.publish(event)
-        self._emit_projected_activity(event)
+        self._emit_projected_provider_reasoning(event)
+        self._emit_projected_activity_fact(event)
         return event
 
-    def _emit_projected_activity(self, event: RunEventRecord) -> None:
-        """Persist and publish one public activity item derived from a run event."""
+    def _emit_projected_provider_reasoning(self, event: RunEventRecord) -> None:
+        """Persist and publish provider reasoning summaries derived from an event."""
 
-        projected = project_activity_item(event)
+        for projected in project_provider_reasoning(event):
+            reasoning_event = RunEventRecord(
+                run_id=event.run_id,
+                event_type=projected.event_type,
+                message=projected.message,
+                payload=projected.payload,
+            )
+            self.store.append_event(reasoning_event)
+            self.bus.publish(reasoning_event)
+
+    def _emit_projected_activity_fact(self, event: RunEventRecord) -> None:
+        """Persist and publish one structured activity fact derived from an event."""
+
+        projected = project_activity_fact(event)
         if projected is None:
             return
-        activity_event = RunEventRecord(
+        fact_event = RunEventRecord(
             run_id=event.run_id,
             event_type=projected.event_type,
             message=projected.message,
             payload=projected.payload,
         )
-        self.store.append_event(activity_event)
-        self.bus.publish(activity_event)
+        self.store.append_event(fact_event)
+        self.bus.publish(fact_event)
 
     def _trace_has_run_events(self, run_id: str) -> bool:
         """Return whether the local JSONL trace contains events for this run."""
@@ -354,7 +378,7 @@ class RunService:
                     return True
         return False
 
-    def _start_workstream_narrator(
+    def _start_live_activity_narrator(
         self,
         *,
         run_id: str,
@@ -362,7 +386,7 @@ class RunService:
         selected_model: str,
         started: float,
     ) -> tuple[threading.Event | None, threading.Thread | None]:
-        """Start the optional evidence-bound narrator for this run."""
+        """Start the optional fact-bound public activity narrator."""
 
         if (
             not self.enable_workstream_narrator
@@ -372,64 +396,119 @@ class RunService:
             return None, None
 
         stop_event = threading.Event()
-        narrator = WorkstreamNarrator(
+        narrator = ThinkingActivityNarrator(
             client=self.narrator_client,
             model=self.narrator_model,
         )
-        previous_notes: list[str] = []
+        last_fact_ids: tuple[str, ...] = ()
+        last_signature = ""
 
         def emit_once() -> bool:
+            nonlocal last_fact_ids, last_signature
             try:
-                events = tuple(self.store.list_events(run_id)[-12:])
-                note = narrator.create_note(
-                    WorkstreamNarratorInput(
+                events = tuple(self.store.list_events(run_id))
+                facts = _narratable_activity_facts(_activity_facts_from_events(events))
+                fact_ids = tuple(
+                    str(fact.get("id"))
+                    for fact in facts
+                    if isinstance(fact.get("id"), str)
+                )
+                if not fact_ids or fact_ids == last_fact_ids:
+                    return False
+                self._emit(
+                    run_id,
+                    "narrator_started",
+                    "Activity narrator started.",
+                    {
+                        "phase": "live",
+                        "fact_count": len(facts),
+                    },
+                )
+                summary = narrator.create_summary(
+                    ThinkingActivityInput(
                         user_request=user_request,
                         selected_model=selected_model,
                         run_status="thinking",
-                        phase="thinking",
-                        elapsed_ms=int((perf_counter() - started) * 1000),
-                        recent_events=events,
-                        previous_notes=tuple(previous_notes),
+                        duration_ms=int((perf_counter() - started) * 1000),
+                        events=events,
+                        activity_facts=facts,
                     )
                 )
-            except Exception:
+            except Exception as exc:
+                if "fact_ids" in locals():
+                    last_fact_ids = fact_ids
+                self._emit(
+                    run_id,
+                    "narrator_failed",
+                    "Activity narrator failed.",
+                    {
+                        "phase": "live",
+                        "code": _error_code(exc),
+                        "message": _safe_error_message(exc),
+                    },
+                )
                 return False
-            if note is None:
+            if summary is None:
+                last_fact_ids = fact_ids
+                self._emit(
+                    run_id,
+                    "narrator_rejected",
+                    "Activity narrator output rejected.",
+                    {
+                        "phase": "live",
+                        "reason": narrator.last_rejection_reason
+                        or "unknown_validation_failure",
+                        "fact_count": len(facts),
+                    },
+                )
                 return False
-            previous_notes.append(note.text)
+            signature = _activity_items_signature(summary.items)
+            if not signature or signature == last_signature:
+                last_fact_ids = fact_ids
+                return False
+            if stop_event.is_set():
+                return False
+            last_fact_ids = fact_ids
+            last_signature = signature
             self._emit(
                 run_id,
-                "workstream_note",
-                "Klara runtime note.",
+                "thinking_summary_delta",
+                "Thinking activity updated.",
                 {
-                    "text": note.text,
+                    "text": summary.summary,
+                    "items": list(summary.items),
                     "source": "narrator_model",
-                    "phase": "thinking",
-                    "evidence_event_ids": list(note.evidence_event_ids),
-                    "confidence": note.confidence,
-                    "display": {"ephemeral": False},
+                    "phase": "live",
+                    "evidence_event_ids": list(summary.evidence_event_ids),
+                    "confidence": summary.confidence,
+                },
+            )
+            self._emit(
+                run_id,
+                "narrator_completed",
+                "Activity narrator completed.",
+                {
+                    "phase": "live",
+                    "item_count": len(summary.items),
+                    "fact_count": len(facts),
                 },
             )
             return True
 
-        emitted = 1 if emit_once() else 0
-
         def worker() -> None:
-            nonlocal emitted
-            while emitted < 3 and not stop_event.wait(4.0):
-                if emit_once():
-                    emitted += 1
+            while not stop_event.wait(1.0):
+                emit_once()
 
         thread = threading.Thread(target=worker, daemon=True)
         thread.start()
         return stop_event, thread
 
-    def _stop_workstream_narrator(
+    def _stop_live_activity_narrator(
         self,
         stop_event: threading.Event | None,
         thread: threading.Thread | None,
     ) -> None:
-        """Stop the optional narrator without blocking the main run."""
+        """Stop the optional live activity narrator without blocking the run."""
 
         if stop_event is not None:
             stop_event.set()
@@ -443,8 +522,8 @@ class RunService:
         user_request: str,
         selected_model: str,
         duration_ms: int,
-    ) -> ThinkingSummaryResult | None:
-        """Return an optional completed-run thinking summary."""
+    ) -> ThinkingActivityResult | None:
+        """Return an optional completed-run public activity summary."""
 
         if (
             not self.enable_workstream_narrator
@@ -454,21 +533,77 @@ class RunService:
             return None
         try:
             events = tuple(self.store.list_events(run_id))
-            narrator = ThinkingSummaryNarrator(
+            facts = _narratable_activity_facts(_activity_facts_from_events(events))
+            if not facts:
+                self._emit(
+                    run_id,
+                    "narrator_rejected",
+                    "Activity narrator output rejected.",
+                    {
+                        "phase": "completed",
+                        "reason": "no_items",
+                        "fact_count": 0,
+                    },
+                )
+                return None
+            narrator = ThinkingActivityNarrator(
                 client=self.narrator_client,
                 model=self.narrator_model,
             )
-            return narrator.create_summary(
-                ThinkingSummaryInput(
+            self._emit(
+                run_id,
+                "narrator_started",
+                "Activity narrator started.",
+                {
+                    "phase": "completed",
+                    "fact_count": len(facts),
+                },
+            )
+            summary = narrator.create_summary(
+                ThinkingActivityInput(
                     user_request=user_request,
                     selected_model=selected_model,
                     run_status="completed",
                     duration_ms=duration_ms,
                     events=events,
-                    tool_summaries=_tool_summaries_from_events(events),
+                    activity_facts=facts,
                 )
             )
-        except Exception:
+            if summary is None:
+                self._emit(
+                    run_id,
+                    "narrator_rejected",
+                    "Activity narrator output rejected.",
+                    {
+                        "phase": "completed",
+                        "reason": narrator.last_rejection_reason
+                        or "unknown_validation_failure",
+                        "fact_count": len(facts),
+                    },
+                )
+                return None
+            self._emit(
+                run_id,
+                "narrator_completed",
+                "Activity narrator completed.",
+                {
+                    "phase": "completed",
+                    "item_count": len(summary.items),
+                    "fact_count": len(facts),
+                },
+            )
+            return summary
+        except Exception as exc:
+            self._emit(
+                run_id,
+                "narrator_failed",
+                "Activity narrator failed.",
+                {
+                    "phase": "completed",
+                    "code": _error_code(exc),
+                    "message": _safe_error_message(exc),
+                },
+            )
             return None
 
     def _cleanup_run_runtime(self, run_id: str) -> None:
@@ -555,49 +690,95 @@ def _system_prompt(user_context: UserContext) -> str:
     return build_system_prompt(persona=persona, timezone_name=user_context.timezone)
 
 
-def _web_evidence_guard(user_context: UserContext) -> WebEvidenceGuard:
-    """Build the web evidence guard with the same prompt-facing date."""
-
-    prompt_timezone = resolve_prompt_timezone(user_context.timezone)
-    current_date = datetime.now(UTC).astimezone(prompt_timezone.tzinfo).date()
-    return WebEvidenceGuard(
-        current_date=current_date,
-        timezone_name=prompt_timezone.name,
-    )
-
-
-def _tool_summaries_from_events(
+def _activity_facts_from_events(
     events: tuple[RunEventRecord, ...],
 ) -> tuple[dict[str, Any], ...]:
-    """Return compact tool summaries for the thinking narrator."""
+    """Return all structured activity facts recorded for this run."""
 
-    summaries: list[dict[str, Any]] = []
+    facts: list[dict[str, Any]] = []
     for event in events:
-        if event.event_type not in {"tool_call_completed", "tool_call_failed"}:
+        if event.event_type != "activity_fact_recorded":
             continue
-        tool_result = event.payload.get("tool_result")
-        if not isinstance(tool_result, dict):
-            continue
-        duration_ms = event.payload.get("duration_ms")
-        if not isinstance(duration_ms, int):
-            metrics = event.payload.get("metrics")
-            if isinstance(metrics, dict) and isinstance(metrics.get("duration_ms"), int):
-                duration_ms = metrics["duration_ms"]
-            else:
-                duration_ms = 0
-        summaries.append(
-            {
-                "tool": str(tool_result.get("name") or "tool"),
-                "status": "failed" if event.event_type == "tool_call_failed" else "completed",
-                "safe_preview": str(
-                    tool_result.get("content_preview")
-                    or tool_result.get("error")
-                    or ""
-                )[:240],
-                "duration_ms": duration_ms,
-            }
+        fact = event.payload.get("fact")
+        if isinstance(fact, dict):
+            facts.append(dict(fact))
+    return tuple(facts)
+
+
+def _narratable_activity_facts(
+    facts: tuple[dict[str, Any], ...],
+) -> tuple[dict[str, Any], ...]:
+    """Return only facts meaningful enough for public activity narration."""
+
+    return tuple(fact for fact in facts if _is_narratable_activity_fact(fact))
+
+
+def _activity_items_signature(items: tuple[dict[str, Any], ...]) -> str:
+    """Return a stable signature for public activity items."""
+
+    try:
+        return json.dumps(
+            [
+                {
+                    "title": item.get("title"),
+                    "body": item.get("body"),
+                    "evidence_fact_ids": item.get("evidence_fact_ids"),
+                }
+                for item in items
+            ],
+            ensure_ascii=False,
+            sort_keys=True,
         )
-    return tuple(summaries)
+    except TypeError:
+        return ""
+
+
+def _is_narratable_activity_fact(fact: dict[str, Any]) -> bool:
+    """Return whether a structured fact represents real middle work."""
+
+    kind = str(fact.get("kind") or "")
+    if kind in {
+        "request_orientation",
+        "tool_call",
+        "tool_result",
+        "web_search_result",
+        "web_fetch_result",
+        "image_generation",
+        "error",
+        "policy_stop",
+    }:
+        return True
+    if kind != "llm_round":
+        return False
+    llm = fact.get("llm")
+    if not isinstance(llm, dict):
+        return False
+    tool_call_count = llm.get("tool_call_count")
+    return isinstance(tool_call_count, int) and tool_call_count > 0
+
+
+def _request_preview(text: str, *, max_chars: int = 120) -> str:
+    """Return a short redacted preview of the user's request for activity facts."""
+
+    compact = " ".join(text.split())
+    compact = re.sub(r"https?://\S+", "[url]", compact)
+    compact = re.sub(
+        r"(?i)\b(api[_-]?key|token|secret|password)\s*[:=]\s*\S+",
+        r"\1=[redacted]",
+        compact,
+    )
+    compact = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "sk-[redacted]", compact)
+    return compact[:max_chars]
+
+
+def _detect_language(text: str) -> str:
+    """Return a compact language hint for narrator output matching."""
+
+    if re.search(r"[\u4e00-\u9fff]", text):
+        return "zh"
+    if re.search(r"[A-Za-z]", text):
+        return "en"
+    return "unknown"
 
 
 def _title_from_question(question: str) -> str:
@@ -615,3 +796,12 @@ def _error_code(exc: Exception) -> str:
     if "provider http" in text or "provider request" in text:
         return "provider_error"
     return "run_failed"
+
+
+def _safe_error_message(exc: Exception) -> str:
+    """Return a debug-safe error string for narrator diagnostics."""
+
+    message = " ".join(str(exc).split())
+    message = re.sub(r"https?://\S+", "[url]", message)
+    message = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "sk-[redacted]", message)
+    return message[:180]

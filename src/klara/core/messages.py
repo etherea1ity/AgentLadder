@@ -8,6 +8,13 @@ from typing import Any, Literal
 from klara.core.tools import ToolCall
 
 MessageRole = Literal["user", "assistant", "tool"]
+ModelStreamEventType = Literal[
+    "provider_reasoning_delta",
+    "assistant_output_delta",
+    "tool_call_delta",
+    "completed",
+    "failed",
+]
 
 
 @dataclass(frozen=True)
@@ -68,3 +75,19 @@ class ModelResponse:
     tool_calls: tuple[ToolCall, ...] = field(default_factory=tuple)
     # Usage stays optional because fake LLMs and some providers may omit it.
     usage: dict[str, int] | None = None
+    # Optional provider-visible reasoning summary for UI only, never history.
+    reasoning_summary: str | None = None
+    # Structured provider reasoning items are reserved for streaming adapters.
+    reasoning_items: tuple[dict[str, object], ...] = field(default_factory=tuple)
+    # Provider/model field that produced the public reasoning summary.
+    reasoning_source: str | None = None
+
+
+@dataclass(frozen=True)
+class ModelStreamEvent:
+    """Optional provider stream event reserved for future live reasoning UI."""
+
+    type: ModelStreamEventType
+    delta: str = ""
+    payload: dict[str, object] = field(default_factory=dict)
+    response: ModelResponse | None = None

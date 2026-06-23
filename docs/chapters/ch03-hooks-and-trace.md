@@ -12,7 +12,7 @@
 
 ## 一句话看懂本章
 
-Chapter 3 不是给 loop 加更多业务规则，而是把 agent 运行时变成可观察的系统：core loop 继续只负责模型、工具和停止条件；hooks 负责生命周期插点；trace 负责记录公开事件；前端把同一条公开事件流分成三层展示。
+Chapter 3 不给 loop 加业务规则，而是把 Klara 的运行过程拆成三层：GPT-like Thinking Trigger、Activity Drawer、Developer Debug。
 
 ![Klara Chapter 3 Hooks and Trace](../assets/ch03-hooks-and-trace.svg)
 
@@ -20,238 +20,108 @@ Chapter 3 不是给 loop 加更多业务规则，而是把 agent 运行时变成
 
 ### 1. Top Thinking Trigger
 
-用户主路径只看到一个很轻的 GPT-like 入口：
+用户主路径只看到一个轻量入口：
 
 ```text
-运行中：  mini Klara + Thinking... + timer
-完成后：  mini Klara + Thought for X >
+运行中：Klara · Thinking... 1.2s
+完成后：Klara · Thought for 24.2s >
 ```
 
-它不展开工具链路，不显示 raw payload，也不展示 developer trace。点击正文区域不会展开；只有右侧 chevron / button 会打开 Activity Drawer。
+完成态的 `Thought for X` 必须绑定真实可展示内容：
 
-对应代码：
+- 有 provider/model 返回的安全 reasoning summary；
+- 或有 narrator 基于 runtime facts 生成的 Klara activity items。
 
-```text
-apps/web/src/components/klara/KlaraThinkingBlock.tsx
-apps/web/src/components/ChatWorkspace.tsx
-apps/web/src/styles/klara.css
-```
+如果两条都没有，就不显示空的 `Thought for X`。运行耗时仍然在 Developer Debug 里可见。
+
+交互上，左侧是 mini Klara icon + label，右侧 chevron 是独立按钮。点击文字不展开，只有 chevron 打开 Activity Drawer。
 
 ### 2. Activity Drawer
 
-Activity Drawer 是公开活动摘要，不是模型私密思考。它展示两类内容：
+Activity Drawer 分两段：
 
 ```text
-Klara thinking  -> narrator 基于完整 public trace 生成的 2-5 条公开 activity items
-Agent activity  -> API projection 层从真实 runtime events 派生的 activity_item_upserted
+Model thinking  -> provider_reasoning summary；没有就隐藏
+Klara activity  -> narrator_model 基于 activity facts 生成的公开工作流
 ```
 
-即使主模型没有 stream、没有 thinking token，Activity 也能基于 runtime events 显示真实中间链路。例如：模型调用开始、web_search 返回候选源、web_fetch 读到页面文本、最终进入回答生成。
+这里的“真实 thinking”不是 raw chain-of-thought：
 
-Activity item 必须带 `evidence_event_ids`，只能引用已经发生的公开事件。它不能暴露 raw tool arguments、完整 URL、完整 observation、raw payload、secret、文件内容或 chain-of-thought。
-
-对应代码：
-
-```text
-apps/api/services/run_event_projector.py
-apps/api/services/run_service.py
-apps/api/services/workstream_narrator.py
-src/klara/prompts/thinking_summary_narrator.md
-apps/web/src/components/klara/KlaraActivityDrawer.tsx
-apps/web/src/types/domain.ts
-```
+- `Model thinking` 来自 provider/model 自己返回的公开 reasoning summary，有就展示，没有不伪造。
+- `Klara activity` 来自 `activity_fact_recorded` + narrator model。facts 只记录结构化事实，narrator 才写可读的公开 activity。
+- narrator 不可用、JSON 错误或校验失败时，不生成模板句子，只在 Developer Debug 里留下诊断事件。
 
 ### 3. Developer Debug
 
-Developer Debug 是教学和工程排查区域，默认折叠。这里才显示详细链路：
+Developer Debug 默认折叠，只给开发和教学看：
 
-```text
-Developer debug · 38 events · 3 tools
-```
-
-展开后可以看到：
-
-- LLM rounds：turn index、model、duration、input/output/total tokens、token source。
+- LLM rounds：turn、model、duration、input/output/total tokens、token source。
 - Tools：tool name、status、duration、arguments preview、observation preview。
-- Trace：event count、trace saved、event_id、created_at、event_type。
-- Raw payload：只放在 Developer Debug 的 `<details>` 里。
+- Activity facts：结构化 facts、request preview、evidence ids。
+- Narrator diagnostics：started、completed、rejected、failed。
+- Trace：event id、created_at、event_type、raw payload。
 
-如果 payload 里没有 token 或 duration，UI 显示 `unknown`，不编造指标。
+## 两条真实来源
 
-对应代码：
+### A. Model Thinking / Provider Reasoning
 
-```text
-apps/web/src/components/klara/KlaraRunSurface.tsx
-apps/web/src/components/klara/KlaraRunStatus.tsx
-apps/web/src/styles/klara.css
-```
-
-## 3.1 为什么不把工具链路塞进 Thinking
-
-工具链路很重要，但它不是用户可见 thinking。
-
-如果顶部 thinking 展开后直接显示 `Searched web / Opened page / Answered`，会产生两个问题：
-
-- 用户会以为这是模型的真实思考过程。
-- debug 信息会抢掉回答本身的阅读路径。
-
-所以本章的边界是：
+Provider 如果返回 `reasoning_content`、`reasoning`、`thinking` 等公开 reasoning 字段，Klara 会把它转成：
 
 ```text
-Top Thinking Trigger -> 轻入口，只告诉用户 Klara 正在/已经思考
-Activity Drawer      -> 公开、可证据追溯的 activity summary
-Developer Debug      -> 工程 trace、tool card、payload、metrics
+provider_reasoning_delta
+provider_reasoning_completed
 ```
 
-这也是本章最重要的产品边界：公开活动可以展示，隐藏推理不展示，工程 debug 不伪装成 thinking。
+它只用于 UI 展示，不写进 assistant message，也不会进入下一轮主模型上下文。
 
-## 3.2 Public Activity Item Contract
+### B. Klara Activity / Agent Workstream
 
-Chapter 3 新增的 activity item shape 是：
+Runtime 只产生 fact，不直接写用户可见文案：
 
 ```json
 {
-  "id": "act_...",
-  "title": "Looking up public information",
-  "body": "Klara is checking external sources before answering.",
-  "status": "running",
-  "kind": "evidence",
-  "source": "runtime_event",
+  "id": "fact_evt_...",
+  "kind": "request_orientation",
+  "status": "completed",
+  "source_event_type": "thinking_summary_started",
   "evidence_event_ids": ["evt_..."],
-  "confidence": 0.9
+  "request": {
+    "preview": "用户请求的脱敏短摘要",
+    "language": "zh"
+  }
 }
 ```
 
-`kind` 可以是：
+工具、搜索、网页读取、图片生成、错误也会形成各自的 fact。fact 不能包含 `title` / `body`，不能暴露完整 URL、raw arguments、raw observation、secret 或 hidden reasoning。
 
-```text
-orientation
-evidence
-tool_activity
-composition
-finalization
-```
-
-`source` 可以是：
-
-```text
-runtime_event
-narrator_model
-provider_reasoning
-fallback
-```
-
-本章实际主路径使用 `runtime_event` 和 `narrator_model`。`provider_reasoning` 只是给未来 provider reasoning stream 预留，不代表现在展示 raw chain-of-thought。
-
-## 3.3 Runtime Activity Projection
-
-我们不改 core loop，也不改 hook 协议。runtime activity 在 API projection 层从已有 events 派生。
-
-例子：
-
-```text
-llm_call_started
--> activity_item_upserted: "Reading the request"
-
-tool_call_started web_search
--> activity_item_upserted: "Looking up public information"
-
-tool_call_completed web_fetch
--> activity_item_upserted: "Source material reviewed"
-
-answer_streaming_started
--> activity_item_upserted: "Writing the answer"
-```
-
-这类 item 只能描述公开发生过的行为，不携带 raw args、完整 URL、完整 observation 或 raw payload。
-
-对应测试：
-
-```text
-tests/apps/api/test_run_event_projector.py
-tests/apps/api/test_thinking_summary.py
-```
-
-## 3.4 Narrator Summary
-
-Narrator model 只负责完成后的公开 activity summary：
-
-```text
-输入：完整 public run events
-输出：2-5 条 activity items + fallback text
-不会：参与最终答案、进入对话历史、改写 assistant message
-```
-
-它必须输出 strict JSON：
+Narrator 只根据 facts 输出公开 activity item：
 
 ```json
 {
-  "text": "Klara prepared the run, checked public evidence, and wrote the final answer.",
-  "items": [
-    {
-      "title": "Checked public evidence",
-      "body": "Klara searched public sources before composing the answer.",
-      "kind": "evidence",
-      "evidence_event_ids": ["evt_123"],
-      "confidence": 0.8
-    }
-  ]
+  "title": "理解请求目标",
+  "body": "Klara 先识别了你想要整理的主题和回答方向。",
+  "kind": "orientation",
+  "source": "narrator_model",
+  "evidence_fact_ids": ["fact_evt_..."],
+  "evidence_event_ids": ["evt_..."],
+  "confidence": 0.8
 }
 ```
 
-校验器会拒绝或降级不可靠内容：
+如果 item 声称搜索、读取、验证、生成图片、编辑或测试，必须有对应 fact 支撑。
 
-- item 数量必须是 2-5 条。
-- title/body 不能为空。
-- body 不能过长。
-- `evidence_event_ids` 必须真实存在。
-- 不能声称搜索、打开、读取、验证、运行、编辑或测试过不存在的动作。
-- narrator 失败不影响主回答。
-- narrator 不可用时只 emit `thinking_summary_completed has_summary=false`，不生成假 summary。
+## 为什么之前是假的
 
-## 3.5 Hooks 和 Trace 仍然是 Runtime 骨架
+之前的问题是：
 
-本章的 UI 改造没有改变核心 hooks/trace 结构：
+- 只有 timer，也会显示 `Thought for X`。
+- `provider_reasoning_delta` 有类型但没有真实 emitter。
+- narrator 不可用时前端仍能打开空 drawer。
+- runtime event 被直接包装成 “Reading request / Writing answer” 这类模板 activity。
 
-```text
-KlaraLoop
--> public KlaraEvent
--> HookManager
--> JsonlTraceHook
--> RunEventProjector
--> SSE / Activity Drawer / Developer Debug
-```
+现在的规则是：没有 provider reasoning，也没有安全 narrator items，就不显示 `Thought for X`。
 
-Hooks 的职责仍然是生命周期观察和有限插点：
-
-```text
-UserPromptSubmit -> 用户请求进入 runtime
-PreToolUse       -> 单个工具执行前
-PostToolUse      -> 工具 observation 生成后
-Stop             -> run 完成前
-```
-
-本章明确不把 hooks 变成语义纠错器、domain guard、intent router 或搜索规则引擎。
-
-## 3.6 为什么这是真实的
-
-这套 Activity 不是假的“我正在深入思考”动画：
-
-- 每个 activity item 都有 `evidence_event_ids`。
-- runtime item 从真实 RunEvent 派生。
-- narrator item 必须引用已有事件。
-- narrator 不可用时不编造内容。
-- Activity 不展示 raw chain-of-thought。
-- Developer Debug 和用户可见 Activity 是两条不同路径。
-
-这让 Klara 同时接近两类成熟产品体验：
-
-- GPT-like collapsed `Thought for X >` 入口。
-- Claude Code / Codex-like 可观察 workstream。
-
-但 Klara 把公开 activity 和 raw debug 分开，避免把工程日志伪装成思考。
-
-## 3.7 快速体验
+## 快速体验
 
 启动：
 
@@ -265,83 +135,22 @@ Stop             -> run 完成前
 http://127.0.0.1:5123
 ```
 
-可以测试三个问题：
+可以试：
 
 ```text
 现在上海时间几点？
+帮我搜一下最新世界杯赛程
+生成一张克拉拉形象图
 ```
 
-期望：模型可以调用 `current_time`，顶部只显示 `Thinking...` / `Thought for X`，Activity Drawer 显示公开活动，Developer Debug 展示工具事件。
+验收时看三件事：
 
-```text
-帮我搜一下最新世界杯赛程。
-```
+1. 顶部没有空的 `Thought for X`。
+2. Activity Drawer 只显示 `Model thinking` 或 `Klara activity`，不显示 raw trace。
+3. Developer Debug 才显示 tools、facts、narrator diagnostics、raw payload 和 metrics。
 
-期望：如果模型使用 web 工具，Activity 只总结公开动作；Developer Debug 才展示 `web_search` / `web_fetch` 细节。runtime 不用硬编码世界杯规则修补答案。
+## 本章不做什么
 
-```text
-生成一张克拉拉形象图。
-```
+Chapter 3 不展示 raw chain-of-thought，不做 intent router，不做 domain guard，不做搜索关键词规则，不做 source ranker，不做 grounding verifier，不做 memory/context compression。
 
-期望：模型可以调用 `image_generate`，回答区域展示图片；Activity 和 Debug 仍然分层。
-
-## 3.8 本章不做什么
-
-Chapter 3 不做：
-
-- raw chain-of-thought 展示。
-- intent router。
-- domain guard。
-- 搜索关键词规则。
-- source ranker。
-- grounding verifier。
-- 复杂权限系统。
-- memory / context compression。
-
-这些能力会在后续章节逐步讲，但本章必须先把 loop、hooks、trace、Activity 和 Debug 的边界立住。
-
-## 代码索引
-
-```text
-apps/api/schemas.py
-apps/api/services/run_service.py
-apps/api/services/run_event_projector.py
-apps/api/services/workstream_narrator.py
-src/klara/prompts/thinking_summary_narrator.md
-apps/web/src/components/ChatWorkspace.tsx
-apps/web/src/components/klara/KlaraThinkingBlock.tsx
-apps/web/src/components/klara/KlaraActivityDrawer.tsx
-apps/web/src/components/klara/KlaraRunSurface.tsx
-apps/web/src/types/domain.ts
-apps/web/src/api/client.ts
-apps/web/src/styles/klara.css
-```
-
-## 运行和验证
-
-后端：
-
-```powershell
-python -m pytest
-```
-
-前端：
-
-```powershell
-cd apps\web
-npm test
-npm run build
-```
-
-人工检查：
-
-1. 顶部只显示 `Thinking...` 或 `Thought for X >`。
-2. 点击 chevron 打开 Activity Drawer。
-3. Activity Drawer 有 `Klara thinking` 和 `Agent activity`。
-4. 顶部 thinking 不出现工具 debug 链路。
-5. Developer Debug 默认折叠。
-6. Developer Debug 展开后能看到 LLM rounds、tool cards、trace 和 raw payload。
-
-## 下一章
-
-Chapter 4 会讲 Harness And Config：当 loop、tools、hooks、trace、activity 和 debug 都有边界之后，下一步是把 provider、model、prompt、tools、hooks、policies 和 trace sinks 收束到一个清晰的 harness entry point。
+这些放在后续章节。本章只把 thinking、activity、debug 的边界立住。

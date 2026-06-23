@@ -10,22 +10,9 @@ from klara.tools.base import BaseTool, ToolInputError
 from klara.tools.builtin.web_search.schema import WEB_SEARCH_METADATA, WEB_SEARCH_SPEC
 from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSpec
 from klara.services.web import SearchResponse, WebSearchError, search_web
-from klara.services.web.source_quality import (
-    classify_source,
-    is_preferred_for_current_sports,
-    source_quality_rank,
-)
 
 
 Searcher = Callable[..., SearchResponse]
-
-WEB_SEARCH_EVIDENCE_NOTE = (
-    "Search results are candidate links and snippets, not verified source text. "
-    "For current/latest/news/sports/scores or other web-backed facts, call "
-    "web_fetch on at least one relevant reliable result before writing the "
-    "final answer. If these results look weak, stale, schedule-only, or SEO-like, retry "
-    "web_search once with a narrower query or source/domain hint."
-)
 
 
 @dataclass(frozen=True)
@@ -71,29 +58,24 @@ class WebSearchTool(BaseTool):
             language=language,
         )
         effective_query = _apply_search_hints(query, search_hints)
-        is_current_sports_query = _looks_current_sports_query(query)
 
         try:
             response = self.searcher(
                 effective_query,
                 allowed_domains=allowed_domains,
                 blocked_domains=blocked_domains,
-                count=8 if is_current_sports_query else count,
+                count=count,
                 timeout_seconds=self.metadata.timeout_seconds,
             )
         except WebSearchError as exc:
             return self.failure(arguments, str(exc))
-        results = _ranked_result_cards(
-            response=response,
-            is_current_sports_query=is_current_sports_query,
-        )[:count]
+        results = _result_cards(response)[:count]
 
         return self.json_success(
             arguments,
             {
                 "observation_kind": "web_search_candidates",
                 "evidence_status": "candidate_snippets_only",
-                "next_step": WEB_SEARCH_EVIDENCE_NOTE,
                 "query": response.query,
                 "original_query": query,
                 "effective_query": effective_query,
@@ -105,7 +87,6 @@ class WebSearchTool(BaseTool):
                 ),
                 "provider": response.provider,
                 "result_count": len(results),
-                "ranked_for_current_sports": is_current_sports_query,
                 "results": results,
                 "searched_url": response.searched_url,
                 "truncated": response.truncated,
@@ -235,88 +216,17 @@ def _apply_search_hints(query: str, search_hints: dict[str, str]) -> str:
     return " ".join([query, *extras])
 
 
-def _ranked_result_cards(
-    *,
-    response: SearchResponse,
-    is_current_sports_query: bool,
-) -> list[dict[str, object]]:
-    """Return search cards with source quality annotations."""
+def _result_cards(response: SearchResponse) -> list[dict[str, object]]:
+    """Return search cards in provider order."""
 
     cards: list[dict[str, object]] = []
     for original_rank, hit in enumerate(response.results, start=1):
-        source_quality = classify_source(hit.url, hit.title)
         cards.append(
             {
                 "title": hit.title,
                 "url": hit.url,
                 "snippet": hit.snippet,
                 "original_rank": original_rank,
-                "source_quality": source_quality,
-                "is_preferred_for_current_sports": is_preferred_for_current_sports(
-                    source_quality
-                ),
             }
         )
-    if not is_current_sports_query:
-        return cards
-    return sorted(
-        cards,
-        key=lambda card: (
-            source_quality_rank(str(card["source_quality"])),
-            int(card["original_rank"]),
-        ),
-    )
-
-
-def _looks_current_sports_query(query: str) -> bool:
-    """Return whether a search query asks for current sports facts."""
-
-    lowered = query.lower()
-    current_terms = (
-        "latest",
-        "current",
-        "today",
-        "live",
-        "score",
-        "scores",
-        "result",
-        "results",
-        "fixture",
-        "fixtures",
-        "schedule",
-        "so far",
-        "to date",
-    )
-    sports_terms = (
-        "world cup",
-        "fifa",
-        "soccer",
-        "football",
-        "match",
-        "matches",
-        "player performance",
-        "standings",
-    )
-    chinese_current_terms = (
-        "\u6700\u65b0",
-        "\u76ee\u524d",
-        "\u4eca\u5929",
-        "\u5b9e\u65f6",
-        "\u8d5b\u679c",
-        "\u6bd4\u5206",
-        "\u8d5b\u7a0b",
-        "\u5230\u76ee\u524d",
-    )
-    chinese_sports_terms = (
-        "\u4e16\u754c\u676f",
-        "\u8db3\u7403",
-        "\u6bd4\u8d5b",
-        "\u7403\u5458\u8868\u73b0",
-    )
-    has_current = any(term in lowered for term in current_terms) or any(
-        term in query for term in chinese_current_terms
-    )
-    has_sports = any(term in lowered for term in sports_terms) or any(
-        term in query for term in chinese_sports_terms
-    )
-    return has_current and has_sports
+    return cards

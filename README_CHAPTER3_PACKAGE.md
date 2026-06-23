@@ -1,52 +1,54 @@
 # Klara Chapter 3 Package: Hooks, Trace, Activity
 
-This package documents the Chapter 3 boundary: Klara keeps public thinking activity, runtime trace, and developer debug separate.
+This package documents the Chapter 3 boundary: public thinking/activity, runtime facts, and developer debug are separate surfaces.
 
 ## User-Facing Shape
 
 Top Thinking Trigger:
 
 ```text
-active:     mini Klara + Thinking... + timer
-completed:  mini Klara + Thought for X >
+active:    Klara · Thinking... + timer
+complete:  Klara · Thought for X >
 ```
 
-The trigger is intentionally small. It does not show tool chains, raw payloads, hidden reasoning, or developer trace.
+Completed `Thought for X` is content-backed. If there is no provider reasoning and no safe narrator activity item, the trigger is not shown. The label itself does not open the drawer; only the right chevron does.
 
 Activity Drawer:
 
-- `Klara thinking`: narrator-generated public activity items after completion.
-- `Agent activity`: runtime activity items projected from real events during the run.
-- Every item cites `evidence_event_ids`.
-- No fake periodic notes are generated.
-- If the narrator is unavailable, the run completes with `has_summary=false`.
+- `Model thinking`: safe `provider_reasoning` summaries only; hidden when unavailable.
+- `Klara activity`: `narrator_model` items generated from structured `activity_fact_recorded` events.
+- No runtime/fallback template prose is shown.
+- If the narrator fails or is unavailable, diagnostics go to Developer Debug instead of public activity.
 
 Developer Debug:
 
 - LLM rounds with token and duration fields when present.
 - Tool cards with status, duration, argument preview, observation preview.
-- Trace events with event id and timestamp.
-- Raw payloads only inside the developer panel.
+- Activity facts with request preview and evidence ids.
+- Narrator diagnostics: started, completed, rejected, failed.
+- Trace events and raw payloads only inside the developer panel.
 
 ## Why This Is The Chapter 3 Contract
 
-Klara follows the agent product pattern we want to teach:
+Klara follows the product pattern we want to teach:
 
 ```text
 GPT-like Thought entry
-+ Claude Code / Codex-like observable activity
++ safe provider reasoning when available
++ evidence-bound narrator activity
 + developer-only trace/debug
 ```
 
 The important separation is:
 
 ```text
-public activity summary != raw chain-of-thought
-developer debug          != user thinking UI
-runtime events           != answer content
+provider reasoning summary != raw chain-of-thought
+narrator activity          != runtime template prose
+developer debug            != user thinking UI
+runtime facts              != answer content
 ```
 
-The narrator model is not the answer model. It reads only public runtime events, writes strict JSON activity items, and never enters the conversation history.
+The narrator model is not the answer model. It reads only structured public facts, writes strict JSON activity items, and never enters the conversation history.
 
 ## Files To Read
 
@@ -57,10 +59,13 @@ apps/api/schemas.py
 apps/api/services/run_event_projector.py
 apps/api/services/run_service.py
 apps/api/services/workstream_narrator.py
-src/klara/prompts/thinking_summary_narrator.md
+src/klara/core/messages.py
+src/klara/infra/llm/openai_compatible.py
+src/klara/prompts/thinking_activity_narrator.md
 apps/web/src/components/klara/KlaraThinkingBlock.tsx
 apps/web/src/components/klara/KlaraActivityDrawer.tsx
 apps/web/src/components/klara/KlaraRunSurface.tsx
+apps/web/src/components/klara/activityItems.ts
 ```
 
 ## Verification
@@ -70,6 +75,7 @@ python -m pytest
 cd apps\web
 npm test
 npm run build
+npm audit --omit=dev
 ```
 
 Do not commit generated folders or secrets:

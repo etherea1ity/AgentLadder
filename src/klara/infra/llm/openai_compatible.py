@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -347,7 +348,61 @@ def response_from_completion_data(
         raise LlmProviderError(f"empty provider response: {raw_preview}")
 
     usage = data.get("usage") if isinstance(data.get("usage"), dict) else None
-    return ModelResponse(content=raw_content, tool_calls=tool_calls, usage=usage)
+    reasoning_source, reasoning_summary = _extract_provider_reasoning(
+        data=data,
+        choice=choice,
+        message=message,
+    )
+    return ModelResponse(
+        content=raw_content,
+        tool_calls=tool_calls,
+        usage=usage,
+        reasoning_summary=reasoning_summary,
+        reasoning_source=reasoning_source,
+    )
+
+
+def _extract_provider_reasoning(
+    *,
+    data: dict[str, Any],
+    choice: dict[str, Any],
+    message: dict[str, Any],
+) -> tuple[str | None, str | None]:
+    """Return one sanitized provider-visible reasoning summary if present."""
+
+    candidates = (
+        ("message.reasoning_content", message.get("reasoning_content")),
+        ("message.reasoning", message.get("reasoning")),
+        ("message.thinking", message.get("thinking")),
+        ("choice.reasoning", choice.get("reasoning")),
+        ("data.reasoning", data.get("reasoning")),
+    )
+    for source, value in candidates:
+        if not isinstance(value, str):
+            continue
+        summary = _sanitize_reasoning_summary(value)
+        if summary:
+            return source, summary
+    return None, None
+
+
+def _sanitize_reasoning_summary(value: str, *, max_chars: int = 1200) -> str:
+    """Return public-safe provider reasoning text for event projection."""
+
+    text = " ".join(value.split())
+    if not text:
+        return ""
+    lowered = text.lower()
+    if any(term in lowered for term in ("raw payload", "api key", "secret", "password")):
+        return ""
+    text = re.sub(r"https?://\S+", "[url]", text)
+    text = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "sk-[redacted]", text)
+    text = re.sub(
+        r"(?i)\b(api[_-]?key|token|secret|password)\s*[:=]\s*\S+",
+        r"\1=[redacted]",
+        text,
+    )
+    return text[:max_chars]
 
 
 def _parse_tool_call(raw: dict[str, Any], index: int) -> ToolCall:

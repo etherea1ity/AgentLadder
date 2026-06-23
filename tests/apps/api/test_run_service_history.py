@@ -100,7 +100,7 @@ def test_conversation_history_removes_local_generated_image_urls(tmp_path) -> No
     current_user = MessageRecord(
         session_id=session.session_id,
         role="user",
-        content="search the latest World Cup news",
+        content="search the latest public news",
         status="completed",
     )
     for message in (previous_assistant, current_user):
@@ -132,16 +132,16 @@ def test_current_user_message_is_timestamped_for_model_boundary(tmp_path) -> Non
     current_user = MessageRecord(
         session_id=session.session_id,
         role="user",
-        content="World Cup status?",
+        content="Public event status?",
         status="completed",
         created_at="2026-06-18T12:34:56+00:00",
     )
 
     assert (
         service._model_visible_content(current_user)
-        == "[Thu 2026-06-18 20:34 GMT+08] World Cup status?"
+        == "[Thu 2026-06-18 20:34 GMT+08] Public event status?"
     )
-    assert current_user.content == "World Cup status?"
+    assert current_user.content == "Public event status?"
 
 
 def test_run_service_projects_model_and_trace_saved(tmp_path) -> None:

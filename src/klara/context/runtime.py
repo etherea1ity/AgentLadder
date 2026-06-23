@@ -39,38 +39,22 @@ def build_runtime_context_prompt(
             (
                 "For live/current/latest/today/so-far/news/sports/scores/"
                 "schedules/prices/versions, call web_search before answering "
-                "from memory, then fetch at least one relevant result before "
-                "writing a web-backed final answer unless the user only asked "
-                "for links."
-            ),
-            (
-                "Treat equivalent non-English recency phrasing the same way, "
-                "including Chinese terms such as 最近, 近况, 这几天, 最新, "
-                "目前, and 现在."
+                "from memory."
             ),
             (
                 "Search snippets are candidates, not evidence. Do not conclude "
-                "from snippets alone."
+                "from snippets alone when a factual answer depends on source text."
             ),
             (
                 "If fetched pages disagree, do not merge conflicting claims. "
                 "Prefer claims that are directly supported by fetched text, "
-                "dated clearly, and corroborated by more than one relevant "
-                "source; otherwise call out uncertainty."
+                "dated clearly, and relevant to the user's request; otherwise "
+                "call out uncertainty."
             ),
             (
                 "For web-backed summaries, do not invent quotes, numeric "
-                "ratings, awards, player statistics, or per-item commentary "
-                "that fetched text does not state. If evidence is complete for "
-                "facts but partial for analysis, separate the complete factual "
-                "list from source-limited analysis."
-            ),
-            (
-                "For current sports updates, separate confirmed completed "
-                "results, today's scheduled or in-progress fixtures, and source "
-                "limitations. Fixtures are not results; do not write 0:0 unless "
-                "fetched evidence explicitly reports a live or full-time 0-0 "
-                "score."
+                "ratings, awards, statistics, or per-item commentary that fetched "
+                "text does not state."
             ),
             (
                 "Call current_time only for exact wall-clock time, weekday, "

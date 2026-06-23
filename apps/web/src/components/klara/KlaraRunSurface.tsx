@@ -1,6 +1,6 @@
 import { CheckCircle2, ChevronDown, ChevronRight, CircleDashed, Wrench, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Run, RunEvent } from "../../types/domain";
+import type { ActivityFact, Run, RunEvent } from "../../types/domain";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
 type LlmRound = {
@@ -48,6 +48,8 @@ export function KlaraRunSurface({
   );
   const llmRounds = useMemo(() => buildLlmRounds(visibleEvents), [visibleEvents]);
   const toolCards = useMemo(() => buildToolCards(visibleEvents), [visibleEvents]);
+  const activityFacts = useMemo(() => buildActivityFacts(visibleEvents), [visibleEvents]);
+  const narratorEvents = useMemo(() => buildNarratorEvents(visibleEvents), [visibleEvents]);
   const traceSaved = Boolean(
     run?.trace_saved ||
       visibleEvents.some(
@@ -66,7 +68,7 @@ export function KlaraRunSurface({
 
   if (!run) return null;
 
-  const title = `Developer debug · ${visibleEvents.length} events · ${toolCards.length} ${toolCards.length === 1 ? "tool" : "tools"}`;
+  const title = `Developer debug - ${visibleEvents.length} events - ${toolCards.length} ${toolCards.length === 1 ? "tool" : "tools"}`;
 
   return (
     <section className={`klara-run-surface ${active ? "is-active" : "is-compact"}`} aria-label="Developer debug">
@@ -102,6 +104,26 @@ export function KlaraRunSurface({
             </DebugSection>
           ) : null}
 
+          {activityFacts.length ? (
+            <DebugSection title="Activity facts">
+              <div className="klara-debug-card-grid">
+                {activityFacts.map((fact) => (
+                  <ActivityFactCard key={fact.id} fact={fact} />
+                ))}
+              </div>
+            </DebugSection>
+          ) : null}
+
+          {narratorEvents.length ? (
+            <DebugSection title="Narrator">
+              <ol className="klara-run-timeline" aria-label="Narrator diagnostics">
+                {narratorEvents.map((event) => (
+                  <TraceEventItem key={event.event_id} event={event} />
+                ))}
+              </ol>
+            </DebugSection>
+          ) : null}
+
           {visibleEvents.length ? (
             <DebugSection title="Trace">
               <ol className="klara-run-timeline" aria-label="Lifecycle timeline">
@@ -114,6 +136,16 @@ export function KlaraRunSurface({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function buildNarratorEvents(events: RunEvent[]): RunEvent[] {
+  return events.filter(
+    (event) =>
+      event.event_type === "narrator_started" ||
+      event.event_type === "narrator_completed" ||
+      event.event_type === "narrator_failed" ||
+      event.event_type === "narrator_rejected",
   );
 }
 
@@ -181,6 +213,27 @@ function ToolRunCard({ tool }: { tool: ToolCard }) {
   );
 }
 
+function ActivityFactCard({ fact }: { fact: ActivityFact }) {
+  return (
+    <article className="klara-debug-card">
+      <header>
+        <h5>{fact.kind}</h5>
+        <span>{fact.status}</span>
+      </header>
+      <dl className="klara-debug-metrics">
+        <Metric label="source event" value={fact.source_event_type} />
+        <Metric label="events" value={fact.evidence_event_ids.join(", ") || "unknown"} />
+        <Metric label="tool" value={stringFrom(fact.tool?.name) || "unknown"} />
+        <Metric label="preview" value={fact.observation_preview || fact.error_preview || "unknown"} />
+      </dl>
+      <details className="klara-debug-raw">
+        <summary>Raw fact</summary>
+        <pre>{JSON.stringify(fact, null, 2)}</pre>
+      </details>
+    </article>
+  );
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <>
@@ -214,7 +267,7 @@ function TraceEventItem({ event }: { event: RunEvent }) {
       <div>
         <p>{event.event_type}</p>
         <small>
-          {event.event_id} · {event.created_at}
+          {event.event_id} - {event.created_at}
         </small>
         <RawEvents events={[event]} />
       </div>
@@ -302,6 +355,25 @@ function buildToolCards(events: RunEvent[]): ToolCard[] {
     });
   });
   return Array.from(cards.values());
+}
+
+function buildActivityFacts(events: RunEvent[]): ActivityFact[] {
+  return events
+    .filter((event) => event.event_type === "activity_fact_recorded")
+    .map((event) => event.payload?.fact)
+    .filter(isActivityFact);
+}
+
+function isActivityFact(value: unknown): value is ActivityFact {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.id === "string" &&
+    typeof record.kind === "string" &&
+    typeof record.status === "string" &&
+    typeof record.source_event_type === "string" &&
+    Array.isArray(record.evidence_event_ids)
+  );
 }
 
 function durationLabel(event: RunEvent) {

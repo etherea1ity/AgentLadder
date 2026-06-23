@@ -9,7 +9,7 @@ from klara.tools.builtin.web_search import WebSearchTool
 
 
 def test_web_fetch_tool_declares_network_untrusted_metadata() -> None:
-    """Web fetch should expose network and trust metadata for later guards."""
+    """Web fetch should expose network and trust metadata for later grounding."""
 
     tool = WebFetchTool()
 
@@ -69,10 +69,10 @@ def test_web_fetch_tool_supports_relevant_snippets() -> None:
     def page_fetcher(url: str, *, max_chars: int, timeout_seconds: float) -> FetchedPage:
         return FetchedPage(
             url=url,
-            final_url="https://www.reuters.com/sports/soccer/world-cup-report",
+            final_url="https://www.reuters.com/world/recent-event-report",
             status=200,
             content_type="text/html",
-            title="Reuters World Cup report",
+            title="Reuters recent event report",
             text=(
                 "Opening navigation. "
                 + ("filler " * 120)
@@ -86,7 +86,7 @@ def test_web_fetch_tool_supports_relevant_snippets() -> None:
 
     result = tool.execute(
         {
-            "url": "https://www.reuters.com/sports/soccer/world-cup-report",
+            "url": "https://www.reuters.com/world/recent-event-report",
             "max_chars": 12000,
             "extract_mode": "relevant_snippets",
             "query_terms": ["England", "Croatia"],
@@ -99,8 +99,7 @@ def test_web_fetch_tool_supports_relevant_snippets() -> None:
     assert payload["extract_mode"] == "relevant_snippets"
     assert payload["query_terms"] == ["England", "Croatia"]
     assert payload["no_relevant_terms_found"] is False
-    assert payload["source_quality"] == "wire"
-    assert payload["is_preferred_for_current_sports"] is True
+    assert "source_quality" not in payload
 
 
 def test_web_fetch_tool_marks_missing_relevant_terms() -> None:
@@ -113,7 +112,7 @@ def test_web_fetch_tool_marks_missing_relevant_terms() -> None:
             status=200,
             content_type="text/html",
             title="Schedule page",
-            text="Today fixture list only.",
+            text="Today schedule list only.",
             truncated=False,
         )
 
@@ -129,17 +128,17 @@ def test_web_fetch_tool_marks_missing_relevant_terms() -> None:
 
     payload = json.loads(result.content)
     assert result.ok is True
-    assert payload["text"] == "Today fixture list only."
+    assert payload["text"] == "Today schedule list only."
     assert payload["no_relevant_terms_found"] is True
 
 
 def test_web_search_tool_declares_network_untrusted_metadata() -> None:
-    """Web search should expose network and trust metadata for later guards."""
+    """Web search should expose network and trust metadata for later grounding."""
 
     tool = WebSearchTool()
 
     assert tool.spec.name == "web_search"
-    assert "ranked result cards" in tool.spec.description
+    assert "candidate result cards" in tool.spec.description
     assert "web_fetch" not in tool.spec.description
     assert tool.spec.input_schema["required"] == ["query"]
     assert "freshness" in tool.spec.input_schema["properties"]
@@ -152,7 +151,7 @@ def test_web_search_tool_declares_network_untrusted_metadata() -> None:
     assert tool.metadata.output_trust == ToolOutputTrust.UNTRUSTED
 
 
-def test_web_search_tool_returns_ranked_results() -> None:
+def test_web_search_tool_returns_candidate_results() -> None:
     """Web search should keep search and page reading separate."""
 
     def searcher(
@@ -179,8 +178,7 @@ def test_web_search_tool_returns_ranked_results() -> None:
     assert result.ok is True
     assert payload["observation_kind"] == "web_search_candidates"
     assert payload["evidence_status"] == "candidate_snippets_only"
-    assert "web_fetch" in payload["next_step"]
-    assert "not verified source text" in payload["next_step"]
+    assert "next_step" not in payload
     assert "may not enforce freshness or language hints" in payload["provider_limitations"]
     assert "source_selection" not in payload
     assert payload["provider"] == "duckduckgo_lite"
@@ -190,15 +188,13 @@ def test_web_search_tool_returns_ranked_results() -> None:
             "url": "https://example.com",
             "snippet": "",
             "original_rank": 1,
-            "source_quality": "unknown",
-            "is_preferred_for_current_sports": False,
         }
     ]
     assert payload["trust"] == "untrusted_external_content"
 
 
 def test_web_search_tool_preserves_provider_order_for_generic_queries() -> None:
-    """Generic search results should not be reordered by sports preferences."""
+    """Generic search results should not be reordered by topic preferences."""
 
     def searcher(
         query: str,
@@ -227,11 +223,11 @@ def test_web_search_tool_preserves_provider_order_for_generic_queries() -> None:
     assert result.ok is True
     assert [hit["title"] for hit in payload["results"]] == ["Package Mirror", "Python Docs"]
     assert [hit["original_rank"] for hit in payload["results"]] == [1, 2]
-    assert payload["ranked_for_current_sports"] is False
+    assert "ranked_for_current_topic" not in payload
 
 
-def test_web_search_tool_reranks_current_sports_sources() -> None:
-    """Current sports searches should prefer official and wire sources."""
+def test_web_search_tool_preserves_provider_order_for_all_queries() -> None:
+    """Search should not rerank results with domain-specific policy."""
 
     def searcher(
         query: str,
@@ -241,37 +237,33 @@ def test_web_search_tool_reranks_current_sports_sources() -> None:
         count: int,
         timeout_seconds: float,
     ) -> SearchResponse:
-        assert count == 8
+        assert count == 3
         return SearchResponse(
             query=query,
             provider="duckduckgo_lite",
             results=(
-                SearchHit(title="SEO Site", url="https://www.fifawatch.com/worldcup"),
-                SearchHit(title="FIFA fixtures", url="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026"),
-                SearchHit(title="Reuters report", url="https://www.reuters.com/sports/soccer/world-cup-report"),
+                SearchHit(title="SEO Site", url="https://example-seo.com/recent-event"),
+                SearchHit(title="Official schedule", url="https://official.example.com/schedule"),
+                SearchHit(title="Reuters report", url="https://www.reuters.com/world/recent-event-report"),
             ),
-            searched_url="https://lite.duckduckgo.com/lite/?q=worldcup",
+            searched_url="https://lite.duckduckgo.com/lite/?q=recent-event",
             truncated=False,
         )
 
     tool = WebSearchTool(searcher=searcher)
 
-    result = tool.execute({"query": "latest world cup scores", "count": 3})
+    result = tool.execute({"query": "latest public event update", "count": 3})
 
     payload = json.loads(result.content)
     assert result.ok is True
-    assert payload["ranked_for_current_sports"] is True
     assert [hit["title"] for hit in payload["results"]] == [
-        "FIFA fixtures",
-        "Reuters report",
         "SEO Site",
+        "Official schedule",
+        "Reuters report",
     ]
-    assert [hit["original_rank"] for hit in payload["results"]] == [2, 3, 1]
-    assert [hit["source_quality"] for hit in payload["results"]] == [
-        "official",
-        "wire",
-        "aggregator",
-    ]
+    assert [hit["original_rank"] for hit in payload["results"]] == [1, 2, 3]
+    assert "ranked_for_current_topic" not in payload
+    assert all("source_quality" not in hit for hit in payload["results"])
 
 
 def test_web_search_tool_applies_portable_search_hints() -> None:
@@ -301,7 +293,7 @@ def test_web_search_tool_applies_portable_search_hints() -> None:
 
     result = tool.execute(
         {
-            "query": "2026 world cup summary",
+            "query": "2026 public event summary",
             "freshness": "week",
             "date_after": "2026-06-11",
             "date_before": "2026-06-18",
@@ -312,8 +304,8 @@ def test_web_search_tool_applies_portable_search_hints() -> None:
 
     payload = json.loads(result.content)
     assert result.ok is True
-    assert captured_query == "2026 world cup summary after:2026-06-11 before:2026-06-18"
-    assert payload["original_query"] == "2026 world cup summary"
+    assert captured_query == "2026 public event summary after:2026-06-11 before:2026-06-18"
+    assert payload["original_query"] == "2026 public event summary"
     assert payload["effective_query"] == captured_query
     assert payload["search_hints"] == {
         "freshness": "week",
