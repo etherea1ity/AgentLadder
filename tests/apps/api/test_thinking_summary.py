@@ -166,7 +166,33 @@ def test_thinking_summary_delta_does_not_enter_assistant_message_content(tmp_pat
 
     assert assistant is not None
     assert assistant.content == "final answer"
+    assert "Preparing the run" not in assistant.content
     assert "public trace" not in main_llm.calls[0][0].content
+    assert "Preparing the run" not in main_llm.calls[0][0].content
+
+
+def test_runtime_activity_items_do_not_enter_assistant_message_content(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    main_llm = RecordingFinalLlm()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=main_llm,
+        default_model="main-model",
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+
+    created = service.create_run(session.session_id, "hello")
+    service._threads[created.run_id].join(timeout=5)
+    assistant = store.get_message(created.assistant_message_id)
+    events = store.list_events(created.run_id)
+
+    assert assistant is not None
+    assert assistant.content == "final answer"
+    assert [event for event in events if event.event_type == "activity_item_upserted"]
+    assert "Preparing the run" not in assistant.content
+    assert "Preparing the run" not in main_llm.calls[0][0].content
 
 
 def test_thinking_summary_narrator_failure_does_not_fail_run(tmp_path) -> None:

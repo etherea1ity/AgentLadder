@@ -17,7 +17,7 @@ from apps.api.schemas import (
     now_iso,
 )
 from apps.api.services.app_store import JsonlAppStore
-from apps.api.services.run_event_projector import RunEventProjector
+from apps.api.services.run_event_projector import RunEventProjector, project_activity_item
 from apps.api.services.sse_bus import SSEBus
 from apps.api.services.workstream_narrator import (
     ThinkingSummaryInput,
@@ -305,12 +305,35 @@ class RunService:
             self._stop_workstream_narrator(narrator_stop, narrator_thread)
             self._cleanup_run_runtime(run_id)
 
-    def _emit(self, run_id: str, event_type, message: str, payload: dict[str, Any]) -> None:
+    def _emit(
+        self,
+        run_id: str,
+        event_type,
+        message: str,
+        payload: dict[str, Any],
+    ) -> RunEventRecord:
         """Persist and publish one API-level run event."""
 
         event = RunEventRecord(run_id=run_id, event_type=event_type, message=message, payload=payload)
         self.store.append_event(event)
         self.bus.publish(event)
+        self._emit_projected_activity(event)
+        return event
+
+    def _emit_projected_activity(self, event: RunEventRecord) -> None:
+        """Persist and publish one public activity item derived from a run event."""
+
+        projected = project_activity_item(event)
+        if projected is None:
+            return
+        activity_event = RunEventRecord(
+            run_id=event.run_id,
+            event_type=projected.event_type,
+            message=projected.message,
+            payload=projected.payload,
+        )
+        self.store.append_event(activity_event)
+        self.bus.publish(activity_event)
 
     def _trace_has_run_events(self, run_id: str) -> bool:
         """Return whether the local JSONL trace contains events for this run."""

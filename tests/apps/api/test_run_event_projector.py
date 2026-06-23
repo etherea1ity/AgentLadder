@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 
-from apps.api.services.run_event_projector import RunEventProjector
+from apps.api.schemas import RunEventRecord
+from apps.api.services.run_event_projector import RunEventProjector, project_activity_item
 from klara.core.events import KlaraEvent
 
 
@@ -224,3 +225,72 @@ def test_projector_does_not_expose_raw_answer_delta_or_chain_of_thought() -> Non
     assert projector.project(
         KlaraEvent(type="run.completed", run_id="run-1", payload={})
     ) == ()
+
+
+def test_llm_call_started_run_event_projects_activity_item() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="llm_call_started",
+        message="Klara is calling the model.",
+        payload={"model": "qwen/qwen-flash"},
+    )
+
+    projected = project_activity_item(event)
+
+    assert projected is not None
+    assert projected.event_type == "activity_item_upserted"
+    item = projected.payload["item"]
+    assert item["title"] == "Reading the request"
+    assert item["source"] == "runtime_event"
+    assert item["evidence_event_ids"] == [event.event_id]
+
+
+def test_web_search_activity_item_is_sanitized() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="tool_call_started",
+        message="Klara is using web_search.",
+        payload={
+            "tool_call": {
+                "id": "call-1",
+                "name": "web_search",
+                "arguments": {"query": "private raw query"},
+            }
+        },
+    )
+
+    projected = project_activity_item(event)
+
+    assert projected is not None
+    item = projected.payload["item"]
+    serialized = json.dumps(item, ensure_ascii=False)
+    assert item["kind"] == "evidence"
+    assert item["status"] == "running"
+    assert item["evidence_event_ids"] == [event.event_id]
+    assert "private raw query" not in serialized
+
+
+def test_web_fetch_completed_activity_item_is_completed_and_sanitized() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="tool_call_completed",
+        message="web_fetch returned an observation.",
+        payload={
+            "tool_result": {
+                "tool_call_id": "call-1",
+                "name": "web_fetch",
+                "content_preview": "safe preview",
+                "url": "https://example.com/full/path",
+            }
+        },
+    )
+
+    projected = project_activity_item(event)
+
+    assert projected is not None
+    item = projected.payload["item"]
+    serialized = json.dumps(item, ensure_ascii=False)
+    assert item["title"] == "Source material reviewed"
+    assert item["status"] == "completed"
+    assert item["evidence_event_ids"] == [event.event_id]
+    assert "https://example.com" not in serialized

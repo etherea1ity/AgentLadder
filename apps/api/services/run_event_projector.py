@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from apps.api.schemas import RunEventType
+from apps.api.schemas import RunEventRecord, RunEventType
 from klara.core.events import KlaraEvent
 
 
@@ -162,6 +162,192 @@ class RunEventProjector:
             return (hook_projection,)
 
         return ()
+
+
+def project_activity_item(event: RunEventRecord) -> ProjectedRunEvent | None:
+    """Return one public activity item derived from a persisted run event."""
+
+    if event.event_type == "activity_item_upserted":
+        return None
+    item = _activity_item_for_event(event)
+    if item is None:
+        return None
+    return ProjectedRunEvent(
+        event_type="activity_item_upserted",
+        message=item["title"],
+        payload={"item": item},
+    )
+
+
+def _activity_item_for_event(event: RunEventRecord) -> dict[str, Any] | None:
+    """Build a sanitized GPT-like activity item from a public run event."""
+
+    if event.event_type == "run_created":
+        return _activity_item(
+            event,
+            title="Preparing the run",
+            body="Klara is setting up the runtime for this request.",
+            status="running",
+            kind="orientation",
+        )
+    if event.event_type == "thinking_started":
+        return _activity_item(
+            event,
+            title="Preparing the run",
+            body="Klara is setting up the runtime for this request.",
+            status="running",
+            kind="orientation",
+        )
+    if event.event_type == "llm_call_started":
+        return _activity_item(
+            event,
+            title="Reading the request",
+            body="Klara is asking the selected model to process the request.",
+            status="running",
+            kind="orientation",
+        )
+    if event.event_type == "llm_call_completed":
+        return _activity_item(
+            event,
+            title="Model response received",
+            body="The model returned a response for this step.",
+            status="completed",
+            kind="orientation",
+        )
+    if event.event_type == "tool_call_started":
+        return _tool_activity_started(event)
+    if event.event_type == "tool_call_completed":
+        return _tool_activity_completed(event)
+    if event.event_type == "tool_call_failed":
+        return _tool_activity_failed(event)
+    if event.event_type == "answer_streaming_started":
+        return _activity_item(
+            event,
+            title="Writing the answer",
+            body="Klara is turning the verified context into the final response.",
+            status="running",
+            kind="composition",
+        )
+    if event.event_type == "run_completed":
+        return _activity_item(
+            event,
+            title="Run completed",
+            body="Klara finished the runtime path for this response.",
+            status="completed",
+            kind="finalization",
+        )
+    return None
+
+
+def _tool_activity_started(event: RunEventRecord) -> dict[str, Any]:
+    """Return a sanitized activity item for a tool start event."""
+
+    name = _tool_call_name(event)
+    if name == "web_search":
+        return _activity_item(
+            event,
+            title="Looking up public information",
+            body="Klara is checking external sources before answering.",
+            status="running",
+            kind="evidence",
+        )
+    if name == "web_fetch":
+        return _activity_item(
+            event,
+            title="Opening source material",
+            body="Klara is reading a selected source to verify details.",
+            status="running",
+            kind="evidence",
+        )
+    return _activity_item(
+        event,
+        title=f"Using {name}",
+        body="Klara is using a runtime tool for this step.",
+        status="running",
+        kind="tool_activity",
+    )
+
+
+def _tool_activity_completed(event: RunEventRecord) -> dict[str, Any]:
+    """Return a sanitized activity item for a tool completion event."""
+
+    name = _tool_result_name(event)
+    if name == "web_search":
+        return _activity_item(
+            event,
+            title="Search results returned",
+            body="Klara received candidate sources and can decide what to verify next.",
+            status="completed",
+            kind="evidence",
+        )
+    if name == "web_fetch":
+        return _activity_item(
+            event,
+            title="Source material reviewed",
+            body="Klara received content from a selected source.",
+            status="completed",
+            kind="evidence",
+        )
+    return _activity_item(
+        event,
+        title=f"{name} returned",
+        body="Klara received an observation from a runtime tool.",
+        status="completed",
+        kind="tool_activity",
+    )
+
+
+def _tool_activity_failed(event: RunEventRecord) -> dict[str, Any]:
+    """Return a sanitized activity item for a failed tool event."""
+
+    name = _tool_result_name(event)
+    return _activity_item(
+        event,
+        title=f"{name} failed",
+        body="A runtime tool did not return a usable observation for this step.",
+        status="failed",
+        kind="tool_activity",
+    )
+
+
+def _activity_item(
+    event: RunEventRecord,
+    *,
+    title: str,
+    body: str,
+    status: str,
+    kind: str,
+) -> dict[str, Any]:
+    """Return the shared public activity item shape."""
+
+    return {
+        "id": f"act_{event.event_id}",
+        "title": title,
+        "body": body,
+        "status": status,
+        "kind": kind,
+        "source": "runtime_event",
+        "evidence_event_ids": [event.event_id],
+        "confidence": 1.0,
+    }
+
+
+def _tool_call_name(event: RunEventRecord) -> str:
+    """Return a public tool name from a tool-call-started event."""
+
+    tool_call = event.payload.get("tool_call")
+    if isinstance(tool_call, dict):
+        return str(tool_call.get("name") or "tool")
+    return "tool"
+
+
+def _tool_result_name(event: RunEventRecord) -> str:
+    """Return a public tool name from a tool terminal event."""
+
+    tool_result = event.payload.get("tool_result")
+    if isinstance(tool_result, dict):
+        return str(tool_result.get("name") or "tool")
+    return "tool"
 
 
 def _hook_projection(event: KlaraEvent) -> ProjectedRunEvent | None:
