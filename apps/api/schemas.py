@@ -27,6 +27,7 @@ RunEventType = Literal[
     "thinking_summary_started",
     "thinking_summary_delta",
     "thinking_summary_completed",
+    "activity_item_upserted",
     "run_completed",
     "run_failed",
     "run_cancelled",

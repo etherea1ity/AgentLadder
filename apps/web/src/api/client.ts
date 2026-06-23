@@ -49,6 +49,7 @@ export const api = {
       'thinking_summary_started',
       'thinking_summary_delta',
       'thinking_summary_completed',
+      'activity_item_upserted',
       'llm_call_started',
       'answer_streaming_started',
       'answer_delta',

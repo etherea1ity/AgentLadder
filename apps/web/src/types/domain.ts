@@ -28,6 +28,7 @@ export type RunEventType =
   | 'thinking_summary_started'
   | 'thinking_summary_delta'
   | 'thinking_summary_completed'
+  | 'activity_item_upserted'
   | 'llm_call_started'
   | 'answer_streaming_started'
   | 'answer_delta'
@@ -71,6 +72,30 @@ export type RunEvent = {
   message: string;
   payload?: Record<string, unknown>;
   created_at: string;
+};
+
+export type ThinkingActivityStatus = 'running' | 'completed' | 'failed';
+export type ThinkingActivityKind =
+  | 'orientation'
+  | 'evidence'
+  | 'tool_activity'
+  | 'composition'
+  | 'finalization';
+export type ThinkingActivitySource =
+  | 'runtime_event'
+  | 'narrator_model'
+  | 'provider_reasoning'
+  | 'fallback';
+
+export type ThinkingActivityItem = {
+  id: string;
+  title: string;
+  body: string;
+  status: ThinkingActivityStatus;
+  kind: ThinkingActivityKind;
+  source: ThinkingActivitySource;
+  evidence_event_ids: string[];
+  confidence?: number;
 };
 
 export type Run = {
