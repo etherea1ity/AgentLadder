@@ -376,28 +376,23 @@
 /* Chapter 3 run surface */
 .klara-thinking-block {
   width: 100%;
-  margin: 4px 0 10px;
-  border: 1px solid rgba(221, 209, 189, 0.7);
-  border-radius: 8px;
-  background: rgba(255, 253, 248, 0.54);
-  overflow: hidden;
+  margin: 4px 0 8px;
 }
 .klara-thinking-row {
-  min-height: 36px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px;
+  min-height: 28px;
+  display: inline-grid;
+  grid-template-columns: minmax(0, auto) 24px;
   align-items: center;
-  gap: 8px;
-  padding: 7px 8px 7px 11px;
+  gap: 4px;
 }
 .klara-thinking-title {
   min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 13px;
-  font-weight: 610;
+  font-weight: 650;
   line-height: 1.2;
 }
 .klara-thinking-title > span:last-child {
@@ -406,20 +401,28 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.klara-thinking-pulse {
-  width: 8px;
-  height: 8px;
+.klara-thinking-mark {
+  width: 13px;
+  height: 13px;
+  display: grid;
+  place-items: center;
   border-radius: 999px;
-  background: var(--accent-running);
-  box-shadow: 0 0 0 4px rgba(100, 123, 100, 0.08);
+  border: 1px solid rgba(184, 129, 47, 0.58);
+  box-shadow: 0 0 0 3px rgba(184, 129, 47, 0.08);
 }
-.klara-thinking-block.is-active .klara-thinking-pulse {
+.klara-thinking-mark > span {
+  width: 5px;
+  height: 5px;
+  border-radius: inherit;
+  background: var(--accent-running);
+}
+.klara-thinking-block.is-active .klara-thinking-mark {
   animation: klara-thinking-pulse 1.35s ease-in-out infinite;
 }
 .klara-thinking-toggle {
   appearance: none;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
   border: 0;
@@ -434,58 +437,129 @@
   background: rgba(184, 129, 47, 0.08);
   outline: none;
 }
-.klara-thinking-body {
-  display: grid;
-  gap: 9px;
-  border-top: 1px solid rgba(221, 209, 189, 0.58);
-  padding: 10px 12px 11px;
+.klara-activity-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
 }
-.klara-thinking-summary,
-.klara-thinking-empty {
+.klara-activity-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 100vw);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 22px;
+  border-left: 1px solid rgba(221, 209, 189, 0.72);
+  background: rgba(255, 252, 246, 0.98);
+  box-shadow: -20px 0 50px rgba(78, 61, 37, 0.16);
+  pointer-events: auto;
+  overflow-y: auto;
+}
+.klara-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(221, 209, 189, 0.68);
+}
+.klara-activity-header h3 {
+  display: inline;
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.55;
+  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 720;
 }
-.klara-thinking-empty {
+.klara-activity-header span {
+  margin-left: 8px;
   color: var(--text-muted);
+  font-size: 18px;
 }
-.klara-thinking-stream {
+.klara-activity-header button {
+  appearance: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.klara-activity-header button:hover,
+.klara-activity-header button:focus-visible {
+  background: rgba(184, 129, 47, 0.1);
+  color: var(--text-primary);
+  outline: none;
+}
+.klara-activity-section {
+  display: grid;
+  gap: 12px;
+}
+.klara-activity-section h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 680;
+}
+.klara-activity-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.klara-activity-list {
   list-style: none;
   display: grid;
-  gap: 7px;
+  gap: 18px;
   margin: 0;
   padding: 0;
 }
-.klara-thinking-stream li {
+.klara-activity-list li {
+  position: relative;
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 12px;
   align-items: start;
 }
-.klara-thinking-stream li > span {
-  width: 7px;
-  height: 7px;
-  margin-top: 5px;
+.klara-activity-list li::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 18px;
+  bottom: -16px;
+  width: 1px;
+  background: rgba(117, 113, 104, 0.24);
+}
+.klara-activity-list li:last-child::after {
+  display: none;
+}
+.klara-activity-list li > span {
+  width: 9px;
+  height: 9px;
+  margin-top: 7px;
   border-radius: 999px;
   background: var(--accent-running);
 }
-.klara-thinking-stream .is-failed > span {
+.klara-activity-list .is-failed > span {
   background: var(--accent-error);
 }
-.klara-thinking-stream p {
+.klara-activity-list h5 {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.35;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 680;
 }
-.klara-thinking-stream small {
-  display: block;
-  margin-top: 1px;
-  color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
+.klara-activity-list p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
 }
 .klara-run-surface {
   width: 100%;
@@ -654,13 +728,19 @@
   line-height: 1.35;
 }
 .theme-dark .klara-run-surface,
-.theme-dark .klara-thinking-block,
 .theme-dark .klara-tool-card {
   background: rgba(36, 40, 33, 0.58);
   border-color: #3b4138;
 }
-.theme-dark .klara-run-surface-body,
-.theme-dark .klara-thinking-body {
+.theme-dark .klara-activity-drawer {
+  background: rgba(24, 27, 23, 0.98);
+  border-left-color: #3b4138;
+  box-shadow: -22px 0 52px rgba(0, 0, 0, 0.34);
+}
+.theme-dark .klara-activity-header {
+  border-bottom-color: #3b4138;
+}
+.theme-dark .klara-run-surface-body {
   border-top-color: #3b4138;
 }
 
@@ -695,6 +775,10 @@
   }
   .klara-status-time {
     display: none;
+  }
+  .klara-activity-drawer {
+    width: 100vw;
+    padding: 22px 18px;
   }
 }
 
@@ -985,7 +1069,7 @@
   .klara-link-particles {
     display: none !important;
   }
-  .klara-thinking-pulse {
+  .klara-thinking-mark {
     animation: none !important;
   }
 }

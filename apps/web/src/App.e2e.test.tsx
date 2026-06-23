@@ -164,10 +164,36 @@ describe("Klara app flow", () => {
       "thinking_summary_delta",
       evt("thinking_summary_delta", "Klara visible thinking summary.", {
         text: "Klara is preparing the observable run from public events.",
+        items: [
+          {
+            id: "act_summary_1",
+            title: "Preparing the run",
+            body: "Klara is preparing the observable run from public events.",
+            status: "completed",
+            kind: "orientation",
+            source: "narrator_model",
+            evidence_event_ids: ["evt_thinking_started"],
+          },
+          {
+            id: "act_summary_2",
+            title: "Writing the answer",
+            body: "Klara is preparing the final response.",
+            status: "completed",
+            kind: "composition",
+            source: "narrator_model",
+            evidence_event_ids: ["evt_thinking_started"],
+          },
+        ],
         evidence_event_ids: ["evt_thinking_started"],
       }),
     );
-    expect(await screen.findByText("Klara is preparing the observable run from public events.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Klara is preparing the observable run from public events."),
+    ).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /open activity/i }));
+    expect(await screen.findByText("Klara thinking")).toBeInTheDocument();
+    expect(await screen.findByText("Preparing the run")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /close activity/i }));
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
       "tool_call_started",
