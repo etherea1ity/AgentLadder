@@ -246,6 +246,23 @@ class RunService:
                 return
 
             self._stop_live_activity_narrator(narrator_stop, narrator_thread)
+            thinking_duration_ms = int((perf_counter() - started) * 1000)
+            self._emit(
+                run_id,
+                "thinking_summary_completed",
+                "Thinking summary completed.",
+                {
+                    "duration_ms": thinking_duration_ms,
+                    "has_summary": False,
+                },
+            )
+            final_text = result.final_answer
+            self._emit(run_id, "answer_streaming_started", "Klara is writing the final answer.", {})
+            self._stream_answer_chunks(
+                run_id=run_id,
+                assistant_message=assistant_message,
+                final_text=final_text,
+            )
             summary = self._create_thinking_summary(
                 run_id=run_id,
                 user_request=user_message.content,
@@ -265,23 +282,6 @@ class RunService:
                         "confidence": summary.confidence,
                     },
                 )
-            thinking_duration_ms = int((perf_counter() - started) * 1000)
-            self._emit(
-                run_id,
-                "thinking_summary_completed",
-                "Thinking summary completed.",
-                {
-                    "duration_ms": thinking_duration_ms,
-                    "has_summary": summary is not None,
-                },
-            )
-            final_text = result.final_answer
-            self._emit(run_id, "answer_streaming_started", "Klara is writing the final answer.", {})
-            self._stream_answer_chunks(
-                run_id=run_id,
-                assistant_message=assistant_message,
-                final_text=final_text,
-            )
 
             latency_ms = int((perf_counter() - started) * 1000)
             usage_totals = projector.usage_totals
@@ -539,14 +539,18 @@ class RunService:
                 )
                 if not fact_ids or fact_ids == last_fact_ids:
                     return False
+                live_facts = _live_activity_facts_since(facts, last_fact_ids)
+                if not live_facts:
+                    last_fact_ids = fact_ids
+                    return False
                 self._emit(
                     run_id,
                     "narrator_started",
                     "Activity narrator started.",
                     {
                         "phase": "live",
-                        "fact_count": len(facts),
-                        "fact_kinds": _activity_fact_kinds(facts),
+                        "fact_count": len(live_facts),
+                        "fact_kinds": _activity_fact_kinds(live_facts),
                     },
                 )
                 summary = narrator.create_summary(
@@ -556,7 +560,7 @@ class RunService:
                         run_status="thinking",
                         duration_ms=int((perf_counter() - started) * 1000),
                         events=events,
-                        activity_facts=facts,
+                        activity_facts=live_facts,
                     )
                 )
             except Exception as exc:
@@ -583,8 +587,8 @@ class RunService:
                         "phase": "live",
                         "reason": narrator.last_rejection_reason
                         or "unknown_validation_failure",
-                        "fact_count": len(facts),
-                        "fact_kinds": _activity_fact_kinds(facts),
+                        "fact_count": len(live_facts),
+                        "fact_kinds": _activity_fact_kinds(live_facts),
                     },
                 )
                 return False
@@ -616,8 +620,8 @@ class RunService:
                 {
                     "phase": "live",
                     "item_count": len(summary.items),
-                    "fact_count": len(facts),
-                    "fact_kinds": _activity_fact_kinds(facts),
+                    "fact_count": len(live_facts),
+                    "fact_kinds": _activity_fact_kinds(live_facts),
                 },
             )
             return True
@@ -878,6 +882,31 @@ def _narratable_activity_facts(
     """Return only facts meaningful enough for public activity narration."""
 
     return tuple(fact for fact in facts if _is_narratable_activity_fact(fact))
+
+
+def _live_activity_facts_since(
+    facts: tuple[dict[str, Any], ...],
+    previous_fact_ids: tuple[str, ...],
+) -> tuple[dict[str, Any], ...]:
+    """Return new completed facts worth narrating during an active run."""
+
+    previous = set(previous_fact_ids)
+    live_facts: list[dict[str, Any]] = []
+    for fact in facts:
+        fact_id = fact.get("id")
+        if not isinstance(fact_id, str) or fact_id in previous:
+            continue
+        kind = str(fact.get("kind") or "")
+        if kind in {
+            "web_search_result",
+            "web_fetch_result",
+            "image_generation",
+            "tool_result",
+            "error",
+            "policy_stop",
+        }:
+            live_facts.append(fact)
+    return tuple(live_facts)
 
 
 def _answer_chunks(

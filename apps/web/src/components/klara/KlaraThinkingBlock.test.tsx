@@ -63,6 +63,34 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
   });
 
+  it("shows the live preamble while a run is still thinking", () => {
+    render(
+      <KlaraThinkingBlock
+        run={{
+          ...baseRun,
+          status: "thinking",
+          events: [
+            evt("thinking_summary_started", { started_at: "2026-06-18T12:00:00Z" }),
+            evt("thinking_preamble_delta", {
+              text: "我先理解一下：你是在问今天世界杯的最新情况，我会把可确认的信息整理清楚。",
+              source: "narrator_model",
+              evidence_event_ids: ["evt_1"],
+              confidence: 0.8,
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/Thinking\.\.\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "我先理解一下：你是在问今天世界杯的最新情况，我会把可确认的信息整理清楚。",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+  });
+
   it("does not show completed Thought when no visible activity exists", () => {
     render(
       <KlaraThinkingBlock
@@ -133,7 +161,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByText("Thought for 800ms")).toBeInTheDocument();
   });
 
-  it("does not show completed Thought when only a legacy preamble exists", () => {
+  it("shows completed Thought when only a safe preamble exists", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -152,8 +180,8 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.queryByText("Thought for 1.2s")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Thought for 1.2s")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
   });
 
   it("opens activity only from the right chevron button", () => {
@@ -228,7 +256,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByText("Request understood")).toBeInTheDocument();
   });
 
-  it("does not open an activity drawer for a legacy preamble without activity items", () => {
+  it("opens an activity drawer for a safe preamble without activity items", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -247,9 +275,12 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
-    expect(screen.queryByText("Klara preamble")).not.toBeInTheDocument();
-    expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
+
+    expect(screen.getByText("Klara activity")).toBeInTheDocument();
+    expect(
+      screen.getByText("Klara understood the request and will prepare an answer."),
+    ).toBeInTheDocument();
   });
 
   it("does not render unsafe narrator payload as a public Thought", () => {

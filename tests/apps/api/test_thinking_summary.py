@@ -5,7 +5,11 @@ import time
 
 from apps.api.schemas import RunEventRecord
 from apps.api.services.app_store import JsonlAppStore
-from apps.api.services.run_service import RunService, _narratable_activity_facts
+from apps.api.services.run_service import (
+    RunService,
+    _live_activity_facts_since,
+    _narratable_activity_facts,
+)
 from apps.api.services.sse_bus import SSEBus
 from apps.api.services.workstream_narrator import (
     ThinkingActivityInput,
@@ -401,7 +405,7 @@ def test_provider_reasoning_delta_does_not_enter_assistant_content(tmp_path) -> 
     assert "safe summary" not in main_llm.calls[0][0].content
 
 
-def test_plain_llm_run_with_narrator_emits_request_orientation_activity(tmp_path) -> None:
+def test_plain_llm_run_with_narrator_emits_request_orientation_activity_after_answer_starts(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()
     narrator = SummaryNarratorLlm(
@@ -425,11 +429,15 @@ def test_plain_llm_run_with_narrator_emits_request_orientation_activity(tmp_path
     completed = next(
         event for event in events if event.event_type == "thinking_summary_completed"
     )
+    answer_started = next(
+        event for event in events if event.event_type == "answer_streaming_started"
+    )
 
     deltas = [event for event in events if event.event_type == "thinking_summary_delta"]
     assert deltas
+    assert events.index(answer_started) < events.index(deltas[-1])
     assert deltas[-1].payload["items"][0]["title"] == "Request understood"
-    assert completed.payload["has_summary"] is True
+    assert completed.payload["has_summary"] is False
     assert narrator.inputs
     assert narrator.inputs[-1]["request_language"] == "en"
     assert [fact["kind"] for fact in narrator.inputs[-1]["activity_facts"]] == [
@@ -709,6 +717,23 @@ def test_narratable_activity_facts_exclude_boilerplate_model_events() -> None:
         "fact_search",
         "fact_fetch",
     ]
+
+
+def test_live_activity_facts_include_only_new_completed_work() -> None:
+    facts = (
+        {"id": "fact_request", "kind": "request_orientation", "status": "completed"},
+        {"id": "fact_tool_started", "kind": "tool_call", "status": "started"},
+        {"id": "fact_search", "kind": "web_search_result", "status": "completed"},
+        {"id": "fact_fetch_old", "kind": "web_fetch_result", "status": "completed"},
+        {"id": "fact_fetch_new", "kind": "web_fetch_result", "status": "completed"},
+    )
+
+    filtered = _live_activity_facts_since(
+        facts,
+        ("fact_request", "fact_tool_started", "fact_search", "fact_fetch_old"),
+    )
+
+    assert [fact["id"] for fact in filtered] == ["fact_fetch_new"]
 
 
 def test_thinking_summary_rejects_unsupported_claims(tmp_path) -> None:

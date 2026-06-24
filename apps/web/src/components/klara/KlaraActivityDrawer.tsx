@@ -4,6 +4,7 @@ import type { Run, ThinkingActivityItem } from "../../types/domain";
 import {
   visibleNarratorActivityItems,
   visibleProviderReasoningItems,
+  visibleThinkingPreamble,
 } from "./activityItems";
 
 type Props = {
@@ -19,6 +20,7 @@ export function KlaraActivityDrawer({ run, durationLabel, onClose }: Props) {
   );
   const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
   const narratorItems = useMemo(() => visibleNarratorActivityItems(events), [events]);
+  const preamble = useMemo(() => visibleThinkingPreamble(events), [events]);
 
   return (
     <div className="klara-activity-layer">
@@ -44,10 +46,13 @@ export function KlaraActivityDrawer({ run, durationLabel, onClose }: Props) {
           </section>
         ) : null}
 
-        {narratorItems.length ? (
+        {preamble || narratorItems.length ? (
           <section className="klara-activity-section">
             <h4>Klara activity</h4>
-            <ActivityList items={narratorItems} />
+            {preamble ? (
+              <p className="klara-activity-preamble">{preamble.text}</p>
+            ) : null}
+            {narratorItems.length ? <ActivityList items={narratorItems} /> : null}
           </section>
         ) : null}
       </aside>
