@@ -49,7 +49,6 @@ export function KlaraRunSurface({
   const llmRounds = useMemo(() => buildLlmRounds(visibleEvents), [visibleEvents]);
   const toolCards = useMemo(() => buildToolCards(visibleEvents), [visibleEvents]);
   const activityFacts = useMemo(() => buildActivityFacts(visibleEvents), [visibleEvents]);
-  const narratorEvents = useMemo(() => buildNarratorEvents(visibleEvents), [visibleEvents]);
   const traceSaved = Boolean(
     run?.trace_saved ||
       visibleEvents.some(
@@ -114,16 +113,6 @@ export function KlaraRunSurface({
             </DebugSection>
           ) : null}
 
-          {narratorEvents.length ? (
-            <DebugSection title="Narrator">
-              <ol className="klara-run-timeline" aria-label="Narrator diagnostics">
-                {narratorEvents.map((event) => (
-                  <TraceEventItem key={event.event_id} event={event} />
-                ))}
-              </ol>
-            </DebugSection>
-          ) : null}
-
           {visibleEvents.length ? (
             <DebugSection title="Trace">
               <ol className="klara-run-timeline" aria-label="Lifecycle timeline">
@@ -136,16 +125,6 @@ export function KlaraRunSurface({
         </div>
       ) : null}
     </section>
-  );
-}
-
-function buildNarratorEvents(events: RunEvent[]): RunEvent[] {
-  return events.filter(
-    (event) =>
-      event.event_type === "narrator_started" ||
-      event.event_type === "narrator_completed" ||
-      event.event_type === "narrator_failed" ||
-      event.event_type === "narrator_rejected",
   );
 }
 

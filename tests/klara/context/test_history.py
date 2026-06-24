@@ -13,14 +13,14 @@ def test_sanitize_history_content_replaces_local_image_markdown() -> None:
 
     content = (
         "![Generated image](/api/assets/local?path=data/assets/images/20260617/a.png)\n"
-        "这就是克拉拉的样子。"
+        "This is Klara's generated image."
     )
 
     sanitized = sanitize_history_content(content)
 
     assert "/api/assets/local" not in sanitized
     assert GENERATED_IMAGE_PLACEHOLDER in sanitized
-    assert "这就是克拉拉的样子。" in sanitized
+    assert "This is Klara's generated image." in sanitized
 
 
 def test_prepare_conversation_history_sanitizes_and_bounds_messages() -> None:

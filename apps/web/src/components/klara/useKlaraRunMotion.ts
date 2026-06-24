@@ -68,8 +68,6 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
       return { ...base, kind: 'ask.created', status: 'completed', publicLabel: 'Created AskState', publicDetail: 'Klara structured the user question as AskState.', concept: 'AskState', capabilities: ['model'] };
     case 'thinking_summary_started':
       return { ...base, kind: 'thinking.summary.started', status: 'started', publicLabel: 'Thinking summary started', publicDetail: 'Klara started tracking a visible summary from public run events.', concept: 'ThinkingSummary', capabilities: ['trace'] };
-    case 'thinking_summary_delta':
-      return { ...base, kind: 'thinking.summary.delta', status: 'progress', publicLabel: 'Thinking summary updated', publicDetail: String(event.payload?.text ?? event.message), concept: 'ThinkingSummary', capabilities: ['trace'] };
     case 'thinking_summary_completed':
       return { ...base, kind: 'thinking.summary.completed', status: 'completed', publicLabel: 'Thinking summary completed', publicDetail: 'Klara finished the visible summary for this run.', concept: 'ThinkingSummary', capabilities: ['trace'] };
     case 'llm_call_started':
@@ -98,8 +96,6 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
     }
     case 'policy_stop':
       return { ...base, kind: 'policy.stopped', status: 'completed', publicLabel: 'Tool policy stopped', publicDetail: String(event.payload?.reason ?? 'A runtime tool policy stopped additional tool calls.'), concept: 'LoopPolicy', capabilities: ['policy'] };
-    case 'workstream_note':
-      return { ...base, kind: 'workstream.note', status: 'progress', publicLabel: 'Runtime note', publicDetail: String(event.payload?.text ?? event.message), concept: 'RunEvent', capabilities: ['trace'] };
     case 'hook_placement_started':
     case 'hook_placement_completed': {
       const placement = String(event.payload?.placement ?? 'Hook');
@@ -186,7 +182,7 @@ function phaseForRun(run: Run, kind?: KlaraRunEventKind): KlaraVisualPhase {
   if (run.status === 'completed') return 'completed';
   if (run.status === 'failed' || run.status === 'cancelled') return 'error';
   if (kind === 'trace.saved') return 'saving';
-  if (kind === 'thinking.summary.started' || kind === 'thinking.summary.delta') return 'thinking';
+  if (kind === 'thinking.summary.started') return 'thinking';
   if (kind === 'tool.call.started') return 'acting';
   if (kind === 'tool.call.failed' || kind === 'policy.stopped') return 'checking';
   if (kind === 'retrieval.started' || kind === 'chunk.retrieved') return 'searching';

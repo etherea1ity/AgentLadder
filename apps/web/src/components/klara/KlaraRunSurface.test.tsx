@@ -162,25 +162,32 @@ describe("KlaraRunSurface", () => {
     expect(screen.getAllByText(/content_preview/).length).toBeGreaterThan(0);
   });
 
-  it("renders narrator diagnostics only inside Developer debug", () => {
+  it("does not render a narrator diagnostics section", () => {
     render(
       <KlaraRunSurface
         run={{
           ...baseRun,
           events: [
-            evt("narrator_started", { phase: "completed", fact_count: 1 }),
-            evt("narrator_rejected", {
-              phase: "completed",
-              reason: "invalid_json",
+            evt("provider_reasoning_delta", {
+              items: [
+                {
+                  id: "provider_1",
+                  title: "Model thinking",
+                  body: "Provider reasoning summary.",
+                  status: "completed",
+                  kind: "orientation",
+                  source: "provider_reasoning",
+                  evidence_event_ids: ["evt_llm"],
+                },
+              ],
             }),
           ],
         }}
       />,
     );
 
-    expect(screen.getByText("Narrator")).toBeInTheDocument();
-    expect(screen.getAllByText("narrator_started").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("narrator_rejected").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Narrator")).not.toBeInTheDocument();
+    expect(screen.getAllByText("provider_reasoning_delta").length).toBeGreaterThan(0);
   });
 
   it("does not label persisted public events as unavailable", () => {

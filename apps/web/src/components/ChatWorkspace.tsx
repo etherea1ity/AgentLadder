@@ -19,6 +19,7 @@ import type {
   Run,
 } from "../types/domain";
 import { KlaraHero } from "./klara/KlaraHero";
+import { KlaraActivityDrawer } from "./klara/KlaraActivityDrawer";
 import { KlaraPresence } from "./klara/KlaraPresence";
 import { KlaraRunSurface } from "./klara/KlaraRunSurface";
 import { KlaraRunStatus } from "./klara/KlaraRunStatus";
@@ -51,11 +52,29 @@ export function ChatWorkspace(props: Props) {
   const empty = !props.activeSessionId || props.messages.length === 0;
   const [composerFocused, setComposerFocused] = useState(false);
   const [typingPulse, setTypingPulse] = useState(0);
+  const [activeActivityRunId, setActiveActivityRunId] = useState<string | null>(
+    null,
+  );
   const lastTypingPulseRef = useRef(0);
+  const activityTriggerRef = useRef<HTMLButtonElement | null>(null);
   const activeRun = [...props.messages]
     .reverse()
     .map((message) => (message.run_id ? props.runs[message.run_id] : undefined))
     .find((run): run is Run => isKlaraRunActive(run));
+  const activeActivityRun = activeActivityRunId
+    ? props.runs[activeActivityRunId]
+    : null;
+  const openActivity = useCallback(
+    (runId: string, trigger: HTMLButtonElement) => {
+      activityTriggerRef.current = trigger;
+      setActiveActivityRunId(runId);
+    },
+    [],
+  );
+  const closeActivity = useCallback(() => {
+    setActiveActivityRunId(null);
+    window.setTimeout(() => activityTriggerRef.current?.focus(), 0);
+  }, []);
   const pulseTyping = () => {
     const now = Date.now();
     if (now - lastTypingPulseRef.current < 700) return;
@@ -66,6 +85,13 @@ export function ChatWorkspace(props: Props) {
     activeRun,
     props.handoffTriggerRunId,
   );
+
+  useEffect(() => {
+    if (activeActivityRunId && !props.runs[activeActivityRunId]) {
+      setActiveActivityRunId(null);
+    }
+  }, [activeActivityRunId, props.runs]);
+
   return (
     <main className={`chat-workspace ${empty ? "is-empty" : "has-messages"}`}>
       <TopPath
@@ -104,6 +130,8 @@ export function ChatWorkspace(props: Props) {
             activeRunId={activeRun?.run_id ?? null}
             handoffRunId={handoffRunId}
             arrivalRunId={arrivalRunId}
+            activeActivityRunId={activeActivityRunId}
+            onOpenActivity={openActivity}
           />
           <div className="composer-footer">
             <ChatInput
@@ -125,6 +153,11 @@ export function ChatWorkspace(props: Props) {
           {handoff ? <KlaraHandoffOverlay handoff={handoff} /> : null}
         </>
       )}
+      <KlaraActivityDrawer
+        run={activeActivityRun}
+        open={Boolean(activeActivityRun)}
+        onClose={closeActivity}
+      />
     </main>
   );
 }
@@ -206,12 +239,16 @@ function MessageList({
   activeRunId,
   handoffRunId,
   arrivalRunId,
+  activeActivityRunId,
+  onOpenActivity,
 }: {
   messages: Message[];
   runs: Record<string, Run>;
   activeRunId: string | null;
   handoffRunId: string | null;
   arrivalRunId: string | null;
+  activeActivityRunId: string | null;
+  onOpenActivity: (runId: string, trigger: HTMLButtonElement) => void;
 }) {
   const scrollerRef = useRef<HTMLElement | null>(null);
   const shouldFollowRef = useRef(true);
@@ -273,6 +310,10 @@ function MessageList({
               arrivalActive={Boolean(
                 turn.run && arrivalRunId === turn.run.run_id,
               )}
+              activityOpen={Boolean(
+                turn.run && activeActivityRunId === turn.run.run_id,
+              )}
+              onOpenActivity={onOpenActivity}
             />
           ) : null}
         </article>
@@ -363,12 +404,16 @@ function AssistantMessage({
   handoffActive,
   visuallyActive,
   arrivalActive,
+  activityOpen,
+  onOpenActivity,
 }: {
   message: Message;
   run?: Run;
   handoffActive: boolean;
   visuallyActive: boolean;
   arrivalActive: boolean;
+  activityOpen: boolean;
+  onOpenActivity: (runId: string, trigger: HTMLButtonElement) => void;
 }) {
   const [feedback, setFeedback] = useState<"up" | "down" | null>(() =>
     readFeedback(message.message_id),
@@ -395,7 +440,11 @@ function AssistantMessage({
           arrivalActive={arrivalActive}
           hideActivePhaseCopy
         />
-        <KlaraThinkingBlock run={run} />
+        <KlaraThinkingBlock
+          run={run}
+          isActivityOpen={activityOpen}
+          onOpenActivity={onOpenActivity}
+        />
       </div>
       <AssistantContent
         content={message.content}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PanelLeft } from "lucide-react";
 import { api, ApiError, type RunEventSubscription } from "./api/client";
 import { ChatWorkspace } from "./components/ChatWorkspace";
 import { Sidebar } from "./components/Sidebar";
@@ -160,7 +161,7 @@ export default function App() {
   useEffect(() => {
     const protectCenterRail = () => {
       const width = window.innerWidth;
-      const shouldCollapseSidebar = empty ? width <= 1160 : width <= 1060;
+      const shouldCollapseSidebar = width <= 900;
       setSidebarCollapsed((current) =>
         current === shouldCollapseSidebar ? current : shouldCollapseSidebar,
       );
@@ -618,13 +619,6 @@ export default function App() {
           current_label: "Thinking...",
         };
       }
-      if (event.event_type === "thinking_summary_delta") {
-        next.live = {
-          elapsed_ms: current.live?.elapsed_ms,
-          streamed_chars: current.live?.streamed_chars ?? 0,
-          current_label: "Thinking summary updated",
-        };
-      }
       if (event.event_type === "thinking_summary_completed") {
         next.live = {
           elapsed_ms: nullableNumber(event.payload?.duration_ms) ?? current.live?.elapsed_ms,
@@ -869,7 +863,7 @@ export default function App() {
         onClick={() => setSidebarCollapsed((value) => !value)}
         aria-label="Toggle mobile sidebar"
       >
-        ☰
+        <PanelLeft size={19} aria-hidden="true" />
       </button>
       <Sidebar
         sessions={sessions}

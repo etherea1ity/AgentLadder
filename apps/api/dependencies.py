@@ -62,13 +62,6 @@ _runtime = load_runtime_config(Path("config"))
 _model_options = _load_model_options(_models)
 _default_model_ref = _default_model(_models)
 _llm = RoutedLlmClient(models=_models, dotenv_path=".env")
-_enable_activity_narrator = os.getenv("KLARA_ENABLE_ACTIVITY_NARRATOR", "1").strip().lower() not in {
-    "0",
-    "false",
-    "no",
-    "off",
-}
-_narrator_model_ref = os.getenv("KLARA_NARRATOR_MODEL", _default_model_ref).strip() or _default_model_ref
 _run_service = RunService(
     store=_store,
     bus=_bus,
@@ -78,9 +71,6 @@ _run_service = RunService(
     default_model=_default_model_ref,
     loop_policy=_runtime.loop_policy,
     user_context=_local_user_context(),
-    narrator_client=_llm if _enable_activity_narrator else None,
-    narrator_model=_narrator_model_ref if _enable_activity_narrator else None,
-    enable_workstream_narrator=_enable_activity_narrator,
 )
 
 

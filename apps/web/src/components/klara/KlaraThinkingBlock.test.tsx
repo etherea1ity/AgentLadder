@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { useRef, useState } from "react";
+import { describe, expect, it, vi } from "vitest";
 import type { Run, RunEvent } from "../../types/domain";
+import { KlaraActivityDrawer } from "./KlaraActivityDrawer";
 import { KlaraThinkingBlock } from "./KlaraThinkingBlock";
 
 const baseRun: Run = {
@@ -15,8 +17,8 @@ const baseRun: Run = {
 };
 
 describe("KlaraThinkingBlock", () => {
-  it("shows active thinking with a timer and mini Klara marker", () => {
-    render(
+  it("shows active thinking with a timer and real mini Klara marker", () => {
+    const { container } = render(
       <KlaraThinkingBlock
         run={{
           ...baseRun,
@@ -27,71 +29,11 @@ describe("KlaraThinkingBlock", () => {
 
     expect(screen.getByText(/Thinking\.\.\. 1\.2s/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /mini klara/i })).toBeInTheDocument();
+    expect(container.querySelector(".klara-thinking-mini .klara-presence")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
   });
 
-  it("shows the latest live activity item while a run is still thinking", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "thinking",
-          events: [
-            evt("thinking_summary_started", { started_at: "2026-06-18T12:00:00Z" }),
-            evt("thinking_summary_delta", {
-              items: [
-                activity(
-                  "act_live_1",
-                  "Request understood",
-                  "Klara identified the request goal and keeps public activity in one stream.",
-                  "narrator_model",
-                ),
-              ],
-            }),
-          ],
-        }}
-      />,
-    );
-
-    expect(screen.getByText(/Thinking\.\.\./)).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Klara identified the request goal and keeps public activity in one stream.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByLabelText("Live activity")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
-  });
-
-  it("shows the live preamble while a run is still thinking", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "thinking",
-          events: [
-            evt("thinking_summary_started", { started_at: "2026-06-18T12:00:00Z" }),
-            evt("thinking_preamble_delta", {
-              text: "我先理解一下：你是在问今天世界杯的最新情况，我会把可确认的信息整理清楚。",
-              source: "narrator_model",
-              evidence_event_ids: ["evt_1"],
-              confidence: 0.8,
-            }),
-          ],
-        }}
-      />,
-    );
-
-    expect(screen.getByText(/Thinking\.\.\./)).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "我先理解一下：你是在问今天世界杯的最新情况，我会把可确认的信息整理清楚。",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
-  });
-
-  it("does not show completed Thought when no visible activity exists", () => {
+  it("does not show completed Thought when provider reasoning is absent", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -106,268 +48,163 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
   });
 
-  it("shows completed Thought when narrator activity exists", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("thinking_summary_delta", {
-              text: "Klara summarized the public trace.",
-              items: [
-                activity(
-                  "act_1",
-                  "Request understood",
-                  "Klara identified the request goal and prepared a concise response.",
-                  "narrator_model",
-                ),
-              ],
-            }),
-            evt("thinking_summary_completed", { duration_ms: 4200, has_summary: true }),
-          ],
-        }}
-      />,
-    );
-
-    expect(screen.getByText("Thought for 4.2s")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
-  });
-
   it("shows completed Thought when provider reasoning exists", () => {
     render(
       <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("provider_reasoning_delta", {
-              items: [
-                activity(
-                  "act_provider_1",
-                  "Model thinking",
-                  "The provider returned a safe reasoning summary.",
-                  "provider_reasoning",
-                ),
-              ],
-            }),
-            evt("provider_reasoning_completed", {}),
-            evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
-          ],
-        }}
+        run={completedRun([
+          providerReasoningEvent("The provider returned a safe reasoning summary."),
+          evt("provider_reasoning_completed", {}),
+          evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
+        ])}
       />,
     );
 
     expect(screen.getByText("Thought for 800ms")).toBeInTheDocument();
-  });
-
-  it("shows completed Thought when only a safe preamble exists", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("thinking_preamble_delta", {
-              text: "Klara understood the request and will prepare an answer.",
-              source: "narrator_model",
-              evidence_event_ids: ["evt_1"],
-              confidence: 0.8,
-            }),
-            evt("thinking_summary_completed", { duration_ms: 1200, has_summary: false }),
-          ],
-        }}
-      />,
-    );
-
-    expect(screen.getByText("Thought for 1.2s")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
   });
 
-  it("opens activity only from the right chevron button", () => {
+  it("does not open activity when the label is clicked", () => {
+    const onOpenActivity = vi.fn();
     render(
       <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("thinking_summary_delta", {
-              items: [
-                activity(
-                  "act_summary_1",
-                  "Request understood",
-                  "Klara identified the request goal before answering.",
-                  "narrator_model",
-                ),
-              ],
-            }),
-            evt("thinking_summary_completed", { duration_ms: 800, has_summary: true }),
-          ],
-        }}
+        run={completedRun([
+          providerReasoningEvent("The provider returned a safe reasoning summary."),
+          evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
+        ])}
+        onOpenActivity={onOpenActivity}
       />,
     );
 
     fireEvent.click(screen.getByText("Thought for 800ms"));
-    expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
+    expect(onOpenActivity).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-    expect(screen.getByText("Klara activity")).toBeInTheDocument();
-    expect(screen.getByText("Request understood")).toBeInTheDocument();
+    expect(onOpenActivity).toHaveBeenCalledTimes(1);
   });
 
-  it("renders provider and narrator activity inside the drawer", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("provider_reasoning_delta", {
-              items: [
-                activity(
-                  "act_provider_1",
-                  "Model thinking",
-                  "The provider returned a safe reasoning summary.",
-                  "provider_reasoning",
-                ),
-              ],
-            }),
-            evt("thinking_summary_delta", {
-              items: [
-                activity(
-                  "act_summary_1",
-                  "Request understood",
-                  "Klara identified the request goal before answering.",
-                  "narrator_model",
-                ),
-              ],
-            }),
-            evt("thinking_summary_completed", { duration_ms: 800, has_summary: true }),
-          ],
-        }}
-      />,
+  it("keeps a single activity drawer when multiple thinking blocks exist", () => {
+    const runOne = completedRun(
+      [
+        providerReasoningEvent("First provider reasoning.", "run_1"),
+        evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
+      ],
+      "run_1",
     );
+    const runTwo = completedRun(
+      [
+        providerReasoningEvent("Second provider reasoning.", "run_2"),
+        evt("thinking_summary_completed", { duration_ms: 1400, has_summary: false }),
+      ],
+      "run_2",
+    );
+
+    render(<ActivityHarness runs={[runOne, runTwo]} />);
+
+    const buttons = screen.getAllByRole("button", { name: /open activity/i });
+    fireEvent.click(buttons[0]);
+    expect(screen.getAllByRole("dialog", { name: /activity/i })).toHaveLength(1);
+    expect(screen.getByText("First provider reasoning.")).toBeInTheDocument();
+
+    fireEvent.click(buttons[1]);
+    expect(screen.getAllByRole("dialog", { name: /activity/i })).toHaveLength(1);
+    expect(screen.queryByText("First provider reasoning.")).not.toBeInTheDocument();
+    expect(screen.getByText("Second provider reasoning.")).toBeInTheDocument();
+  });
+
+  it("closes the singleton drawer from close button, backdrop, and Escape", () => {
+    const run = completedRun([
+      providerReasoningEvent("The provider returned a safe reasoning summary."),
+      evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
+    ]);
+    const { container } = render(<ActivityHarness runs={[run]} />);
 
     fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-
-    expect(screen.getAllByText("Model thinking").length).toBeGreaterThan(0);
-    expect(screen.getByText("Klara activity")).toBeInTheDocument();
-    expect(screen.getByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
-    expect(screen.getByText("Request understood")).toBeInTheDocument();
-  });
-
-  it("opens an activity drawer for a safe preamble without activity items", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("thinking_preamble_delta", {
-              text: "Klara understood the request and will prepare an answer.",
-              source: "narrator_model",
-              evidence_event_ids: ["evt_1"],
-              confidence: 0.8,
-            }),
-            evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
-          ],
-        }}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-
-    expect(screen.getByText("Klara activity")).toBeInTheDocument();
-    expect(
-      screen.getByText("Klara understood the request and will prepare an answer."),
-    ).toBeInTheDocument();
-  });
-
-  it("does not render unsafe narrator payload as a public Thought", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("thinking_summary_delta", {
-              items: [
-                activity(
-                  "act_bad_query",
-                  "Search query used",
-                  "Klara used query arguments against https://example.com/raw.",
-                  "narrator_model",
-                ),
-              ],
-            }),
-            evt("thinking_summary_completed", { duration_ms: 800, has_summary: true }),
-          ],
-        }}
-      />,
-    );
-
-    expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
-  });
-
-  it("closes the activity drawer", () => {
-    render(
-      <KlaraThinkingBlock
-        run={{
-          ...baseRun,
-          status: "completed",
-          events: [
-            evt("thinking_summary_delta", {
-              items: [
-                activity(
-                  "act_summary_1",
-                  "Request understood",
-                  "Klara identified the request goal before answering.",
-                  "narrator_model",
-                ),
-              ],
-            }),
-            evt("thinking_summary_completed", { duration_ms: 800, has_summary: true }),
-          ],
-        }}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-    expect(screen.getByText("Klara activity")).toBeInTheDocument();
-
+    expect(screen.getByRole("dialog", { name: /activity/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close activity/i }));
+    expect(screen.queryByRole("dialog", { name: /activity/i })).not.toBeInTheDocument();
 
-    expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
+    const layer = container.querySelector(".klara-activity-layer");
+    expect(layer).toBeTruthy();
+    fireEvent.mouseDown(layer as Element);
+    expect(screen.queryByRole("dialog", { name: /activity/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: /activity/i })).not.toBeInTheDocument();
   });
 });
 
-function activity(
-  id: string,
-  title: string,
-  body: string,
-  source: "provider_reasoning" | "narrator_model",
-) {
+function ActivityHarness({ runs }: { runs: Run[] }) {
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const activeRun = runs.find((run) => run.run_id === activeRunId) ?? null;
+  return (
+    <>
+      {runs.map((run) => (
+        <KlaraThinkingBlock
+          key={run.run_id}
+          run={run}
+          isActivityOpen={activeRunId === run.run_id}
+          onOpenActivity={(runId, trigger) => {
+            triggerRef.current = trigger;
+            setActiveRunId(runId);
+          }}
+        />
+      ))}
+      <KlaraActivityDrawer
+        run={activeRun}
+        open={Boolean(activeRun)}
+        onClose={() => {
+          setActiveRunId(null);
+          window.setTimeout(() => triggerRef.current?.focus(), 0);
+        }}
+      />
+    </>
+  );
+}
+
+function completedRun(events: RunEvent[], runId = "run_1"): Run {
   return {
-    id,
-    title,
-    body,
+    ...baseRun,
+    run_id: runId,
     status: "completed",
-    kind: "orientation",
-    source,
-    evidence_fact_ids: source === "narrator_model" ? ["fact_1"] : undefined,
-    evidence_event_ids: ["evt_1"],
-    confidence: 0.8,
+    latency_ms: 800,
+    events: events.map((event, index) => ({
+      ...event,
+      run_id: runId,
+      created_at: `2026-06-18T12:00:0${index}.000Z`,
+    })),
   };
 }
 
-function evt(event_type: RunEvent["event_type"], payload: RunEvent["payload"]): RunEvent {
+function providerReasoningEvent(body: string, runId = "run_1"): RunEvent {
+  return evt("provider_reasoning_delta", {
+    items: [
+      {
+        id: `provider_${runId}`,
+        title: "Model thinking",
+        body,
+        status: "completed",
+        kind: "orientation",
+        source: "provider_reasoning",
+        evidence_event_ids: [`evt_${runId}`],
+        confidence: 1,
+      },
+    ],
+  });
+}
+
+function evt(
+  event_type: RunEvent["event_type"],
+  payload: Record<string, unknown>,
+): RunEvent {
   return {
-    event_id: `evt_${event_type}_${Math.random()}`,
+    event_id: `evt_${event_type}_${Math.random().toString(16).slice(2)}`,
     run_id: "run_1",
     event_type,
     message: event_type,
     payload,
-    created_at: new Date().toISOString(),
+    created_at: "2026-06-18T12:00:00.000Z",
   };
 }

@@ -7,19 +7,19 @@ import {
 
 describe('normalizeMathMarkdown', () => {
   it('keeps Big-O as one math expression', () => {
-    expect(normalizeMathMarkdown('复杂度是 O(N \\log N)。')).toContain('$O(N \\log N)$');
+    expect(normalizeMathMarkdown('\u590d\u6742\u5ea6\u662f O(N \\log N)\u3002')).toContain('$O(N \\log N)$');
   });
 
   it('repairs broken symbol explanation fragments', () => {
-    const input = ['f', '(', 't', ')', 'f(t)：时域信号', 'ω', '=', '2πf', 'ω=2πf：角频率'].join('\n');
+    const input = ['f', '(', 't', ')', 'f(t)\uff1a\u65f6\u57df\u4fe1\u53f7', 'ω', '=', '2πf', 'ω=2πf\uff1a\u89d2\u9891\u7387'].join('\n');
     const output = normalizeMathMarkdown(input);
-    expect(output).toContain('$f(t)$：时域信号');
-    expect(output).toContain('ω=2πf：角频率');
+    expect(output).toContain('$f(t)$\uff1a\u65f6\u57df\u4fe1\u53f7');
+    expect(output).toContain('ω=2πf\uff1a\u89d2\u9891\u7387');
     expect(output).not.toContain('f\n(\nt\n)\nf(t)');
   });
 
   it('converts bracket display math and parenthesized inline math', () => {
-    const output = normalizeMathMarkdown('[ F(\\omega) = \\int f(t)\\,dt ]\n符号 ( \\omega = 2\\pi f )');
+    const output = normalizeMathMarkdown('[ F(\\omega) = \\int f(t)\\,dt ]\n\u7b26\u53f7 ( \\omega = 2\\pi f )');
     expect(output).toContain('$$\nF(\\omega) = \\int f(t)\\,dt\n$$');
     expect(output).toContain('$\\omega = 2\\pi f$');
   });

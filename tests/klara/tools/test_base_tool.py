@@ -33,7 +33,7 @@ class TemplateProbeTool(BaseTool):
         if mode == "input_error":
             raise ToolInputError("invalid probe arguments")
         if mode == "json":
-            return self.json_success(arguments, {"message": "克拉拉会继续努力"})
+            return self.json_success(arguments, {"message": "Klara will keep going"})
         return self.success(arguments, self.optional_string(arguments, "text"))
 
 
@@ -52,14 +52,14 @@ def test_base_tool_converts_input_errors_into_failed_observations() -> None:
 
 
 def test_base_tool_json_success_keeps_utf8_content_readable() -> None:
-    """JSON observations should keep Chinese text readable for traces and docs."""
+    """JSON observations should keep UTF-8 text readable for traces and docs."""
 
     tool = TemplateProbeTool()
 
     result = tool.execute({"tool_call_id": "call-2", "mode": "json"})
 
-    assert "克拉拉会继续努力" in result.content
-    assert json.loads(result.content) == {"message": "克拉拉会继续努力"}
+    assert "Klara will keep going" in result.content
+    assert json.loads(result.content) == {"message": "Klara will keep going"}
 
 
 def test_base_tool_optional_string_trims_and_rejects_non_strings() -> None:

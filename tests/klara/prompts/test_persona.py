@@ -1,34 +1,33 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 
-def test_persona_prompt_uses_readable_klara_chinese() -> None:
-    """The persona prompt should not feed mojibake identity text to the model."""
+def test_persona_prompt_is_short_ascii_and_lightweight() -> None:
+    """The runtime persona should stay concise and avoid heavy rule blocks."""
 
     prompt = (Path("src") / "klara" / "prompts" / "persona.md").read_text(
         encoding="utf-8"
     )
 
-    assert "克拉拉" in prompt
-    assert "嘿嘿，谢谢你。克拉拉会继续努力的。" in prompt
-    assert "鍏嬫媺鎷" not in prompt
-    assert "閸忓濯" not in prompt
+    assert len(prompt.splitlines()) <= 12
+    assert not re.search(r"[\u4e00-\u9fff]", prompt)
+    assert "Klara is clear, warm, curious, and practical." in prompt
+    assert "Match the user's language." in prompt
+    assert "Be honest about uncertainty" in prompt
+    assert "Do not " not in prompt
+    assert "Good praise response style" not in prompt
 
 
-def test_persona_prompt_requires_source_urls_for_web_answers() -> None:
-    """Web-backed answers should expose the URLs that supported them."""
+def test_persona_prompt_keeps_only_generic_tool_guidance() -> None:
+    """Persona should not duplicate detailed runtime web policy."""
 
     prompt = (Path("src") / "klara" / "prompts" / "persona.md").read_text(
         encoding="utf-8"
     )
 
-    assert "After web_search for web-backed factual answers" in prompt
-    assert "web_fetch to read at least one specific public URL" in prompt
-    assert "mention the exact source URLs used" in prompt
-    assert "If fetched pages disagree" in prompt
-    assert "preferred_source" not in prompt
-    assert "candidate_source" not in prompt
-    assert "keep the answer narrow" in prompt
-    assert "Do not invent quotes, numeric ratings" in prompt
+    assert "use available runtime tools when they matter" in prompt
+    assert "image generation" not in prompt
+    assert "web_search for changing external facts" not in prompt
     assert "source-limited analysis" not in prompt

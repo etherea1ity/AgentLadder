@@ -26,19 +26,10 @@ export type RunEventType =
   | 'run_created'
   | 'thinking_started'
   | 'thinking_summary_started'
-  | 'thinking_preamble_started'
-  | 'thinking_preamble_delta'
-  | 'thinking_preamble_completed'
-  | 'thinking_preamble_failed'
-  | 'thinking_summary_delta'
   | 'thinking_summary_completed'
   | 'provider_reasoning_delta'
   | 'provider_reasoning_completed'
   | 'activity_fact_recorded'
-  | 'narrator_started'
-  | 'narrator_completed'
-  | 'narrator_failed'
-  | 'narrator_rejected'
   | 'web_research.started'
   | 'web_research.state_updated'
   | 'web_search.started'
@@ -61,7 +52,6 @@ export type RunEventType =
   | 'policy_stop'
   | 'hook_placement_started'
   | 'hook_placement_completed'
-  | 'workstream_note'
   | 'run_completed'
   | 'run_failed'
   | 'run_cancelled'
@@ -104,7 +94,7 @@ export type ThinkingActivityKind =
   | 'composition'
   | 'finalization'
   | 'error';
-export type ThinkingActivitySource = 'narrator_model' | 'provider_reasoning';
+export type ThinkingActivitySource = 'provider_reasoning';
 
 export type ThinkingActivityItem = {
   id: string;
@@ -114,12 +104,6 @@ export type ThinkingActivityItem = {
   kind: ThinkingActivityKind;
   source: ThinkingActivitySource;
   evidence_fact_ids?: string[];
-  evidence_event_ids: string[];
-  confidence?: number;
-};
-
-export type ThinkingPreamble = {
-  text: string;
   evidence_event_ids: string[];
   confidence?: number;
 };
@@ -224,7 +208,6 @@ export type KlaraRunEventKind =
   | 'model.call.started'
   | 'model.call.completed'
   | 'thinking.summary.started'
-  | 'thinking.summary.delta'
   | 'thinking.summary.completed'
   | 'answer.started'
   | 'answer.token'
@@ -234,7 +217,6 @@ export type KlaraRunEventKind =
   | 'tool.call.failed'
   | 'hook.placement.started'
   | 'hook.placement.completed'
-  | 'workstream.note'
   | 'policy.stopped'
   | 'observation.created'
   | 'retrieval.started'

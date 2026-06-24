@@ -394,24 +394,18 @@
 }
 .klara-thinking-mini {
   position: relative;
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: inline-grid;
+  place-items: center;
   border-radius: 999px;
-  background:
-    radial-gradient(circle at 42% 38%, rgba(255, 255, 255, 0.95) 0 20%, transparent 22%),
-    radial-gradient(circle at 52% 54%, #e4b968 0 34%, #b8812f 66%, rgba(184, 129, 47, 0.58) 100%);
-  box-shadow:
-    0 0 0 1px rgba(184, 129, 47, 0.2),
-    0 0 12px rgba(184, 129, 47, 0.16);
+  overflow: visible;
 }
-.klara-thinking-mini.is-active::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: inherit;
-  border: 1px solid rgba(184, 129, 47, 0.28);
-  animation: klara-thinking-pulse 1.5s ease-in-out infinite;
+.klara-thinking-mini .klara-presence {
+  --klara-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 .klara-thinking-title {
   min-width: 0;
@@ -455,23 +449,26 @@
   position: fixed;
   inset: 0;
   z-index: 70;
-  pointer-events: none;
+  pointer-events: auto;
+  background: rgba(32, 39, 37, 0.1);
+  backdrop-filter: blur(2px);
 }
 .klara-activity-drawer {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(440px, 100vw);
+  width: min(420px, calc(100vw - 24px));
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   padding: 24px 22px;
   border-left: 1px solid rgba(221, 209, 189, 0.72);
-  background: rgba(255, 252, 246, 0.98);
+  background: rgba(255, 253, 249, 0.98);
   box-shadow: -20px 0 50px rgba(78, 61, 37, 0.16);
   pointer-events: auto;
   overflow-y: auto;
+  animation: klara-drawer-enter 0.18s ease-out;
 }
 .klara-activity-header {
   display: flex;
@@ -485,13 +482,13 @@
   display: inline;
   margin: 0;
   color: var(--text-primary);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 720;
 }
 .klara-activity-header span {
   margin-left: 8px;
   color: var(--text-muted);
-  font-size: 18px;
+  font-size: 14px;
 }
 .klara-activity-header button {
   appearance: none;
@@ -518,7 +515,7 @@
 .klara-activity-section h4 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 680;
 }
 .klara-activity-empty {
@@ -584,10 +581,11 @@
 .klara-run-surface {
   width: 100%;
   margin: 2px 0 12px;
-  border: 1px solid rgba(221, 209, 189, 0.72);
+  border: 1px solid rgba(221, 209, 189, 0.54);
   border-radius: 8px;
-  background: rgba(255, 253, 248, 0.32);
+  background: rgba(255, 253, 248, 0.22);
   overflow: hidden;
+  opacity: 0.86;
 }
 .klara-run-surface-toggle {
   width: 100%;
@@ -845,6 +843,9 @@
   border-left-color: #3b4138;
   box-shadow: -22px 0 52px rgba(0, 0, 0, 0.34);
 }
+.theme-dark .klara-activity-layer {
+  background: rgba(0, 0, 0, 0.36);
+}
 .theme-dark .klara-activity-header {
   border-bottom-color: #3b4138;
 }
@@ -886,6 +887,7 @@
   }
   .klara-activity-drawer {
     width: 100vw;
+    max-width: none;
     padding: 22px 18px;
   }
 }
@@ -1170,6 +1172,16 @@
   50% {
     opacity: 1;
     transform: scale(1.08);
+  }
+}
+@keyframes klara-drawer-enter {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -161,30 +161,30 @@ describe("Klara app flow", () => {
       }),
     );
     source.emit(
-      "thinking_summary_delta",
-      evt("thinking_summary_delta", "Klara visible thinking summary.", {
-        text: "Klara summarized a public tool step.",
+      "provider_reasoning_delta",
+      evt("provider_reasoning_delta", "Provider reasoning summary received.", {
         items: [
           {
-            id: "act_summary_1",
-            title: "Tool step completed",
-            body: "Klara received a public observation from the selected tool.",
+            id: "provider_1",
+            title: "Model thinking",
+            body: "The provider returned a safe reasoning summary.",
             status: "completed",
-            kind: "tool_activity",
-            source: "narrator_model",
-            evidence_fact_ids: ["fact_tool_completed"],
-            evidence_event_ids: ["evt_tool_call_completed"],
+            kind: "orientation",
+            source: "provider_reasoning",
+            evidence_event_ids: ["evt_llm_completed"],
           },
         ],
-        evidence_event_ids: ["evt_tool_call_completed"],
+        evidence_event_ids: ["evt_llm_completed"],
       }),
     );
     expect(
-      screen.queryByText("Klara summarized a public tool step."),
+      screen.queryByText("The provider returned a safe reasoning summary."),
     ).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: /open activity/i }));
-    expect(await screen.findByText("Klara activity")).toBeInTheDocument();
-    expect(await screen.findByText("Tool step completed")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getAllByText("Model thinking").length).toBeGreaterThan(0),
+    );
+    expect(await screen.findByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close activity/i }));
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(

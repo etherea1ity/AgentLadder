@@ -10,7 +10,7 @@ from klara.services.web import WebResearchBudget, WebResearchController
 def test_current_information_request_activates_web_research() -> None:
     controller = WebResearchController(user_timezone="Asia/Shanghai")
 
-    controller.on_run_start(user_input="最近 OpenAI SDK 有什么最新变化？", run_id="run-web")
+    controller.on_run_start(user_input="What are the latest OpenAI SDK changes?", run_id="run-web")
 
     assert controller.state.active is True
     assert controller.state.mode == "quick"
@@ -26,17 +26,17 @@ def test_current_information_request_activates_web_research() -> None:
 def test_stable_chat_leaves_web_research_off() -> None:
     controller = WebResearchController()
 
-    controller.on_run_start(user_input="你好，介绍一下你自己", run_id="run-stable")
+    controller.on_run_start(user_input="hello, introduce yourself", run_id="run-stable")
 
     assert controller.state.active is False
     assert controller.system_prompt_suffix() == ""
-    assert controller.before_final_answer(content="你好呀").allowed is True
+    assert controller.before_final_answer(content="hello").allowed is True
     assert controller.drain_events() == ()
 
 
 def test_search_only_observation_blocks_final_answer() -> None:
     controller = WebResearchController()
-    controller.on_run_start(user_input="帮我查一下最新赛程", run_id="run-search-only")
+    controller.on_run_start(user_input="look up the latest schedule", run_id="run-search-only")
     controller.drain_events()
     controller.on_tool_results(
         results=(
@@ -82,7 +82,7 @@ def test_search_only_observation_blocks_final_answer() -> None:
 
 def test_good_fetched_source_allows_quick_final_answer() -> None:
     controller = WebResearchController()
-    controller.on_run_start(user_input="最近 Python 版本有什么变化？", run_id="run-fetch")
+    controller.on_run_start(user_input="What changed in the latest Python release?", run_id="run-fetch")
     controller.drain_events()
     controller.on_tool_results(
         results=(
@@ -118,7 +118,7 @@ def test_good_fetched_source_allows_quick_final_answer() -> None:
 
 def test_deep_research_requires_multiple_good_sources() -> None:
     controller = WebResearchController()
-    controller.on_run_start(user_input="比较两个最新 AI agent 项目，给出详细报告", run_id="run-deep")
+    controller.on_run_start(user_input="Compare two latest AI agent projects in a detailed report", run_id="run-deep")
     controller.drain_events()
     controller.on_tool_results(
         results=(
@@ -151,7 +151,7 @@ def test_deep_research_requires_multiple_good_sources() -> None:
 
 def test_budget_exhaustion_allows_uncertain_final_answer() -> None:
     controller = WebResearchController()
-    controller.on_run_start(user_input="查一下最新新闻", run_id="run-budget")
+    controller.on_run_start(user_input="look up the latest news", run_id="run-budget")
     controller.state.budget = WebResearchBudget(
         max_search_calls=0,
         max_fetch_calls=0,
@@ -168,7 +168,7 @@ def test_budget_exhaustion_allows_uncertain_final_answer() -> None:
 
 def test_prepare_next_turn_compacts_older_web_fetch_messages() -> None:
     controller = WebResearchController()
-    controller.on_run_start(user_input="给我详细的最新资料整理", run_id="run-compact")
+    controller.on_run_start(user_input="give me a detailed latest source summary", run_id="run-compact")
     full_payload = {
         "observation_kind": "web_fetched_source",
         "source_id": "src_old",

@@ -402,7 +402,7 @@ def test_thinking_summary_started_projects_request_orientation_fact() -> None:
         message="Klara is thinking.",
         payload={
             "request": {
-                "preview": "请帮我处理 token=secret-value https://example.com/raw " + "x" * 160,
+                "preview": "\u8bf7\u5e2e\u6211\u5904\u7406 token=secret-value https://example.com/raw " + "x" * 160,
                 "language": "zh",
             }
         },

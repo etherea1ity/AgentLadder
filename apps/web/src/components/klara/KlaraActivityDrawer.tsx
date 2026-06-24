@@ -1,63 +1,112 @@
 import { X } from "lucide-react";
-import { useMemo } from "react";
-import type { Run, ThinkingActivityItem } from "../../types/domain";
-import {
-  visibleNarratorActivityItems,
-  visibleProviderReasoningItems,
-  visibleThinkingPreamble,
-} from "./activityItems";
+import { useEffect, useMemo, useRef } from "react";
+import type { Run, RunEvent, ThinkingActivityItem } from "../../types/domain";
+import { visibleProviderReasoningItems } from "./activityItems";
 
 type Props = {
-  run: Run;
-  durationLabel: string;
+  run?: Run | null;
+  open: boolean;
   onClose: () => void;
 };
 
-export function KlaraActivityDrawer({ run, durationLabel, onClose }: Props) {
+export function KlaraActivityDrawer({ run, open, onClose }: Props) {
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const events = useMemo(
-    () => [...run.events].sort((a, b) => a.created_at.localeCompare(b.created_at)),
-    [run.events],
+    () =>
+      [...(run?.events ?? [])].sort((a, b) =>
+        a.created_at.localeCompare(b.created_at),
+      ),
+    [run?.events],
   );
   const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
-  const narratorItems = useMemo(() => visibleNarratorActivityItems(events), [events]);
-  const preamble = useMemo(() => visibleThinkingPreamble(events), [events]);
+  const hasVisibleContent = providerItems.length > 0;
+  const durationLabel = run ? activityDurationLabel(run, events) : "0s";
+
+  useEffect(() => {
+    if (!open) return;
+    closeButtonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, open]);
+
+  if (!open || !run || !hasVisibleContent) return null;
 
   return (
-    <div className="klara-activity-layer">
+    <div
+      className="klara-activity-layer"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <aside
         className="klara-activity-drawer"
         role="dialog"
+        aria-modal="true"
+        aria-labelledby="klara-activity-title"
         aria-label="Activity"
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="klara-activity-header">
           <div>
-            <h3>Activity</h3>
+            <h3 id="klara-activity-title">Activity</h3>
             <span>{durationLabel}</span>
           </div>
-          <button type="button" aria-label="Close activity" onClick={onClose}>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            aria-label="Close activity"
+            onClick={onClose}
+          >
             <X size={18} />
           </button>
         </header>
 
-        {providerItems.length ? (
-          <section className="klara-activity-section">
-            <h4>Model thinking</h4>
-            <ActivityList items={providerItems} />
-          </section>
-        ) : null}
-
-        {preamble || narratorItems.length ? (
-          <section className="klara-activity-section">
-            <h4>Klara activity</h4>
-            {preamble ? (
-              <p className="klara-activity-preamble">{preamble.text}</p>
-            ) : null}
-            {narratorItems.length ? <ActivityList items={narratorItems} /> : null}
-          </section>
-        ) : null}
+        <section className="klara-activity-section">
+          <h4>Model thinking</h4>
+          <ActivityList items={providerItems} />
+        </section>
       </aside>
     </div>
   );
+}
+
+function activityDurationLabel(run: Run, events: RunEvent[]) {
+  const completionEvent = [...events]
+    .reverse()
+    .find((event) => event.event_type === "thinking_summary_completed");
+  const explicitDuration = numberFrom(completionEvent?.payload?.duration_ms);
+  const ms =
+    explicitDuration ??
+    run.latency_ms ??
+    run.live?.elapsed_ms ??
+    durationFromEvents(events) ??
+    0;
+  return formatThoughtDuration(ms);
+}
+
+function durationFromEvents(events: RunEvent[]) {
+  if (events.length < 2) return null;
+  const start = Date.parse(events[0].created_at);
+  const end = Date.parse(events[events.length - 1].created_at);
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+  return Math.max(0, end - start);
+}
+
+function numberFrom(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function formatThoughtDuration(ms: number) {
+  if (!Number.isFinite(ms) || ms <= 0) return "0s";
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1).replace(/\.0$/, "")}s`;
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.round((ms % 60000) / 1000);
+  return `${minutes}m ${seconds}s`;
 }
 
 function ActivityList({ items }: { items: ThinkingActivityItem[] }) {

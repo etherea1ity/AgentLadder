@@ -47,12 +47,14 @@ id = "deepseek-v4-flash"
 label = "DeepSeek V4 Flash"
 supports_tools = true
 supports_json = true
+enable_thinking = false
 
 [[models.providers.deepseek.models]]
 id = "deepseek-v4-pro"
-label = "DeepSeek V4 Pro"
+label = "DeepSeek V4 Pro Thinking"
 supports_tools = true
 supports_json = true
+enable_thinking = true
 
 [models.profiles.agent]
 primary = "qwen/qwen-flash"

@@ -42,6 +42,10 @@ def build_runtime_context_prompt(
                 "from memory."
             ),
             (
+                "Keep web_search queries faithful to the user's scope and named "
+                "entities."
+            ),
+            (
                 "Search snippets are candidates, not evidence. Do not conclude "
                 "from snippets alone when a factual answer depends on source text."
             ),

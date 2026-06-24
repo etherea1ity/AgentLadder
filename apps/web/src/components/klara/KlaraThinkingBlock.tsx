@@ -1,22 +1,25 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Run, RunEvent } from "../../types/domain";
-import { KlaraActivityDrawer } from "./KlaraActivityDrawer";
+import { KlaraPresence } from "./KlaraPresence";
 import {
-  visibleThinkingPreamble,
-  visibleNarratorActivityItems,
   visibleProviderReasoningItems,
 } from "./activityItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
-export function KlaraThinkingBlock({ run }: { run?: Run }) {
-  const active = isKlaraRunActive(run);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
+type Props = {
+  run?: Run;
+  isActivityOpen?: boolean;
+  onOpenActivity?: (runId: string, trigger: HTMLButtonElement) => void;
+};
 
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [run?.run_id]);
+export function KlaraThinkingBlock({
+  run,
+  isActivityOpen = false,
+  onOpenActivity,
+}: Props) {
+  const active = isKlaraRunActive(run);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!active) return;
@@ -39,13 +42,9 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
     [events],
   );
   const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
-  const narratorItems = useMemo(() => visibleNarratorActivityItems(events), [events]);
-  const preamble = useMemo(() => visibleThinkingPreamble(events), [events]);
-  const activeActivity = narratorItems[narratorItems.length - 1] ?? null;
 
   if (!run) return null;
-  const hasVisibleActivity =
-    providerItems.length > 0 || narratorItems.length > 0 || Boolean(preamble);
+  const hasVisibleActivity = providerItems.length > 0;
   if (!active && !hasVisibleActivity) return null;
 
   const durationMs = thinkingDurationMs(
@@ -70,7 +69,16 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
           className={`klara-thinking-mini ${active ? "is-active" : "is-completed"}`}
           aria-label="Mini Klara"
           role="img"
-        />
+        >
+          <KlaraPresence
+            active={active}
+            phase={active ? "thinking" : "completed"}
+            size="status"
+            capabilities={active ? ["model"] : []}
+            elevated={active}
+            pulseKey={events.length}
+          />
+        </span>
         <span className="klara-thinking-title">{label}</span>
         {hasVisibleActivity ? (
           <button
@@ -78,24 +86,13 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
             className="klara-thinking-toggle"
             aria-label="Open activity"
             aria-haspopup="dialog"
-            onClick={() => setDrawerOpen(true)}
+            aria-expanded={isActivityOpen}
+            onClick={(event) => onOpenActivity?.(run.run_id, event.currentTarget)}
           >
             <ChevronRight size={16} aria-hidden="true" />
           </button>
         ) : null}
       </div>
-      {active && (activeActivity || preamble) ? (
-        <p className="klara-thinking-activity">
-          {activeActivity?.body ?? preamble?.text}
-        </p>
-      ) : null}
-      {drawerOpen ? (
-        <KlaraActivityDrawer
-          run={run}
-          durationLabel={durationLabel}
-          onClose={() => setDrawerOpen(false)}
-        />
-      ) : null}
     </section>
   );
 }

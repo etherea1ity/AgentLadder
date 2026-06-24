@@ -87,14 +87,14 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
 
     assert result.final_answer == "harness final"
     assert "You are Klara" in llm.system_prompt
-    assert "must call the image-generation tool" in llm.system_prompt
-    assert "Never invent local image URLs" in llm.system_prompt
+    assert "Klara is clear, warm, curious, and practical." in llm.system_prompt
+    assert "use available runtime tools when they matter" in llm.system_prompt
     assert "<runtime_context>" in llm.system_prompt
     assert "Conversation date:" in llm.system_prompt
     assert "Call current_time only for exact wall-clock time" in llm.system_prompt
     assert "call web_search before answering from memory" in llm.system_prompt
-    assert "keep the user's original scope and named entities" in llm.system_prompt
-    assert "Fetch at least one relevant source page" in llm.system_prompt
+    assert "Keep web_search queries faithful to the user's scope" in llm.system_prompt
+    assert "Call web_fetch for source text" in llm.system_prompt
     assert "Search snippets are candidates, not evidence" in llm.system_prompt
     assert "preferred_source" not in llm.system_prompt
     assert "source-limited analysis" not in llm.system_prompt
