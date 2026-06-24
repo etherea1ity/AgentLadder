@@ -431,6 +431,7 @@ def test_plain_llm_run_with_narrator_emits_request_orientation_activity(tmp_path
     assert deltas[-1].payload["items"][0]["title"] == "Request understood"
     assert completed.payload["has_summary"] is True
     assert narrator.inputs
+    assert narrator.inputs[-1]["request_language"] == "en"
     assert [fact["kind"] for fact in narrator.inputs[-1]["activity_facts"]] == [
         "request_orientation"
     ]
@@ -864,7 +865,7 @@ def test_thinking_summary_rejects_public_reasoning_wording(tmp_path) -> None:
     assert summary is None
 
 
-def test_thinking_summary_rejects_raw_tool_detail_wording(tmp_path) -> None:
+def test_thinking_summary_drops_raw_tool_detail_item_but_keeps_safe_item(tmp_path) -> None:
     event = RunEventRecord(
         run_id="run-1",
         event_type="tool_call_completed",
@@ -913,7 +914,104 @@ def test_thinking_summary_rejects_raw_tool_detail_wording(tmp_path) -> None:
         )
     )
 
+    assert summary is not None
+    assert len(summary.items) == 1
+    assert summary.items[0]["title"] == "Search metadata returned"
+
+
+def test_thinking_summary_rejects_english_body_for_chinese_request(tmp_path) -> None:
+    request_event = RunEventRecord(
+        run_id="run-1",
+        event_type="thinking_summary_started",
+        message="Klara is thinking.",
+        payload={"request": {"preview": "\u4f60\u597d", "language": "zh"}},
+    )
+    fact_event = _fact_event(request_event, kind="request_orientation")
+    fact_event.payload["fact"]["request"] = {"preview": "\u4f60\u597d", "language": "zh"}
+    fact_id = fact_event.payload["fact"]["id"]
+    narrator = ThinkingActivityNarrator(
+        client=StaticNarratorLlm(
+            json.dumps(
+                {
+                    "text": "Klara summarized public activity.",
+                    "items": [
+                        {
+                            "title": "Request understood",
+                            "body": "Klara understood the user's request and prepared a concise response.",
+                            "kind": "orientation",
+                            "evidence_fact_ids": [fact_id],
+                            "evidence_event_ids": [request_event.event_id],
+                            "confidence": 0.8,
+                        }
+                    ],
+                }
+            )
+        ),
+        model="narrator-model",
+        prompt_path=_prompt(tmp_path),
+    )
+
+    summary = narrator.create_summary(
+        ThinkingActivityInput(
+            user_request="\u4f60\u597d",
+            selected_model="main-model",
+            run_status="completed",
+            duration_ms=10,
+            events=(request_event, fact_event),
+            activity_facts=(fact_event.payload["fact"],),
+        )
+    )
+
     assert summary is None
+
+
+def test_thinking_activity_payload_exposes_request_language_to_narrator(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    narrator = SummaryNarratorLlm("Klara summarized a Chinese request.")
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=RecordingFinalLlm(),
+        default_model="main-model",
+        narrator_client=narrator,
+        narrator_model="narrator-model",
+        enable_workstream_narrator=True,
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+    run_id = "run-language"
+    request_event = RunEventRecord(
+        run_id=run_id,
+        event_type="thinking_summary_started",
+        message="Klara is thinking.",
+        payload={"request": {"preview": "\u8bf7\u641c\u7d22\u65b0\u95fb", "language": "zh"}},
+    )
+    store.append_event(request_event)
+    store.append_event(
+        _activity_fact_record(
+            run_id,
+            {
+                "id": f"fact_{request_event.event_id}",
+                "kind": "request_orientation",
+                "status": "completed",
+                "source_event_type": "thinking_summary_started",
+                "evidence_event_ids": [request_event.event_id],
+                "request": {"preview": "\u8bf7\u641c\u7d22\u65b0\u95fb", "language": "zh"},
+            },
+        )
+    )
+
+    service._create_thinking_summary(
+        run_id=run_id,
+        user_request="\u8bf7\u641c\u7d22\u65b0\u95fb",
+        selected_model="main-model",
+        duration_ms=10,
+    )
+
+    assert narrator.inputs
+    assert narrator.inputs[-1]["request_language"] == "zh"
+    assert narrator.inputs[-1]["available_activity_fact_ids"] == [
+        f"fact_{request_event.event_id}"
+    ]
 
 
 def test_thinking_summary_rejects_chinese_thinking_wording(tmp_path) -> None:

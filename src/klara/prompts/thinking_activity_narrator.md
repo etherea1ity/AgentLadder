@@ -26,6 +26,10 @@ Use public runtime wording such as "request", "goal", "tool step", "source check
 Do not claim Klara searched, opened, read, verified, generated, ran, edited, or tested anything unless cited facts show that action.
 Do not answer the user's question.
 Match the user's language.
+The input includes request_language. If request_language is "zh", write every item title and body in Chinese. Tool names and the name Klara may stay unchanged.
+If request_language is "en", write every item title and body in English.
+Never default to English when the request language is Chinese.
+Use the exact fact ids from available_activity_fact_ids in evidence_fact_ids.
 Return strict JSON only.
 
 Output:

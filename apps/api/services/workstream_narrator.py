@@ -346,12 +346,19 @@ def _workstream_input_payload(payload: WorkstreamNarratorInput) -> dict[str, Any
 def _thinking_activity_input_payload(payload: ThinkingActivityInput) -> dict[str, Any]:
     """Build the strict public JSON input for the activity narrator."""
 
+    request_language = _request_language_from_facts(payload.activity_facts)
     return {
         "user_request": payload.user_request,
         "selected_model": payload.selected_model,
         "run_status": payload.run_status,
+        "request_language": request_language,
         "duration_ms": payload.duration_ms,
         "activity_facts": list(payload.activity_facts),
+        "available_activity_fact_ids": [
+            fact["id"]
+            for fact in payload.activity_facts
+            if isinstance(fact.get("id"), str)
+        ],
         "public_event_ids": [
             {
                 "event_id": event.event_id,
@@ -452,15 +459,16 @@ def _summary_activity_items(
 
     if not isinstance(value, list):
         return []
-    if not MIN_ACTIVITY_ITEMS <= len(value) <= MAX_ACTIVITY_ITEMS:
+    if len(value) < MIN_ACTIVITY_ITEMS:
         return []
+    request_language = _request_language_from_facts(facts)
     items: list[dict[str, Any]] = []
-    for raw_item in value:
+    for raw_item in value[:MAX_ACTIVITY_ITEMS]:
         if not isinstance(raw_item, dict):
-            return []
-        item = _summary_activity_item(raw_item, events, facts)
+            continue
+        item = _summary_activity_item(raw_item, events, facts, request_language)
         if item is None:
-            return []
+            continue
         items.append(item)
     return items
 
@@ -469,6 +477,7 @@ def _summary_activity_item(
     raw_item: dict[str, Any],
     events: tuple[RunEventRecord, ...],
     facts: tuple[dict[str, Any], ...],
+    request_language: str,
 ) -> dict[str, Any] | None:
     """Return one sanitized narrator activity item."""
 
@@ -488,6 +497,8 @@ def _summary_activity_item(
     if _contains_raw_activity_detail_terms(f"{title}\n{body}"):
         return None
     if _contains_boilerplate_activity_terms(f"{title}\n{body}"):
+        return None
+    if request_language == "zh" and not _contains_cjk(body):
         return None
     evidence_fact_ids = _strict_fact_ids(raw_item.get("evidence_fact_ids"), facts)
     if not evidence_fact_ids:
@@ -586,6 +597,21 @@ def _aggregate_evidence_ids(items: list[dict[str, Any]]) -> list[str]:
     return evidence_ids
 
 
+def _request_language_from_facts(facts: tuple[dict[str, Any], ...]) -> str:
+    """Return the redacted request language carried by request_orientation."""
+
+    for fact in facts:
+        if fact.get("kind") != "request_orientation":
+            continue
+        request = fact.get("request")
+        if not isinstance(request, dict):
+            continue
+        language = request.get("language")
+        if isinstance(language, str) and language.strip():
+            return language.strip()
+    return "unknown"
+
+
 def _average_confidence(items: list[dict[str, Any]]) -> float:
     """Return the average confidence across validated activity items."""
 
@@ -640,6 +666,12 @@ def _contains_full_url(text: str) -> bool:
     """Return whether visible summary text exposes a full URL."""
 
     return "http://" in text.lower() or "https://" in text.lower()
+
+
+def _contains_cjk(text: str) -> bool:
+    """Return whether text contains Chinese/Japanese/Korean characters."""
+
+    return any("\u4e00" <= char <= "\u9fff" for char in text)
 
 
 def _contains_raw_activity_detail_terms(text: str) -> bool:
