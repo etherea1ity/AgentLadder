@@ -524,12 +524,6 @@
   font-size: 13px;
   line-height: 1.5;
 }
-.klara-activity-preamble {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
-}
 .klara-activity-list {
   list-style: none;
   display: grid;
@@ -699,20 +693,6 @@
   line-height: 1.4;
   padding: 8px;
   white-space: pre-wrap;
-}
-.klara-workstream-notes {
-  display: grid;
-  gap: 6px;
-}
-.klara-workstream-notes p {
-  margin: 0;
-  border-left: 3px solid rgba(100, 123, 100, 0.28);
-  border-radius: 6px;
-  background: rgba(100, 123, 100, 0.07);
-  color: var(--text-secondary);
-  padding: 7px 9px;
-  font-size: 12px;
-  line-height: 1.45;
 }
 .klara-hook-badges {
   display: flex;

@@ -89,8 +89,14 @@ Activity and thinking UI follow the same separation:
 - Projection code may emit structured facts such as `activity_fact_recorded`.
 - Facts use ids, kinds, status, tool names, metrics, previews, and evidence ids;
   they do not use `title` or `body`.
-- Public activity text belongs to provider reasoning summaries or the narrator
-  validator, not to core, tools, or raw event projection.
+- Public activity text belongs to provider reasoning summaries or main-model
+  commentary (`assistant_activity_delta`).
+- Public runtime action transcript may show compact technical labels and safe
+  metadata, such as `web_search`, result counts, source titles, and domains.
+- Runtime events must not be converted into canned public prose such as
+  "Reading the request" or "Writing the answer".
+- Thinking/activity events must not be written into final assistant content or
+  the next model-visible history.
 
 ## Comments And Docstrings
 

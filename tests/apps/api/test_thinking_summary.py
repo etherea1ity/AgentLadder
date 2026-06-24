@@ -91,7 +91,7 @@ def test_thinking_summary_started_and_completed_wrap_answer(tmp_path) -> None:
     assert completed.payload["has_summary"] is False
 
 
-def test_run_service_does_not_emit_narrator_or_preamble_events(tmp_path) -> None:
+def test_run_service_does_not_emit_legacy_public_summary_events(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()
     service = RunService(
@@ -107,9 +107,6 @@ def test_run_service_does_not_emit_narrator_or_preamble_events(tmp_path) -> None
 
     event_types = {event.event_type for event in store.list_events(created.run_id)}
     assert "thinking_summary_delta" not in event_types
-    assert not any(str(event_type).startswith("thinking_preamble") for event_type in event_types)
-    assert not any(str(event_type).startswith("narrator_") for event_type in event_types)
-    assert "workstream_note" not in event_types
 
 
 def test_provider_reasoning_delta_does_not_enter_assistant_content_or_history(tmp_path) -> None:

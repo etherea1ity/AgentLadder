@@ -166,10 +166,18 @@ Public activity must also stay layered:
 - Activity facts may include tool names, result counts, metrics, short previews,
   and `evidence_event_ids`, but not raw arguments, full URLs, full observations,
   secrets, or hidden reasoning.
-- User-visible Activity Drawer items come only from safe provider reasoning
-  summaries or the narrator model validating against activity facts.
-- If the narrator is unavailable, show an empty public activity state; do not
-  fall back to runtime template sentences.
+- User-visible Thinking and Activity Drawer content has three public sources:
+  provider reasoning summaries, main-model public commentary, and sanitized
+  runtime action transcript.
+- Main-model public commentary is emitted as `assistant_activity_delta`. When a
+  model response contains both assistant text and tool calls, that text is
+  activity commentary, not the final answer.
+- Runtime action transcript is compact and factual: tool names, status, counts,
+  safe source titles, domains, and evidence ids. It must not be expanded into
+  canned natural-language thinking.
+- Optional completed-summary enhancers are experimental and off by default.
+  They must never replace provider reasoning or main-model commentary, and they
+  must not fabricate activity when public evidence is absent.
 
 Tool execution uses metadata-driven waves:
 

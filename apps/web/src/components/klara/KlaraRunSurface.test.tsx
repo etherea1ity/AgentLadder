@@ -162,7 +162,7 @@ describe("KlaraRunSurface", () => {
     expect(screen.getAllByText(/content_preview/).length).toBeGreaterThan(0);
   });
 
-  it("does not render a narrator diagnostics section", () => {
+  it("keeps provider reasoning as a raw developer event", () => {
     render(
       <KlaraRunSurface
         run={{
@@ -186,7 +186,6 @@ describe("KlaraRunSurface", () => {
       />,
     );
 
-    expect(screen.queryByText("Narrator")).not.toBeInTheDocument();
     expect(screen.getAllByText("provider_reasoning_delta").length).toBeGreaterThan(0);
   });
 

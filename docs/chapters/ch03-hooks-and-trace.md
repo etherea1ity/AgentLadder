@@ -12,7 +12,7 @@
 
 ## 一句话看懂本章
 
-Chapter 3 不给 loop 加业务规则，而是把 Klara 的一次回答拆成三层：用户可见的 Thinking、可展开的 Activity Drawer、开发者专用的 Developer Debug。
+Chapter 3 不给 loop 加业务规则。它把一次 Klara 回答拆成三层：回答前的轻量 Thinking、右侧 Activity Drawer、回答下方的 Developer Debug。
 
 ![Klara Chapter 3 Hooks and Trace](../assets/ch03-hooks-and-trace.svg)
 
@@ -20,18 +20,16 @@ Chapter 3 不给 loop 加业务规则，而是把 Klara 的一次回答拆成三
 
 Thinking 属于 assistant message 内部，放在最终回答正文前面。
 
-它不是页面顶部的全局状态，不是底部 debug 面板，也不是一个运行时 trace 大框。
-
-运行中应该像这样：
+它不是全局 loading，不是底部 debug，也不是一大块 trace 面板。运行中应该像这样：
 
 ```text
 Klara · Thinking... 3.2s
-我先理解了你是在问世界杯的最新进展，所以需要查当前来源，而不是只靠模型记忆。
+我先理解了你是在问世界杯的最新进展，所以不能只靠模型记忆回答。我会先查公开来源，再把已确认赛果和待赛赛程分开整理。
 
-最终回答开始逐步出现……
+最终回答开始逐步出现...
 ```
 
-完成后应该像这样：
+完成后收起成：
 
 ```text
 Klara · Thought for 24.2s >
@@ -39,7 +37,63 @@ Klara · Thought for 24.2s >
 Developer debug · collapsed
 ```
 
-`Thought for X` 必须有真实可展示内容支撑：provider/model reasoning，或 narrator 生成的 Klara activity。两者都没有时，不显示空的 `Thought for X`，运行耗时只留在 Developer Debug。
+`Thought for X` 必须有真实可展示内容支撑。如果 provider reasoning、主模型公开 commentary、runtime action transcript 都没有内容，完成后不显示空的 `Thought for X`，耗时只留在 Developer Debug。
+
+## 三条公开链路
+
+### A. Provider Reasoning
+
+这是 provider 或模型原生返回的公开 reasoning summary，例如 `reasoning_content`、`reasoning`、`thinking` 等字段。
+
+Klara 会把它投影成：
+
+```text
+provider_reasoning_delta
+provider_reasoning_completed
+```
+
+它只用于 UI 展示，不写进最终 assistant answer，也不进入下一轮主模型 history。没有 provider reasoning 时不伪造。
+
+### B. Main Model Public Commentary
+
+这是主模型自己写给用户看的公开说明，不是 hidden chain-of-thought。
+
+第一版支持两种来源：
+
+- provider 或 wrapper 返回结构化字段：`activity_commentary`、`public_activity`、`commentary`
+- 模型同一轮同时返回 `content + tool_calls` 时，`content` 被视为公开 activity commentary，而不是最终答案
+
+语义是：
+
+```text
+我理解了用户在问什么。
+我接下来会怎么处理。
+Klara 会继续做什么。
+```
+
+它会投影成：
+
+```text
+assistant_activity_delta
+assistant_activity_completed
+```
+
+这条 commentary 不进入最终 answer，不进入下一轮主模型 history，也不会混进 answer chunks。
+
+### C. Runtime Action Transcript
+
+这是 Klara runtime 真实发生过的动作摘要。它不是 Thinking 本身，但应该在 Activity Drawer 里作为 Agent activity 展示。
+
+示例：
+
+```text
+web_search · 8 results · fifa.com · reuters.com
+web_fetch · FIFA official schedule · fifa.com · 2300 chars
+image_generate · 1 asset
+current_time · completed
+```
+
+公开 transcript 只展示安全摘要：工具名、状态、数量、来源标题、域名、短 preview。完整 URL、完整 query、完整参数、完整 observation、raw payload 留给 Developer Debug。
 
 ## 三层界面
 
@@ -52,102 +106,51 @@ active:    Klara · Thinking... 1.2s
 complete:  Klara · Thought for 24.2s >
 ```
 
-运行中如果 narrator 已经从 activity facts 生成公开 activity item，就在这一行下面显示最新一条 compact activity。请求理解、搜索、读取来源、生成图片、整理回答都属于同一条 Klara activity stream；不再有单独的 preamble 产品层。
+运行中如果有主模型公开 commentary，就显示最新一条短说明。完成后只显示 `Thought for X` 入口，不在主对话里铺工具列表、event list 或 debug trace。
 
-交互上，左侧是 mini Klara icon + label，右侧 chevron 是独立按钮。点击文字或 inline activity 不展开，只有 chevron 打开 Activity Drawer。
+交互上，左侧是 mini Klara icon + label，右侧 chevron 是唯一打开 Activity Drawer 的按钮。点击文字本身不展开。
 
 ### 2. Activity Drawer
 
-Drawer 是详情，不是主实时体验。它只展示两类内容：
+Drawer 是详情，不是主实时体验。它展示三段：
 
 ```text
-Model thinking   -> provider_reasoning summary；没有就隐藏
-Klara activity   -> narrator_model 基于 activity facts 生成的公开活动摘要
+Model thinking  -> provider_reasoning_delta
+Klara activity  -> assistant_activity_delta
+Agent activity  -> runtime action transcript
 ```
 
-这里的“真实 thinking”不是 raw chain-of-thought：
+没有 provider reasoning 就隐藏 `Model thinking`。没有主模型 commentary 时，`Klara activity` 显示轻量 empty state。没有 runtime action 时隐藏 `Agent activity`。
 
-- `Model thinking` 来自 provider/model 返回的公开 reasoning summary，有才展示，没有不伪造。
-- `Klara activity` 来自 `activity_fact_recorded` + narrator model。runtime 只记录结构化事实，narrator 才写用户可读的公开 activity。`request_orientation` 是这条 activity stream 的第一项，不是单独 preamble。
-- narrator 不可用、JSON 错误或校验失败时，不生成模板句子，只在 Developer Debug 留诊断事件。
+Drawer 里不展示 raw chain-of-thought、raw tool arguments、full URL、raw observation、raw payload。
 
 ### 3. Developer Debug
 
 Developer Debug 默认折叠，只给开发和教学看：
 
-- LLM rounds：turn、model、duration、input/output/total tokens、token source。
-- Tools：tool name、status、duration、arguments preview、observation preview。
-- Activity facts：结构化 facts、request preview、evidence ids。
-- Narrator diagnostics：started、completed、rejected、failed。
-- Trace：event id、created_at、event_type、raw payload。
+- LLM rounds：turn、model、duration、input/output/total tokens、token source
+- Tools：tool name、status、duration、arguments preview、observation preview
+- Activity facts：结构化 facts、evidence ids、safe metrics
+- Trace：event id、created_at、event_type、raw payload
 
 Developer Debug 可以显示 raw payload，因为它是开发者区域；Thinking Trigger 和 Activity Drawer 不显示 raw trace、tool cards 或 event list。
 
-## 两条真实来源
-
-### A. Model Thinking / Provider Reasoning
-
-Provider 如果返回 `reasoning_content`、`reasoning`、`thinking` 等公开字段，Klara 会投影成：
-
-```text
-provider_reasoning_delta
-provider_reasoning_completed
-```
-
-它只用于 UI 展示，不写进 assistant message，也不会进入下一轮主模型上下文。
-
-### B. Klara Activity / Agent Workstream
-
-Runtime 只产生 fact，不直接写用户可见文案：
-
-```json
-{
-  "id": "fact_evt_...",
-  "kind": "request_orientation",
-  "status": "completed",
-  "source_event_type": "thinking_summary_started",
-  "evidence_event_ids": ["evt_..."],
-  "request": {
-    "preview": "用户请求的脱敏短摘要",
-    "language": "zh"
-  }
-}
-```
-
-工具、搜索、网页读取、图片生成、错误也会形成各自的 fact。fact 不能包含 `title` / `body`，不能暴露完整 URL、raw arguments、raw observation、secret 或 hidden reasoning。
-
-narrator 只根据 facts 输出公开 activity item：
-
-```json
-{
-  "title": "理解请求目标",
-  "body": "Klara 先识别了你想整理的主题和回答方向。",
-  "kind": "orientation",
-  "source": "narrator_model",
-  "evidence_fact_ids": ["fact_evt_..."],
-  "evidence_event_ids": ["evt_..."],
-  "confidence": 0.8
-}
-```
-
-如果 item 声称搜索、读取、验证、生成图片、编辑或测试，必须有对应 fact 支撑。
-
-## 为什么之前像假的
+## 为什么这版不再做假 Thinking
 
 之前的问题是：
 
-- 只有 timer，也会显示 `Thought for X`。
-- `provider_reasoning_delta` 有类型但没有真实 emitter。
-- narrator 没内容时，前端还能打开空 drawer。
-- runtime event 被直接包装成 “Reading request / Writing answer” 这类模板 activity。
-- active 阶段没有 assistant message 内部的 live activity。
-- `answer_delta` 一次性发送完整 final text，看起来不像回答正在出现。
+- 只有 timer，也会显示 `Thought for X`
+- Activity Drawer 可能打开后是空的
+- runtime event 被包装成固定句子，例如 "Reading request" 或 "Writing answer"
+- provider reasoning 有类型但不一定有真实内容
+- 最终答案一次性出现，看起来不像正在输出
 
 现在的规则是：
 
-- 运行中可以显示 `Thinking...`，并尽快尝试生成同一条 Klara activity stream 的最新 item。
-- 完成后只有在有 provider reasoning 或 narrator activity 时，才显示 `Thought for X`。
-- 最终答案会分块发出，但 thinking/preamble/activity 不会混进 answer chunks。
+- 有 A/B/C 任意内容时，才允许完成后显示 `Thought for X`
+- 主模型公开 commentary 是 Thinking 的主来源之一
+- runtime action transcript 只做紧凑事实摘要，不伪装成模型思考
+- 最终 answer 可以分块输出，但 Thinking/Activity 永远不混进 answer
 
 ## 快速体验
 
@@ -171,11 +174,12 @@ http://127.0.0.1:5123
 生成一张克拉拉形象图
 ```
 
-验收时看三件事：
+验收时看四件事：
 
-1. assistant 消息内部先出现 `Thinking...`，有 narrator activity 时显示最新一条短说明。
-2. 完成后没有内容支撑时，不显示空的 `Thought for X`。
-3. Developer Debug 才显示 tools、facts、narrator diagnostics、raw payload 和 metrics。
+1. assistant 消息内部先出现 `Thinking...`。
+2. 如果模型输出了 public commentary，它会显示在回答前。
+3. 完成后没有 A/B/C 内容时，不显示空的 `Thought for X`。
+4. Developer Debug 才显示 tools、raw payload 和完整 trace。
 
 ## 本章不做什么
 

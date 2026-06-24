@@ -12,7 +12,7 @@ Roadmap: [Klara Roadmap](../skills/roadmap.md)
 
 ## The Chapter In One Sentence
 
-Chapter 3 does not add business rules to the loop. It separates one Klara assistant turn into three surfaces: user-facing Thinking, an expandable Activity Drawer, and developer-only Debug.
+Chapter 3 does not add business rules to the loop. It separates one Klara assistant turn into three surfaces: lightweight Thinking before the answer, an Activity Drawer on the right, and developer-only Debug below the answer.
 
 ![Klara Chapter 3 Hooks and Trace](../assets/ch03-hooks-and-trace.svg)
 
@@ -20,9 +20,7 @@ Chapter 3 does not add business rules to the loop. It separates one Klara assist
 
 Thinking belongs inside the assistant message, before the final answer body.
 
-It is not a global page status, not the bottom debug panel, and not a large runtime trace box.
-
-During a run, it should feel like this:
+It is not global loading, not the bottom debug panel, and not a large trace frame. During a run, it should feel like this:
 
 ```text
 Klara · Thinking... 3.2s
@@ -31,7 +29,7 @@ I first understood that you are asking for the latest World Cup status, so this 
 The final answer starts appearing progressively...
 ```
 
-After completion, it should collapse to:
+After completion, it collapses to:
 
 ```text
 Klara · Thought for 24.2s >
@@ -39,7 +37,63 @@ Final answer body
 Developer debug · collapsed
 ```
 
-`Thought for X` must be backed by real visible content: provider/model reasoning or narrator-generated Klara activity. If both are absent, Klara does not show an empty `Thought for X`; duration remains available in Developer Debug.
+`Thought for X` must be backed by real visible content. If provider reasoning, main-model public commentary, and runtime action transcript are all absent, Klara does not show an empty `Thought for X`; duration remains available in Developer Debug.
+
+## The Three Public Chains
+
+### A. Provider Reasoning
+
+This is the public reasoning summary returned natively by a provider or model, such as `reasoning_content`, `reasoning`, or `thinking`.
+
+Klara projects it into:
+
+```text
+provider_reasoning_delta
+provider_reasoning_completed
+```
+
+This metadata is UI-only. It is not written into the final assistant answer and does not enter the next main-model history turn. If the provider does not return reasoning, Klara does not invent it.
+
+### B. Main Model Public Commentary
+
+This is public text written by the main model for the user. It is not hidden chain-of-thought.
+
+The first version supports two sources:
+
+- structured fields from a provider or wrapper: `activity_commentary`, `public_activity`, `commentary`
+- `content + tool_calls` in the same model response, where `content` becomes public activity commentary instead of the final answer
+
+Its meaning is:
+
+```text
+I understood what the user is asking.
+I will handle it this way next.
+Klara will continue with this action.
+```
+
+It is projected into:
+
+```text
+assistant_activity_delta
+assistant_activity_completed
+```
+
+This commentary does not enter the final answer, does not enter the next main-model history turn, and is never mixed into answer chunks.
+
+### C. Runtime Action Transcript
+
+This is a compact summary of actions that really happened in the Klara runtime. It is not Thinking itself, but it belongs in the Activity Drawer as Agent activity.
+
+Examples:
+
+```text
+web_search · 8 results · fifa.com · reuters.com
+web_fetch · FIFA official schedule · fifa.com · 2300 chars
+image_generate · 1 asset
+current_time · completed
+```
+
+The public transcript shows only safe summaries: tool name, status, counts, source title, domain, and short preview. Full URLs, full queries, full arguments, full observations, and raw payloads stay in Developer Debug.
 
 ## The Three Surfaces
 
@@ -52,102 +106,51 @@ active:    Klara · Thinking... 1.2s
 complete:  Klara · Thought for 24.2s >
 ```
 
-During an active run, if the narrator has produced public activity items from activity facts, Klara renders the latest compact activity below the row. Request orientation, search, source reading, image generation, and answer composition all belong to the same Klara activity stream; there is no separate preamble product layer.
+During an active run, if the main model produced public commentary, Klara shows the latest short line before the answer. After completion, Klara only shows the `Thought for X` trigger; the main chat never displays tool lists, event lists, or debug trace as Thinking.
 
-Interaction is explicit: the left side is mini Klara icon + label, and the right chevron is the only drawer trigger. Clicking the label or inline activity does not open the drawer.
+Interaction is explicit: the left side is mini Klara icon + label, and the right chevron is the only drawer trigger. Clicking the text does not open the drawer.
 
 ### 2. Activity Drawer
 
-The drawer is detail, not the main live experience. It shows two content sources:
+The drawer is detail, not the main live experience. It has three sections:
 
 ```text
-Model thinking  -> provider_reasoning summary; hidden when absent
-Klara activity  -> narrator_model public activity generated from facts
+Model thinking  -> provider_reasoning_delta
+Klara activity  -> assistant_activity_delta
+Agent activity  -> runtime action transcript
 ```
 
-"Real thinking" here does not mean raw chain-of-thought:
+If provider reasoning is absent, `Model thinking` is hidden. If main-model commentary is absent, `Klara activity` shows a lightweight empty state. If no runtime action happened, `Agent activity` is hidden.
 
-- `Model thinking` comes from a provider/model-visible reasoning summary. Klara shows it only when the provider returns it.
-- `Klara activity` comes from `activity_fact_recorded` plus a narrator model. Runtime records structured facts; the narrator writes public activity prose. `request_orientation` is the first item in this activity stream, not a separate preamble.
-- If the narrator is unavailable, returns invalid JSON, or fails validation, Klara does not invent template prose. The failure is visible only in Developer Debug.
+The drawer never shows raw chain-of-thought, raw tool arguments, full URLs, raw observations, or raw payloads.
 
 ### 3. Developer Debug
 
 Developer Debug is collapsed by default and is for engineering and teaching:
 
-- LLM rounds: turn, model, duration, input/output/total tokens, token source.
-- Tools: tool name, status, duration, arguments preview, observation preview.
-- Activity facts: structured facts, request preview, evidence ids.
-- Narrator diagnostics: started, completed, rejected, failed.
-- Trace: event id, created_at, event_type, raw payload.
+- LLM rounds: turn, model, duration, input/output/total tokens, token source
+- Tools: tool name, status, duration, arguments preview, observation preview
+- Activity facts: structured facts, evidence ids, safe metrics
+- Trace: event id, created_at, event_type, raw payload
 
 Developer Debug may show raw payloads because it is a developer surface. Thinking Trigger and Activity Drawer never show raw traces, tool cards, or event lists.
 
-## The Two Real Sources
+## Why This No Longer Fakes Thinking
 
-### A. Model Thinking / Provider Reasoning
-
-If a provider returns public fields such as `reasoning_content`, `reasoning`, or `thinking`, Klara projects them into:
-
-```text
-provider_reasoning_delta
-provider_reasoning_completed
-```
-
-This metadata is UI-only. It is not written into assistant message content and does not enter the next main-model history turn.
-
-### B. Klara Activity / Agent Workstream
-
-Runtime emits facts, not visible sentences:
-
-```json
-{
-  "id": "fact_evt_...",
-  "kind": "request_orientation",
-  "status": "completed",
-  "source_event_type": "thinking_summary_started",
-  "evidence_event_ids": ["evt_..."],
-  "request": {
-    "preview": "redacted short user-request preview",
-    "language": "en"
-  }
-}
-```
-
-Tools, search results, fetched pages, image generation, and errors produce their own facts. Facts must not contain `title` / `body`, full URLs, raw arguments, raw observations, secrets, or hidden reasoning.
-
-The narrator turns facts into public activity items:
-
-```json
-{
-  "title": "Request understood",
-  "body": "Klara identified the request goal and prepared a concise response.",
-  "kind": "orientation",
-  "source": "narrator_model",
-  "evidence_fact_ids": ["fact_evt_..."],
-  "evidence_event_ids": ["evt_..."],
-  "confidence": 0.8
-}
-```
-
-If an item claims Klara searched, opened, read, verified, generated, edited, or tested something, corresponding facts must support it.
-
-## Why The Previous Version Felt Fake
-
-The earlier version had several wrong signals:
+The previous version had several wrong signals:
 
 - `Thought for X` appeared even when only a timer existed.
-- `provider_reasoning_delta` existed as a type but no backend emitted it.
-- The drawer could open into an empty public state.
-- Runtime events were directly templated into phrases like "Reading request" or "Writing answer".
-- The active phase had no live activity inside the assistant message.
-- `answer_delta` sent the full final text at once, so the answer appeared all at once.
+- The Activity Drawer could open into an empty public state.
+- Runtime events were wrapped into fixed prose such as "Reading request" or "Writing answer".
+- Provider reasoning had event types but did not always have real content.
+- The final answer appeared all at once.
 
 The corrected rule is:
 
-- Active runs may show `Thinking...` and should quickly try to generate the latest item in the same Klara activity stream.
-- Completed runs show `Thought for X` only when backed by provider reasoning or narrator activity.
-- The final answer is chunked into answer deltas, but thinking/preamble/activity never mixes into answer chunks.
+- Completed turns show `Thought for X` only when A, B, or C has visible content.
+- Main-model public commentary is one primary Thinking source.
+- Runtime action transcript stays compact and factual; it does not pretend to be model reasoning.
+- The final answer can be chunked, but Thinking and Activity never mix into answer text.
 
 ## Quick Experience
 
@@ -173,9 +176,10 @@ Generate an image of Klara.
 
 Check:
 
-1. The assistant message shows `Thinking...` first, and the latest narrator activity when available.
-2. A completed turn does not show an empty `Thought for X`.
-3. Developer Debug is the only place for tools, facts, narrator diagnostics, raw payloads, and metrics.
+1. The assistant message shows `Thinking...` first.
+2. If the model produced public commentary, it appears before the answer.
+3. A completed turn does not show an empty `Thought for X` when A/B/C content is absent.
+4. Developer Debug is the only place for tools, raw payloads, and full trace.
 
 ## Out Of Scope
 

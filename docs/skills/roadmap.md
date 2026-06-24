@@ -140,12 +140,17 @@ Runnable result:
 - trace and frontend projections are produced from the same public events
 - tool start/result cards appear in the run surface
 - trace records per-run, per-turn, and per-tool duration/usage metrics
-- GPT-style thinking block shows `Thinking...`, then `Thought for Xs`
+- GPT-style thinking block shows `Thinking...`, then `Thought for Xs` only
+  when visible public activity exists
 - hook failure does not crash the loop
 - `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop` placements are real
 - public/private hook payload boundary is explicit
 - trace event schema is stable enough for teaching and replay
 - current web-evidence traces separate search candidates from fetched page text without runtime semantic guards
+- provider reasoning summaries can appear as `Model thinking`
+- main-model public commentary appears as Klara activity before or between tool
+  calls
+- runtime action transcript appears as compact safe Agent activity
 
 Includes:
 
@@ -161,7 +166,8 @@ Includes:
 - API/SSE projection from public events
 - frontend GPT-style thinking block plus developer trace panel
 - source-quality signals for current web evidence
-- optional evidence-bound thinking summary narrator as a final capstone only
+- assistant activity projection from model text plus tool calls
+- sanitized runtime action transcript for Activity Drawer
 
 Excludes:
 
@@ -173,6 +179,7 @@ Excludes:
 - full provider streaming adapter
 - fake periodic thinking text
 - raw chain-of-thought display
+- default completed-summary generator
 
 ### Chapter 4 - Harness And Config
 
