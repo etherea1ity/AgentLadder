@@ -353,12 +353,19 @@ def response_from_completion_data(
         choice=choice,
         message=message,
     )
+    activity_source, activity_commentary = _extract_public_activity(
+        data=data,
+        choice=choice,
+        message=message,
+    )
     return ModelResponse(
         content=raw_content,
         tool_calls=tool_calls,
         usage=usage,
         reasoning_summary=reasoning_summary,
         reasoning_source=reasoning_source,
+        activity_commentary=activity_commentary,
+        activity_source=activity_source,
     )
 
 
@@ -386,6 +393,32 @@ def _extract_provider_reasoning(
     return None, None
 
 
+def _extract_public_activity(
+    *,
+    data: dict[str, Any],
+    choice: dict[str, Any],
+    message: dict[str, Any],
+) -> tuple[str | None, str | None]:
+    """Return one sanitized model-authored public activity commentary."""
+
+    candidates = (
+        ("message.activity_commentary", message.get("activity_commentary")),
+        ("message.public_activity", message.get("public_activity")),
+        ("message.commentary", message.get("commentary")),
+        ("choice.activity_commentary", choice.get("activity_commentary")),
+        ("data.activity_commentary", data.get("activity_commentary")),
+        ("data.public_activity", data.get("public_activity")),
+        ("data.commentary", data.get("commentary")),
+    )
+    for source, value in candidates:
+        if not isinstance(value, str):
+            continue
+        commentary = _sanitize_public_activity(value)
+        if commentary:
+            return source, commentary
+    return None, None
+
+
 def _sanitize_reasoning_summary(value: str, *, max_chars: int = 1200) -> str:
     """Return public-safe provider reasoning text for event projection."""
 
@@ -394,6 +427,38 @@ def _sanitize_reasoning_summary(value: str, *, max_chars: int = 1200) -> str:
         return ""
     lowered = text.lower()
     if any(term in lowered for term in ("raw payload", "api key", "secret", "password")):
+        return ""
+    text = re.sub(r"https?://\S+", "[url]", text)
+    text = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "sk-[redacted]", text)
+    text = re.sub(
+        r"(?i)\b(api[_-]?key|token|secret|password)\s*[:=]\s*\S+",
+        r"\1=[redacted]",
+        text,
+    )
+    return text[:max_chars]
+
+
+def _sanitize_public_activity(value: str, *, max_chars: int = 500) -> str:
+    """Return public-safe activity commentary text."""
+
+    text = " ".join(value.split())
+    if not text:
+        return ""
+    lowered = text.lower()
+    if any(
+        term in lowered
+        for term in (
+            "chain-of-thought",
+            "chain of thought",
+            "hidden reasoning",
+            "raw reasoning",
+            "scratchpad",
+            "raw payload",
+            "api key",
+            "secret",
+            "password",
+        )
+    ):
         return ""
     text = re.sub(r"https?://\S+", "[url]", text)
     text = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "sk-[redacted]", text)

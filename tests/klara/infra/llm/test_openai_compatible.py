@@ -189,6 +189,59 @@ def test_response_from_completion_data_extracts_data_reasoning() -> None:
     assert response.reasoning_source == "data.reasoning"
 
 
+def test_response_from_completion_data_extracts_public_activity_commentary() -> None:
+    """Structured public activity fields should be UI metadata."""
+
+    response = response_from_completion_data(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": "final answer",
+                        "activity_commentary": "I will handle this as a tool-backed task.",
+                    }
+                }
+            ],
+        },
+        model_ref=ModelRef(provider="qwen", model="qwen3.7-flash"),
+        raw_preview="{}",
+    )
+
+    assert response.content == "final answer"
+    assert response.activity_commentary == "I will handle this as a tool-backed task."
+    assert response.activity_source == "message.activity_commentary"
+
+
+def test_response_from_completion_data_keeps_tool_call_content_for_loop_activity() -> None:
+    """Loop owns the content+tool_calls split so providers stay normalized."""
+
+    response = response_from_completion_data(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": "I will check with a tool first.",
+                        "tool_calls": [
+                            {
+                                "id": "call-1",
+                                "function": {
+                                    "name": "lookup",
+                                    "arguments": "{}",
+                                },
+                            }
+                        ],
+                    }
+                }
+            ],
+        },
+        model_ref=ModelRef(provider="qwen", model="qwen3.7-flash"),
+        raw_preview="{}",
+    )
+
+    assert response.content == "I will check with a tool first."
+    assert response.tool_calls
+
+
 def test_response_from_completion_data_sanitizes_provider_reasoning() -> None:
     """Reasoning metadata should not expose full URLs or secret-shaped values."""
 

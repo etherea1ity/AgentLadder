@@ -19,6 +19,7 @@ from apps.api.schemas import (
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_event_projector import (
     RunEventProjector,
+    project_assistant_activity,
     project_activity_fact,
     project_provider_reasoning,
 )
@@ -297,6 +298,7 @@ class RunService:
         self.store.append_event(event)
         self.bus.publish(event)
         self._emit_projected_provider_reasoning(event)
+        self._emit_projected_assistant_activity(event)
         self._emit_projected_activity_fact(event)
         return event
 
@@ -312,6 +314,19 @@ class RunService:
             )
             self.store.append_event(reasoning_event)
             self.bus.publish(reasoning_event)
+
+    def _emit_projected_assistant_activity(self, event: RunEventRecord) -> None:
+        """Persist and publish main-model public activity commentary."""
+
+        for projected in project_assistant_activity(event):
+            activity_event = RunEventRecord(
+                run_id=event.run_id,
+                event_type=projected.event_type,
+                message=projected.message,
+                payload=projected.payload,
+            )
+            self.store.append_event(activity_event)
+            self.bus.publish(activity_event)
 
     def _emit_projected_activity_fact(self, event: RunEventRecord) -> None:
         """Persist and publish one structured activity fact derived from an event."""

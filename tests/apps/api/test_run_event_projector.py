@@ -5,6 +5,7 @@ import json
 from apps.api.schemas import RunEventRecord
 from apps.api.services.run_event_projector import (
     RunEventProjector,
+    project_assistant_activity,
     project_activity_fact,
     project_provider_reasoning,
 )
@@ -84,6 +85,33 @@ def test_llm_completed_projection_includes_duration_and_usage() -> None:
     assert projected.payload["completion_tokens"] == 11
     assert projected.payload["total_tokens"] == 18
     assert projected.payload["token_source"] == "reported"
+
+
+def test_llm_completed_projection_preserves_public_activity_metadata() -> None:
+    projector = RunEventProjector()
+    event = KlaraEvent(
+        type="llm.completed",
+        run_id="run-1",
+        payload={
+            "turn_index": 1,
+            "tool_call_count": 1,
+            "activity_commentary": {
+                "text": "I will check public sources first.",
+                "source": "assistant.content_with_tool_calls",
+                "phase": "before_tool",
+            },
+            "usage": {},
+        },
+    )
+
+    projected = projector.project(event)[0]
+
+    assert projected.event_type == "llm_call_completed"
+    assert projected.payload["activity_commentary"] == {
+        "text": "I will check public sources first.",
+        "source": "assistant.content_with_tool_calls",
+        "phase": "before_tool",
+    }
 
 
 def test_tool_events_project_to_visible_started_completed_and_failed() -> None:
@@ -446,3 +474,63 @@ def test_provider_reasoning_projects_delta_and_completed_events() -> None:
     assert item["source"] == "provider_reasoning"
     assert item["body"] == "I considered the request shape before answering."
     assert item["evidence_event_ids"] == [event.event_id]
+
+
+def test_assistant_activity_projects_delta_and_completed_events() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="llm_call_completed",
+        message="Model call completed.",
+        payload={
+            "activity_commentary": {
+                "text": "I will check public sources first.",
+                "source": "assistant.content_with_tool_calls",
+                "phase": "before_tool",
+            }
+        },
+    )
+
+    projected = project_assistant_activity(event)
+
+    assert [item.event_type for item in projected] == [
+        "assistant_activity_delta",
+        "assistant_activity_completed",
+    ]
+    assert projected[0].payload == {
+        "text": "I will check public sources first.",
+        "source": "main_model_commentary",
+        "source_detail": "assistant.content_with_tool_calls",
+        "phase": "before_tool",
+        "evidence_event_ids": [event.event_id],
+    }
+
+
+def test_assistant_activity_projection_redacts_urls_and_rejects_raw_reasoning() -> None:
+    event = RunEventRecord(
+        run_id="run-1",
+        event_type="llm_call_completed",
+        message="Model call completed.",
+        payload={
+            "activity_commentary": {
+                "text": "I will use https://example.com and token=secret.",
+                "phase": "between_tools",
+            }
+        },
+    )
+    rejected = RunEventRecord(
+        run_id="run-1",
+        event_type="llm_call_completed",
+        message="Model call completed.",
+        payload={
+            "activity_commentary": {
+                "text": "My hidden chain-of-thought is private.",
+            }
+        },
+    )
+
+    projected = project_assistant_activity(event)
+
+    assert "[url]" in projected[0].payload["text"]
+    assert "https://example.com" not in projected[0].payload["text"]
+    assert "token=secret" not in projected[0].payload["text"]
+    assert project_assistant_activity(rejected) == ()

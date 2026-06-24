@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import json
+import re
 from time import perf_counter
 from typing import Any, Iterator, Protocol
 from uuid import uuid4
@@ -289,12 +290,19 @@ class KlaraLoop:
                         "usage": usage,
                         "metrics": llm_metrics,
                         **_reasoning_payload(response),
+                        **_activity_payload(
+                            response,
+                            phase=_activity_phase(
+                                turn_index=turn_index,
+                                has_tool_calls=bool(response.tool_calls),
+                            ),
+                        ),
                     },
                 )
                 # Store the assistant request before tools so replay matches transcript.
                 assistant_message = KlaraMessage(
                     role="assistant",
-                    content=response.content,
+                    content=_assistant_message_content(response),
                     tool_calls=response.tool_calls,
                 )
 
@@ -543,6 +551,7 @@ class KlaraLoop:
                     "metrics": llm_metrics,
                     "finalization": True,
                     **_reasoning_payload(response),
+                    **_activity_payload(response, phase="finalizing"),
                 },
             )
         if not response.content.strip() and ignored_tool_call_count:
@@ -598,6 +607,7 @@ class KlaraLoop:
                     "finalization": True,
                     "retry_after_ignored_tools": True,
                     **_reasoning_payload(response),
+                    **_activity_payload(response, phase="finalizing"),
                 },
             )
         final_answer = response.content.strip()
@@ -972,6 +982,82 @@ def _reasoning_payload(response: ModelResponse) -> dict[str, object]:
             "display": "summarized",
         }
     }
+
+
+def _activity_payload(response: ModelResponse, *, phase: str) -> dict[str, object]:
+    """Return main-model public activity commentary for UI projection."""
+
+    commentary = response.activity_commentary
+    source = response.activity_source or "main_model_commentary"
+    if response.tool_calls and not _has_text(commentary):
+        commentary = response.content
+        source = "assistant.content_with_tool_calls"
+    text = _sanitize_public_activity(commentary)
+    if not text:
+        return {}
+    return {
+        "activity_commentary": {
+            "text": text,
+            "source": source,
+            "phase": phase,
+        }
+    }
+
+
+def _assistant_message_content(response: ModelResponse) -> str:
+    """Return model-visible assistant text for this response."""
+
+    if response.tool_calls:
+        return ""
+    return response.content
+
+
+def _activity_phase(*, turn_index: int, has_tool_calls: bool) -> str:
+    """Return a compact public phase label for activity commentary."""
+
+    if not has_tool_calls:
+        return "finalizing"
+    return "before_tool" if turn_index == 1 else "between_tools"
+
+
+def _sanitize_public_activity(value: object, *, max_chars: int = 500) -> str:
+    """Return safe public commentary text without URLs or secret-shaped values."""
+
+    if not isinstance(value, str):
+        return ""
+    text = " ".join(value.split())
+    if not text:
+        return ""
+    lowered = text.lower()
+    if any(
+        term in lowered
+        for term in (
+            "chain-of-thought",
+            "chain of thought",
+            "hidden reasoning",
+            "raw reasoning",
+            "scratchpad",
+            "raw payload",
+            "api key",
+            "secret",
+            "password",
+        )
+    ):
+        return ""
+    text = re.sub(r"https?://\S+", "[url]", text)
+    text = re.sub(r"\bsk-[A-Za-z0-9_-]{12,}\b", "sk-[redacted]", text)
+    text = re.sub(
+        r"(?i)\b(api[_-]?key|token|secret|password)\s*[:=]\s*\S+",
+        r"\1=[redacted]",
+        text,
+    )
+    return text[:max_chars]
+
+
+def _has_text(value: object) -> bool:
+    """Return whether a value is non-empty text."""
+
+    return isinstance(value, str) and bool(value.strip())
 
 
 def _first_present(source: dict[str, int], *keys: str) -> int | None:

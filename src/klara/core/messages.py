@@ -81,6 +81,10 @@ class ModelResponse:
     reasoning_items: tuple[dict[str, object], ...] = field(default_factory=tuple)
     # Provider/model field that produced the public reasoning summary.
     reasoning_source: str | None = None
+    # Main-model public commentary about the current agent step. UI-only.
+    activity_commentary: str | None = None
+    # Provider/model field that produced the public activity commentary.
+    activity_source: str | None = None
 
 
 @dataclass(frozen=True)

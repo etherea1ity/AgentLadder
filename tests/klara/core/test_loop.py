@@ -445,6 +445,108 @@ def test_one_tool_run_feeds_observation_back_to_llm() -> None:
     assert llm.calls[1][0][-1].content == "observed"
 
 
+def test_tool_call_content_becomes_public_activity_not_history() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-activity",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="I will check the tool first.",
+                tool_calls=(tool_call,),
+            ),
+            ModelResponse(content="I saw observed."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("use a tool", run_id="run-tool-activity")
+
+    activity = next(
+        event
+        for event in recorder.events
+        if str(getattr(event, "type")) == "llm.completed"
+    )
+    assert getattr(activity, "payload")["activity_commentary"]["text"] == (
+        "I will check the tool first."
+    )
+    assert result.final_answer == "I saw observed."
+    assert result.messages[1].role == "assistant"
+    assert result.messages[1].content == ""
+    assert all(
+        "I will check the tool first." not in message.content
+        for message in llm.calls[1][0]
+    )
+
+
+def test_empty_tool_call_content_does_not_create_public_activity() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-empty-activity",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="I saw observed."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    loop.run("use a tool", run_id="run-empty-tool-activity")
+
+    llm_completed = next(
+        event
+        for event in recorder.events
+        if str(getattr(event, "type")) == "llm.completed"
+    )
+    assert "activity_commentary" not in getattr(llm_completed, "payload")
+
+
+def test_structured_activity_commentary_emits_without_replacing_final_answer() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="Final answer.",
+                activity_commentary="I will keep this as public activity.",
+                activity_source="message.activity_commentary",
+            )
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("answer", run_id="run-structured-activity")
+
+    llm_completed = next(
+        event
+        for event in recorder.events
+        if str(getattr(event, "type")) == "llm.completed"
+    )
+    assert result.final_answer == "Final answer."
+    assert result.messages[-1].content == "Final answer."
+    assert (
+        getattr(llm_completed, "payload")["activity_commentary"]["text"]
+        == "I will keep this as public activity."
+    )
+
+
 def test_pre_tool_use_defaults_to_allow() -> None:
     recorder = EventRecorder()
     hooks = HookManager([recorder])

@@ -44,11 +44,13 @@ class ToolThenFinalLlm:
         """Create a two-turn tool fixture."""
 
         self.calls = 0
+        self.histories: list[tuple[KlaraMessage, ...]] = []
 
-    def complete(self, **_: object) -> ModelResponse:
+    def complete(self, **kwargs: object) -> ModelResponse:
         """Request a tool on the first call and answer on the second."""
 
         self.calls += 1
+        self.histories.append(kwargs["messages"])  # type: ignore[index]
         if self.calls == 1:
             return ModelResponse(
                 content="I will check the current time first.",
@@ -161,6 +163,42 @@ def test_activity_facts_stay_debug_only_and_do_not_enter_assistant_content(tmp_p
     assert assistant is not None
     assert assistant.content == "It is time to answer."
     assert "activity_fact_recorded" not in assistant.content
+
+
+def test_tool_call_content_emits_assistant_activity_without_entering_history(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    llm = ToolThenFinalLlm()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=llm,
+        default_model="main-model",
+        trace_path=str(tmp_path / "trace.jsonl"),
+        answer_chunk_delay_ms=0,
+    )
+
+    first = service.create_run(session.session_id, "what time is it in Shanghai?")
+    service._threads[first.run_id].join(timeout=5)
+    second = service.create_run(session.session_id, "continue")
+    service._threads[second.run_id].join(timeout=5)
+
+    events = store.list_events(first.run_id)
+    activity = [event for event in events if event.event_type == "assistant_activity_delta"]
+    assert activity
+    assert activity[0].payload["text"] == "I will check the current time first."
+    assert activity[0].payload["phase"] == "before_tool"
+
+    assistant = store.get_message(first.assistant_message_id)
+    assert assistant is not None
+    assert assistant.content == "It is time to answer."
+    assert "I will check the current time first." not in assistant.content
+
+    # The second run should see only completed user/assistant content, not activity.
+    assert all(
+        "I will check the current time first." not in message.content
+        for message in llm.histories[-1]
+    )
 
 
 def test_long_answer_emits_multiple_display_chunks(tmp_path) -> None:

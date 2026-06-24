@@ -93,6 +93,7 @@ class RunEventProjector:
             )
             metrics = _dict_payload(event.payload.get("metrics"))
             reasoning = _dict_payload(event.payload.get("reasoning"))
+            activity = _dict_payload(event.payload.get("activity_commentary"))
             usage_fields = _usage_payload(usage)
             token_source = _token_source(metrics, usage_fields)
             duration_ms = _int_or_none(metrics.get("duration_ms"))
@@ -116,6 +117,7 @@ class RunEventProjector:
                             "token_source": token_source,
                         },
                         **({"reasoning": reasoning} if reasoning else {}),
+                        **({"activity_commentary": activity} if activity else {}),
                     },
                 ),
             )
@@ -257,6 +259,44 @@ def project_provider_reasoning(event: RunEventRecord) -> tuple[ProjectedRunEvent
             message="Provider reasoning summary completed.",
             payload={
                 "source": source,
+                "evidence_event_ids": [event.event_id],
+            },
+        ),
+    )
+
+
+def project_assistant_activity(event: RunEventRecord) -> tuple[ProjectedRunEvent, ...]:
+    """Return public main-model activity commentary from one LLM event."""
+
+    if event.event_type != "llm_call_completed":
+        return ()
+    activity = event.payload.get("activity_commentary")
+    if not isinstance(activity, dict):
+        return ()
+    text = _safe_public_activity(activity.get("text"))
+    if not text:
+        return ()
+    source = _string_or_none(activity.get("source")) or "main_model_commentary"
+    phase = _activity_phase(activity.get("phase"))
+    payload = {
+        "text": text,
+        "source": "main_model_commentary",
+        "source_detail": source,
+        "phase": phase,
+        "evidence_event_ids": [event.event_id],
+    }
+    return (
+        ProjectedRunEvent(
+            event_type="assistant_activity_delta",
+            message="Assistant public activity commentary received.",
+            payload=payload,
+        ),
+        ProjectedRunEvent(
+            event_type="assistant_activity_completed",
+            message="Assistant public activity commentary completed.",
+            payload={
+                "source": "main_model_commentary",
+                "phase": phase,
                 "evidence_event_ids": [event.event_id],
             },
         ),
@@ -598,6 +638,41 @@ def _safe_provider_reasoning(value: object, *, max_chars: int = 900) -> str:
     if any(term in lowered for term in ("raw payload", "api key", "secret", "sk-")):
         return ""
     return text[:max_chars]
+
+
+def _safe_public_activity(value: object, *, max_chars: int = 500) -> str:
+    """Return displayable main-model public activity commentary."""
+
+    if not isinstance(value, str):
+        return ""
+    text = _redact_public_text(" ".join(value.split()))
+    if not text:
+        return ""
+    lowered = text.lower()
+    if any(
+        term in lowered
+        for term in (
+            "chain-of-thought",
+            "chain of thought",
+            "hidden reasoning",
+            "raw reasoning",
+            "scratchpad",
+            "raw payload",
+            "api key",
+            "secret",
+            "password",
+        )
+    ):
+        return ""
+    return text[:max_chars]
+
+
+def _activity_phase(value: object) -> str:
+    """Return a known public activity phase."""
+
+    if value in {"before_tool", "between_tools", "finalizing"}:
+        return str(value)
+    return "before_tool"
 
 
 def _redact_public_text(text: str) -> str:
