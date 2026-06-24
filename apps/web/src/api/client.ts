@@ -50,6 +50,8 @@ export const api = {
       'thinking_summary_completed',
       'provider_reasoning_delta',
       'provider_reasoning_completed',
+      'assistant_activity_delta',
+      'assistant_activity_completed',
       'activity_fact_recorded',
       'web_research.started',
       'web_research.state_updated',

@@ -1,7 +1,11 @@
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import type { Run, RunEvent, ThinkingActivityItem } from "../../types/domain";
-import { visibleProviderReasoningItems } from "./activityItems";
+import {
+  visibleAgentTranscriptItems,
+  visibleMainModelCommentaryItems,
+  visibleProviderReasoningItems,
+} from "./activityItems";
 
 type Props = {
   run?: Run | null;
@@ -19,7 +23,18 @@ export function KlaraActivityDrawer({ run, open, onClose }: Props) {
     [run?.events],
   );
   const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
-  const hasVisibleContent = providerItems.length > 0;
+  const commentaryItems = useMemo(
+    () => visibleMainModelCommentaryItems(events),
+    [events],
+  );
+  const transcriptItems = useMemo(
+    () => visibleAgentTranscriptItems(events),
+    [events],
+  );
+  const hasVisibleContent =
+    providerItems.length > 0 ||
+    commentaryItems.length > 0 ||
+    transcriptItems.length > 0;
   const durationLabel = run ? activityDurationLabel(run, events) : "0s";
 
   useEffect(() => {
@@ -65,10 +80,30 @@ export function KlaraActivityDrawer({ run, open, onClose }: Props) {
           </button>
         </header>
 
+        {providerItems.length > 0 ? (
+          <section className="klara-activity-section">
+            <h4>Model thinking</h4>
+            <ActivityList items={providerItems} />
+          </section>
+        ) : null}
+
         <section className="klara-activity-section">
-          <h4>Model thinking</h4>
-          <ActivityList items={providerItems} />
+          <h4>Klara activity</h4>
+          {commentaryItems.length > 0 ? (
+            <ActivityList items={commentaryItems} />
+          ) : (
+            <p className="klara-activity-empty">
+              No public model commentary was produced for this run.
+            </p>
+          )}
         </section>
+
+        {transcriptItems.length > 0 ? (
+          <section className="klara-activity-section">
+            <h4>Agent activity</h4>
+            <ActivityList items={transcriptItems} />
+          </section>
+        ) : null}
       </aside>
     </div>
   );

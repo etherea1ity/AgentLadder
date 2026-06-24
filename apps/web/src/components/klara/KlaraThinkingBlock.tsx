@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Run, RunEvent } from "../../types/domain";
 import { KlaraPresence } from "./KlaraPresence";
 import {
+  visibleAgentTranscriptItems,
+  visibleMainModelCommentaryItems,
   visibleProviderReasoningItems,
 } from "./activityItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
@@ -42,9 +44,24 @@ export function KlaraThinkingBlock({
     [events],
   );
   const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
+  const commentaryItems = useMemo(
+    () => visibleMainModelCommentaryItems(events),
+    [events],
+  );
+  const transcriptItems = useMemo(
+    () => visibleAgentTranscriptItems(events),
+    [events],
+  );
+  const latestCommentary =
+    commentaryItems.length > 0
+      ? commentaryItems[commentaryItems.length - 1]?.body ?? ""
+      : "";
 
   if (!run) return null;
-  const hasVisibleActivity = providerItems.length > 0;
+  const hasVisibleActivity =
+    providerItems.length > 0 ||
+    commentaryItems.length > 0 ||
+    transcriptItems.length > 0;
   if (!active && !hasVisibleActivity) return null;
 
   const durationMs = thinkingDurationMs(
@@ -93,6 +110,9 @@ export function KlaraThinkingBlock({
           </button>
         ) : null}
       </div>
+      {active && latestCommentary ? (
+        <p className="klara-thinking-activity">{latestCommentary}</p>
+      ) : null}
     </section>
   );
 }

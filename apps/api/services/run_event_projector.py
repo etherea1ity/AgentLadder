@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import json
 import re
 from typing import Any, cast
+from urllib.parse import urlparse
 
 from apps.api.schemas import RunEventRecord, RunEventType
 from klara.core.events import KlaraEvent
@@ -412,12 +413,15 @@ def _tool_result_activity_fact(event: RunEventRecord, *, status: str) -> dict[st
         extra["web"] = {
             "result_count": _int_or_none(structured_summary.get("result_count")),
             "provider": _string_or_none(structured_summary.get("provider")),
+            "top_domains": structured_summary.get("top_domains"),
+            "top_titles": structured_summary.get("top_titles"),
             "truncated": structured_summary.get("truncated"),
         }
     elif name == "web_fetch":
         extra["web"] = {
             "status": _int_or_none(structured_summary.get("status")),
             "title_preview": _sanitize_preview(structured_summary.get("title")),
+            "source_domain": _string_or_none(structured_summary.get("source_domain")),
             "text_length": _int_or_none(structured_summary.get("text_length")),
         }
     elif name == "image_generate":
@@ -550,6 +554,7 @@ def _structured_tool_summary(name: str, content: object) -> dict[str, Any]:
         return {}
     if name == "web_search":
         results = value.get("results")
+        result_items = results if isinstance(results, list) else []
         return {
             "provider": _string_or_none(value.get("provider")),
             "result_count": _int_or_none(value.get("result_count")),
@@ -557,7 +562,9 @@ def _structured_tool_summary(name: str, content: object) -> dict[str, Any]:
             "evidence_status": _string_or_none(value.get("evidence_status")),
             "search_id": _string_or_none(value.get("search_id")),
             "freshness_enforced": bool(value.get("freshness_enforced", False)),
-            "candidate_count": len(results) if isinstance(results, list) else None,
+            "candidate_count": len(result_items),
+            "top_domains": _top_domains(result_items),
+            "top_titles": _top_titles(result_items),
         }
     if name == "web_fetch":
         text = value.get("text")
@@ -573,6 +580,10 @@ def _structured_tool_summary(name: str, content: object) -> dict[str, Any]:
             "status": _int_or_none(value.get("status")),
             "content_type": _string_or_none(value.get("content_type")),
             "title": _sanitize_preview(value.get("title")),
+            "source_domain": _domain_from_url(
+                _string_or_none(value.get("final_url"))
+                or _string_or_none(value.get("url"))
+            ),
             "text_length": len(text) if isinstance(text, str) else None,
             "truncated": bool(value.get("truncated", False)),
             "quality": quality_score,
@@ -594,6 +605,50 @@ def _dict_payload(value: object) -> dict[str, Any]:
     if isinstance(value, dict):
         return dict(value)
     return {}
+
+
+def _top_domains(results: list[Any], *, limit: int = 3) -> list[str]:
+    """Return unique source domains from search result cards."""
+
+    domains: list[str] = []
+    for item in results:
+        if not isinstance(item, dict):
+            continue
+        domain = _domain_from_url(
+            _string_or_none(item.get("canonical_url"))
+            or _string_or_none(item.get("url"))
+        )
+        if domain and domain not in domains:
+            domains.append(domain)
+        if len(domains) >= limit:
+            break
+    return domains
+
+
+def _top_titles(results: list[Any], *, limit: int = 2) -> list[str]:
+    """Return short public titles from search result cards."""
+
+    titles: list[str] = []
+    for item in results:
+        if not isinstance(item, dict):
+            continue
+        title = _sanitize_preview(item.get("title"), max_chars=90)
+        if title:
+            titles.append(title)
+        if len(titles) >= limit:
+            break
+    return titles
+
+
+def _domain_from_url(url: str | None) -> str | None:
+    """Return only the public hostname from a URL."""
+
+    if not url:
+        return None
+    hostname = urlparse(url).hostname
+    if not hostname:
+        return None
+    return hostname.lower().removeprefix("www.")
 
 
 def _fact_metrics(event: RunEventRecord) -> dict[str, Any]:

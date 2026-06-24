@@ -48,6 +48,27 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
   });
 
+  it("shows active public commentary inline before the answer", () => {
+    render(
+      <KlaraThinkingBlock
+        run={{
+          ...baseRun,
+          events: [
+            evt("thinking_summary_started", { started_at: "2026-06-18T12:00:00Z" }),
+            assistantActivityEvent(
+              "I will check current sources before answering.",
+            ),
+          ],
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText("I will check current sources before answering."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/web_search ·/)).not.toBeInTheDocument();
+  });
+
   it("shows completed Thought when provider reasoning exists", () => {
     render(
       <KlaraThinkingBlock
@@ -60,6 +81,42 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.getByText("Thought for 800ms")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+  });
+
+  it("shows completed Thought when main-model commentary exists", () => {
+    render(
+      <KlaraThinkingBlock
+        run={completedRun([
+          assistantActivityEvent("I will use a tool before answering."),
+          evt("thinking_summary_completed", { duration_ms: 900, has_summary: false }),
+        ])}
+      />,
+    );
+
+    expect(screen.getByText("Thought for 900ms")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+  });
+
+  it("shows completed Thought when runtime action transcript exists", () => {
+    render(
+      <KlaraThinkingBlock
+        run={completedRun([
+          activityFactEvent({
+            id: "fact_tool",
+            kind: "web_search_result",
+            status: "completed",
+            source_event_type: "tool_call_completed",
+            evidence_event_ids: ["evt_tool"],
+            tool: { name: "web_search" },
+            web: { result_count: 8, top_domains: ["fifa.com"] },
+          }),
+          evt("thinking_summary_completed", { duration_ms: 1000, has_summary: false }),
+        ])}
+      />,
+    );
+
+    expect(screen.getByText("Thought for 1s")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
   });
 
@@ -80,6 +137,40 @@ describe("KlaraThinkingBlock", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
     expect(onOpenActivity).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders drawer sections for provider, commentary, and agent transcript", () => {
+    const run = completedRun([
+      providerReasoningEvent("The provider returned a safe reasoning summary."),
+      assistantActivityEvent("I will use a tool before answering."),
+      activityFactEvent({
+        id: "fact_fetch",
+        kind: "web_fetch_result",
+        status: "completed",
+        source_event_type: "tool_call_completed",
+        evidence_event_ids: ["evt_fetch"],
+        tool: { name: "web_fetch" },
+        web: {
+          title_preview: "FIFA match schedule",
+          source_domain: "fifa.com",
+          text_length: 2300,
+        },
+      }),
+      evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
+    ]);
+    render(<ActivityHarness runs={[run]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
+
+    expect(screen.getAllByText("Model thinking").length).toBeGreaterThan(0);
+    expect(screen.getByText("Klara activity")).toBeInTheDocument();
+    expect(screen.getByText("Agent activity")).toBeInTheDocument();
+    expect(screen.getByText("I will use a tool before answering.")).toBeInTheDocument();
+    expect(screen.getByText("web_fetch")).toBeInTheDocument();
+    expect(screen.getByText(/FIFA match schedule/)).toBeInTheDocument();
+    expect(screen.getByText(/fifa\.com/)).toBeInTheDocument();
+    expect(screen.queryByText(/https:\/\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/raw payload/i)).not.toBeInTheDocument();
   });
 
   it("keeps a single activity drawer when multiple thinking blocks exist", () => {
@@ -193,6 +284,19 @@ function providerReasoningEvent(body: string, runId = "run_1"): RunEvent {
       },
     ],
   });
+}
+
+function assistantActivityEvent(text: string): RunEvent {
+  return evt("assistant_activity_delta", {
+    text,
+    source: "main_model_commentary",
+    phase: "before_tool",
+    evidence_event_ids: ["evt_llm"],
+  });
+}
+
+function activityFactEvent(fact: Record<string, unknown>): RunEvent {
+  return evt("activity_fact_recorded", { fact });
 }
 
 function evt(
