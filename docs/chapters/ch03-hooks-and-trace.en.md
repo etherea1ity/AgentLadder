@@ -39,7 +39,7 @@ Final answer body
 Developer debug · collapsed
 ```
 
-`Thought for X` must be backed by real visible content: provider/model reasoning, a Klara preamble, or narrator-generated Klara activity. If all three are absent, Klara does not show an empty `Thought for X`; duration remains available in Developer Debug.
+`Thought for X` must be backed by real visible content: provider/model reasoning or narrator-generated Klara activity. If both are absent, Klara does not show an empty `Thought for X`; duration remains available in Developer Debug.
 
 ## The Three Surfaces
 
@@ -52,16 +52,15 @@ active:    Klara · Thinking... 1.2s
 complete:  Klara · Thought for 24.2s >
 ```
 
-During an active run, if `thinking_preamble_delta` is available, Klara renders one compact preamble below the row. It explains what Klara publicly understands about the request and the high-level approach. It does not answer the question and does not show a tool chain.
+During an active run, if the narrator has produced public activity items from activity facts, Klara renders the latest compact activity below the row. Request orientation, search, source reading, image generation, and answer composition all belong to the same Klara activity stream; there is no separate preamble product layer.
 
-Interaction is explicit: the left side is mini Klara icon + label, and the right chevron is the only drawer trigger. Clicking the label or preamble does not open the drawer.
+Interaction is explicit: the left side is mini Klara icon + label, and the right chevron is the only drawer trigger. Clicking the label or inline activity does not open the drawer.
 
 ### 2. Activity Drawer
 
-The drawer is detail, not the main live experience. It can show three content sources:
+The drawer is detail, not the main live experience. It shows two content sources:
 
 ```text
-Klara preamble  -> thinking_preamble_delta.text
 Model thinking  -> provider_reasoning summary; hidden when absent
 Klara activity  -> narrator_model public activity generated from facts
 ```
@@ -69,7 +68,7 @@ Klara activity  -> narrator_model public activity generated from facts
 "Real thinking" here does not mean raw chain-of-thought:
 
 - `Model thinking` comes from a provider/model-visible reasoning summary. Klara shows it only when the provider returns it.
-- `Klara activity` comes from `activity_fact_recorded` plus a narrator model. Runtime records structured facts; the narrator writes public activity prose.
+- `Klara activity` comes from `activity_fact_recorded` plus a narrator model. Runtime records structured facts; the narrator writes public activity prose. `request_orientation` is the first item in this activity stream, not a separate preamble.
 - If the narrator is unavailable, returns invalid JSON, or fails validation, Klara does not invent template prose. The failure is visible only in Developer Debug.
 
 ### 3. Developer Debug
@@ -141,13 +140,13 @@ The earlier version had several wrong signals:
 - `provider_reasoning_delta` existed as a type but no backend emitted it.
 - The drawer could open into an empty public state.
 - Runtime events were directly templated into phrases like "Reading request" or "Writing answer".
-- The active phase had no live preamble inside the assistant message.
+- The active phase had no live activity inside the assistant message.
 - `answer_delta` sent the full final text at once, so the answer appeared all at once.
 
 The corrected rule is:
 
-- Active runs may show `Thinking...` and should quickly try to generate one live preamble.
-- Completed runs show `Thought for X` only when backed by preamble, provider reasoning, or narrator activity.
+- Active runs may show `Thinking...` and should quickly try to generate the latest item in the same Klara activity stream.
+- Completed runs show `Thought for X` only when backed by provider reasoning or narrator activity.
 - The final answer is chunked into answer deltas, but thinking/preamble/activity never mixes into answer chunks.
 
 ## Quick Experience
@@ -174,7 +173,7 @@ Generate an image of Klara.
 
 Check:
 
-1. The assistant message shows `Thinking...` first, and a short preamble when available.
+1. The assistant message shows `Thinking...` first, and the latest narrator activity when available.
 2. A completed turn does not show an empty `Thought for X`.
 3. Developer Debug is the only place for tools, facts, narrator diagnostics, raw payloads, and metrics.
 

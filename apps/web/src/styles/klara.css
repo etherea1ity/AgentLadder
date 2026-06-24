@@ -444,17 +444,11 @@
   background: rgba(184, 129, 47, 0.08);
   outline: none;
 }
-.klara-thinking-preamble {
+.klara-thinking-activity {
   max-width: min(720px, 100%);
   margin: 6px 0 0 21px;
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.55;
-}
-.klara-activity-preamble {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
   line-height: 1.55;
 }
 .klara-activity-layer {

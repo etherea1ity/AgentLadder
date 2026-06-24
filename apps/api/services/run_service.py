@@ -207,7 +207,6 @@ class RunService:
             selected_model=selected_model,
             summary_started_event=summary_started_event,
         )
-
         projector = RunEventProjector(selected_model=selected_model)
         hooks = HookManager(
             [RunProjectionHook(self, run_id, projector), JsonlTraceHook(Path(self.trace_path))]
@@ -547,6 +546,7 @@ class RunService:
                     {
                         "phase": "live",
                         "fact_count": len(facts),
+                        "fact_kinds": _activity_fact_kinds(facts),
                     },
                 )
                 summary = narrator.create_summary(
@@ -584,6 +584,7 @@ class RunService:
                         "reason": narrator.last_rejection_reason
                         or "unknown_validation_failure",
                         "fact_count": len(facts),
+                        "fact_kinds": _activity_fact_kinds(facts),
                     },
                 )
                 return False
@@ -616,11 +617,13 @@ class RunService:
                     "phase": "live",
                     "item_count": len(summary.items),
                     "fact_count": len(facts),
+                    "fact_kinds": _activity_fact_kinds(facts),
                 },
             )
             return True
 
         def worker() -> None:
+            emit_once()
             while not stop_event.wait(1.0):
                 emit_once()
 
@@ -703,6 +706,7 @@ class RunService:
                         "phase": "completed",
                         "reason": "no_items",
                         "fact_count": 0,
+                        "fact_kinds": [],
                     },
                 )
                 return None
@@ -717,6 +721,7 @@ class RunService:
                 {
                     "phase": "completed",
                     "fact_count": len(facts),
+                    "fact_kinds": _activity_fact_kinds(facts),
                 },
             )
             summary = narrator.create_summary(
@@ -739,6 +744,7 @@ class RunService:
                         "reason": narrator.last_rejection_reason
                         or "unknown_validation_failure",
                         "fact_count": len(facts),
+                        "fact_kinds": _activity_fact_kinds(facts),
                     },
                 )
                 return None
@@ -750,6 +756,7 @@ class RunService:
                     "phase": "completed",
                     "item_count": len(summary.items),
                     "fact_count": len(facts),
+                    "fact_kinds": _activity_fact_kinds(facts),
                 },
             )
             return summary
@@ -916,6 +923,12 @@ def _activity_items_signature(items: tuple[dict[str, Any], ...]) -> str:
         )
     except TypeError:
         return ""
+
+
+def _activity_fact_kinds(facts: tuple[dict[str, Any], ...]) -> list[str]:
+    """Return ordered fact kind labels for developer diagnostics."""
+
+    return [str(fact.get("kind") or "unknown") for fact in facts]
 
 
 def _is_narratable_activity_fact(fact: dict[str, Any]) -> bool:

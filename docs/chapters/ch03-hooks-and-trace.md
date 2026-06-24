@@ -39,7 +39,7 @@ Klara · Thought for 24.2s >
 Developer debug · collapsed
 ```
 
-`Thought for X` 必须有真实可展示内容支撑：provider/model reasoning、Klara preamble，或 narrator 生成的 Klara activity。三者都没有时，不显示空的 `Thought for X`，运行耗时只留在 Developer Debug。
+`Thought for X` 必须有真实可展示内容支撑：provider/model reasoning，或 narrator 生成的 Klara activity。两者都没有时，不显示空的 `Thought for X`，运行耗时只留在 Developer Debug。
 
 ## 三层界面
 
@@ -52,16 +52,15 @@ active:    Klara · Thinking... 1.2s
 complete:  Klara · Thought for 24.2s >
 ```
 
-运行中如果 `thinking_preamble_delta` 已经返回，就在这一行下面显示一条 compact preamble。它只说明 Klara 公开理解到的用户目标和高层处理方向，不回答问题，不展示工具链路。
+运行中如果 narrator 已经从 activity facts 生成公开 activity item，就在这一行下面显示最新一条 compact activity。请求理解、搜索、读取来源、生成图片、整理回答都属于同一条 Klara activity stream；不再有单独的 preamble 产品层。
 
-交互上，左侧是 mini Klara icon + label，右侧 chevron 是独立按钮。点击文字或 preamble 不展开，只有 chevron 打开 Activity Drawer。
+交互上，左侧是 mini Klara icon + label，右侧 chevron 是独立按钮。点击文字或 inline activity 不展开，只有 chevron 打开 Activity Drawer。
 
 ### 2. Activity Drawer
 
-Drawer 是详情，不是主实时体验。它可以展示三类内容：
+Drawer 是详情，不是主实时体验。它只展示两类内容：
 
 ```text
-Klara preamble   -> thinking_preamble_delta.text
 Model thinking   -> provider_reasoning summary；没有就隐藏
 Klara activity   -> narrator_model 基于 activity facts 生成的公开活动摘要
 ```
@@ -69,7 +68,7 @@ Klara activity   -> narrator_model 基于 activity facts 生成的公开活动�
 这里的“真实 thinking”不是 raw chain-of-thought：
 
 - `Model thinking` 来自 provider/model 返回的公开 reasoning summary，有才展示，没有不伪造。
-- `Klara activity` 来自 `activity_fact_recorded` + narrator model。runtime 只记录结构化事实，narrator 才写用户可读的公开 activity。
+- `Klara activity` 来自 `activity_fact_recorded` + narrator model。runtime 只记录结构化事实，narrator 才写用户可读的公开 activity。`request_orientation` 是这条 activity stream 的第一项，不是单独 preamble。
 - narrator 不可用、JSON 错误或校验失败时，不生成模板句子，只在 Developer Debug 留诊断事件。
 
 ### 3. Developer Debug
@@ -141,13 +140,13 @@ narrator 只根据 facts 输出公开 activity item：
 - `provider_reasoning_delta` 有类型但没有真实 emitter。
 - narrator 没内容时，前端还能打开空 drawer。
 - runtime event 被直接包装成 “Reading request / Writing answer” 这类模板 activity。
-- active 阶段没有 assistant message 内部的 live preamble。
+- active 阶段没有 assistant message 内部的 live activity。
 - `answer_delta` 一次性发送完整 final text，看起来不像回答正在出现。
 
 现在的规则是：
 
-- 运行中可以显示 `Thinking...`，并尽快尝试生成一条 live preamble。
-- 完成后只有在有 preamble、provider reasoning 或 narrator activity 时，才显示 `Thought for X`。
+- 运行中可以显示 `Thinking...`，并尽快尝试生成同一条 Klara activity stream 的最新 item。
+- 完成后只有在有 provider reasoning 或 narrator activity 时，才显示 `Thought for X`。
 - 最终答案会分块发出，但 thinking/preamble/activity 不会混进 answer chunks。
 
 ## 快速体验
@@ -174,7 +173,7 @@ http://127.0.0.1:5123
 
 验收时看三件事：
 
-1. assistant 消息内部先出现 `Thinking...`，有 preamble 时显示一条短说明。
+1. assistant 消息内部先出现 `Thinking...`，有 narrator activity 时显示最新一条短说明。
 2. 完成后没有内容支撑时，不显示空的 `Thought for X`。
 3. Developer Debug 才显示 tools、facts、narrator diagnostics、raw payload 和 metrics。
 

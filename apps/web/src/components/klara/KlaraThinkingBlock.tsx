@@ -5,7 +5,6 @@ import { KlaraActivityDrawer } from "./KlaraActivityDrawer";
 import {
   visibleNarratorActivityItems,
   visibleProviderReasoningItems,
-  visibleThinkingPreamble,
 } from "./activityItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
@@ -40,11 +39,10 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
   );
   const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
   const narratorItems = useMemo(() => visibleNarratorActivityItems(events), [events]);
-  const preamble = useMemo(() => visibleThinkingPreamble(events), [events]);
+  const activeActivity = narratorItems[narratorItems.length - 1] ?? null;
 
   if (!run) return null;
-  const hasVisibleActivity =
-    providerItems.length > 0 || narratorItems.length > 0 || Boolean(preamble);
+  const hasVisibleActivity = providerItems.length > 0 || narratorItems.length > 0;
   if (!active && !hasVisibleActivity) return null;
 
   const durationMs = thinkingDurationMs(
@@ -83,8 +81,8 @@ export function KlaraThinkingBlock({ run }: { run?: Run }) {
           </button>
         ) : null}
       </div>
-      {active && preamble ? (
-        <p className="klara-thinking-preamble">{preamble.text}</p>
+      {active && activeActivity ? (
+        <p className="klara-thinking-activity">{activeActivity.body}</p>
       ) : null}
       {drawerOpen ? (
         <KlaraActivityDrawer

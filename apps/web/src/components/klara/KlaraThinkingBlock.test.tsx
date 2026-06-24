@@ -30,7 +30,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
   });
 
-  it("shows a live preamble while a run is still thinking", () => {
+  it("shows the latest live activity item while a run is still thinking", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -38,11 +38,15 @@ describe("KlaraThinkingBlock", () => {
           status: "thinking",
           events: [
             evt("thinking_summary_started", { started_at: "2026-06-18T12:00:00Z" }),
-            evt("thinking_preamble_delta", {
-              text: "我先理解了你是在问世界杯的最新进展，所以会先明确目标再回答。",
-              source: "narrator_model",
-              evidence_event_ids: ["evt_1"],
-              confidence: 0.8,
+            evt("thinking_summary_delta", {
+              items: [
+                activity(
+                  "act_live_1",
+                  "Request understood",
+                  "Klara identified the request goal and keeps public activity in one stream.",
+                  "narrator_model",
+                ),
+              ],
             }),
           ],
         }}
@@ -51,7 +55,9 @@ describe("KlaraThinkingBlock", () => {
 
     expect(screen.getByText(/Thinking\.\.\./)).toBeInTheDocument();
     expect(
-      screen.getByText("我先理解了你是在问世界杯的最新进展，所以会先明确目标再回答。"),
+      screen.getByText(
+        "Klara identified the request goal and keeps public activity in one stream.",
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Live activity")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
@@ -82,7 +88,12 @@ describe("KlaraThinkingBlock", () => {
             evt("thinking_summary_delta", {
               text: "Klara summarized the public trace.",
               items: [
-                activity("act_1", "Request understood", "Klara identified the request goal and prepared a concise response.", "narrator_model"),
+                activity(
+                  "act_1",
+                  "Request understood",
+                  "Klara identified the request goal and prepared a concise response.",
+                  "narrator_model",
+                ),
               ],
             }),
             evt("thinking_summary_completed", { duration_ms: 4200, has_summary: true }),
@@ -104,7 +115,12 @@ describe("KlaraThinkingBlock", () => {
           events: [
             evt("provider_reasoning_delta", {
               items: [
-                activity("act_provider_1", "Model thinking", "The provider returned a safe reasoning summary.", "provider_reasoning"),
+                activity(
+                  "act_provider_1",
+                  "Model thinking",
+                  "The provider returned a safe reasoning summary.",
+                  "provider_reasoning",
+                ),
               ],
             }),
             evt("provider_reasoning_completed", {}),
@@ -117,7 +133,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByText("Thought for 800ms")).toBeInTheDocument();
   });
 
-  it("shows completed Thought when only a preamble exists", () => {
+  it("does not show completed Thought when only a legacy preamble exists", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -125,7 +141,7 @@ describe("KlaraThinkingBlock", () => {
           status: "completed",
           events: [
             evt("thinking_preamble_delta", {
-              text: "我先理解了你是在问一个简短问题，我会把目标整理成回答。",
+              text: "Klara understood the request and will prepare an answer.",
               source: "narrator_model",
               evidence_event_ids: ["evt_1"],
               confidence: 0.8,
@@ -136,8 +152,8 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText("Thought for 1.2s")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+    expect(screen.queryByText("Thought for 1.2s")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
   });
 
   it("opens activity only from the right chevron button", () => {
@@ -149,7 +165,12 @@ describe("KlaraThinkingBlock", () => {
           events: [
             evt("thinking_summary_delta", {
               items: [
-                activity("act_summary_1", "Request understood", "Klara identified the request goal before answering.", "narrator_model"),
+                activity(
+                  "act_summary_1",
+                  "Request understood",
+                  "Klara identified the request goal before answering.",
+                  "narrator_model",
+                ),
               ],
             }),
             evt("thinking_summary_completed", { duration_ms: 800, has_summary: true }),
@@ -175,12 +196,22 @@ describe("KlaraThinkingBlock", () => {
           events: [
             evt("provider_reasoning_delta", {
               items: [
-                activity("act_provider_1", "Model thinking", "The provider returned a safe reasoning summary.", "provider_reasoning"),
+                activity(
+                  "act_provider_1",
+                  "Model thinking",
+                  "The provider returned a safe reasoning summary.",
+                  "provider_reasoning",
+                ),
               ],
             }),
             evt("thinking_summary_delta", {
               items: [
-                activity("act_summary_1", "Request understood", "Klara identified the request goal before answering.", "narrator_model"),
+                activity(
+                  "act_summary_1",
+                  "Request understood",
+                  "Klara identified the request goal before answering.",
+                  "narrator_model",
+                ),
               ],
             }),
             evt("thinking_summary_completed", { duration_ms: 800, has_summary: true }),
@@ -197,7 +228,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByText("Request understood")).toBeInTheDocument();
   });
 
-  it("renders preamble inside the drawer without activity items", () => {
+  it("does not open an activity drawer for a legacy preamble without activity items", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -205,7 +236,7 @@ describe("KlaraThinkingBlock", () => {
           status: "completed",
           events: [
             evt("thinking_preamble_delta", {
-              text: "我先理解了你是在问一个简短问题，我会把目标整理成回答。",
+              text: "Klara understood the request and will prepare an answer.",
               source: "narrator_model",
               evidence_event_ids: ["evt_1"],
               confidence: 0.8,
@@ -216,10 +247,8 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-
-    expect(screen.getByText("Klara preamble")).toBeInTheDocument();
-    expect(screen.getByText("我先理解了你是在问一个简短问题，我会把目标整理成回答。")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Klara preamble")).not.toBeInTheDocument();
     expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
   });
 
@@ -259,7 +288,12 @@ describe("KlaraThinkingBlock", () => {
           events: [
             evt("thinking_summary_delta", {
               items: [
-                activity("act_summary_1", "Request understood", "Klara identified the request goal before answering.", "narrator_model"),
+                activity(
+                  "act_summary_1",
+                  "Request understood",
+                  "Klara identified the request goal before answering.",
+                  "narrator_model",
+                ),
               ],
             }),
             evt("thinking_summary_completed", { duration_ms: 800, has_summary: true }),
