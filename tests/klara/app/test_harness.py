@@ -66,6 +66,11 @@ class HarnessLlm:
                 content="",
                 tool_calls=(
                     ToolCall(
+                        id="activity-1",
+                        name="update_activity",
+                        arguments={"text": "I will use the echo tool."},
+                    ),
+                    ToolCall(
                         id="echo-1",
                         name="test_echo",
                         arguments={"text": "from harness"},
@@ -100,7 +105,7 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     assert "preferred_source" not in llm.system_prompt
     assert "source-limited analysis" not in llm.system_prompt
     assert "Runtime user context" not in llm.system_prompt
-    assert [tool.name for tool in llm.tools] == ["test_echo"]
+    assert [tool.name for tool in llm.tools] == ["test_echo", "update_activity"]
     assert llm.messages_seen[1][-1].content == "from harness"
 
     # Parse trace lines to verify the harness attached a working trace hook.
@@ -122,6 +127,7 @@ def test_harness_defaults_to_default_registry() -> None:
     assert {tool.name for tool in llm.tools} == {
         "current_time",
         "image_generate",
+        "update_activity",
         "web_fetch",
         "web_search",
     }

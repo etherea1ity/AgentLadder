@@ -80,23 +80,18 @@ export function KlaraActivityDrawer({ run, open, onClose }: Props) {
           </button>
         </header>
 
-        {commentaryItems.length > 0 ? (
-          <section className="klara-activity-section">
-            <h4>Klara activity</h4>
-            <ThoughtList items={commentaryItems} />
-          </section>
-        ) : null}
+        {commentaryItems.length > 0 ? <ThoughtList items={commentaryItems} /> : null}
 
         {transcriptItems.length > 0 ? (
-          <section className="klara-activity-section">
-            <h4>Agent activity</h4>
+          <details className="klara-activity-section klara-activity-provider">
+            <summary>Actions</summary>
             <ActivityList items={transcriptItems} />
-          </section>
+          </details>
         ) : null}
 
         {providerItems.length > 0 ? (
           <details className="klara-activity-section klara-activity-provider">
-            <summary>Provider reasoning</summary>
+            <summary>Original model reasoning</summary>
             <ThoughtList items={providerItems} />
           </details>
         ) : null}

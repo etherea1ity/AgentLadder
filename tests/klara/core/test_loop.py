@@ -257,6 +257,22 @@ def _terminal_tool_call_ids(events: list[object]) -> list[str]:
     return ids
 
 
+def _activity_call(text: str = "I will use the tool now.") -> ToolCall:
+    """Return the internal public activity call expected before runtime tools."""
+
+    return ToolCall(
+        id=f"activity-{len(text)}",
+        name="update_activity",
+        arguments={"text": text},
+    )
+
+
+def _with_activity(*calls: ToolCall, text: str = "I will use the tool now.") -> tuple[ToolCall, ...]:
+    """Return tool calls prefixed with one public activity update."""
+
+    return (_activity_call(text), *calls)
+
+
 def test_no_tool_run_returns_final_answer() -> None:
     llm = ScriptedLlm([ModelResponse(content="Hello from Klara.")])
     loop = KlaraLoop(llm=llm, tool_executor=ToolExecutor())
@@ -362,7 +378,7 @@ def test_tool_terminal_event_includes_duration_ms() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(tool_call)),
             ModelResponse(content="done"),
         ]
     )
@@ -439,7 +455,7 @@ def test_one_tool_run_feeds_observation_back_to_llm() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(tool_call)),
             ModelResponse(content="I saw observed."),
         ]
     )
@@ -503,7 +519,7 @@ def test_tool_call_content_becomes_public_activity_not_history() -> None:
     )
 
 
-def test_empty_tool_call_content_does_not_create_public_activity() -> None:
+def test_missing_tool_activity_retries_before_executing_known_tool() -> None:
     recorder = EventRecorder()
     tool_call = ToolCall(
         id="call-empty-activity",
@@ -513,6 +529,13 @@ def test_empty_tool_call_content_does_not_create_public_activity() -> None:
     llm = ScriptedLlm(
         [
             ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(
+                content="",
+                tool_calls=_with_activity(
+                    tool_call,
+                    text="I will check the tool first.",
+                ),
+            ),
             ModelResponse(content="I saw observed."),
         ]
     )
@@ -522,14 +545,68 @@ def test_empty_tool_call_content_does_not_create_public_activity() -> None:
         hooks=HookManager([recorder]),
     )
 
-    loop.run("use a tool", run_id="run-empty-tool-activity")
+    result = loop.run("use a tool", run_id="run-empty-tool-activity")
 
-    llm_completed = next(
-        event
-        for event in recorder.events
-        if str(getattr(event, "type")) == "llm.completed"
+    assert result.final_answer == "I saw observed."
+    assert "activity_protocol.retry_requested" in recorder.event_types
+    assert _tool_call_ids_for(recorder.events, "tool.started") == [
+        "call-empty-activity"
+    ]
+    llm_completed = [
+        event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
+    ]
+    assert "activity_commentary" not in getattr(llm_completed[0], "payload")
+    assert getattr(llm_completed[1], "payload")["activity_commentary"]["text"] == (
+        "I will check the tool first."
     )
-    assert "activity_commentary" not in getattr(llm_completed, "payload")
+
+
+def test_activity_retry_can_bind_activity_to_pending_tool_calls() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-pending-activity",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(
+                content="",
+                tool_calls=(
+                    _activity_call("I will check the tool first."),
+                ),
+            ),
+            ModelResponse(content="I saw observed."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("use a tool", run_id="run-pending-activity")
+
+    assert result.final_answer == "I saw observed."
+    assert _tool_call_ids_for(recorder.events, "tool.started") == [
+        "call-pending-activity"
+    ]
+    assistant_with_tool = next(
+        message
+        for message in result.messages
+        if message.role == "assistant" and message.tool_calls
+    )
+    tool_observation = next(message for message in result.messages if message.role == "tool")
+    assert assistant_with_tool.tool_calls == (tool_call,)
+    assert tool_observation.content == "observed"
+    llm_completed = [
+        event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
+    ]
+    assert getattr(llm_completed[1], "payload")["tool_call_count"] == 1
+    assert getattr(llm_completed[1], "payload")["activity_commentary"]["text"] == (
+        "I will check the tool first."
+    )
 
 
 def test_structured_activity_commentary_emits_without_replacing_final_answer() -> None:
@@ -574,7 +651,7 @@ def test_pre_tool_use_defaults_to_allow() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(tool_call)),
             ModelResponse(content="I saw allowed."),
         ]
     )
@@ -609,7 +686,7 @@ def test_parallel_tool_batch_pairs_each_call_independently() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(first_call, second_call)),
+            ModelResponse(content="", tool_calls=_with_activity(first_call, second_call)),
             ModelResponse(content="done"),
         ]
     )
@@ -647,7 +724,7 @@ def test_pre_tool_use_can_block_tool_with_model_visible_observation() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(tool_call)),
             ModelResponse(content="I saw the block."),
         ]
     )
@@ -677,7 +754,7 @@ def test_blocked_tool_emits_failed_terminal_without_started_event() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(tool_call)),
             ModelResponse(content="blocked"),
         ]
     )
@@ -704,7 +781,7 @@ def test_post_tool_use_receives_result_after_execution() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(tool_call)),
             ModelResponse(content="done"),
         ]
     )
@@ -729,7 +806,7 @@ def test_pre_tool_use_failure_records_failure_and_defaults_to_allow() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(tool_call)),
             ModelResponse(content="done"),
         ]
     )
@@ -750,14 +827,14 @@ def test_loop_stops_at_max_turns_when_model_keeps_requesting_tools() -> None:
         [
             ModelResponse(
                 content="",
-                tool_calls=(
-                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"}),
+                tool_calls=_with_activity(
+                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"})
                 ),
             ),
             ModelResponse(
                 content="",
-                tool_calls=(
-                    ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
+                tool_calls=_with_activity(
+                    ToolCall(id="call-2", name="test_echo", arguments={"text": "2"})
                 ),
             ),
             ModelResponse(content="I stopped after observing 2."),
@@ -792,14 +869,14 @@ def test_max_turn_finalization_never_returns_blank_when_model_asks_for_more_tool
         [
             ModelResponse(
                 content="",
-                tool_calls=(
-                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"}),
+                tool_calls=_with_activity(
+                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"})
                 ),
             ),
             ModelResponse(
                 content="",
-                tool_calls=(
-                    ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
+                tool_calls=_with_activity(
+                    ToolCall(id="call-2", name="test_echo", arguments={"text": "2"})
                 ),
             ),
             ModelResponse(content=""),
@@ -824,13 +901,13 @@ def test_loop_stops_at_tool_call_budget() -> None:
         [
             ModelResponse(
                 content="",
-                tool_calls=(
-                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"}),
+                tool_calls=_with_activity(
+                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"})
                 ),
             ),
             ModelResponse(
                 content="",
-                tool_calls=(
+                tool_calls=_with_activity(
                     ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
                     ToolCall(id="call-3", name="test_echo", arguments={"text": "3"}),
                 ),
@@ -861,13 +938,13 @@ def test_policy_stop_does_not_start_pending_tool_calls() -> None:
         [
             ModelResponse(
                 content="",
-                tool_calls=(
-                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"}),
+                tool_calls=_with_activity(
+                    ToolCall(id="call-1", name="test_echo", arguments={"text": "1"})
                 ),
             ),
             ModelResponse(
                 content="",
-                tool_calls=(
+                tool_calls=_with_activity(
                     ToolCall(id="call-2", name="test_echo", arguments={"text": "2"}),
                     ToolCall(id="call-3", name="test_echo", arguments={"text": "3"}),
                 ),
@@ -898,25 +975,25 @@ def test_loop_stops_at_repeated_tool_call_budget() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(repeated_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(repeated_call)),
             ModelResponse(
                 content="",
-                tool_calls=(
+                tool_calls=_with_activity(
                     ToolCall(
                         id="call-2",
                         name="test_echo",
                         arguments={"text": "same"},
-                    ),
+                    )
                 ),
             ),
             ModelResponse(
                 content="",
-                tool_calls=(
+                tool_calls=_with_activity(
                     ToolCall(
                         id="call-3",
                         name="test_echo",
                         arguments={"text": "same"},
-                    ),
+                    )
                 ),
             ),
             ModelResponse(content="I stopped repeating the same call."),
@@ -949,25 +1026,25 @@ def test_policy_finalization_retries_when_model_requests_tools_again() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(repeated_call,)),
+            ModelResponse(content="", tool_calls=_with_activity(repeated_call)),
             ModelResponse(
                 content="",
-                tool_calls=(
+                tool_calls=_with_activity(
                     ToolCall(
                         id="call-2",
                         name="test_echo",
                         arguments={"text": "same"},
-                    ),
+                    )
                 ),
             ),
             ModelResponse(
                 content="",
-                tool_calls=(
+                tool_calls=_with_activity(
                     ToolCall(
                         id="call-3",
                         name="test_echo",
                         arguments={"text": "same"},
-                    ),
+                    )
                 ),
             ),
             ModelResponse(
@@ -1032,8 +1109,8 @@ def test_tool_exception_returns_failed_terminal_event() -> None:
         [
             ModelResponse(
                 content="",
-                tool_calls=(
-                    ToolCall(id="explode-1", name="test_explode", arguments={}),
+                tool_calls=_with_activity(
+                    ToolCall(id="explode-1", name="test_explode", arguments={})
                 ),
             ),
             ModelResponse(content="Tool failed."),

@@ -52,10 +52,9 @@ export function KlaraThinkingBlock({
     () => visibleAgentTranscriptItems(events),
     [events],
   );
-  const latestCommentary =
-    commentaryItems.length > 0
-      ? commentaryItems[commentaryItems.length - 1]?.body ?? ""
-      : "";
+  const commentaryBodies = commentaryItems
+    .map((item) => item.body)
+    .filter(Boolean);
 
   if (!run) return null;
   const hasProviderReasoning = providerItems.length > 0;
@@ -112,8 +111,12 @@ export function KlaraThinkingBlock({
           </button>
         ) : null}
       </div>
-      {active && latestCommentary ? (
-        <p className="klara-thinking-activity">{latestCommentary}</p>
+      {active && commentaryBodies.length > 0 ? (
+        <div className="klara-thinking-activity" aria-label="Klara public thinking">
+          {commentaryBodies.map((body, index) => (
+            <p key={`${index}-${body.slice(0, 16)}`}>{body}</p>
+          ))}
+        </div>
       ) : null}
     </section>
   );

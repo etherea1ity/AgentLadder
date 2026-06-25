@@ -444,6 +444,11 @@
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.55;
+  display: grid;
+  gap: 6px;
+}
+.klara-thinking-activity p {
+  margin: 0;
 }
 .klara-activity-layer {
   position: fixed;

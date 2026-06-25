@@ -58,6 +58,7 @@ describe("KlaraThinkingBlock", () => {
             assistantActivityEvent(
               "I will check current sources before answering.",
             ),
+            assistantActivityEvent("Then I will separate confirmed facts from unknowns."),
           ],
         }}
       />,
@@ -65,6 +66,9 @@ describe("KlaraThinkingBlock", () => {
 
     expect(
       screen.getByText("I will check current sources before answering."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Then I will separate confirmed facts from unknowns."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/web_search/)).not.toBeInTheDocument();
   });
@@ -162,7 +166,7 @@ describe("KlaraThinkingBlock", () => {
     expect(onOpenActivity).toHaveBeenCalledTimes(1);
   });
 
-  it("renders drawer sections for provider, commentary, and agent transcript", () => {
+  it("renders drawer with commentary first and folded runtime/provider details", () => {
     const run = completedRun([
       providerReasoningEvent("The provider returned a safe reasoning summary."),
       assistantActivityEvent("I will use a tool before answering."),
@@ -185,19 +189,21 @@ describe("KlaraThinkingBlock", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
 
-    const klaraActivity = screen.getByText("Klara activity");
-    const agentActivity = screen.getByText("Agent activity");
-    const providerReasoning = screen.getByText("Provider reasoning");
-    expect(klaraActivity).toBeInTheDocument();
-    expect(agentActivity).toBeInTheDocument();
+    const commentary = screen.getByText("I will use a tool before answering.");
+    const actions = screen.getByText("Actions");
+    const providerReasoning = screen.getByText("Original model reasoning");
+    expect(commentary).toBeInTheDocument();
+    expect(actions).toBeInTheDocument();
     expect(providerReasoning).toBeInTheDocument();
-    expect(klaraActivity.compareDocumentPosition(agentActivity)).toBe(
+    expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
+    expect(screen.queryByText("Agent activity")).not.toBeInTheDocument();
+    expect(screen.queryByText("Provider reasoning")).not.toBeInTheDocument();
+    expect(commentary.compareDocumentPosition(actions)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
-    expect(agentActivity.compareDocumentPosition(providerReasoning)).toBe(
+    expect(actions.compareDocumentPosition(providerReasoning)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
-    expect(screen.getByText("I will use a tool before answering.")).toBeInTheDocument();
     expect(screen.queryByText("Before tools")).not.toBeInTheDocument();
     expect(screen.getByText("web_fetch")).toBeInTheDocument();
     expect(screen.getByText(/FIFA match schedule/)).toBeInTheDocument();
