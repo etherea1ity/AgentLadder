@@ -483,7 +483,7 @@ def test_assistant_activity_projects_delta_and_completed_events() -> None:
         message="Model call completed.",
         payload={
             "activity_commentary": {
-                "text": "I will check public sources first.",
+                "text": "update_activity.text: I will check public sources first.",
                 "source": "assistant.content_with_tool_calls",
                 "phase": "before_tool",
             }

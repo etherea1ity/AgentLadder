@@ -519,6 +519,43 @@ def test_tool_call_content_becomes_public_activity_not_history() -> None:
     )
 
 
+def test_tool_call_content_strips_internal_activity_label() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-prefixed-activity",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="update_activity.text: I will check the tool first.",
+                tool_calls=(tool_call,),
+            ),
+            ModelResponse(content="I saw observed."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("use a tool", run_id="run-prefixed-tool-activity")
+
+    activity = next(
+        event
+        for event in recorder.events
+        if str(getattr(event, "type")) == "llm.completed"
+    )
+    assert (
+        getattr(activity, "payload")["activity_commentary"]["text"]
+        == "I will check the tool first."
+    )
+    assert result.final_answer == "I saw observed."
+    assert result.messages[1].content == ""
+
+
 def test_missing_tool_activity_retries_before_executing_known_tool() -> None:
     recorder = EventRecorder()
     tool_call = ToolCall(
@@ -559,6 +596,44 @@ def test_missing_tool_activity_retries_before_executing_known_tool() -> None:
     assert getattr(llm_completed[1], "payload")["activity_commentary"]["text"] == (
         "I will check the tool first."
     )
+
+
+def test_internal_activity_tool_strips_internal_activity_label() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-prefixed-internal-activity",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="", tool_calls=(tool_call,)),
+            ModelResponse(
+                content="",
+                tool_calls=_with_activity(
+                    tool_call,
+                    text="update_activity.text: I will check the tool first.",
+                ),
+            ),
+            ModelResponse(content="I saw observed."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("use a tool", run_id="run-prefixed-internal-activity")
+
+    llm_completed = [
+        event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
+    ]
+    assert (
+        getattr(llm_completed[1], "payload")["activity_commentary"]["text"]
+        == "I will check the tool first."
+    )
+    assert result.final_answer == "I saw observed."
 
 
 def test_activity_retry_can_bind_activity_to_pending_tool_calls() -> None:

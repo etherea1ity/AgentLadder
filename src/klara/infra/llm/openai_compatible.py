@@ -457,7 +457,7 @@ def _sanitize_reasoning_summary(value: str, *, max_chars: int = 1200) -> str:
 def _sanitize_public_activity(value: str, *, max_chars: int = 500) -> str:
     """Return public-safe activity commentary text."""
 
-    text = " ".join(value.split())
+    text = _strip_internal_activity_labels(" ".join(value.split()))
     if not text:
         return ""
     lowered = text.lower()
@@ -484,6 +484,16 @@ def _sanitize_public_activity(value: str, *, max_chars: int = 500) -> str:
         text,
     )
     return text[:max_chars]
+
+
+def _strip_internal_activity_labels(text: str) -> str:
+    """Remove accidental public echoes of internal activity field labels."""
+
+    return re.sub(
+        r"(?i)\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:：]\s*",
+        "",
+        text,
+    ).strip()
 
 
 def _parse_tool_call(raw: dict[str, Any], index: int) -> ToolCall:

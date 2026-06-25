@@ -205,6 +205,23 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByText(/raw payload/i)).not.toBeInTheDocument();
   });
 
+  it("strips internal activity field labels from visible thinking", () => {
+    const run = completedRun([
+      assistantActivityEvent(
+        "update_activity.text: I will check public sources before answering.",
+      ),
+      evt("thinking_summary_completed", { duration_ms: 900, has_summary: false }),
+    ]);
+    render(<ActivityHarness runs={[run]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
+
+    expect(
+      screen.getByText("I will check public sources before answering."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/update_activity\.text/i)).not.toBeInTheDocument();
+  });
+
   it("keeps a single thinking drawer when multiple thinking blocks exist", () => {
     const runOne = completedRun(
       [

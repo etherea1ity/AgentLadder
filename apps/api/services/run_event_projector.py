@@ -700,7 +700,7 @@ def _safe_public_activity(value: object, *, max_chars: int = 500) -> str:
 
     if not isinstance(value, str):
         return ""
-    text = _redact_public_text(" ".join(value.split()))
+    text = _strip_internal_activity_labels(_redact_public_text(" ".join(value.split())))
     if not text:
         return ""
     lowered = text.lower()
@@ -720,6 +720,16 @@ def _safe_public_activity(value: object, *, max_chars: int = 500) -> str:
     ):
         return ""
     return text[:max_chars]
+
+
+def _strip_internal_activity_labels(text: str) -> str:
+    """Remove accidental public echoes of internal activity field labels."""
+
+    return re.sub(
+        r"(?i)\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:：]\s*",
+        "",
+        text,
+    ).strip()
 
 
 def _activity_phase(value: object) -> str:

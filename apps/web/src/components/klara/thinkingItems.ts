@@ -85,9 +85,20 @@ function stringField(value: unknown) {
 }
 
 function safeText(value: unknown, maxChars: number) {
-  const text = stringField(value).replace(/\s+/g, " ");
+  const text = stripInternalActivityLabels(
+    stringField(value).replace(/\s+/g, " "),
+  );
   if (!text || containsFullUrl(text) || containsRawPayloadTerms(text)) return "";
   return text.slice(0, maxChars);
+}
+
+function stripInternalActivityLabels(text: string) {
+  return text
+    .replace(
+      /\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:：]\s*/gi,
+      "",
+    )
+    .trim();
 }
 
 function activityStatus(value: unknown): ThinkingActivityStatus {

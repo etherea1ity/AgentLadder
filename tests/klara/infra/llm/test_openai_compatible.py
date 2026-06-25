@@ -295,7 +295,10 @@ def test_response_from_completion_data_extracts_public_activity_commentary() -> 
                 {
                     "message": {
                         "content": "final answer",
-                        "activity_commentary": "I will handle this as a tool-backed task.",
+                        "activity_commentary": (
+                            "update_activity.text: I will handle this as a "
+                            "tool-backed task."
+                        ),
                     }
                 }
             ],
