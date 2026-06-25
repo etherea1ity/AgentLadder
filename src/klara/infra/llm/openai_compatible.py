@@ -435,7 +435,7 @@ def _extract_public_activity(
     return None, None
 
 
-def _sanitize_reasoning_summary(value: str, *, max_chars: int = 1200) -> str:
+def _sanitize_reasoning_summary(value: str) -> str:
     """Return public-safe provider reasoning text for event projection."""
 
     text = " ".join(value.split())
@@ -451,10 +451,10 @@ def _sanitize_reasoning_summary(value: str, *, max_chars: int = 1200) -> str:
         r"\1=[redacted]",
         text,
     )
-    return text[:max_chars]
+    return text
 
 
-def _sanitize_public_activity(value: str, *, max_chars: int = 500) -> str:
+def _sanitize_public_activity(value: str) -> str:
     """Return public-safe activity commentary text."""
 
     text = _strip_internal_activity_labels(" ".join(value.split()))
@@ -483,17 +483,17 @@ def _sanitize_public_activity(value: str, *, max_chars: int = 500) -> str:
         r"\1=[redacted]",
         text,
     )
-    return text[:max_chars]
+    return text
 
 
 def _strip_internal_activity_labels(text: str) -> str:
     """Remove accidental public echoes of internal activity field labels."""
 
-    return re.sub(
-        r"(?i)\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:：]\s*",
-        "",
-        text,
-    ).strip()
+    pattern = (
+        "(?i)\\b(?:update_activity(?:\\.text)?|activity_commentary|public_activity|"
+        "assistant_activity(?:_delta)?)\\s*[:\\uff1a]\\s*"
+    )
+    return re.sub(pattern, "", text).strip()
 
 
 def _parse_tool_call(raw: dict[str, Any], index: int) -> ToolCall:

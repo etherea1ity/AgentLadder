@@ -681,7 +681,7 @@ def _sanitize_preview(value: object, *, max_chars: int = 180) -> str:
     return text[:max_chars]
 
 
-def _safe_provider_reasoning(value: object, *, max_chars: int = 900) -> str:
+def _safe_provider_reasoning(value: object) -> str:
     """Return displayable provider reasoning summary text."""
 
     if not isinstance(value, str):
@@ -692,10 +692,10 @@ def _safe_provider_reasoning(value: object, *, max_chars: int = 900) -> str:
     lowered = text.lower()
     if any(term in lowered for term in ("raw payload", "api key", "secret", "sk-")):
         return ""
-    return text[:max_chars]
+    return text
 
 
-def _safe_public_activity(value: object, *, max_chars: int = 500) -> str:
+def _safe_public_activity(value: object) -> str:
     """Return displayable main-model public activity commentary."""
 
     if not isinstance(value, str):
@@ -719,17 +719,17 @@ def _safe_public_activity(value: object, *, max_chars: int = 500) -> str:
         )
     ):
         return ""
-    return text[:max_chars]
+    return text
 
 
 def _strip_internal_activity_labels(text: str) -> str:
     """Remove accidental public echoes of internal activity field labels."""
 
-    return re.sub(
-        r"(?i)\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:：]\s*",
-        "",
-        text,
-    ).strip()
+    pattern = (
+        "(?i)\\b(?:update_activity(?:\\.text)?|activity_commentary|public_activity|"
+        "assistant_activity(?:_delta)?)\\s*[:\\uff1a]\\s*"
+    )
+    return re.sub(pattern, "", text).strip()
 
 
 def _activity_phase(value: object) -> str:

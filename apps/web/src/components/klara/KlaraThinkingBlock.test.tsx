@@ -78,7 +78,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByText(/web_search/)).not.toBeInTheDocument();
   });
 
-  it("collapses near-duplicate thinking updates in the visible stream", () => {
+  it("keeps repeated thinking updates visible as source events", () => {
     const { container } = render(
       <KlaraThinkingBlock
         run={{
@@ -97,12 +97,12 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(
-      screen.queryByText("I will search recent World Model papers before answering."),
-    ).not.toBeInTheDocument();
+      screen.getByText("I will search recent World Model papers before answering."),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("I will search the latest World Model papers before answering."),
     ).toBeInTheDocument();
-    expect(container.querySelectorAll(".klara-thinking-stream p")).toHaveLength(1);
+    expect(container.querySelectorAll(".klara-thinking-stream p")).toHaveLength(2);
   });
 
   it("does not show active thinking when only runtime action transcript exists", () => {

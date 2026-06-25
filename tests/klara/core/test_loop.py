@@ -517,6 +517,8 @@ def test_tool_call_content_becomes_public_activity_not_history() -> None:
         "I will check the tool first." not in message.content
         for message in llm.calls[1][0]
     )
+    assert "<public_activity_so_far>" in llm.system_prompts[1]
+    assert "I will check the tool first." in llm.system_prompts[1]
 
 
 def test_tool_call_content_strips_internal_activity_label() -> None:
@@ -556,7 +558,7 @@ def test_tool_call_content_strips_internal_activity_label() -> None:
     assert result.messages[1].content == ""
 
 
-def test_missing_tool_activity_retries_before_executing_known_tool() -> None:
+def test_missing_tool_activity_executes_known_tool_without_fake_retry() -> None:
     recorder = EventRecorder()
     tool_call = ToolCall(
         id="call-empty-activity",
@@ -566,13 +568,6 @@ def test_missing_tool_activity_retries_before_executing_known_tool() -> None:
     llm = ScriptedLlm(
         [
             ModelResponse(content="", tool_calls=(tool_call,)),
-            ModelResponse(
-                content="",
-                tool_calls=_with_activity(
-                    tool_call,
-                    text="I will check the tool first.",
-                ),
-            ),
             ModelResponse(content="I saw observed."),
         ]
     )
@@ -585,7 +580,7 @@ def test_missing_tool_activity_retries_before_executing_known_tool() -> None:
     result = loop.run("use a tool", run_id="run-empty-tool-activity")
 
     assert result.final_answer == "I saw observed."
-    assert "activity_protocol.retry_requested" in recorder.event_types
+    assert "activity_protocol.retry_requested" not in recorder.event_types
     assert _tool_call_ids_for(recorder.events, "tool.started") == [
         "call-empty-activity"
     ]
@@ -593,9 +588,7 @@ def test_missing_tool_activity_retries_before_executing_known_tool() -> None:
         event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
     ]
     assert "activity_commentary" not in getattr(llm_completed[0], "payload")
-    assert getattr(llm_completed[1], "payload")["activity_commentary"]["text"] == (
-        "I will check the tool first."
-    )
+    assert len(llm.calls) == 2
 
 
 def test_internal_activity_tool_strips_internal_activity_label() -> None:
@@ -607,7 +600,6 @@ def test_internal_activity_tool_strips_internal_activity_label() -> None:
     )
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
             ModelResponse(
                 content="",
                 tool_calls=_with_activity(
@@ -630,27 +622,25 @@ def test_internal_activity_tool_strips_internal_activity_label() -> None:
         event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
     ]
     assert (
-        getattr(llm_completed[1], "payload")["activity_commentary"]["text"]
+        getattr(llm_completed[0], "payload")["activity_commentary"]["text"]
         == "I will check the tool first."
     )
     assert result.final_answer == "I saw observed."
 
 
-def test_activity_retry_can_bind_activity_to_pending_tool_calls() -> None:
+def test_activity_updates_are_carried_only_in_next_system_prompt() -> None:
     recorder = EventRecorder()
     tool_call = ToolCall(
-        id="call-pending-activity",
+        id="call-ledger-activity",
         name="test_echo",
         arguments={"text": "observed"},
     )
+    activity_text = "I will check the tool first."
     llm = ScriptedLlm(
         [
-            ModelResponse(content="", tool_calls=(tool_call,)),
             ModelResponse(
                 content="",
-                tool_calls=(
-                    _activity_call("I will check the tool first."),
-                ),
+                tool_calls=_with_activity(tool_call, text=activity_text),
             ),
             ModelResponse(content="I saw observed."),
         ]
@@ -661,27 +651,19 @@ def test_activity_retry_can_bind_activity_to_pending_tool_calls() -> None:
         hooks=HookManager([recorder]),
     )
 
-    result = loop.run("use a tool", run_id="run-pending-activity")
+    result = loop.run("use a tool", run_id="run-activity-ledger")
 
     assert result.final_answer == "I saw observed."
-    assert _tool_call_ids_for(recorder.events, "tool.started") == [
-        "call-pending-activity"
-    ]
-    assistant_with_tool = next(
-        message
-        for message in result.messages
-        if message.role == "assistant" and message.tool_calls
-    )
-    tool_observation = next(message for message in result.messages if message.role == "tool")
-    assert assistant_with_tool.tool_calls == (tool_call,)
-    assert tool_observation.content == "observed"
+    assert "<public_activity_so_far>" not in llm.system_prompts[0]
+    assert "<public_activity_so_far>" in llm.system_prompts[1]
+    assert activity_text in llm.system_prompts[1]
+    assert all(activity_text not in message.content for message in llm.calls[1][0])
+    assert "activity_protocol.retry_requested" not in recorder.event_types
     llm_completed = [
         event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
     ]
-    assert getattr(llm_completed[1], "payload")["tool_call_count"] == 1
-    assert getattr(llm_completed[1], "payload")["activity_commentary"]["text"] == (
-        "I will check the tool first."
-    )
+    assert getattr(llm_completed[0], "payload")["tool_call_count"] == 1
+    assert getattr(llm_completed[0], "payload")["activity_commentary"]["text"] == activity_text
 
 
 def test_structured_activity_commentary_emits_without_replacing_final_answer() -> None:

@@ -16,8 +16,9 @@ def test_persona_prompt_is_short_ascii_and_lightweight() -> None:
     assert "Klara is clear, warm, curious, and practical." in prompt
     assert "Match the user's language." in prompt
     assert "Be honest about uncertainty" in prompt
-    assert "call `update_activity` before the other tool calls" in prompt
-    assert "Use it to write Klara's public thinking" in prompt
+    assert "use `update_activity` for public thinking updates" in prompt
+    assert "Write only new progress for the current step" in prompt
+    assert "<public_activity_so_far>" in prompt
     assert "update_activity.text" not in prompt
     assert "not the final answer" in prompt
     assert "Keep private reasoning out of user-facing text." in prompt

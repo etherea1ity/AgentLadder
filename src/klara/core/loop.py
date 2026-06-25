@@ -28,9 +28,9 @@ _ACTIVITY_TOOL_NAME = "update_activity"
 _ACTIVITY_TOOL_SPEC = ToolSpec(
     name=_ACTIVITY_TOOL_NAME,
     description=(
-        "Write Klara's public thinking update before using other tools. "
-        "Use first person, match the user's language, and describe only the "
-        "high-level next action. This is not the final answer."
+        "Append Klara's public thinking update for the current step. "
+        "Write only new progress that has not already been shown in "
+        "<public_activity_so_far>. This is not the final answer."
     ),
     input_schema={
         "type": "object",
@@ -271,6 +271,7 @@ class KlaraLoop:
         ]
         tool_call_count = 0
         tool_call_signatures: dict[str, int] = {}
+        public_activity_updates: list[str] = []
         run_started = perf_counter()
         run_metrics = _RunMetrics()
         self._emit(sequencer, active_run_id, EventKind.RUN_STARTED, {"model": self.model})
@@ -297,120 +298,56 @@ class KlaraLoop:
             # Iterate through bounded turns so a model cannot request tools forever.
             for turn_index in range(1, self.policy.max_turns + 1):
                 self._emit(sequencer, active_run_id, EventKind.TURN_STARTED, {"turn_index": turn_index})
-                activity_protocol_retried = False
-                pending_activity_tool_calls: tuple[ToolCall, ...] = ()
-                while True:
-                    self._emit(
-                        sequencer,
-                        active_run_id,
-                        EventKind.LLM_STARTED,
-                        {
-                            "turn_index": turn_index,
-                            "model": self.model,
-                            "thinking_enabled": self.thinking_enabled,
-                        },
-                    )
-                    # Ask the injected model using only the prompt, transcript, and specs.
-                    llm_started = perf_counter()
-                    response = self.llm.complete(
-                        system_prompt=self._system_prompt_for_turn(),
-                        messages=tuple(messages),
-                        tools=_model_visible_tool_specs(self.tool_executor.specs),
-                        model=self.model,
-                        thinking_enabled=self.thinking_enabled,
-                    )
-                    prepared_calls = _prepare_tool_calls(response.tool_calls)
-                    if (
-                        pending_activity_tool_calls
-                        and prepared_calls.internal_activity_count
-                        and not prepared_calls.external_calls
-                        and not response.content.strip()
-                    ):
-                        prepared_calls = _PreparedToolCalls(
-                            activity_text=prepared_calls.activity_text,
-                            external_calls=pending_activity_tool_calls,
-                            internal_activity_count=prepared_calls.internal_activity_count,
-                        )
-                    activity_payload = _activity_payload(
-                        response,
-                        phase=_activity_phase(
-                            turn_index=turn_index,
-                            has_tool_calls=bool(prepared_calls.external_calls),
-                        ),
-                        tool_calls=prepared_calls.external_calls,
-                        activity_tool_text=prepared_calls.activity_text,
-                    )
-                    llm_duration_ms = _duration_ms(llm_started)
-                    usage = _normalize_usage(response.usage)
-                    llm_metrics = _llm_metrics(llm_duration_ms, usage)
-                    run_metrics.add_llm_metrics(llm_metrics)
-                    self._emit(
-                        sequencer,
-                        active_run_id,
-                        EventKind.LLM_COMPLETED,
-                        {
-                            "turn_index": turn_index,
-                            "tool_call_count": len(prepared_calls.external_calls),
-                            "internal_activity_call_count": prepared_calls.internal_activity_count,
-                            "usage": usage,
-                            "metrics": llm_metrics,
-                            **_reasoning_payload(response),
-                            **activity_payload,
-                        },
-                    )
-                    if (
-                        prepared_calls.external_calls
-                        and not activity_payload
-                        and not activity_protocol_retried
-                        and _requires_public_activity(
-                            prepared_calls.external_calls,
-                            self.tool_executor.specs,
-                        )
-                    ):
-                        pending_activity_tool_calls = prepared_calls.external_calls
-                        messages.append(
-                            KlaraMessage(
-                                role="user",
-                                content=_activity_protocol_feedback(prepared_calls.external_calls),
-                            )
-                        )
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            "activity_protocol.retry_requested",
-                            {
-                                "turn_index": turn_index,
-                                "tool_call_count": len(prepared_calls.external_calls),
-                            },
-                        )
-                        activity_protocol_retried = True
-                        continue
-                    if (
-                        response.tool_calls
-                        and not prepared_calls.external_calls
-                        and activity_payload
-                        and not response.content.strip()
-                        and not activity_protocol_retried
-                    ):
-                        messages.append(
-                            KlaraMessage(
-                                role="user",
-                                content=_activity_only_feedback(),
-                            )
-                        )
-                        self._emit(
-                            sequencer,
-                            active_run_id,
-                            "activity_protocol.retry_requested",
-                            {
-                                "turn_index": turn_index,
-                                "tool_call_count": 0,
-                                "activity_only": True,
-                            },
-                        )
-                        activity_protocol_retried = True
-                        continue
-                    break
+                self._emit(
+                    sequencer,
+                    active_run_id,
+                    EventKind.LLM_STARTED,
+                    {
+                        "turn_index": turn_index,
+                        "model": self.model,
+                        "thinking_enabled": self.thinking_enabled,
+                    },
+                )
+                # Ask the injected model using only the prompt, transcript, and specs.
+                llm_started = perf_counter()
+                response = self.llm.complete(
+                    system_prompt=self._system_prompt_for_turn(public_activity_updates),
+                    messages=tuple(messages),
+                    tools=_model_visible_tool_specs(self.tool_executor.specs),
+                    model=self.model,
+                    thinking_enabled=self.thinking_enabled,
+                )
+                prepared_calls = _prepare_tool_calls(response.tool_calls)
+                activity_payload = _activity_payload(
+                    response,
+                    phase=_activity_phase(
+                        turn_index=turn_index,
+                        has_tool_calls=bool(prepared_calls.external_calls),
+                    ),
+                    tool_calls=prepared_calls.external_calls,
+                    activity_tool_text=prepared_calls.activity_text,
+                )
+                llm_duration_ms = _duration_ms(llm_started)
+                usage = _normalize_usage(response.usage)
+                llm_metrics = _llm_metrics(llm_duration_ms, usage)
+                run_metrics.add_llm_metrics(llm_metrics)
+                self._emit(
+                    sequencer,
+                    active_run_id,
+                    EventKind.LLM_COMPLETED,
+                    {
+                        "turn_index": turn_index,
+                        "tool_call_count": len(prepared_calls.external_calls),
+                        "internal_activity_call_count": prepared_calls.internal_activity_count,
+                        "usage": usage,
+                        "metrics": llm_metrics,
+                        **_reasoning_payload(response),
+                        **activity_payload,
+                    },
+                )
+                activity_text = _activity_text_from_payload(activity_payload)
+                if activity_text:
+                    public_activity_updates.append(activity_text)
                 # Store the assistant request before tools so replay matches transcript.
                 assistant_message = KlaraMessage(
                     role="assistant",
@@ -987,17 +924,23 @@ class KlaraLoop:
             hook_failures=tuple(self.hooks.failures),
         )
 
-    def _system_prompt_for_turn(self) -> str:
-        """Return base prompt plus controller-owned runtime context."""
+    def _system_prompt_for_turn(
+        self,
+        public_activity_updates: list[str] | tuple[str, ...] = (),
+    ) -> str:
+        """Return base prompt plus controller context and same-run public activity."""
 
+        prompt_parts = [self.system_prompt]
+        activity_context = _public_activity_context(public_activity_updates)
+        if activity_context:
+            prompt_parts.append(activity_context)
         suffixes = [
             suffix.strip()
             for controller in self.controllers
             if (suffix := controller.system_prompt_suffix()).strip()
         ]
-        if not suffixes:
-            return self.system_prompt
-        return "\n\n".join([self.system_prompt, *suffixes]).strip()
+        prompt_parts.extend(suffixes)
+        return "\n\n".join(part for part in prompt_parts if part.strip()).strip()
 
     def _before_final_answer(self, content: str) -> FinalAnswerDecision:
         """Aggregate controller decisions before finalization."""
@@ -1134,46 +1077,11 @@ def _prepare_tool_calls(calls: tuple[ToolCall, ...]) -> _PreparedToolCalls:
     )
 
 
-def _requires_public_activity(
-    calls: tuple[ToolCall, ...],
-    specs: tuple[ToolSpec, ...],
-) -> bool:
-    """Return whether these executable calls need public model commentary."""
-
-    visible_tool_names = {spec.name for spec in specs}
-    return any(call.name in visible_tool_names for call in calls)
-
-
 def _activity_text_from_call(call: ToolCall) -> str:
     """Return public activity text carried by the internal activity tool."""
 
     raw_text = call.arguments.get("text")
     return raw_text if isinstance(raw_text, str) else ""
-
-
-def _activity_protocol_feedback(calls: tuple[ToolCall, ...]) -> str:
-    """Return feedback when a tool turn forgot the public activity field."""
-
-    tool_names = ", ".join(dict.fromkeys(call.name for call in calls))
-    return (
-        "<activity_protocol_feedback>\n"
-        "Before calling runtime tools, provide a public first-person activity "
-        f"update with the `{_ACTIVITY_TOOL_NAME}` tool in the same response. "
-        "Then repeat the intended tool calls. Do not answer the user yet.\n"
-        f"Pending tools: {tool_names}\n"
-        "</activity_protocol_feedback>"
-    )
-
-
-def _activity_only_feedback() -> str:
-    """Return feedback when the model only wrote activity and did not proceed."""
-
-    return (
-        "<activity_protocol_feedback>\n"
-        "You wrote the public activity update. Now continue with the runtime "
-        "tool call or provide the final answer if no tool is needed.\n"
-        "</activity_protocol_feedback>"
-    )
 
 
 def _activity_payload(
@@ -1206,6 +1114,32 @@ def _activity_payload(
     }
 
 
+def _activity_text_from_payload(payload: dict[str, object]) -> str:
+    """Return public activity text from an emitted LLM payload."""
+
+    activity = payload.get("activity_commentary")
+    if not isinstance(activity, dict):
+        return ""
+    text = activity.get("text")
+    return text.strip() if isinstance(text, str) and text.strip() else ""
+
+
+def _public_activity_context(updates: list[str] | tuple[str, ...]) -> str:
+    """Return same-run public activity context for future model turns."""
+
+    cleaned = [item.strip() for item in updates if item.strip()]
+    if not cleaned:
+        return ""
+    body = "\n".join(f"{index}. {item}" for index, item in enumerate(cleaned, 1))
+    return (
+        "<public_activity_so_far>\n"
+        f"{body}\n"
+        "</public_activity_so_far>\n"
+        "If you write another public activity update, add only new progress for "
+        "the current step."
+    )
+
+
 def _assistant_message_content(
     response: ModelResponse,
     *,
@@ -1227,7 +1161,7 @@ def _activity_phase(*, turn_index: int, has_tool_calls: bool) -> str:
     return "before_tool" if turn_index == 1 else "between_tools"
 
 
-def _sanitize_public_activity(value: object, *, max_chars: int = 500) -> str:
+def _sanitize_public_activity(value: object) -> str:
     """Return safe public commentary text without URLs or secret-shaped values."""
 
     if not isinstance(value, str):
@@ -1258,17 +1192,17 @@ def _sanitize_public_activity(value: object, *, max_chars: int = 500) -> str:
         r"\1=[redacted]",
         text,
     )
-    return text[:max_chars]
+    return text
 
 
 def _strip_internal_activity_labels(text: str) -> str:
     """Remove accidental public echoes of internal activity field labels."""
 
-    return re.sub(
-        r"(?i)\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:：]\s*",
-        "",
-        text,
-    ).strip()
+    pattern = (
+        "(?i)\\b(?:update_activity(?:\\.text)?|activity_commentary|public_activity|"
+        "assistant_activity(?:_delta)?)\\s*[:\\uff1a]\\s*"
+    )
+    return re.sub(pattern, "", text).strip()
 
 
 def _has_text(value: object) -> bool:
