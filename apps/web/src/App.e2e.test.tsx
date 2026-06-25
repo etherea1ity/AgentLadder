@@ -187,12 +187,14 @@ describe("Klara app flow", () => {
     expect(
       screen.queryByText("The provider returned a safe reasoning summary."),
     ).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByRole("button", { name: /open activity/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /toggle thinking details/i }),
+    );
     await waitFor(() =>
-      expect(screen.getByText("Original model reasoning")).toBeInTheDocument(),
+      expect(screen.getByRole("dialog", { name: /thinking/i })).toBeInTheDocument(),
     );
     expect(await screen.findByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /close activity/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close thinking/i }));
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
       "tool_call_started",

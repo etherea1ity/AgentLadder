@@ -3,22 +3,21 @@ import { useEffect, useMemo, useState } from "react";
 import type { Run, RunEvent } from "../../types/domain";
 import { KlaraPresence } from "./KlaraPresence";
 import {
-  visibleAgentTranscriptItems,
   visibleMainModelCommentaryItems,
   visibleProviderReasoningItems,
-} from "./activityItems";
+} from "./thinkingItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
 type Props = {
   run?: Run;
-  isActivityOpen?: boolean;
-  onOpenActivity?: (runId: string, trigger: HTMLButtonElement) => void;
+  isThinkingOpen?: boolean;
+  onToggleThinking?: (runId: string, trigger: HTMLButtonElement) => void;
 };
 
 export function KlaraThinkingBlock({
   run,
-  isActivityOpen = false,
-  onOpenActivity,
+  isThinkingOpen = false,
+  onToggleThinking,
 }: Props) {
   const active = isKlaraRunActive(run);
   const [now, setNow] = useState(() => Date.now());
@@ -48,10 +47,6 @@ export function KlaraThinkingBlock({
     () => visibleMainModelCommentaryItems(events),
     [events],
   );
-  const transcriptItems = useMemo(
-    () => visibleAgentTranscriptItems(events),
-    [events],
-  );
   const commentaryBodies = commentaryItems
     .map((item) => item.body)
     .filter(Boolean);
@@ -59,10 +54,8 @@ export function KlaraThinkingBlock({
   if (!run) return null;
   const hasProviderReasoning = providerItems.length > 0;
   const hasMainModelCommentary = commentaryItems.length > 0;
-  const hasRuntimeTranscript = transcriptItems.length > 0;
-  const hasVisibleActivity =
-    hasProviderReasoning || hasMainModelCommentary || hasRuntimeTranscript;
-  if (!hasVisibleActivity) return null;
+  const hasVisibleThinking = hasProviderReasoning || hasMainModelCommentary;
+  if (!hasVisibleThinking) return null;
 
   const durationMs = thinkingDurationMs(
     run,
@@ -72,17 +65,23 @@ export function KlaraThinkingBlock({
     now,
   );
   const durationLabel = formatThoughtDuration(durationMs);
-  const isThoughtful = hasMainModelCommentary || hasProviderReasoning;
   const label = active
-    ? `${isThoughtful ? "Thinking..." : "Working..."} ${durationLabel}`
-    : `${isThoughtful ? "Thought for" : "Worked for"} ${durationLabel}`;
+    ? `Thinking... ${durationLabel}`
+    : `Thought for ${durationLabel}`;
 
   return (
     <section
-      className={`klara-thinking-block ${active ? "is-active" : "is-completed"}`}
+      className={`klara-thinking-block ${active ? "is-active" : "is-completed"} ${isThinkingOpen ? "is-open" : ""}`}
       aria-label="Thinking"
     >
-      <div className="klara-thinking-row">
+      <button
+        type="button"
+        className="klara-thinking-row"
+        aria-label="Toggle thinking details"
+        aria-haspopup="dialog"
+        aria-expanded={isThinkingOpen}
+        onClick={(event) => onToggleThinking?.(run.run_id, event.currentTarget)}
+      >
         <span
           className={`klara-thinking-mini ${active ? "is-active" : "is-completed"}`}
           aria-label="Mini Klara"
@@ -98,19 +97,10 @@ export function KlaraThinkingBlock({
           />
         </span>
         <span className="klara-thinking-title">{label}</span>
-        {hasVisibleActivity ? (
-          <button
-            type="button"
-            className="klara-thinking-toggle"
-            aria-label="Open activity"
-            aria-haspopup="dialog"
-            aria-expanded={isActivityOpen}
-            onClick={(event) => onOpenActivity?.(run.run_id, event.currentTarget)}
-          >
-            <ChevronRight size={16} aria-hidden="true" />
-          </button>
-        ) : null}
-      </div>
+        <span className="klara-thinking-toggle" aria-hidden="true">
+          <ChevronRight size={16} />
+        </span>
+      </button>
       {active && commentaryBodies.length > 0 ? (
         <div className="klara-thinking-activity" aria-label="Klara public thinking">
           {commentaryBodies.map((body, index) => (

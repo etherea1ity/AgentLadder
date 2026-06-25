@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { Run, RunEvent } from "../../types/domain";
-import { KlaraActivityDrawer } from "./KlaraActivityDrawer";
+import { KlaraThinkingDrawer } from "./KlaraThinkingDrawer";
 import { KlaraThinkingBlock } from "./KlaraThinkingBlock";
 
 const baseRun: Run = {
@@ -30,7 +30,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByText(/Thinking\.\.\./)).not.toBeInTheDocument();
     expect(screen.queryByRole("img", { name: /mini klara/i })).not.toBeInTheDocument();
     expect(container.querySelector(".klara-thinking-mini .klara-presence")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
   it("does not show completed Thought when provider reasoning is absent", () => {
@@ -45,7 +45,7 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
   it("shows active public commentary inline before the answer", () => {
@@ -73,7 +73,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByText(/web_search/)).not.toBeInTheDocument();
   });
 
-  it("shows active Working when only runtime action transcript exists", () => {
+  it("does not show active thinking when only runtime action transcript exists", () => {
     render(
       <KlaraThinkingBlock
         run={{
@@ -92,7 +92,7 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText(/Working\.\.\. 1\.2s/)).toBeInTheDocument();
+    expect(screen.queryByText(/Working\.\.\./)).not.toBeInTheDocument();
     expect(screen.queryByText(/Thinking\.\.\./)).not.toBeInTheDocument();
   });
 
@@ -108,7 +108,7 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.getByText("Thought for 800ms")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /toggle thinking details/i })).toBeInTheDocument();
   });
 
   it("shows completed Thought when main-model commentary exists", () => {
@@ -122,10 +122,10 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.getByText("Thought for 900ms")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /toggle thinking details/i })).toBeInTheDocument();
   });
 
-  it("shows completed Worked when only runtime action transcript exists", () => {
+  it("does not show completed Thought when only runtime action transcript exists", () => {
     render(
       <KlaraThinkingBlock
         run={completedRun([
@@ -143,30 +143,28 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText("Worked for 1s")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Worked for/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
-  it("does not open activity when the label is clicked", () => {
-    const onOpenActivity = vi.fn();
+  it("toggles thinking when the label row is clicked", () => {
+    const onToggleThinking = vi.fn();
     render(
       <KlaraThinkingBlock
         run={completedRun([
           providerReasoningEvent("The provider returned a safe reasoning summary."),
           evt("thinking_summary_completed", { duration_ms: 800, has_summary: false }),
         ])}
-        onOpenActivity={onOpenActivity}
+        onToggleThinking={onToggleThinking}
       />,
     );
 
     fireEvent.click(screen.getByText("Thought for 800ms"));
-    expect(onOpenActivity).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-    expect(onOpenActivity).toHaveBeenCalledTimes(1);
+    expect(onToggleThinking).toHaveBeenCalledTimes(1);
   });
 
-  it("renders drawer with commentary first and folded runtime/provider details", () => {
+  it("renders drawer as a simple thinking list without runtime action sections", () => {
     const run = completedRun([
       providerReasoningEvent("The provider returned a safe reasoning summary."),
       assistantActivityEvent("I will use a tool before answering."),
@@ -187,32 +185,27 @@ describe("KlaraThinkingBlock", () => {
     ]);
     render(<ActivityHarness runs={[run]} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
 
     const commentary = screen.getByText("I will use a tool before answering.");
-    const actions = screen.getByText("Actions");
-    const providerReasoning = screen.getByText("Original model reasoning");
     expect(commentary).toBeInTheDocument();
-    expect(actions).toBeInTheDocument();
-    expect(providerReasoning).toBeInTheDocument();
+    expect(screen.getByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /thinking/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Thinking" })).toBeInTheDocument();
+    expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
     expect(screen.queryByText("Agent activity")).not.toBeInTheDocument();
     expect(screen.queryByText("Provider reasoning")).not.toBeInTheDocument();
-    expect(commentary.compareDocumentPosition(actions)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(actions.compareDocumentPosition(providerReasoning)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
+    expect(screen.queryByText("Original model reasoning")).not.toBeInTheDocument();
     expect(screen.queryByText("Before tools")).not.toBeInTheDocument();
-    expect(screen.getByText("web_fetch")).toBeInTheDocument();
-    expect(screen.getByText(/FIFA match schedule/)).toBeInTheDocument();
-    expect(screen.getByText(/fifa\.com/)).toBeInTheDocument();
+    expect(screen.queryByText("web_fetch")).not.toBeInTheDocument();
+    expect(screen.queryByText(/FIFA match schedule/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/fifa\.com/)).not.toBeInTheDocument();
     expect(screen.queryByText(/https:\/\//)).not.toBeInTheDocument();
     expect(screen.queryByText(/raw payload/i)).not.toBeInTheDocument();
   });
 
-  it("keeps a single activity drawer when multiple thinking blocks exist", () => {
+  it("keeps a single thinking drawer when multiple thinking blocks exist", () => {
     const runOne = completedRun(
       [
         providerReasoningEvent("First provider reasoning.", "run_1"),
@@ -230,13 +223,13 @@ describe("KlaraThinkingBlock", () => {
 
     render(<ActivityHarness runs={[runOne, runTwo]} />);
 
-    const buttons = screen.getAllByRole("button", { name: /open activity/i });
+    const buttons = screen.getAllByRole("button", { name: /toggle thinking details/i });
     fireEvent.click(buttons[0]);
-    expect(screen.getAllByRole("dialog", { name: /activity/i })).toHaveLength(1);
+    expect(screen.getAllByRole("dialog", { name: /thinking/i })).toHaveLength(1);
     expect(screen.getByText("First provider reasoning.")).toBeInTheDocument();
 
     fireEvent.click(buttons[1]);
-    expect(screen.getAllByRole("dialog", { name: /activity/i })).toHaveLength(1);
+    expect(screen.getAllByRole("dialog", { name: /thinking/i })).toHaveLength(1);
     expect(screen.queryByText("First provider reasoning.")).not.toBeInTheDocument();
     expect(screen.getByText("Second provider reasoning.")).toBeInTheDocument();
   });
@@ -248,20 +241,25 @@ describe("KlaraThinkingBlock", () => {
     ]);
     const { container } = render(<ActivityHarness runs={[run]} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-    expect(screen.getByRole("dialog", { name: /activity/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /close activity/i }));
-    expect(screen.queryByRole("dialog", { name: /activity/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
+    expect(screen.getByRole("dialog", { name: /thinking/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
+    expect(screen.queryByRole("dialog", { name: /thinking/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
-    const layer = container.querySelector(".klara-activity-layer");
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
+    expect(screen.getByRole("dialog", { name: /thinking/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /close thinking/i }));
+    expect(screen.queryByRole("dialog", { name: /thinking/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
+    const layer = container.querySelector(".klara-thinking-drawer-layer");
     expect(layer).toBeTruthy();
     fireEvent.mouseDown(layer as Element);
-    expect(screen.queryByRole("dialog", { name: /activity/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /thinking/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: /activity/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /thinking/i })).not.toBeInTheDocument();
   });
 });
 
@@ -275,14 +273,14 @@ function ActivityHarness({ runs }: { runs: Run[] }) {
         <KlaraThinkingBlock
           key={run.run_id}
           run={run}
-          isActivityOpen={activeRunId === run.run_id}
-          onOpenActivity={(runId, trigger) => {
+          isThinkingOpen={activeRunId === run.run_id}
+          onToggleThinking={(runId, trigger) => {
             triggerRef.current = trigger;
-            setActiveRunId(runId);
+            setActiveRunId((current) => (current === runId ? null : runId));
           }}
         />
       ))}
-      <KlaraActivityDrawer
+      <KlaraThinkingDrawer
         run={activeRun}
         open={Boolean(activeRun)}
         onClose={() => {

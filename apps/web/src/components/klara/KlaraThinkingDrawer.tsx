@@ -2,10 +2,9 @@ import { X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import type { Run, RunEvent, ThinkingActivityItem } from "../../types/domain";
 import {
-  visibleAgentTranscriptItems,
   visibleMainModelCommentaryItems,
   visibleProviderReasoningItems,
-} from "./activityItems";
+} from "./thinkingItems";
 
 type Props = {
   run?: Run | null;
@@ -13,7 +12,7 @@ type Props = {
   onClose: () => void;
 };
 
-export function KlaraActivityDrawer({ run, open, onClose }: Props) {
+export function KlaraThinkingDrawer({ run, open, onClose }: Props) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const events = useMemo(
     () =>
@@ -27,14 +26,11 @@ export function KlaraActivityDrawer({ run, open, onClose }: Props) {
     () => visibleMainModelCommentaryItems(events),
     [events],
   );
-  const transcriptItems = useMemo(
-    () => visibleAgentTranscriptItems(events),
-    [events],
+  const thoughtItems = useMemo(
+    () => [...commentaryItems, ...providerItems],
+    [commentaryItems, providerItems],
   );
-  const hasVisibleContent =
-    providerItems.length > 0 ||
-    commentaryItems.length > 0 ||
-    transcriptItems.length > 0;
+  const hasVisibleContent = thoughtItems.length > 0;
   const durationLabel = run ? activityDurationLabel(run, events) : "0s";
 
   useEffect(() => {
@@ -51,50 +47,36 @@ export function KlaraActivityDrawer({ run, open, onClose }: Props) {
 
   return (
     <div
-      className="klara-activity-layer"
+      className="klara-thinking-drawer-layer"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <aside
-        className="klara-activity-drawer"
+        className="klara-thinking-drawer"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="klara-activity-title"
-        aria-label="Activity"
+        aria-labelledby="klara-thinking-drawer-title"
+        aria-label="Thinking"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="klara-activity-header">
+        <header className="klara-thinking-drawer-header">
           <div>
-            <h3 id="klara-activity-title">Activity</h3>
+            <h3 id="klara-thinking-drawer-title">Thinking</h3>
             <span>{durationLabel}</span>
           </div>
           <button
             ref={closeButtonRef}
             type="button"
-            aria-label="Close activity"
+            aria-label="Close thinking"
             onClick={onClose}
           >
             <X size={18} />
           </button>
         </header>
 
-        {commentaryItems.length > 0 ? <ThoughtList items={commentaryItems} /> : null}
-
-        {transcriptItems.length > 0 ? (
-          <details className="klara-activity-section klara-activity-provider">
-            <summary>Actions</summary>
-            <ActivityList items={transcriptItems} />
-          </details>
-        ) : null}
-
-        {providerItems.length > 0 ? (
-          <details className="klara-activity-section klara-activity-provider">
-            <summary>Original model reasoning</summary>
-            <ThoughtList items={providerItems} />
-          </details>
-        ) : null}
+        <ThoughtList items={thoughtItems} />
       </aside>
     </div>
   );
@@ -135,28 +117,14 @@ function formatThoughtDuration(ms: number) {
   return `${minutes}m ${seconds}s`;
 }
 
-function ActivityList({ items }: { items: ThinkingActivityItem[] }) {
+function ThoughtList({ items }: { items: ThinkingActivityItem[] }) {
   return (
-    <ol className="klara-activity-list">
+    <ol className="klara-thought-list">
       {items.map((item) => (
-        <li className={`is-${item.status}`} key={item.id}>
-          <span aria-hidden="true" />
-          <article>
-            <h5>{item.title}</h5>
-            <p>{item.body}</p>
-          </article>
+        <li key={item.id}>
+          <p>{item.body}</p>
         </li>
       ))}
     </ol>
-  );
-}
-
-function ThoughtList({ items }: { items: ThinkingActivityItem[] }) {
-  return (
-    <div className="klara-thought-list">
-      {items.map((item) => (
-        <p key={item.id}>{item.body}</p>
-      ))}
-    </div>
   );
 }

@@ -378,7 +378,12 @@
   width: auto;
   margin: 0;
 }
+.klara-thinking-block.is-open {
+  position: relative;
+  z-index: 80;
+}
 .klara-thinking-row {
+  appearance: none;
   min-height: 26px;
   display: inline-flex;
   align-items: center;
@@ -391,6 +396,17 @@
   color: var(--text-muted);
   padding: 2px 3px 2px 2px;
   text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+.klara-thinking-row:hover,
+.klara-thinking-row:focus-visible,
+.klara-thinking-row[aria-expanded="true"] {
+  color: var(--text-primary);
+  background: rgba(184, 129, 47, 0.08);
+  outline: none;
 }
 .klara-thinking-mini {
   position: relative;
@@ -419,24 +435,16 @@
   white-space: nowrap;
 }
 .klara-thinking-toggle {
-  appearance: none;
   width: 22px;
   height: 22px;
   display: inline-grid;
   place-items: center;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
   flex: 0 0 auto;
   color: currentColor;
-  cursor: pointer;
-  padding: 0;
+  transition: transform 0.16s ease;
 }
-.klara-thinking-toggle:hover,
-.klara-thinking-toggle:focus-visible {
-  color: var(--text-primary);
-  background: rgba(184, 129, 47, 0.08);
-  outline: none;
+.klara-thinking-row[aria-expanded="true"] .klara-thinking-toggle {
+  transform: rotate(90deg);
 }
 .klara-thinking-activity {
   max-width: min(720px, 100%);
@@ -450,7 +458,7 @@
 .klara-thinking-activity p {
   margin: 0;
 }
-.klara-activity-layer {
+.klara-thinking-drawer-layer {
   position: fixed;
   inset: 0;
   z-index: 70;
@@ -458,7 +466,7 @@
   background: rgba(32, 39, 37, 0.1);
   backdrop-filter: blur(2px);
 }
-.klara-activity-drawer {
+.klara-thinking-drawer {
   position: absolute;
   top: 0;
   right: 0;
@@ -475,7 +483,7 @@
   overflow-y: auto;
   animation: klara-drawer-enter 0.18s ease-out;
 }
-.klara-activity-header {
+.klara-thinking-drawer-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -483,19 +491,19 @@
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(221, 209, 189, 0.68);
 }
-.klara-activity-header h3 {
+.klara-thinking-drawer-header h3 {
   display: inline;
   margin: 0;
   color: var(--text-primary);
   font-size: 18px;
   font-weight: 720;
 }
-.klara-activity-header span {
+.klara-thinking-drawer-header span {
   margin-left: 8px;
   color: var(--text-muted);
   font-size: 14px;
 }
-.klara-activity-header button {
+.klara-thinking-drawer-header button {
   appearance: none;
   width: 34px;
   height: 34px;
@@ -507,93 +515,39 @@
   color: var(--text-secondary);
   cursor: pointer;
 }
-.klara-activity-header button:hover,
-.klara-activity-header button:focus-visible {
+.klara-thinking-drawer-header button:hover,
+.klara-thinking-drawer-header button:focus-visible {
   background: rgba(184, 129, 47, 0.1);
   color: var(--text-primary);
   outline: none;
 }
-.klara-activity-section {
-  display: grid;
-  gap: 12px;
-}
-.klara-activity-section h4 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 680;
-}
-.klara-activity-provider {
-  gap: 10px;
-  color: var(--text-secondary);
-}
-.klara-activity-provider summary {
-  cursor: pointer;
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 650;
-  list-style-position: inside;
-}
-.klara-activity-provider[open] summary {
-  color: var(--text-primary);
-}
-.klara-activity-empty {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.klara-activity-list {
+.klara-thought-list {
   list-style: none;
   display: grid;
-  gap: 18px;
+  gap: 14px;
   margin: 0;
   padding: 0;
+  counter-reset: klara-thought;
 }
-.klara-activity-list li {
+.klara-thought-list li {
   position: relative;
-  display: grid;
-  grid-template-columns: 14px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
+  padding-left: 22px;
+  counter-increment: klara-thought;
 }
-.klara-activity-list li::after {
-  content: "";
+.klara-thought-list li::before {
+  content: counter(klara-thought);
   position: absolute;
-  left: 6px;
-  top: 18px;
-  bottom: -16px;
-  width: 1px;
-  background: rgba(117, 113, 104, 0.24);
-}
-.klara-activity-list li:last-child::after {
-  display: none;
-}
-.klara-activity-list li > span {
-  width: 9px;
-  height: 9px;
-  margin-top: 7px;
-  border-radius: 999px;
-  background: var(--accent-running);
-}
-.klara-activity-list .is-failed > span {
-  background: var(--accent-error);
-}
-.klara-activity-list h5 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 680;
-}
-.klara-activity-list p {
-  margin: 4px 0 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-}
-.klara-thought-list {
+  left: 0;
+  top: 0.16em;
+  width: 15px;
+  height: 15px;
   display: grid;
-  gap: 12px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(184, 129, 47, 0.12);
+  color: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 720;
 }
 .klara-thought-list p {
   margin: 0;
@@ -847,15 +801,15 @@
 .theme-dark .klara-debug-raw pre {
   background: rgba(0, 0, 0, 0.18);
 }
-.theme-dark .klara-activity-drawer {
+.theme-dark .klara-thinking-drawer {
   background: rgba(24, 27, 23, 0.98);
   border-left-color: #3b4138;
   box-shadow: -22px 0 52px rgba(0, 0, 0, 0.34);
 }
-.theme-dark .klara-activity-layer {
+.theme-dark .klara-thinking-drawer-layer {
   background: rgba(0, 0, 0, 0.36);
 }
-.theme-dark .klara-activity-header {
+.theme-dark .klara-thinking-drawer-header {
   border-bottom-color: #3b4138;
 }
 .theme-dark .klara-run-surface-body {
@@ -894,7 +848,7 @@
   .klara-status-time {
     display: none;
   }
-  .klara-activity-drawer {
+  .klara-thinking-drawer {
     width: 100vw;
     max-width: none;
     padding: 22px 18px;

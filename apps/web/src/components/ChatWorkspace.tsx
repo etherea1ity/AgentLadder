@@ -20,7 +20,7 @@ import type {
   Run,
 } from "../types/domain";
 import { KlaraHero } from "./klara/KlaraHero";
-import { KlaraActivityDrawer } from "./klara/KlaraActivityDrawer";
+import { KlaraThinkingDrawer } from "./klara/KlaraThinkingDrawer";
 import { KlaraPresence } from "./klara/KlaraPresence";
 import { KlaraRunSurface } from "./klara/KlaraRunSurface";
 import { KlaraRunStatus } from "./klara/KlaraRunStatus";
@@ -55,28 +55,28 @@ export function ChatWorkspace(props: Props) {
   const empty = !props.activeSessionId || props.messages.length === 0;
   const [composerFocused, setComposerFocused] = useState(false);
   const [typingPulse, setTypingPulse] = useState(0);
-  const [activeActivityRunId, setActiveActivityRunId] = useState<string | null>(
+  const [activeThinkingRunId, setActiveThinkingRunId] = useState<string | null>(
     null,
   );
   const lastTypingPulseRef = useRef(0);
-  const activityTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const thinkingTriggerRef = useRef<HTMLButtonElement | null>(null);
   const activeRun = [...props.messages]
     .reverse()
     .map((message) => (message.run_id ? props.runs[message.run_id] : undefined))
     .find((run): run is Run => isKlaraRunActive(run));
-  const activeActivityRun = activeActivityRunId
-    ? props.runs[activeActivityRunId]
+  const activeThinkingRun = activeThinkingRunId
+    ? props.runs[activeThinkingRunId]
     : null;
-  const openActivity = useCallback(
+  const toggleThinking = useCallback(
     (runId: string, trigger: HTMLButtonElement) => {
-      activityTriggerRef.current = trigger;
-      setActiveActivityRunId(runId);
+      thinkingTriggerRef.current = trigger;
+      setActiveThinkingRunId((current) => (current === runId ? null : runId));
     },
     [],
   );
-  const closeActivity = useCallback(() => {
-    setActiveActivityRunId(null);
-    window.setTimeout(() => activityTriggerRef.current?.focus(), 0);
+  const closeThinking = useCallback(() => {
+    setActiveThinkingRunId(null);
+    window.setTimeout(() => thinkingTriggerRef.current?.focus(), 0);
   }, []);
   const pulseTyping = () => {
     const now = Date.now();
@@ -90,10 +90,10 @@ export function ChatWorkspace(props: Props) {
   );
 
   useEffect(() => {
-    if (activeActivityRunId && !props.runs[activeActivityRunId]) {
-      setActiveActivityRunId(null);
+    if (activeThinkingRunId && !props.runs[activeThinkingRunId]) {
+      setActiveThinkingRunId(null);
     }
-  }, [activeActivityRunId, props.runs]);
+  }, [activeThinkingRunId, props.runs]);
 
   return (
     <main className={`chat-workspace ${empty ? "is-empty" : "has-messages"}`}>
@@ -135,8 +135,8 @@ export function ChatWorkspace(props: Props) {
             activeRunId={activeRun?.run_id ?? null}
             handoffRunId={handoffRunId}
             arrivalRunId={arrivalRunId}
-            activeActivityRunId={activeActivityRunId}
-            onOpenActivity={openActivity}
+            activeThinkingRunId={activeThinkingRunId}
+            onToggleThinking={toggleThinking}
           />
           <div className="composer-footer">
             <ChatInput
@@ -160,10 +160,10 @@ export function ChatWorkspace(props: Props) {
           {handoff ? <KlaraHandoffOverlay handoff={handoff} /> : null}
         </>
       )}
-      <KlaraActivityDrawer
-        run={activeActivityRun}
-        open={Boolean(activeActivityRun)}
-        onClose={closeActivity}
+      <KlaraThinkingDrawer
+        run={activeThinkingRun}
+        open={Boolean(activeThinkingRun)}
+        onClose={closeThinking}
       />
     </main>
   );
@@ -246,16 +246,16 @@ function MessageList({
   activeRunId,
   handoffRunId,
   arrivalRunId,
-  activeActivityRunId,
-  onOpenActivity,
+  activeThinkingRunId,
+  onToggleThinking,
 }: {
   messages: Message[];
   runs: Record<string, Run>;
   activeRunId: string | null;
   handoffRunId: string | null;
   arrivalRunId: string | null;
-  activeActivityRunId: string | null;
-  onOpenActivity: (runId: string, trigger: HTMLButtonElement) => void;
+  activeThinkingRunId: string | null;
+  onToggleThinking: (runId: string, trigger: HTMLButtonElement) => void;
 }) {
   const scrollerRef = useRef<HTMLElement | null>(null);
   const shouldFollowRef = useRef(true);
@@ -317,10 +317,10 @@ function MessageList({
               arrivalActive={Boolean(
                 turn.run && arrivalRunId === turn.run.run_id,
               )}
-              activityOpen={Boolean(
-                turn.run && activeActivityRunId === turn.run.run_id,
+              thinkingOpen={Boolean(
+                turn.run && activeThinkingRunId === turn.run.run_id,
               )}
-              onOpenActivity={onOpenActivity}
+              onToggleThinking={onToggleThinking}
             />
           ) : null}
         </article>
@@ -411,16 +411,16 @@ function AssistantMessage({
   handoffActive,
   visuallyActive,
   arrivalActive,
-  activityOpen,
-  onOpenActivity,
+  thinkingOpen,
+  onToggleThinking,
 }: {
   message: Message;
   run?: Run;
   handoffActive: boolean;
   visuallyActive: boolean;
   arrivalActive: boolean;
-  activityOpen: boolean;
-  onOpenActivity: (runId: string, trigger: HTMLButtonElement) => void;
+  thinkingOpen: boolean;
+  onToggleThinking: (runId: string, trigger: HTMLButtonElement) => void;
 }) {
   const [feedback, setFeedback] = useState<"up" | "down" | null>(() =>
     readFeedback(message.message_id),
@@ -449,8 +449,8 @@ function AssistantMessage({
         />
         <KlaraThinkingBlock
           run={run}
-          isActivityOpen={activityOpen}
-          onOpenActivity={onOpenActivity}
+          isThinkingOpen={thinkingOpen}
+          onToggleThinking={onToggleThinking}
         />
       </div>
       <AssistantContent
