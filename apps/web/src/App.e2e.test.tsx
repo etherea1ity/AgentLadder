@@ -150,6 +150,13 @@ describe("Klara app flow", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
+    const runRequest = vi
+      .mocked(fetch)
+      .mock.calls.find(([url]) => url === "/api/runs");
+    const runPayload = JSON.parse(String(runRequest?.[1]?.body));
+    expect(runPayload.client_context.timestamp).toEqual(expect.any(String));
+    expect(runPayload.client_context.timezone).toEqual(expect.any(String));
+    expect(runPayload.client_context.utc_offset_minutes).toEqual(expect.any(Number));
 
     const source = MockEventSource.instances[0];
     source.emit("thinking_started", evt("thinking_started", "Klara is preparing the runtime loop."));
@@ -234,6 +241,23 @@ describe("Klara app flow", () => {
     expect(screen.getByText("Generated image unavailable")).toBeInTheDocument();
     expect(screen.queryByText("Run Margin")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /open run trace/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps the desktop sidebar collapsed after sending from the empty view", async () => {
+    localStorage.setItem(
+      "klara_ui_state",
+      JSON.stringify({ activeSessionId: null, sidebarCollapsed: true }),
+    );
+
+    const { container } = render(<App />);
+    await userEvent.type(
+      screen.getByPlaceholderText("Ask your first question..."),
+      "keep the rail quiet",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
+
+    expect(container.querySelector(".app-shell")).toHaveClass("sidebar-collapsed");
   });
 });
 

@@ -20,6 +20,9 @@ export type Message = {
   status?: MessageStatus;
   created_at: string;
   updated_at?: string | null;
+  client_created_at?: string | null;
+  client_timezone?: string | null;
+  client_utc_offset_minutes?: number | null;
 };
 
 export type RunEventType =
@@ -165,6 +168,12 @@ export type ModelOption = {
   use_when?: string | null;
   supports_thinking?: boolean;
   default_thinking?: boolean;
+};
+
+export type ClientContext = {
+  timestamp: string;
+  timezone?: string | null;
+  utc_offset_minutes: number;
 };
 
 // Klara Presence public event model. This is intentionally separate from the

@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 import re
 import threading
+from dataclasses import replace
+from datetime import datetime
 from pathlib import Path
 from time import perf_counter, sleep
 from typing import Any
 
 from apps.api.schemas import (
+    ClientContext,
     CreateRunResponse,
     MessageRecord,
     RunError,
@@ -27,7 +30,7 @@ from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
 from klara.context.runtime import build_system_prompt
-from klara.context.timestamps import stamp_user_message_content
+from klara.context.timestamps import parse_prompt_datetime, stamp_user_message_content
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager, JsonlTraceHook
 from klara.core.loop import KlaraLoop, LlmClient
@@ -96,6 +99,7 @@ class RunService:
         question: str,
         model: str | None = None,
         thinking_enabled: bool | None = None,
+        client_context: ClientContext | None = None,
     ) -> CreateRunResponse:
         """Create user/assistant messages and start a background Klara loop."""
 
@@ -112,7 +116,17 @@ class RunService:
         if session.title == "Untitled":
             self.store.rename_session(session_id, title)
 
-        user_message = MessageRecord(session_id=session_id, role="user", content=question, status="completed")
+        user_message = MessageRecord(
+            session_id=session_id,
+            role="user",
+            content=question,
+            status="completed",
+            client_created_at=client_context.timestamp if client_context else None,
+            client_timezone=_client_timezone_name(client_context),
+            client_utc_offset_minutes=(
+                client_context.utc_offset_minutes if client_context else None
+            ),
+        )
         self.store.save_message(user_message)
 
         run = RunRecord(
@@ -198,6 +212,11 @@ class RunService:
         self.store.save_run(current)
         selected_model = current.model or self.default_model or "fake-model"
         thinking_enabled = current.thinking_enabled
+        run_user_context = replace(
+            self.user_context,
+            timezone=_message_timezone_name(user_message, self.user_context.timezone),
+        )
+        run_now = _message_client_datetime(user_message)
         self._emit(run_id, "thinking_started", "Klara is preparing the runtime loop.", {})
         self._emit(
             run_id,
@@ -225,11 +244,11 @@ class RunService:
                 hooks=hooks,
                 policy=self.loop_policy,
                 controllers=(
-                    WebResearchController(user_timezone=self.user_context.timezone),
+                    WebResearchController(user_timezone=run_user_context.timezone),
                 ),
                 model=selected_model,
                 thinking_enabled=thinking_enabled,
-                system_prompt=_system_prompt(self.user_context),
+                system_prompt=_system_prompt(run_user_context, now=run_now),
             )
             model_visible_user_input = self._model_visible_content(user_message)
             result = loop.run(
@@ -492,8 +511,8 @@ class RunService:
             return message.content
         return stamp_user_message_content(
             message.content,
-            created_at=message.created_at,
-            timezone_name=self.user_context.timezone,
+            created_at=message.client_created_at or message.created_at,
+            timezone_name=_message_timezone_name(message, self.user_context.timezone),
         )
 
 
@@ -524,11 +543,50 @@ class RunProjectionHook:
             )
 
 
-def _system_prompt(user_context: UserContext) -> str:
+def _client_timezone_name(client_context: ClientContext | None) -> str | None:
+    """Return the best prompt timezone name from browser context."""
+
+    if client_context is None:
+        return None
+    if client_context.timezone:
+        return client_context.timezone
+    if client_context.utc_offset_minutes is None:
+        return None
+    return _offset_timezone_name(client_context.utc_offset_minutes)
+
+
+def _message_timezone_name(message: MessageRecord, fallback: str) -> str:
+    """Return the timezone to use for one model-visible user message."""
+
+    if message.client_timezone:
+        return message.client_timezone
+    if message.client_utc_offset_minutes is not None:
+        return _offset_timezone_name(message.client_utc_offset_minutes)
+    return fallback
+
+
+def _message_client_datetime(message: MessageRecord) -> datetime | None:
+    """Return browser send time when the client supplied a valid timestamp."""
+
+    if not message.client_created_at:
+        return None
+    return parse_prompt_datetime(message.client_created_at)
+
+
+def _offset_timezone_name(offset_minutes: int) -> str:
+    """Convert a JavaScript UTC offset minute count into a timezone label."""
+
+    sign = "+" if offset_minutes >= 0 else "-"
+    absolute = abs(offset_minutes)
+    hours, minutes = divmod(absolute, 60)
+    return f"UTC{sign}{hours:02d}:{minutes:02d}"
+
+
+def _system_prompt(user_context: UserContext, *, now: datetime | None = None) -> str:
     """Build the app prompt while keeping persona outside core."""
 
     persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8")
-    return build_system_prompt(persona=persona, timezone_name=user_context.timezone)
+    return build_system_prompt(persona=persona, timezone_name=user_context.timezone, now=now)
 
 
 def _answer_chunks(

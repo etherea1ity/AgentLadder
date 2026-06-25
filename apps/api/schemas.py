@@ -78,6 +78,9 @@ class MessageRecord(BaseModel):
     status: MessageStatus = "idle"
     created_at: str = Field(default_factory=now_iso)
     updated_at: str | None = None
+    client_created_at: str | None = None
+    client_timezone: str | None = None
+    client_utc_offset_minutes: int | None = None
 
 
 class RunError(BaseModel):
@@ -147,11 +150,49 @@ class DeleteSessionResponse(BaseModel):
     deleted_at: str
 
 
+class ClientContext(BaseModel):
+    timestamp: str | None = None
+    timezone: str | None = None
+    utc_offset_minutes: int | None = None
+
+    @field_validator("timestamp")
+    @classmethod
+    def timestamp_not_empty(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        timestamp = value.strip()
+        if not timestamp:
+            return None
+        try:
+            datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return timestamp[:80]
+
+    @field_validator("timezone")
+    @classmethod
+    def timezone_not_empty(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        timezone = value.strip()
+        if not timezone:
+            return None
+        return timezone[:80]
+
+    @field_validator("utc_offset_minutes")
+    @classmethod
+    def utc_offset_in_reasonable_range(cls, value: int | None) -> int | None:
+        if value is None:
+            return None
+        return max(-14 * 60, min(14 * 60, value))
+
+
 class CreateRunRequest(BaseModel):
     session_id: str
     question: str
     model: str | None = None
     thinking_enabled: bool | None = None
+    client_context: ClientContext | None = None
 
     @field_validator("question")
     @classmethod

@@ -177,16 +177,12 @@ export default function App() {
 
   useEffect(() => {
     const protectCenterRail = () => {
-      const width = window.innerWidth;
-      const shouldCollapseSidebar = width <= 900;
-      setSidebarCollapsed((current) =>
-        current === shouldCollapseSidebar ? current : shouldCollapseSidebar,
-      );
+      if (isMobileViewport()) setSidebarCollapsed(true);
     };
     protectCenterRail();
     window.addEventListener("resize", protectCenterRail);
     return () => window.removeEventListener("resize", protectCenterRail);
-  }, [empty]);
+  }, []);
 
   async function loadSession(
     sessionId: string,
@@ -244,6 +240,7 @@ export default function App() {
     const draftAssistantId = createClientId("draft_assistant");
     const draftRunId = createClientId("draft_run");
     const createdAt = new Date().toISOString();
+    const clientContext = createClientContext(createdAt);
     const draftUser: Message = {
       message_id: draftUserId,
       session_id: draftSessionId,
@@ -251,6 +248,9 @@ export default function App() {
       content: question,
       status: "completed",
       created_at: createdAt,
+      client_created_at: clientContext.timestamp,
+      client_timezone: clientContext.timezone,
+      client_utc_offset_minutes: clientContext.utc_offset_minutes,
     };
     const draftAssistant: Message = {
       message_id: draftAssistantId,
@@ -314,6 +314,7 @@ export default function App() {
         selectedModelOption?.supports_thinking
           ? effectiveThinkingEnabled
           : undefined,
+        clientContext,
       );
       const realUser: Message = {
         message_id: created.user_message_id,
@@ -322,6 +323,9 @@ export default function App() {
         content: question,
         status: "completed",
         created_at: createdAt,
+        client_created_at: clientContext.timestamp,
+        client_timezone: clientContext.timezone,
+        client_utc_offset_minutes: clientContext.utc_offset_minutes,
       };
       const realAssistant: Message = {
         message_id: created.assistant_message_id,
@@ -1037,6 +1041,15 @@ function isMobileViewport() {
   } catch {
     return false;
   }
+}
+
+function createClientContext(timestamp: string) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  return {
+    timestamp,
+    timezone,
+    utc_offset_minutes: -new Date(timestamp).getTimezoneOffset(),
+  };
 }
 
 function readPersistedUi(): PersistedUi {

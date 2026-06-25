@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 TIMESTAMP_PREFIX_PATTERN = re.compile(
     r"^\[[A-Za-z]{3} \d{4}-\d{2}-\d{2} \d{2}:\d{2} [^\]]+\]\s"
 )
+FIXED_OFFSET_PATTERN = re.compile(r"^(?:UTC|GMT)([+-])(\d{2})(?::?(\d{2}))?$")
 
 _FIXED_TIMEZONES: dict[str, tzinfo] = {
     "UTC": UTC,
@@ -87,10 +88,18 @@ def resolve_prompt_timezone(timezone_name: str | None) -> PromptTimezone:
         )
     if trimmed in _FIXED_TIMEZONES:
         return PromptTimezone(name=trimmed, tzinfo=_FIXED_TIMEZONES[trimmed])
+    if offset_timezone := _resolve_fixed_offset(trimmed):
+        return offset_timezone
     try:
         return PromptTimezone(name=trimmed, tzinfo=ZoneInfo(trimmed))
     except ZoneInfoNotFoundError:
         return PromptTimezone(name="UTC", tzinfo=UTC)
+
+
+def parse_prompt_datetime(value: str) -> datetime:
+    """Parse a prompt-facing ISO datetime, defaulting invalid values to now."""
+
+    return _parse_datetime(value)
 
 
 def _parse_datetime(value: str) -> datetime:
@@ -104,6 +113,24 @@ def _parse_datetime(value: str) -> datetime:
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=UTC)
     return parsed
+
+
+def _resolve_fixed_offset(value: str) -> PromptTimezone | None:
+    """Resolve compact UTC/GMT offsets such as `UTC+08:00`."""
+
+    match = FIXED_OFFSET_PATTERN.match(value)
+    if not match:
+        return None
+    sign, hours_text, minutes_text = match.groups()
+    hours = int(hours_text)
+    minutes = int(minutes_text or "0")
+    if hours > 14 or minutes > 59:
+        return None
+    total_minutes = hours * 60 + minutes
+    if sign == "-":
+        total_minutes = -total_minutes
+    offset = timezone(timedelta(minutes=total_minutes), name=value)
+    return PromptTimezone(name=value, tzinfo=offset)
 
 
 def _offset_label(value: datetime) -> str:

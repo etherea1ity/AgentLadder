@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from apps.api.schemas import MessageRecord
+from apps.api.schemas import ClientContext, MessageRecord
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_service import RunService
 from apps.api.services.sse_bus import SSEBus
@@ -28,6 +28,19 @@ class UsageLlm:
             content="ok",
             usage={"input_tokens": 5, "output_tokens": 8},
         )
+
+
+class CaptureLlm:
+    """LLM fixture that captures the prompt boundary for assertions."""
+
+    def __init__(self) -> None:
+        self.system_prompt = ""
+        self.messages = ()
+
+    def complete(self, **kwargs: object) -> ModelResponse:
+        self.system_prompt = str(kwargs["system_prompt"])
+        self.messages = kwargs["messages"]
+        return ModelResponse(content="ok")
 
 
 def test_conversation_history_uses_completed_messages_before_current_turn(tmp_path) -> None:
@@ -142,6 +155,68 @@ def test_current_user_message_is_timestamped_for_model_boundary(tmp_path) -> Non
         == "[Thu 2026-06-18 20:34 GMT+08] Public event status?"
     )
     assert current_user.content == "Public event status?"
+
+
+def test_current_user_message_prefers_client_time_context(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=FinalLlm(),
+        user_context=UserContext(
+            user_id="local-user",
+            display_name="Local User",
+            timezone="UTC",
+            storage_key="local-user",
+        ),
+    )
+    current_user = MessageRecord(
+        session_id=session.session_id,
+        role="user",
+        content="What happened today?",
+        status="completed",
+        created_at="2026-06-18T12:34:56+00:00",
+        client_created_at="2026-06-25T10:00:00+02:00",
+        client_timezone="Asia/Shanghai",
+    )
+
+    assert (
+        service._model_visible_content(current_user)
+        == "[Thu 2026-06-25 16:00 GMT+08] What happened today?"
+    )
+
+
+def test_create_run_passes_browser_time_context_to_model_prompt(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    llm = CaptureLlm()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=llm,
+        default_model="test-model",
+        answer_chunk_delay_ms=0,
+    )
+
+    created = service.create_run(
+        session.session_id,
+        "Today status?",
+        client_context=ClientContext(
+            timestamp="2026-06-25T10:00:00+02:00",
+            timezone="Asia/Shanghai",
+            utc_offset_minutes=120,
+        ),
+    )
+    service._threads[created.run_id].join(timeout=5)
+
+    user_message = store.get_message(created.user_message_id)
+    assert user_message is not None
+    assert user_message.client_created_at == "2026-06-25T10:00:00+02:00"
+    assert user_message.client_timezone == "Asia/Shanghai"
+    assert "Conversation date: Thursday, June 25, 2026" in llm.system_prompt
+    assert "User timezone: Asia/Shanghai" in llm.system_prompt
+    assert llm.messages[0].content.startswith("[Thu 2026-06-25 16:00 GMT+08] ")
 
 
 def test_run_service_projects_model_and_trace_saved(tmp_path) -> None:

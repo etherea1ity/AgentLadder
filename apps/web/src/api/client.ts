@@ -1,4 +1,4 @@
-import type { Message, ModelOption, Run, RunEvent, Session } from '../types/domain';
+import type { ClientContext, Message, ModelOption, Run, RunEvent, Session } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -43,6 +43,7 @@ export const api = {
     question: string,
     model?: string | null,
     thinking_enabled?: boolean | null,
+    client_context?: ClientContext | null,
     signal?: AbortSignal,
   ) =>
     request<CreateRunResponse>('/api/runs', {
@@ -52,6 +53,7 @@ export const api = {
         question,
         model: model || undefined,
         thinking_enabled: thinking_enabled ?? undefined,
+        client_context: client_context ?? undefined,
       }),
       signal,
     }),

@@ -22,6 +22,7 @@ def create_run(request: CreateRunRequest, run_service: RunService = Depends(get_
             question=request.question,
             model=request.model,
             thinking_enabled=request.thinking_enabled,
+            client_context=request.client_context,
         )
     except KeyError:
         raise HTTPException(status_code=404, detail="session_not_found") from None
