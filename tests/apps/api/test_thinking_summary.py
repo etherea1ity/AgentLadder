@@ -67,6 +67,32 @@ class ToolThenFinalLlm:
         return ModelResponse(content="It is time to answer.")
 
 
+class ToolThenFailureLlm:
+    """Main model fixture that emits public activity before a later failure."""
+
+    def __init__(self) -> None:
+        """Create a fixture that fails after the first tool turn."""
+
+        self.calls = 0
+
+    def complete(self, **_: object) -> ModelResponse:
+        """Return one tool request, then simulate a provider failure."""
+
+        self.calls += 1
+        if self.calls == 1:
+            return ModelResponse(
+                content="I will check a tool before continuing.",
+                tool_calls=(
+                    ToolCall(
+                        id="call_time",
+                        name="current_time",
+                        arguments={"timezone": "Asia/Shanghai"},
+                    ),
+                ),
+            )
+        raise RuntimeError("provider request failed: The read operation timed out")
+
+
 def test_thinking_summary_started_and_completed_wrap_answer(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()
@@ -248,6 +274,39 @@ def test_tool_call_content_emits_assistant_activity_without_entering_history(tmp
         "I will check the current time first." not in message.content
         for message in llm.histories[-1]
     )
+
+
+def test_failed_run_keeps_prior_activity_events_and_exposes_latency(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=ToolThenFailureLlm(),
+        default_model="main-model",
+        trace_path=str(tmp_path / "trace.jsonl"),
+        answer_chunk_delay_ms=0,
+    )
+
+    created = service.create_run(session.session_id, "what time is it in Shanghai?")
+    service._threads[created.run_id].join(timeout=5)
+
+    events = store.list_events(created.run_id)
+    failed = next(event for event in events if event.event_type == "run_failed")
+    activity = [
+        event for event in events if event.event_type == "assistant_activity_delta"
+    ]
+    run = store.get_run(created.run_id)
+    assistant = store.get_message(created.assistant_message_id)
+
+    assert activity
+    assert activity[0].payload["text"] == "I will check a tool before continuing."
+    assert isinstance(failed.payload["latency_ms"], int)
+    assert run is not None
+    assert run.status == "failed"
+    assert run.latency_ms == failed.payload["latency_ms"]
+    assert assistant is not None
+    assert assistant.status == "failed"
 
 
 def test_long_answer_emits_multiple_display_chunks(tmp_path) -> None:

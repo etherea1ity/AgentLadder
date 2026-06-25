@@ -108,7 +108,10 @@ def test_openai_compatible_client_uses_model_default_thinking(monkeypatch) -> No
         def read(self) -> bytes:
             return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode("utf-8")
 
-    def fake_urlopen(request: urllib.request.Request, timeout: int) -> FakeResponse:
+    def fake_urlopen(
+        request: urllib.request.Request,
+        timeout: int | None = None,
+    ) -> FakeResponse:
         captured["payload"] = json.loads(request.data.decode("utf-8"))  # type: ignore[union-attr]
         return FakeResponse()
 
@@ -156,7 +159,10 @@ def test_openai_compatible_client_accepts_run_thinking_override(monkeypatch) -> 
         def read(self) -> bytes:
             return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode("utf-8")
 
-    def fake_urlopen(request: urllib.request.Request, timeout: int) -> FakeResponse:
+    def fake_urlopen(
+        request: urllib.request.Request,
+        timeout: int | None = None,
+    ) -> FakeResponse:
         captured["payload"] = json.loads(request.data.decode("utf-8"))  # type: ignore[union-attr]
         return FakeResponse()
 
@@ -424,6 +430,52 @@ def test_openai_compatible_client_builds_authenticated_request(monkeypatch) -> N
     assert captured["payload"]["model"] == "deepseek-v4-flash"
     assert "max_tokens" not in captured["payload"]
     assert captured["headers"]["Authorization"] == "Bearer test-key"
+
+
+def test_openai_compatible_client_does_not_cap_provider_reads_by_default(monkeypatch) -> None:
+    """Long thinking calls should not inherit a short adapter read timeout."""
+
+    captured: dict[str, object | None] = {}
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode("utf-8")
+
+    def fake_urlopen(
+        request: urllib.request.Request,
+        timeout: int | None = None,
+    ) -> FakeResponse:
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    client = OpenAICompatibleLlmClient(
+        provider_id="deepseek",
+        provider=ProviderConfig(
+            api="openai-completions",
+            base_url="https://api.deepseek.com/v1",
+            api_key_env="DEEPSEEK_API_KEY",
+            models=(ProviderModel(id="deepseek-v4-flash"),),
+        ),
+        settings=OpenAICompatibleSettings(retry_attempts=1),
+    )
+
+    response = client.complete(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="deepseek/deepseek-v4-flash",
+    )
+
+    assert response.content == "ok"
+    assert captured["timeout"] is None
 
 
 def test_openai_compatible_client_rejects_missing_key(monkeypatch) -> None:

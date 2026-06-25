@@ -327,7 +327,15 @@ class RunService:
             failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
             self.store.save_run(failed)
             self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
-            self._emit(run_id, "run_failed", "Run failed.", {"error": error.model_dump(mode="json")})
+            self._emit(
+                run_id,
+                "run_failed",
+                "Run failed.",
+                {
+                    "error": error.model_dump(mode="json"),
+                    "latency_ms": latency_ms,
+                },
+            )
         finally:
             self._cleanup_run_runtime(run_id)
 

@@ -31,7 +31,8 @@ class OpenAICompatibleSettings:
     # Sampling temperature for the provider.
     temperature: float = 0.4
     # Network timeout for one blocking provider request.
-    timeout_seconds: int = 60
+    # None means Klara does not impose a provider read cap.
+    timeout_seconds: int | None = None
     # Retry attempts for transient provider/network failures.
     retry_attempts: int = 3
     # Initial exponential-backoff delay between retryable failures.
@@ -521,7 +522,7 @@ def _parse_tool_call(raw: dict[str, Any], index: int) -> ToolCall:
 def _urlopen_with_retries(
     request: urllib.request.Request,
     *,
-    timeout_seconds: int,
+    timeout_seconds: int | None,
     attempts: int,
     retry_base_delay_seconds: float,
 ) -> str:
@@ -531,7 +532,14 @@ def _urlopen_with_retries(
     # Retry only around transport/provider overload failures.
     for attempt in range(attempts):
         try:
-            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            if timeout_seconds is None:
+                response_context = urllib.request.urlopen(request)
+            else:
+                response_context = urllib.request.urlopen(
+                    request,
+                    timeout=timeout_seconds,
+                )
+            with response_context as response:
                 return response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")

@@ -44,12 +44,72 @@ const runResponse = {
   events_url: "/api/runs/run_1/events/stream",
 };
 let listedSessions: (typeof session)[];
+let sessionDetailResponse: unknown;
+let runDetailResponse: unknown;
 
 describe("Klara app flow", () => {
   beforeEach(() => {
     localStorage.clear();
     MockEventSource.instances = [];
     listedSessions = [];
+    sessionDetailResponse = {
+      session,
+      messages: [
+        {
+          message_id: "msg_u",
+          session_id: "sess_1",
+          role: "user",
+          content: "run the runtime loop",
+          status: "completed",
+          created_at: now,
+        },
+        {
+          message_id: "msg_a",
+          session_id: "sess_1",
+          role: "assistant",
+          content: "Klara completed the runtime loop.",
+          run_id: "run_1",
+          status: "completed",
+          created_at: now,
+        },
+      ],
+      runs: [
+        {
+          ...runResponse,
+          status: "completed",
+          latency_ms: 1200,
+          trace_saved: true,
+        },
+      ],
+      events: [
+        evt("tool_call_started", "Klara is using current_time.", {
+          tool_call: { id: "call_1", name: "current_time" },
+        }),
+        evt("tool_call_completed", "current_time returned.", {
+          tool_result: {
+            tool_call_id: "call_1",
+            name: "current_time",
+            ok: true,
+            content_preview: "Asia/Shanghai 22:00",
+            content_length: 20,
+          },
+        }),
+        evt("run_completed", "Run completed.", {
+          latency_ms: 1200,
+          trace_saved: true,
+        }),
+      ],
+    };
+    runDetailResponse = {
+      run: {
+        ...runResponse,
+        status: "completed",
+        latency_ms: 1200,
+        trace_saved: true,
+      },
+      events: [],
+      trace: null,
+    };
     vi.stubGlobal("EventSource", MockEventSource);
     vi.stubGlobal(
       "fetch",
@@ -69,55 +129,8 @@ describe("Klara app flow", () => {
         if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: listedSessions });
         if (url === "/api/sessions" && init?.method === "POST") return json(session);
         if (url === "/api/runs") return json(runResponse);
-        if (url === "/api/sessions/sess_1")
-          return json({
-            session,
-            messages: [
-              {
-                message_id: "msg_u",
-                session_id: "sess_1",
-                role: "user",
-                content: "run the runtime loop",
-                status: "completed",
-                created_at: now,
-              },
-              {
-                message_id: "msg_a",
-                session_id: "sess_1",
-                role: "assistant",
-                content: "Klara completed the runtime loop.",
-                run_id: "run_1",
-                status: "completed",
-                created_at: now,
-              },
-            ],
-            runs: [
-              {
-                ...runResponse,
-                status: "completed",
-                latency_ms: 1200,
-                trace_saved: true,
-              },
-            ],
-            events: [
-              evt("tool_call_started", "Klara is using current_time.", {
-                tool_call: { id: "call_1", name: "current_time" },
-              }),
-              evt("tool_call_completed", "current_time returned.", {
-                tool_result: {
-                  tool_call_id: "call_1",
-                  name: "current_time",
-                  ok: true,
-                  content_preview: "Asia/Shanghai 22:00",
-                  content_length: 20,
-                },
-              }),
-              evt("run_completed", "Run completed.", {
-                latency_ms: 1200,
-                trace_saved: true,
-              }),
-            ],
-          });
+        if (url === "/api/runs/run_1") return json(runDetailResponse);
+        if (url === "/api/sessions/sess_1") return json(sessionDetailResponse);
         return json({});
       }),
     );
@@ -264,6 +277,98 @@ describe("Klara app flow", () => {
     await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
 
     expect(container.querySelector(".app-shell")).toHaveClass("sidebar-collapsed");
+  });
+
+  it("keeps live thinking after a failed run is reconciled from a sparse snapshot", async () => {
+    render(<App />);
+    await userEvent.type(
+      screen.getByPlaceholderText("Ask your first question..."),
+      "run a long research task",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
+
+    const source = MockEventSource.instances[0];
+    source.emit(
+      "assistant_activity_delta",
+      evt("assistant_activity_delta", "", {
+        text: "I will search current sources before writing the answer.",
+        source: "main_model_commentary",
+        phase: "before_tool",
+        evidence_event_ids: ["evt_llm"],
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "I will search current sources before writing the answer.",
+      ),
+    ).toBeInTheDocument();
+
+    runDetailResponse = {
+      run: {
+        ...runResponse,
+        status: "failed",
+        latency_ms: 2500,
+        error: {
+          code: "provider_error",
+          message: "provider request failed: The read operation timed out",
+          stage: "runtime_loop",
+        },
+      },
+      events: [],
+      trace: null,
+    };
+    sessionDetailResponse = {
+      session,
+      messages: [
+        {
+          message_id: "msg_u",
+          session_id: "sess_1",
+          role: "user",
+          content: "run a long research task",
+          status: "completed",
+          created_at: now,
+        },
+        {
+          message_id: "msg_a",
+          session_id: "sess_1",
+          role: "assistant",
+          content: "",
+          run_id: "run_1",
+          status: "failed",
+          created_at: now,
+        },
+      ],
+      runs: [{ ...runResponse, status: "failed", latency_ms: 2500 }],
+      events: [],
+    };
+
+    source.emit(
+      "run_failed",
+      evt("run_failed", "Run failed.", {
+        error: {
+          code: "provider_error",
+          message: "provider request failed: The read operation timed out",
+          stage: "runtime_loop",
+        },
+        latency_ms: 2500,
+      }),
+    );
+    source.onerror?.();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "I will search current sources before writing the answer.",
+        ),
+      ).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
+    expect(
+      within(screen.getByRole("dialog", { name: /thinking/i })).getByText(
+        "I will search current sources before writing the answer.",
+      ),
+    ).toBeInTheDocument();
   });
 });
 

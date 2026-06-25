@@ -204,7 +204,11 @@ export default function App() {
         detail.runs.forEach((run) => {
           const merged = {
             ...run,
-            events: eventsByRunId[run.run_id] ?? prev[run.run_id]?.events ?? [],
+            events: mergeRunEvents(
+              prev[run.run_id]?.events,
+              eventsByRunId[run.run_id],
+            ),
+            live: prev[run.run_id]?.live,
           };
           next[run.run_id] = normalizeReconciledRun(run.run_id, merged);
         });
@@ -438,9 +442,11 @@ export default function App() {
   ) {
     try {
       const detail = await api.getRun(runId);
+      const existingRun = runsRef.current[runId];
       const nextRun = normalizeReconciledRun(runId, {
         ...detail.run,
-        events: detail.events,
+        events: mergeRunEvents(existingRun?.events, detail.events),
+        live: existingRun?.live,
       });
       setRuns((prev) => ({ ...prev, [runId]: nextRun }));
       if (isTerminal(nextRun.status)) {
@@ -491,7 +497,11 @@ export default function App() {
         detail.runs.forEach((run) => {
           const merged = {
             ...run,
-            events: eventsByRunId[run.run_id] ?? prev[run.run_id]?.events ?? [],
+            events: mergeRunEvents(
+              prev[run.run_id]?.events,
+              eventsByRunId[run.run_id],
+            ),
+            live: prev[run.run_id]?.live,
           };
           next[run.run_id] = normalizeReconciledRun(run.run_id, merged);
         });
@@ -737,6 +747,7 @@ export default function App() {
       if (event.event_type === "run_failed") {
         next.status = "failed";
         next.error = event.payload?.error as Run["error"];
+        next.latency_ms = nullableNumber(event.payload?.latency_ms) ?? current.latency_ms;
         next.completed_at = event.created_at;
       }
       if (event.event_type === "run_cancelled") {
@@ -1012,6 +1023,15 @@ function groupEventsByRunId(events: RunEvent[]) {
     (groups[event.run_id] ??= []).push(event);
     return groups;
   }, {});
+}
+function mergeRunEvents(existing: RunEvent[] = [], incoming: RunEvent[] = []) {
+  const byId = new Map<string, RunEvent>();
+  [...existing, ...incoming].forEach((event) => {
+    byId.set(event.event_id, event);
+  });
+  return [...byId.values()].sort((a, b) =>
+    a.created_at.localeCompare(b.created_at),
+  );
 }
 function remapDraftSession(
   messages: Record<string, Message>,
