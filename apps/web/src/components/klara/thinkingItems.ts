@@ -19,6 +19,42 @@ export function visibleProviderReasoningItems(events: RunEvent[]) {
     .filter(isSafeActivityItem);
 }
 
+export function visibleThinkingItems(events: RunEvent[]) {
+  return events
+    .flatMap((event) => {
+      if (event.event_type === "assistant_activity_delta") {
+        const text = safeText(event.payload?.text);
+        if (!text) return [];
+        const phase = activityPhase(event.payload?.phase);
+        return [
+          {
+            id: `activity_${event.event_id}`,
+            title: "thinking",
+            body: text,
+            status: "completed",
+            kind: phaseToKind(phase),
+            source: "main_model_commentary",
+            evidence_event_ids: evidenceIds(event),
+            confidence: 1,
+          } satisfies ThinkingActivityItem,
+        ];
+      }
+      if (event.event_type === "provider_reasoning_delta") {
+        const items = event.payload?.items;
+        return Array.isArray(items)
+          ? items.map(normalizeActivityItem).filter(isActivityItem)
+          : [];
+      }
+      return [];
+    })
+    .filter(
+      (item) =>
+        item.source === "main_model_commentary" ||
+        item.source === "provider_reasoning",
+    )
+    .filter(isSafeActivityItem);
+}
+
 export function visibleMainModelCommentaryItems(events: RunEvent[]) {
   return events
     .filter((event) => event.event_type === "assistant_activity_delta")

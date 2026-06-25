@@ -387,57 +387,46 @@
   position: relative;
   z-index: 80;
 }
-.klara-thinking-row {
+.klara-thinking-current {
   appearance: none;
-  min-height: 26px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+  width: min(760px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  align-items: start;
+  gap: 8px;
   max-width: 100%;
   border: 0;
-  border-radius: 999px;
+  border-radius: 9px;
   background: transparent;
   box-shadow: none;
-  color: var(--text-muted);
-  padding: 2px 3px 2px 2px;
+  color: var(--text-secondary);
+  padding: 2px 4px 2px 0;
   text-align: left;
   cursor: pointer;
   transition:
     background 0.16s ease,
     color 0.16s ease;
 }
-.klara-thinking-row:hover,
-.klara-thinking-row:focus-visible,
-.klara-thinking-row[aria-expanded="true"] {
+.klara-thinking-current:hover,
+.klara-thinking-current:focus-visible,
+.klara-thinking-current[aria-expanded="true"] {
   color: var(--text-primary);
-  background: rgba(184, 129, 47, 0.08);
+  background: rgba(184, 129, 47, 0.05);
   outline: none;
 }
-.klara-thinking-mini {
-  position: relative;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 999px;
-  overflow: visible;
-}
-.klara-thinking-mini .klara-presence {
-  --klara-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-.klara-thinking-title {
+.klara-thinking-current > span:first-child {
   min-width: 0;
-  display: inline-block;
+  display: block;
   color: inherit;
-  font-size: 13px;
-  font-weight: 560;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 520;
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.klara-thinking-current > span:first-child.is-current {
+  color: var(--text-primary);
+  text-shadow: 0 0 20px rgba(184, 129, 47, 0.18);
 }
 .klara-thinking-toggle {
   width: 22px;
@@ -445,39 +434,19 @@
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
+  margin-top: 0.15em;
   color: currentColor;
   transition: transform 0.16s ease;
 }
-.klara-thinking-row[aria-expanded="true"] .klara-thinking-toggle {
+.klara-thinking-current[aria-expanded="true"] .klara-thinking-toggle {
   transform: rotate(90deg);
-}
-.klara-thinking-stream {
-  max-width: min(760px, 100%);
-  margin: 7px 0 0 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.58;
-  display: grid;
-  gap: 8px;
-}
-.klara-thinking-stream p {
-  margin: 0;
-  opacity: 0.68;
-  transition:
-    color 0.18s ease,
-    opacity 0.18s ease,
-    text-shadow 0.18s ease;
-}
-.klara-thinking-stream p.is-current {
-  color: var(--text-primary);
-  opacity: 1;
-  text-shadow: 0 0 18px rgba(184, 129, 47, 0.16);
 }
 .klara-thinking-cursor {
   min-height: 22px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  margin-top: 8px;
   color: var(--text-muted);
 }
 .klara-thinking-cursor-mark {
@@ -849,7 +818,7 @@
   background: rgba(36, 40, 33, 0.58);
   border-color: #3b4138;
 }
-.theme-dark .klara-thinking-row {
+.theme-dark .klara-thinking-current {
   background: transparent;
   box-shadow: none;
 }

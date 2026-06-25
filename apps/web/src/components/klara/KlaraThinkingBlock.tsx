@@ -1,11 +1,8 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { Run, RunEvent } from "../../types/domain";
+import { useMemo } from "react";
+import type { Run } from "../../types/domain";
 import { KlaraPresence } from "./KlaraPresence";
-import {
-  visibleMainModelCommentaryItems,
-  visibleProviderReasoningItems,
-} from "./thinkingItems";
+import { visibleThinkingItems } from "./thinkingItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
 type Props = {
@@ -20,13 +17,6 @@ export function KlaraThinkingBlock({
   onToggleThinking,
 }: Props) {
   const active = isKlaraRunActive(run);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!active) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(timer);
-  }, [active]);
 
   const events = useMemo(
     () =>
@@ -35,37 +25,14 @@ export function KlaraThinkingBlock({
       ),
     [run?.events],
   );
-  const completionEvent = useMemo(
-    () =>
-      [...events]
-        .reverse()
-        .find((event) => event.event_type === "thinking_summary_completed"),
+  const thinkingItems = useMemo(
+    () => visibleThinkingItems(events),
     [events],
   );
-  const providerItems = useMemo(() => visibleProviderReasoningItems(events), [events]);
-  const commentaryItems = useMemo(
-    () => visibleMainModelCommentaryItems(events),
-    [events],
-  );
-  const commentaryBodies = commentaryItems.map((item) => item.body).filter(Boolean);
+  const latestThinking = thinkingItems[thinkingItems.length - 1];
 
   if (!run) return null;
-  const hasProviderReasoning = providerItems.length > 0;
-  const hasMainModelCommentary = commentaryItems.length > 0;
-  const hasVisibleThinking = hasProviderReasoning || hasMainModelCommentary;
-  if (!hasVisibleThinking) return null;
-
-  const durationMs = thinkingDurationMs(
-    run,
-    events,
-    completionEvent,
-    active,
-    now,
-  );
-  const durationLabel = formatThoughtDuration(durationMs);
-  const label = active
-    ? `Thinking... ${durationLabel}`
-    : `Thought for ${durationLabel}`;
+  if (!latestThinking) return null;
 
   return (
     <section
@@ -74,97 +41,38 @@ export function KlaraThinkingBlock({
     >
       <button
         type="button"
-        className="klara-thinking-row"
+        className="klara-thinking-current"
         aria-label="Toggle thinking details"
         aria-haspopup="dialog"
         aria-expanded={isThinkingOpen}
         onClick={(event) => onToggleThinking?.(run.run_id, event.currentTarget)}
       >
-        <span
-          className={`klara-thinking-mini ${active ? "is-active" : "is-completed"}`}
-          aria-label="Mini Klara"
-          role="img"
-        >
-          <KlaraPresence
-            active={active}
-            phase={active ? "thinking" : "completed"}
-            size="status"
-            capabilities={active ? ["model"] : []}
-            elevated={active}
-            pulseKey={events.length}
-          />
+        <span className={active ? "is-current" : undefined}>
+          {latestThinking.body}
         </span>
-        <span className="klara-thinking-title">{label}</span>
         <span className="klara-thinking-toggle" aria-hidden="true">
           <ChevronRight size={16} />
         </span>
       </button>
-      {active && commentaryBodies.length > 0 ? (
-        <div className="klara-thinking-stream" aria-label="Klara public thinking">
-          {commentaryBodies.map((body, index) => {
-            const current = index === commentaryBodies.length - 1;
-            return (
-              <p
-                key={`${index}-${body.slice(0, 16)}`}
-                className={current ? "is-current" : undefined}
-              >
-                {body}
-              </p>
-            );
-          })}
-          <div className="klara-thinking-cursor" aria-hidden="true">
-            <span className="klara-thinking-cursor-mark">
-              <KlaraPresence
-                active
-                phase="thinking"
-                size="status"
-                capabilities={["model"]}
-                elevated
-                pulseKey={events.length}
-              />
-            </span>
-            <span className="klara-thinking-cursor-dots">
-              <span />
-              <span />
-              <span />
-            </span>
-          </div>
+      {active ? (
+        <div className="klara-thinking-cursor" aria-hidden="true">
+          <span className="klara-thinking-cursor-mark">
+            <KlaraPresence
+              active
+              phase="thinking"
+              size="status"
+              capabilities={["model"]}
+              elevated
+              pulseKey={events.length}
+            />
+          </span>
+          <span className="klara-thinking-cursor-dots">
+            <span />
+            <span />
+            <span />
+          </span>
         </div>
       ) : null}
     </section>
   );
-}
-
-function thinkingDurationMs(
-  run: Run,
-  events: RunEvent[],
-  completionEvent: RunEvent | undefined,
-  active: boolean,
-  now: number,
-) {
-  const explicitDuration = numberFrom(completionEvent?.payload?.duration_ms);
-  if (explicitDuration != null) return explicitDuration;
-  if (run.latency_ms != null) return run.latency_ms;
-  if (run.live?.elapsed_ms != null) return run.live.elapsed_ms;
-  const startEvent =
-    events.find((event) => event.event_type === "thinking_summary_started") ??
-    events[0];
-  if (active && startEvent) {
-    const startedAt = Date.parse(startEvent.created_at);
-    if (!Number.isNaN(startedAt)) return Math.max(0, now - startedAt);
-  }
-  return 0;
-}
-
-function numberFrom(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function formatThoughtDuration(ms: number) {
-  if (!Number.isFinite(ms) || ms <= 0) return "0s";
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(1).replace(/\.0$/, "")}s`;
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.round((ms % 60000) / 1000);
-  return `${minutes}m ${seconds}s`;
 }

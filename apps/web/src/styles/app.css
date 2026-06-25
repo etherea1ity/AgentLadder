@@ -1949,33 +1949,6 @@ body,
 .assistant-content.rich-answer {
   margin-top: 0;
 }
-.assistant-content.is-running
-  :is(p, li, h1, h2, h3, h4, h5, h6):last-child::after,
-.assistant-content.is-running .caret-anchor::after {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 1em;
-  margin-left: 4px;
-  background: var(--accent-running);
-  vertical-align: -0.12em;
-  animation: breathe 1s infinite;
-}
-.assistant-content.is-running
-  > :last-child:not(:is(p, ul, ol, h1, h2, h3, h4, h5, h6))::after {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 1em;
-  margin-left: 4px;
-  background: var(--accent-running);
-  vertical-align: -0.12em;
-  animation: breathe 1s infinite;
-}
-.caret-anchor {
-  min-height: 1.62em;
-}
-
 /* Balanced chat column: narrower reading width, slightly more breathing around Klara header/thinking, and clearer turn separation. */
 :root {
   --message-w: 660px;

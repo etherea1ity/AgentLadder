@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -193,7 +193,11 @@ describe("Klara app flow", () => {
     await waitFor(() =>
       expect(screen.getByRole("dialog", { name: /thinking/i })).toBeInTheDocument(),
     );
-    expect(await screen.findByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("dialog", { name: /thinking/i })).getByText(
+        "The provider returned a safe reasoning summary.",
+      ),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close thinking/i }));
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(

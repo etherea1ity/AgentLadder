@@ -642,14 +642,14 @@ export default function App() {
         next.live = {
           elapsed_ms: current.live?.elapsed_ms,
           streamed_chars: current.live?.streamed_chars ?? 0,
-          current_label: "Thinking...",
+          current_label: "Running",
         };
       }
       if (event.event_type === "thinking_summary_completed") {
         next.live = {
           elapsed_ms: nullableNumber(event.payload?.duration_ms) ?? current.live?.elapsed_ms,
           streamed_chars: current.live?.streamed_chars ?? 0,
-          current_label: "Thinking summary completed",
+          current_label: "Run completed",
         };
       }
       if (event.event_type === "answer_streaming_started")

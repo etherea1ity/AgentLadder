@@ -515,9 +515,7 @@ function AssistantContent({
         >
           {normalizeMathMarkdown(content)}
         </ReactMarkdown>
-      ) : (
-        <p className="muted-answer caret-anchor"> </p>
-      )}
+      ) : null}
     </div>
   );
 }
