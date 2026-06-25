@@ -23,6 +23,42 @@ def test_current_information_request_activates_web_research() -> None:
     assert "evidence.readiness_evaluated" in event_types
 
 
+def test_exact_time_request_uses_clock_tool_without_web_research() -> None:
+    controller = WebResearchController(user_timezone="Asia/Shanghai")
+
+    controller.on_run_start(
+        user_input=(
+            "\u8bf7\u8c03\u7528 current_time \u5de5\u5177\u67e5\u8be2"
+            "\u4e0a\u6d77\u5f53\u524d\u65f6\u95f4\uff0c\u7136\u540e"
+            "\u4e00\u53e5\u8bdd\u56de\u7b54\u3002"
+        ),
+        run_id="run-clock",
+    )
+
+    assert controller.state.active is False
+    assert controller.system_prompt_suffix() == ""
+    decision = controller.before_final_answer(content="上海当前时间是 14:05。")
+    assert decision.allowed is True
+    assert decision.reason == "web_off"
+    assert controller.drain_events() == ()
+
+
+def test_today_event_request_still_activates_web_research() -> None:
+    controller = WebResearchController(user_timezone="Asia/Shanghai")
+
+    controller.on_run_start(
+        user_input=(
+            "\u4eca\u5929\u4e16\u754c\u676f\u6700\u65b0"
+            "\u8d5b\u7a0b\u600e\u4e48\u6837\uff1f"
+        ),
+        run_id="run-today-web",
+    )
+
+    assert controller.state.active is True
+    assert controller.state.mode == "quick"
+    assert "web_research.started" in [event.type for event in controller.drain_events()]
+
+
 def test_stable_chat_leaves_web_research_off() -> None:
     controller = WebResearchController()
 

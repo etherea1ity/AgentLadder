@@ -683,6 +683,8 @@ def _final_block_feedback(decision: ResearchDecision) -> str:
 
 def _classify_mode(user_input: str) -> ResearchMode:
     compact = _strip_timestamp_envelope(user_input).lower()
+    if _is_exact_time_request(compact):
+        return "off"
     deep_terms = (
         "research",
         "compare",
@@ -735,6 +737,55 @@ def _classify_mode(user_input: str) -> ResearchMode:
     if any(term in compact for term in quick_terms):
         return "quick"
     return "off"
+
+
+def _is_exact_time_request(compact: str) -> bool:
+    """Return whether a request is about clock/date lookup, not web research."""
+
+    if "current_time" in compact:
+        return True
+    exact_time_terms = (
+        "what time",
+        "current time",
+        "local time",
+        "wall-clock time",
+        "time zone",
+        "timezone",
+        "utc offset",
+        "today's date",
+        "\u51e0\u70b9",
+        "\u73b0\u5728\u65f6\u95f4",
+        "\u5f53\u524d\u65f6\u95f4",
+        "\u5317\u4eac\u65f6\u95f4",
+        "\u4e0a\u6d77\u65f6\u95f4",
+        "\u65f6\u533a",
+        "\u661f\u671f\u51e0",
+        "\u4eca\u5929\u51e0\u53f7",
+    )
+    if not any(term in compact for term in exact_time_terms):
+        return False
+    web_research_terms = (
+        "search",
+        "look up",
+        "latest",
+        "news",
+        "schedule",
+        "score",
+        "scores",
+        "research",
+        "compare",
+        "report",
+        "\u641c\u7d22",
+        "\u6700\u65b0",
+        "\u6700\u8fd1",
+        "\u65b0\u95fb",
+        "\u8d5b\u7a0b",
+        "\u6bd4\u5206",
+        "\u7814\u7a76",
+        "\u6bd4\u8f83",
+        "\u62a5\u544a",
+    )
+    return not any(term in compact for term in web_research_terms)
 
 
 def _strip_timestamp_envelope(text: str) -> str:

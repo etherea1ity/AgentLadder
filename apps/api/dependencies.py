@@ -9,16 +9,23 @@ from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_service import RunService
 from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
+from klara.infra.config.env import get_env_secret
 from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.config.models import ModelsConfig
 from klara.infra.llm.routed_client import RoutedLlmClient
 
 
-def _load_model_options(models: ModelsConfig) -> list[ModelOption]:
+def _load_model_options(
+    models: ModelsConfig,
+    *,
+    dotenv_path: str | Path | None = ".env",
+) -> list[ModelOption]:
     """Build UI model options from Klara's TOML provider registry."""
 
     options: list[ModelOption] = []
     for provider_id, provider in models.providers.items():
+        if provider.api_key_env and not get_env_secret(provider.api_key_env, dotenv_path=dotenv_path):
+            continue
         for item in provider.models:
             model_ref = f"{provider_id}/{item.id}"
             options.append(
@@ -34,19 +41,24 @@ def _load_model_options(models: ModelsConfig) -> list[ModelOption]:
     return options
 
 
+def _default_model(models: ModelsConfig, options: list[ModelOption]) -> str:
+    """Return the configured primary model when available, otherwise a visible model."""
+
+    profile = models.profile("agent")
+    visible_models = {item.model for item in options}
+    if profile.primary in visible_models:
+        return profile.primary
+    if options:
+        return options[0].model
+    return profile.primary
+
+
 def _model_use_when(provider_id: str, supports_vision: bool) -> str:
     """Return a compact UI hint for one configured model."""
 
     if supports_vision:
         return f"{provider_id} provider, vision-capable"
     return f"{provider_id} provider"
-
-
-def _default_model(models: ModelsConfig) -> str:
-    """Return the first configured agent profile primary model."""
-
-    profile = models.profile("agent")
-    return profile.primary
 
 
 def _local_user_context() -> UserContext:
@@ -61,7 +73,7 @@ _bus = SSEBus()
 _models = load_models_config(Path("config"))
 _runtime = load_runtime_config(Path("config"))
 _model_options = _load_model_options(_models)
-_default_model_ref = _default_model(_models)
+_default_model_ref = _default_model(_models, _model_options)
 _llm = RoutedLlmClient(models=_models, dotenv_path=".env")
 _run_service = RunService(
     store=_store,
