@@ -80,29 +80,25 @@ export function KlaraActivityDrawer({ run, open, onClose }: Props) {
           </button>
         </header>
 
-        {providerItems.length > 0 ? (
+        {commentaryItems.length > 0 ? (
           <section className="klara-activity-section">
-            <h4>Model thinking</h4>
-            <ActivityList items={providerItems} />
+            <h4>Klara activity</h4>
+            <ThoughtList items={commentaryItems} />
           </section>
         ) : null}
-
-        <section className="klara-activity-section">
-          <h4>Klara activity</h4>
-          {commentaryItems.length > 0 ? (
-            <ActivityList items={commentaryItems} />
-          ) : (
-            <p className="klara-activity-empty">
-              No public model commentary was produced for this run.
-            </p>
-          )}
-        </section>
 
         {transcriptItems.length > 0 ? (
           <section className="klara-activity-section">
             <h4>Agent activity</h4>
             <ActivityList items={transcriptItems} />
           </section>
+        ) : null}
+
+        {providerItems.length > 0 ? (
+          <details className="klara-activity-section klara-activity-provider">
+            <summary>Provider reasoning</summary>
+            <ThoughtList items={providerItems} />
+          </details>
         ) : null}
       </aside>
     </div>
@@ -157,5 +153,15 @@ function ActivityList({ items }: { items: ThinkingActivityItem[] }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+function ThoughtList({ items }: { items: ThinkingActivityItem[] }) {
+  return (
+    <div className="klara-thought-list">
+      {items.map((item) => (
+        <p key={item.id}>{item.body}</p>
+      ))}
+    </div>
   );
 }

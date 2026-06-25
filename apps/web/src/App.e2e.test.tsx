@@ -166,7 +166,7 @@ describe("Klara app flow", () => {
         items: [
           {
             id: "provider_1",
-            title: "Model thinking",
+            title: "Provider reasoning",
             body: "The provider returned a safe reasoning summary.",
             status: "completed",
             kind: "orientation",
@@ -182,7 +182,7 @@ describe("Klara app flow", () => {
     ).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: /open activity/i }));
     await waitFor(() =>
-      expect(screen.getAllByText("Model thinking").length).toBeGreaterThan(0),
+      expect(screen.getAllByText("Provider reasoning").length).toBeGreaterThan(0),
     );
     expect(await screen.findByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close activity/i }));

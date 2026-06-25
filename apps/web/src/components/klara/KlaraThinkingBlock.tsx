@@ -58,11 +58,12 @@ export function KlaraThinkingBlock({
       : "";
 
   if (!run) return null;
+  const hasProviderReasoning = providerItems.length > 0;
+  const hasMainModelCommentary = commentaryItems.length > 0;
+  const hasRuntimeTranscript = transcriptItems.length > 0;
   const hasVisibleActivity =
-    providerItems.length > 0 ||
-    commentaryItems.length > 0 ||
-    transcriptItems.length > 0;
-  if (!active && !hasVisibleActivity) return null;
+    hasProviderReasoning || hasMainModelCommentary || hasRuntimeTranscript;
+  if (!hasVisibleActivity) return null;
 
   const durationMs = thinkingDurationMs(
     run,
@@ -72,9 +73,10 @@ export function KlaraThinkingBlock({
     now,
   );
   const durationLabel = formatThoughtDuration(durationMs);
+  const isThoughtful = hasMainModelCommentary || hasProviderReasoning;
   const label = active
-    ? `Thinking... ${durationLabel}`
-    : `Thought for ${durationLabel}`;
+    ? `${isThoughtful ? "Thinking..." : "Working..."} ${durationLabel}`
+    : `${isThoughtful ? "Thought for" : "Worked for"} ${durationLabel}`;
 
   return (
     <section

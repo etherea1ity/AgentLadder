@@ -237,7 +237,7 @@ def project_provider_reasoning(event: RunEventRecord) -> tuple[ProjectedRunEvent
     source = _string_or_none(reasoning.get("source")) or "provider_reasoning"
     item = {
         "id": f"provider_{event.event_id}",
-        "title": "Model thinking",
+        "title": "Provider reasoning",
         "body": summary,
         "kind": "orientation",
         "source": "provider_reasoning",

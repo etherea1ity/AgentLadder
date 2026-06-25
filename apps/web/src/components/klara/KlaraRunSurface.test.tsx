@@ -172,7 +172,7 @@ describe("KlaraRunSurface", () => {
               items: [
                 {
                   id: "provider_1",
-                  title: "Model thinking",
+                  title: "Provider reasoning",
                   body: "Provider reasoning summary.",
                   status: "completed",
                   kind: "orientation",

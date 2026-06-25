@@ -17,7 +17,7 @@ const baseRun: Run = {
 };
 
 describe("KlaraThinkingBlock", () => {
-  it("shows active thinking with a timer and real mini Klara marker", () => {
+  it("does not show active thinking before visible activity exists", () => {
     const { container } = render(
       <KlaraThinkingBlock
         run={{
@@ -27,9 +27,9 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText(/Thinking\.\.\. 1\.2s/)).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /mini klara/i })).toBeInTheDocument();
-    expect(container.querySelector(".klara-thinking-mini .klara-presence")).toBeInTheDocument();
+    expect(screen.queryByText(/Thinking\.\.\./)).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /mini klara/i })).not.toBeInTheDocument();
+    expect(container.querySelector(".klara-thinking-mini .klara-presence")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /open activity/i })).not.toBeInTheDocument();
   });
 
@@ -66,7 +66,30 @@ describe("KlaraThinkingBlock", () => {
     expect(
       screen.getByText("I will check current sources before answering."),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/web_search ·/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/web_search/)).not.toBeInTheDocument();
+  });
+
+  it("shows active Working when only runtime action transcript exists", () => {
+    render(
+      <KlaraThinkingBlock
+        run={{
+          ...baseRun,
+          events: [
+            activityFactEvent({
+              id: "fact_tool",
+              kind: "tool_call",
+              status: "started",
+              source_event_type: "tool_call_started",
+              evidence_event_ids: ["evt_tool"],
+              tool: { name: "web_search" },
+            }),
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/Working\.\.\. 1\.2s/)).toBeInTheDocument();
+    expect(screen.queryByText(/Thinking\.\.\./)).not.toBeInTheDocument();
   });
 
   it("shows completed Thought when provider reasoning exists", () => {
@@ -98,7 +121,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
   });
 
-  it("shows completed Thought when runtime action transcript exists", () => {
+  it("shows completed Worked when only runtime action transcript exists", () => {
     render(
       <KlaraThinkingBlock
         run={completedRun([
@@ -116,7 +139,7 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText("Thought for 1s")).toBeInTheDocument();
+    expect(screen.getByText("Worked for 1s")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open activity/i })).toBeInTheDocument();
   });
 
@@ -162,10 +185,20 @@ describe("KlaraThinkingBlock", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /open activity/i }));
 
-    expect(screen.getAllByText("Model thinking").length).toBeGreaterThan(0);
-    expect(screen.getByText("Klara activity")).toBeInTheDocument();
-    expect(screen.getByText("Agent activity")).toBeInTheDocument();
+    const klaraActivity = screen.getByText("Klara activity");
+    const agentActivity = screen.getByText("Agent activity");
+    const providerReasoning = screen.getByText("Provider reasoning");
+    expect(klaraActivity).toBeInTheDocument();
+    expect(agentActivity).toBeInTheDocument();
+    expect(providerReasoning).toBeInTheDocument();
+    expect(klaraActivity.compareDocumentPosition(agentActivity)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(agentActivity.compareDocumentPosition(providerReasoning)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
     expect(screen.getByText("I will use a tool before answering.")).toBeInTheDocument();
+    expect(screen.queryByText("Before tools")).not.toBeInTheDocument();
     expect(screen.getByText("web_fetch")).toBeInTheDocument();
     expect(screen.getByText(/FIFA match schedule/)).toBeInTheDocument();
     expect(screen.getByText(/fifa\.com/)).toBeInTheDocument();
@@ -274,7 +307,7 @@ function providerReasoningEvent(body: string, runId = "run_1"): RunEvent {
     items: [
       {
         id: `provider_${runId}`,
-        title: "Model thinking",
+        title: "Provider reasoning",
         body,
         status: "completed",
         kind: "orientation",

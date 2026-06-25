@@ -518,6 +518,20 @@
   font-size: 15px;
   font-weight: 680;
 }
+.klara-activity-provider {
+  gap: 10px;
+  color: var(--text-secondary);
+}
+.klara-activity-provider summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 650;
+  list-style-position: inside;
+}
+.klara-activity-provider[open] summary {
+  color: var(--text-primary);
+}
 .klara-activity-empty {
   margin: 0;
   color: var(--text-muted);
@@ -571,6 +585,16 @@
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
+}
+.klara-thought-list {
+  display: grid;
+  gap: 12px;
+}
+.klara-thought-list p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
 }
 .klara-run-surface {
   width: 100%;

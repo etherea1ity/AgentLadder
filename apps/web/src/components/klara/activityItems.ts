@@ -29,7 +29,7 @@ export function visibleMainModelCommentaryItems(events: RunEvent[]) {
       const phase = activityPhase(event.payload?.phase);
       const item: ThinkingActivityItem = {
         id: `activity_${event.event_id}`,
-        title: phase,
+        title: "activity",
         body: text,
         status: "completed",
         kind: phaseToKind(phase),
@@ -75,7 +75,7 @@ function transcriptItemFromFact(event: RunEvent): ThinkingActivityItem | null {
       body: joinParts(
         countLabel(numberField(fact.web?.result_count), "result"),
         stringList(fact.web?.top_domains).join(", "),
-        stringList(fact.web?.top_titles).join(" · "),
+        stringList(fact.web?.top_titles).join(" / "),
       ),
       kind: "evidence",
     };
@@ -259,7 +259,7 @@ function countLabel(value: number | null, singular: string) {
 }
 
 function joinParts(...parts: string[]) {
-  return parts.filter(Boolean).join(" · ");
+  return parts.filter(Boolean).join(" / ");
 }
 
 function isSafeActivityItem(item: ThinkingActivityItem) {
