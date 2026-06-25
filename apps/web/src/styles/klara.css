@@ -414,7 +414,8 @@
   background: rgba(184, 129, 47, 0.05);
   outline: none;
 }
-.klara-thinking-current > span:first-child {
+.klara-thinking-text,
+.klara-thinking-summary {
   min-width: 0;
   display: block;
   color: inherit;
@@ -424,9 +425,14 @@
   overflow-wrap: anywhere;
   white-space: normal;
 }
-.klara-thinking-current > span:first-child.is-current {
+.klara-thinking-text.is-current {
   color: var(--text-primary);
   text-shadow: 0 0 20px rgba(184, 129, 47, 0.18);
+}
+.klara-thinking-summary {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 680;
 }
 .klara-thinking-toggle {
   width: 22px;
@@ -441,24 +447,26 @@
 .klara-thinking-current[aria-expanded="true"] .klara-thinking-toggle {
   transform: rotate(90deg);
 }
-.klara-thinking-cursor {
-  min-height: 22px;
+.klara-thinking-inline-cursor {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-left: 8px;
+  vertical-align: -0.32em;
+  white-space: nowrap;
   color: var(--text-muted);
 }
 .klara-thinking-cursor-mark {
-  width: 20px;
-  height: 20px;
-  display: inline-grid;
-  place-items: center;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .klara-thinking-cursor-mark .klara-presence {
-  --klara-size: 20px;
-  width: 20px;
-  height: 20px;
+  --klara-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 .klara-thinking-cursor-dots {
   display: inline-flex;
@@ -520,6 +528,7 @@
   font-weight: 720;
 }
 .klara-thinking-drawer-header span {
+  display: inline-block;
   margin-left: 8px;
   color: var(--text-muted);
   font-size: 14px;

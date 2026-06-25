@@ -72,7 +72,9 @@ describe("KlaraThinkingBlock", () => {
       screen.getByText("Then I will separate confirmed facts from unknowns."),
     ).toBeInTheDocument();
     expect(container.querySelector(".klara-thinking-current")).toBeTruthy();
-    expect(container.querySelector(".klara-thinking-cursor .klara-presence")).toBeTruthy();
+    expect(
+      container.querySelector(".klara-thinking-inline-cursor .klara-presence"),
+    ).toBeTruthy();
     expect(
       screen.getByText("Then I will separate confirmed facts from unknowns."),
     ).toHaveClass("is-current");
@@ -129,7 +131,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByText(/Thinking\.\.\./)).not.toBeInTheDocument();
   });
 
-  it("shows completed provider reasoning without a timer label", () => {
+  it("shows completed provider reasoning as a compact Thought trigger", () => {
     render(
       <KlaraThinkingBlock
         run={completedRun([
@@ -140,12 +142,12 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
-    expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
+    expect(screen.getByText("Thought for 0.8s")).toBeInTheDocument();
+    expect(screen.queryByText("The provider returned a safe reasoning summary.")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /toggle thinking details/i })).toBeInTheDocument();
   });
 
-  it("shows completed main-model commentary without a timer label", () => {
+  it("shows completed main-model commentary as a compact Thought trigger", () => {
     render(
       <KlaraThinkingBlock
         run={completedRun([
@@ -155,8 +157,8 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText("I will use a tool before answering.")).toBeInTheDocument();
-    expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
+    expect(screen.getByText("Thought for 0.8s")).toBeInTheDocument();
+    expect(screen.queryByText("I will use a tool before answering.")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /toggle thinking details/i })).toBeInTheDocument();
   });
 
@@ -183,7 +185,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
-  it("toggles thinking when the visible thinking text is clicked", () => {
+  it("toggles thinking when the compact Thought trigger is clicked", () => {
     const onToggleThinking = vi.fn();
     render(
       <KlaraThinkingBlock
@@ -195,7 +197,7 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("The provider returned a safe reasoning summary."));
+    fireEvent.click(screen.getByText("Thought for 0.8s"));
     expect(onToggleThinking).toHaveBeenCalledTimes(1);
   });
 
@@ -228,6 +230,7 @@ describe("KlaraThinkingBlock", () => {
     expect(within(drawer).getByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
     expect(drawer).toBeInTheDocument();
     expect(within(drawer).getByRole("heading", { name: "Thinking" })).toBeInTheDocument();
+    expect(within(drawer).getByText("0.8s")).toBeInTheDocument();
     expect(commentary.closest("li")).toHaveClass("is-current");
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
