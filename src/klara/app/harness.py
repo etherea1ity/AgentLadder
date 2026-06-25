@@ -30,6 +30,7 @@ class KlaraHarnessConfig:
     max_turns: int = DEFAULT_LOOP_POLICY.max_turns
     max_tool_calls: int = DEFAULT_LOOP_POLICY.max_tool_calls
     max_repeated_tool_calls: int = DEFAULT_LOOP_POLICY.max_repeated_tool_calls
+    max_repeated_final_blocks: int = DEFAULT_LOOP_POLICY.max_repeated_final_blocks
     # User context is local-only and kept for future partitioning.
     user_context: UserContext = field(default_factory=UserContext.local_default)
     # Persona prompt stays in app so core does not own product identity.
@@ -90,6 +91,7 @@ class KlaraHarness:
                 max_turns=self.config.max_turns,
                 max_tool_calls=self.config.max_tool_calls,
                 max_repeated_tool_calls=self.config.max_repeated_tool_calls,
+                max_repeated_final_blocks=self.config.max_repeated_final_blocks,
             ),
             controllers=(
                 WebResearchController(user_timezone=self.config.user_context.timezone),

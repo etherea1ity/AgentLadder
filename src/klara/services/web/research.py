@@ -51,6 +51,9 @@ class WebResearchState:
     user_timezone: str = ""
     searched_queries: list[str] = field(default_factory=list)
     fetched_source_ids: list[str] = field(default_factory=list)
+    search_attempt_count: int = 0
+    fetch_attempt_count: int = 0
+    web_tool_failure_count: int = 0
     gaps: list[str] = field(default_factory=list)
     conflicts: list[str] = field(default_factory=list)
     runtime_feedback: str = ""
@@ -444,6 +447,8 @@ class WebResearchController:
             "",
             "progress:",
             f"- searched_queries: {json.dumps(state.searched_queries[-5:], ensure_ascii=False)}",
+            f"- search_attempt_count: {state.search_attempt_count}",
+            f"- fetch_attempt_count: {state.fetch_attempt_count}",
             f"- fetched_source_count: {ledger_state['fetched_source_count']}",
             f"- good_source_count: {ledger_state['good_source_count']}",
             f"- independent_domain_count: {ledger_state['independent_domain_count']}",
@@ -472,7 +477,16 @@ class WebResearchController:
         changed = False
         for result in results:
             payload = _json_object(result.content)
-            if result.name == "web_search" and result.ok:
+            if result.name == "web_search":
+                self.state.search_attempt_count += 1
+                if not result.ok:
+                    self.state.web_tool_failure_count += 1
+                    self._queue(
+                        "web_search.failed",
+                        {"error_preview": _compact(result.error or "", max_chars=180)},
+                    )
+                    changed = True
+                    continue
                 self.state.status = "searching"
                 before = len(self.ledger.candidates)
                 candidates = self.ledger.record_search_observation(payload)
@@ -492,7 +506,16 @@ class WebResearchController:
                         "freshness_enforced": payload.get("freshness_enforced"),
                     },
                 )
-            elif result.name == "web_fetch" and result.ok:
+            elif result.name == "web_fetch":
+                self.state.fetch_attempt_count += 1
+                if not result.ok:
+                    self.state.web_tool_failure_count += 1
+                    self._queue(
+                        "web_fetch.failed",
+                        {"error_preview": _compact(result.error or "", max_chars=180)},
+                    )
+                    changed = True
+                    continue
                 self.state.status = "fetching"
                 source = self.ledger.record_fetch_observation(payload)
                 if source is not None:
@@ -524,6 +547,24 @@ class WebResearchController:
                 allowed=True,
                 reason=decision.reason or decision.status,
                 feedback=decision.next_hint,
+            )
+        if not _has_viable_next_action(state=self.state, ledger=self.ledger):
+            feedback = _no_viable_action_feedback(decision)
+            self.state.runtime_feedback = feedback
+            self._queue(
+                "web_research.no_viable_action",
+                {
+                    "reason": decision.reason or decision.status,
+                    "search_attempt_count": self.state.search_attempt_count,
+                    "fetch_attempt_count": self.state.fetch_attempt_count,
+                    "unfetched_candidate_count": len(self.ledger.top_unfetched_candidates()),
+                    "web_tool_failure_count": self.state.web_tool_failure_count,
+                },
+            )
+            return FinalAnswerDecision(
+                allowed=True,
+                reason="no_viable_web_action",
+                feedback=feedback,
             )
         feedback = _final_block_feedback(decision)
         self.state.runtime_feedback = feedback
@@ -607,6 +648,9 @@ class WebResearchController:
                 "status": self.state.status,
                 "searched_queries": list(self.state.searched_queries[-8:]),
                 "fetched_source_ids": list(self.state.fetched_source_ids[-8:]),
+                "search_attempt_count": self.state.search_attempt_count,
+                "fetch_attempt_count": self.state.fetch_attempt_count,
+                "web_tool_failure_count": self.state.web_tool_failure_count,
                 "gaps": list(self.state.gaps),
                 "budget": self._budget_payload(),
             },
@@ -621,8 +665,8 @@ class WebResearchController:
             "min_fetched_sources": budget.min_fetched_sources,
             "min_independent_domains": budget.min_independent_domains,
             "max_candidate_results": budget.max_candidate_results,
-            "search_calls": self.ledger.search_call_count(),
-            "fetch_calls": self.ledger.fetch_call_count(),
+            "search_calls": self.state.search_attempt_count,
+            "fetch_calls": self.state.fetch_attempt_count,
         }
 
     def _queue(self, event_type: str, payload: dict[str, object]) -> None:
@@ -653,10 +697,28 @@ def _budget_for_mode(mode: ResearchMode) -> WebResearchBudget:
 
 
 def _budget_exhausted(*, state: WebResearchState, ledger: EvidenceLedger) -> bool:
-    return (
-        ledger.search_call_count() >= state.budget.max_search_calls
-        and ledger.fetch_call_count() >= state.budget.max_fetch_calls
-    )
+    if state.search_attempt_count >= state.budget.max_search_calls and not ledger.candidates:
+        return True
+    if state.fetch_attempt_count >= state.budget.max_fetch_calls:
+        return True
+    return False
+
+
+def _has_viable_next_action(
+    *,
+    state: WebResearchState,
+    ledger: EvidenceLedger,
+) -> bool:
+    """Return whether another web action can still add new evidence."""
+
+    can_search = state.search_attempt_count < state.budget.max_search_calls
+    can_fetch = state.fetch_attempt_count < state.budget.max_fetch_calls
+    has_unfetched_candidates = bool(ledger.top_unfetched_candidates(limit=1))
+    if has_unfetched_candidates and can_fetch:
+        return True
+    if can_search:
+        return True
+    return False
 
 
 def _next_hint_for_no_sources(ledger: EvidenceLedger) -> str:
@@ -678,6 +740,18 @@ def _final_block_feedback(decision: ResearchDecision) -> str:
         parts.append("Gaps: " + "; ".join(decision.gaps))
     if decision.next_hint:
         parts.append("Next: " + decision.next_hint)
+    return " ".join(parts)
+
+
+def _no_viable_action_feedback(decision: ResearchDecision) -> str:
+    parts = [
+        "Web research cannot make further progress with the remaining tool budget.",
+        f"Last reason: {decision.reason or decision.status}.",
+        "Answer from fetched observations already in the transcript.",
+        "If evidence is incomplete, clearly state what remains uncertain.",
+    ]
+    if decision.gaps:
+        parts.append("Open gaps: " + "; ".join(decision.gaps))
     return " ".join(parts)
 
 

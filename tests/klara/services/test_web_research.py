@@ -116,6 +116,83 @@ def test_search_only_observation_blocks_final_answer() -> None:
     )
 
 
+def test_empty_search_budget_allows_uncertain_final_answer() -> None:
+    controller = WebResearchController()
+    controller.on_run_start(user_input="look up the latest schedule", run_id="run-empty-search")
+    controller.state.budget = WebResearchBudget(
+        max_search_calls=1,
+        max_fetch_calls=5,
+        min_fetched_sources=1,
+        min_independent_domains=1,
+    )
+    controller.drain_events()
+    controller.on_tool_results(
+        results=(
+            ToolResult(
+                tool_call_id="call-search",
+                name="web_search",
+                content=json.dumps(
+                    {
+                        "observation_kind": "web_search_candidates",
+                        "search_id": "search_1",
+                        "query": "latest schedule",
+                        "provider": "duckduckgo_lite",
+                        "result_count": 0,
+                        "results": [],
+                    }
+                ),
+            ),
+        )
+    )
+
+    decision = controller.before_final_answer(content="I have no fetched sources.")
+
+    assert decision.allowed is True
+    assert decision.reason == "budget_exhausted"
+    assert "uncertainty" in decision.feedback
+    events = controller.drain_events()
+    assert any(
+        event.type == "evidence.readiness_evaluated"
+        and event.payload["budget"]["search_calls"] == 1
+        for event in events
+    )
+
+
+def test_failed_search_attempt_can_exhaust_web_progress() -> None:
+    controller = WebResearchController()
+    controller.on_run_start(user_input="look up the latest schedule", run_id="run-search-fail")
+    controller.state.budget = WebResearchBudget(
+        max_search_calls=1,
+        max_fetch_calls=5,
+        min_fetched_sources=1,
+        min_independent_domains=1,
+    )
+    controller.drain_events()
+    controller.on_tool_results(
+        results=(
+            ToolResult(
+                tool_call_id="call-search",
+                name="web_search",
+                content="",
+                ok=False,
+                error="Provider returned a challenge page.",
+            ),
+        )
+    )
+
+    decision = controller.before_final_answer(content="Search failed.")
+
+    assert decision.allowed is True
+    assert decision.reason == "budget_exhausted"
+    events = controller.drain_events()
+    assert any(event.type == "web_search.failed" for event in events)
+    assert any(
+        event.type == "evidence.readiness_evaluated"
+        and event.payload["budget"]["search_calls"] == 1
+        for event in events
+    )
+
+
 def test_good_fetched_source_allows_quick_final_answer() -> None:
     controller = WebResearchController()
     controller.on_run_start(user_input="What changed in the latest Python release?", run_id="run-fetch")

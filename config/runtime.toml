@@ -7,3 +7,6 @@ max_tool_calls = 48
 
 # Repeated identical tool calls are usually retry loops.
 max_repeated_tool_calls = 3
+
+# Repeated identical final-answer blocks usually mean no new progress.
+max_repeated_final_blocks = 2

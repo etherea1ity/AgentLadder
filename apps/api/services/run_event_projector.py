@@ -13,15 +13,19 @@ from klara.core.events import KlaraEvent
 WEB_RESEARCH_EVENT_MESSAGES = {
     "web_research.started": "Web research state started.",
     "web_research.state_updated": "Web research state updated.",
+    "web_research.no_viable_action": "Web research has no viable next action.",
     "web_search.started": "Web search started.",
     "web_search.completed": "Web search completed.",
+    "web_search.failed": "Web search failed.",
     "web_fetch.started": "Web fetch started.",
     "web_fetch.completed": "Web fetch completed.",
+    "web_fetch.failed": "Web fetch failed.",
     "evidence.candidate_recorded": "Search candidate recorded.",
     "evidence.source_recorded": "Fetched source recorded.",
     "evidence.readiness_evaluated": "Evidence readiness evaluated.",
     "final_answer.blocked": "Final answer blocked by runtime policy.",
     "final_answer.allowed": "Final answer allowed by runtime policy.",
+    "final_answer.no_progress_stopped": "Final answer blocking stopped for no progress.",
     "context.compacted": "Model-visible context compacted.",
 }
 

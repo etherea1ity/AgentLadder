@@ -169,6 +169,20 @@ class BlockingFinalController:
         return events
 
 
+class AlwaysBlockingFinalController(BlockingFinalController):
+    """Test controller that repeats the same final-answer block."""
+
+    def before_final_answer(self, *, content: str) -> FinalAnswerDecision:
+        """Return the same blocking decision every time."""
+
+        self.block_count += 1
+        return FinalAnswerDecision(
+            allowed=False,
+            reason="not_ready",
+            feedback="Need another model turn.",
+        )
+
+
 class BlockingPreToolHook:
     """Hook that blocks one tool before execution."""
 
@@ -327,6 +341,33 @@ def test_controller_can_block_premature_no_tool_final_answer() -> None:
     assert "controller.started" in recorder.event_types
     assert "<controller_feedback>" in llm.system_prompts[1]
     assert "<runtime_policy_feedback>" in llm.calls[1][0][-1].content
+
+
+def test_repeated_final_block_stops_as_no_progress() -> None:
+    recorder = EventRecorder()
+    controller = AlwaysBlockingFinalController()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(content="premature final"),
+            ModelResponse(content="still premature"),
+            ModelResponse(content="final from partial observations"),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+        controllers=(controller,),
+        policy=LoopPolicy(max_repeated_final_blocks=2),
+    )
+
+    result = loop.run("latest information please", run_id="run-no-progress")
+
+    assert result.stop_reason == StopReason.NO_PROGRESS
+    assert result.final_answer == "final from partial observations"
+    assert "final_answer.no_progress_stopped" in recorder.event_types
+    assert llm.calls[-1][1] == ()
+    assert "<finalization_context>" in llm.system_prompts[-1]
 
 
 def test_streaming_protocol_can_represent_provider_reasoning_delta() -> None:

@@ -13,6 +13,7 @@ class StopReason(StrEnum):
     MAX_TURNS = "max_turns"
     MAX_TOOL_CALLS = "max_tool_calls"
     REPEATED_TOOL_CALL = "repeated_tool_call"
+    NO_PROGRESS = "no_progress"
     FAILED = "failed"
 
 
@@ -30,6 +31,8 @@ class LoopPolicy:
     max_tool_calls: int = 48
     # Max identical name+arguments calls catches repeated retries of one action.
     max_repeated_tool_calls: int = 3
+    # Max identical final-answer blocks before forcing a no-tool finalization.
+    max_repeated_final_blocks: int = 2
 
     def __post_init__(self) -> None:
         """Validate policy values as soon as the immutable policy is created."""
@@ -40,3 +43,5 @@ class LoopPolicy:
             raise ValueError("max_tool_calls must be at least 1")
         if self.max_repeated_tool_calls < 1:
             raise ValueError("max_repeated_tool_calls must be at least 1")
+        if self.max_repeated_final_blocks < 1:
+            raise ValueError("max_repeated_final_blocks must be at least 1")

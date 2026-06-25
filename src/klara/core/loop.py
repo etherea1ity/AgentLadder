@@ -271,6 +271,7 @@ class KlaraLoop:
         ]
         tool_call_count = 0
         tool_call_signatures: dict[str, int] = {}
+        final_block_signatures: dict[str, int] = {}
         public_activity_updates: list[str] = []
         run_started = perf_counter()
         run_metrics = _RunMetrics()
@@ -362,6 +363,36 @@ class KlaraLoop:
                     final_decision = self._before_final_answer(response.content)
                     self._emit_controller_events(sequencer, active_run_id)
                     if not final_decision.allowed:
+                        block_signature = _final_decision_signature(final_decision)
+                        block_count = final_block_signatures.get(block_signature, 0) + 1
+                        final_block_signatures[block_signature] = block_count
+                        if block_count >= self.policy.max_repeated_final_blocks:
+                            policy_context = {
+                                "reason": (
+                                    "The same final-answer block repeated without "
+                                    "new progress."
+                                ),
+                                "blocked_reason": final_decision.reason,
+                                "repeated_count": block_count,
+                            }
+                            self._emit(
+                                sequencer,
+                                active_run_id,
+                                "final_answer.no_progress_stopped",
+                                {
+                                    "turn_index": turn_index,
+                                    **policy_context,
+                                },
+                            )
+                            return self._finalize_without_tools(
+                                sequencer,
+                                active_run_id,
+                                messages,
+                                stop_reason=StopReason.NO_PROGRESS,
+                                policy_context=policy_context,
+                                run_started=run_started,
+                                run_metrics=run_metrics,
+                            )
                         feedback_message = _runtime_feedback_message(final_decision)
                         if feedback_message and _last_message_content(messages) != feedback_message:
                             messages.append(KlaraMessage(role="user", content=feedback_message))
@@ -1250,6 +1281,20 @@ def _tool_call_signature(call: ToolCall) -> str:
     return f"{call.name}:{arguments}"
 
 
+def _final_decision_signature(decision: FinalAnswerDecision) -> str:
+    """Return a stable signature for repeated final-answer block detection."""
+
+    return json.dumps(
+        {
+            "reason": decision.reason,
+            "feedback": decision.feedback,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
 def _runtime_feedback_message(decision: FinalAnswerDecision) -> str:
     """Return model-visible feedback after a controller blocks finalization."""
 
@@ -1310,6 +1355,11 @@ def _empty_final_answer_for_stop(stop_reason: StopReason) -> str:
         return (
             "Tool turn limit reached before the model produced a final answer. "
             "Please ask again with a narrower request or fewer required lookups."
+        )
+    if stop_reason == StopReason.NO_PROGRESS:
+        return (
+            "The run stopped because no new progress was made. Please ask again "
+            "with a narrower request or fewer required lookups."
         )
     return (
         "A tool policy limit was reached before the model produced a final answer. "

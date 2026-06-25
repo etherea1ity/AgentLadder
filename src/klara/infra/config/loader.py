@@ -98,6 +98,13 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
             env_name="KLARA_LOOP_MAX_REPEATED_TOOL_CALLS",
             default=default_policy.max_repeated_tool_calls,
         ),
+        max_repeated_final_blocks=_int_config(
+            raw_loop,
+            "max_repeated_final_blocks",
+            env=env,
+            env_name="KLARA_LOOP_MAX_REPEATED_FINAL_BLOCKS",
+            default=default_policy.max_repeated_final_blocks,
+        ),
     )
     return RuntimeConfig(loop_policy=policy)
 

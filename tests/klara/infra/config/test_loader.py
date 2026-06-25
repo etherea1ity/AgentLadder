@@ -60,6 +60,7 @@ def test_load_runtime_config_reads_loop_policy() -> None:
     assert runtime.loop_policy.max_turns == 24
     assert runtime.loop_policy.max_tool_calls == 48
     assert runtime.loop_policy.max_repeated_tool_calls == 3
+    assert runtime.loop_policy.max_repeated_final_blocks == 2
 
 
 def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
@@ -72,6 +73,7 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
                 "max_turns = 11",
                 "max_tool_calls = 22",
                 "max_repeated_tool_calls = 2",
+                "max_repeated_final_blocks = 3",
             ]
         ),
         encoding="utf-8",
@@ -83,12 +85,14 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
             "KLARA_LOOP_MAX_TURNS": "31",
             "KLARA_LOOP_MAX_TOOL_CALLS": "62",
             "KLARA_LOOP_MAX_REPEATED_TOOL_CALLS": "4",
+            "KLARA_LOOP_MAX_REPEATED_FINAL_BLOCKS": "5",
         },
     )
 
     assert runtime.loop_policy.max_turns == 31
     assert runtime.loop_policy.max_tool_calls == 62
     assert runtime.loop_policy.max_repeated_tool_calls == 4
+    assert runtime.loop_policy.max_repeated_final_blocks == 5
 
 
 def test_get_env_secret_can_read_one_key_from_dotenv_without_exporting_all(tmp_path, monkeypatch) -> None:
