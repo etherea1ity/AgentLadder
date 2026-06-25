@@ -555,7 +555,7 @@ button:disabled {
   min-width: 0;
   border-radius: 18px;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   background: rgba(255, 253, 248, 0.62);
 }
 .input-wrap.home-input textarea {
