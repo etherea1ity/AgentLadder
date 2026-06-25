@@ -17,7 +17,7 @@ const baseRun: Run = {
 };
 
 describe("KlaraThinkingBlock", () => {
-  it("does not show active thinking before visible activity exists", () => {
+  it("shows a pending thinking animation before visible activity exists", () => {
     const { container } = render(
       <KlaraThinkingBlock
         run={{
@@ -31,6 +31,9 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
     expect(screen.queryByRole("img", { name: /mini klara/i })).not.toBeInTheDocument();
     expect(container.querySelector(".klara-thinking-mini .klara-presence")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Klara is thinking")).toBeInTheDocument();
+    expect(container.querySelector(".klara-thinking-pending")).toBeTruthy();
+    expect(container.querySelectorAll(".klara-thinking-loader span")).toHaveLength(3);
     expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 

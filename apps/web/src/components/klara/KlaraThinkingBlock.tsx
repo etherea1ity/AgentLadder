@@ -35,7 +35,23 @@ export function KlaraThinkingBlock({
     : "";
 
   if (!run) return null;
-  if (!latestThinking) return null;
+  if (!latestThinking) {
+    if (!active) return null;
+    return (
+      <section
+        className="klara-thinking-block is-active is-pending"
+        aria-label="Thinking"
+      >
+        <div className="klara-thinking-pending" aria-label="Klara is thinking">
+          <span className="klara-thinking-loader" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </div>
+      </section>
+    );
+  }
 
   const label = active
     ? latestThinking.body
