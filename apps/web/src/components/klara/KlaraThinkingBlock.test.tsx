@@ -49,7 +49,7 @@ describe("KlaraThinkingBlock", () => {
   });
 
   it("shows active public commentary inline before the answer", () => {
-    render(
+    const { container } = render(
       <KlaraThinkingBlock
         run={{
           ...baseRun,
@@ -70,7 +70,39 @@ describe("KlaraThinkingBlock", () => {
     expect(
       screen.getByText("Then I will separate confirmed facts from unknowns."),
     ).toBeInTheDocument();
+    expect(container.querySelector(".klara-thinking-stream")).toBeTruthy();
+    expect(container.querySelector(".klara-thinking-cursor .klara-presence")).toBeTruthy();
+    expect(
+      screen.getByText("Then I will separate confirmed facts from unknowns."),
+    ).toHaveClass("is-current");
     expect(screen.queryByText(/web_search/)).not.toBeInTheDocument();
+  });
+
+  it("collapses near-duplicate thinking updates in the visible stream", () => {
+    const { container } = render(
+      <KlaraThinkingBlock
+        run={{
+          ...baseRun,
+          events: [
+            evt("thinking_summary_started", { started_at: "2026-06-18T12:00:00Z" }),
+            assistantActivityEvent(
+              "I will search recent World Model papers before answering.",
+            ),
+            assistantActivityEvent(
+              "I will search the latest World Model papers before answering.",
+            ),
+          ],
+        }}
+      />,
+    );
+
+    expect(
+      screen.queryByText("I will search recent World Model papers before answering."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("I will search the latest World Model papers before answering."),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".klara-thinking-stream p")).toHaveLength(1);
   });
 
   it("does not show active thinking when only runtime action transcript exists", () => {
@@ -192,6 +224,7 @@ describe("KlaraThinkingBlock", () => {
     expect(screen.getByText("The provider returned a safe reasoning summary.")).toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: /thinking/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Thinking" })).toBeInTheDocument();
+    expect(screen.getByText("The provider returned a safe reasoning summary.").closest("li")).toHaveClass("is-current");
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     expect(screen.queryByText("Klara activity")).not.toBeInTheDocument();
     expect(screen.queryByText("Agent activity")).not.toBeInTheDocument();

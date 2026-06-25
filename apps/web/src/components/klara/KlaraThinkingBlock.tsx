@@ -47,9 +47,7 @@ export function KlaraThinkingBlock({
     () => visibleMainModelCommentaryItems(events),
     [events],
   );
-  const commentaryBodies = commentaryItems
-    .map((item) => item.body)
-    .filter(Boolean);
+  const commentaryBodies = commentaryItems.map((item) => item.body).filter(Boolean);
 
   if (!run) return null;
   const hasProviderReasoning = providerItems.length > 0;
@@ -102,10 +100,35 @@ export function KlaraThinkingBlock({
         </span>
       </button>
       {active && commentaryBodies.length > 0 ? (
-        <div className="klara-thinking-activity" aria-label="Klara public thinking">
-          {commentaryBodies.map((body, index) => (
-            <p key={`${index}-${body.slice(0, 16)}`}>{body}</p>
-          ))}
+        <div className="klara-thinking-stream" aria-label="Klara public thinking">
+          {commentaryBodies.map((body, index) => {
+            const current = index === commentaryBodies.length - 1;
+            return (
+              <p
+                key={`${index}-${body.slice(0, 16)}`}
+                className={current ? "is-current" : undefined}
+              >
+                {body}
+              </p>
+            );
+          })}
+          <div className="klara-thinking-cursor" aria-hidden="true">
+            <span className="klara-thinking-cursor-mark">
+              <KlaraPresence
+                active
+                phase="thinking"
+                size="status"
+                capabilities={["model"]}
+                elevated
+                pulseKey={events.length}
+              />
+            </span>
+            <span className="klara-thinking-cursor-dots">
+              <span />
+              <span />
+              <span />
+            </span>
+          </div>
         </div>
       ) : null}
     </section>

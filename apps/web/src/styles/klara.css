@@ -378,6 +378,11 @@
   width: auto;
   margin: 0;
 }
+.conversation-turn .assistant-label .klara-thinking-block {
+  flex-basis: 100%;
+  margin-top: -2px;
+  margin-left: 47px;
+}
 .klara-thinking-block.is-open {
   position: relative;
   z-index: 80;
@@ -446,17 +451,64 @@
 .klara-thinking-row[aria-expanded="true"] .klara-thinking-toggle {
   transform: rotate(90deg);
 }
-.klara-thinking-activity {
-  max-width: min(720px, 100%);
-  margin: 6px 0 0 21px;
+.klara-thinking-stream {
+  max-width: min(760px, 100%);
+  margin: 7px 0 0 0;
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.58;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
-.klara-thinking-activity p {
+.klara-thinking-stream p {
   margin: 0;
+  opacity: 0.68;
+  transition:
+    color 0.18s ease,
+    opacity 0.18s ease,
+    text-shadow 0.18s ease;
+}
+.klara-thinking-stream p.is-current {
+  color: var(--text-primary);
+  opacity: 1;
+  text-shadow: 0 0 18px rgba(184, 129, 47, 0.16);
+}
+.klara-thinking-cursor {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+.klara-thinking-cursor-mark {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+}
+.klara-thinking-cursor-mark .klara-presence {
+  --klara-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+.klara-thinking-cursor-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.klara-thinking-cursor-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  opacity: 0.28;
+  animation: klara-thinking-dot 1.15s ease-in-out infinite;
+}
+.klara-thinking-cursor-dots span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+.klara-thinking-cursor-dots span:nth-child(3) {
+  animation-delay: 0.28s;
 }
 .klara-thinking-drawer-layer {
   position: fixed;
@@ -533,6 +585,9 @@
   position: relative;
   padding-left: 22px;
   counter-increment: klara-thought;
+}
+.klara-thought-list li.is-current p {
+  color: var(--text-primary);
 }
 .klara-thought-list li::before {
   content: counter(klara-thought);
@@ -1137,6 +1192,18 @@
     transform: scale(1.08);
   }
 }
+@keyframes klara-thinking-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.24;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
 @keyframes klara-drawer-enter {
   from {
     opacity: 0;
@@ -1151,6 +1218,9 @@
   .klara-collect-particles,
   .klara-link-particles {
     display: none !important;
+  }
+  .klara-thinking-cursor-dots span {
+    animation: none !important;
   }
 }
 

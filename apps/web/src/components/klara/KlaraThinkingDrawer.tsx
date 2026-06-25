@@ -120,8 +120,11 @@ function formatThoughtDuration(ms: number) {
 function ThoughtList({ items }: { items: ThinkingActivityItem[] }) {
   return (
     <ol className="klara-thought-list">
-      {items.map((item) => (
-        <li key={item.id}>
+      {items.map((item, index) => (
+        <li
+          key={item.id}
+          className={index === items.length - 1 ? "is-current" : undefined}
+        >
           <p>{item.body}</p>
         </li>
       ))}

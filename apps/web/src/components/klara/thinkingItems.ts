@@ -7,7 +7,7 @@ import type {
 } from "../../types/domain";
 
 export function visibleProviderReasoningItems(events: RunEvent[]) {
-  return events
+  const items = events
     .filter((event) => event.event_type === "provider_reasoning_delta")
     .flatMap((event) => {
       const items = event.payload?.items;
@@ -17,10 +17,12 @@ export function visibleProviderReasoningItems(events: RunEvent[]) {
     })
     .filter((item) => item.source === "provider_reasoning")
     .filter(isSafeActivityItem);
+
+  return dedupeSimilarItems(items);
 }
 
 export function visibleMainModelCommentaryItems(events: RunEvent[]) {
-  return events
+  const items = events
     .filter((event) => event.event_type === "assistant_activity_delta")
     .map((event) => {
       const text = safeText(event.payload?.text, 500);
@@ -40,6 +42,8 @@ export function visibleMainModelCommentaryItems(events: RunEvent[]) {
     })
     .filter(isActivityItem)
     .filter(isSafeActivityItem);
+
+  return dedupeSimilarItems(items);
 }
 
 function normalizeActivityItem(value: unknown): ThinkingActivityItem | null {
@@ -95,10 +99,74 @@ function safeText(value: unknown, maxChars: number) {
 function stripInternalActivityLabels(text: string) {
   return text
     .replace(
-      /\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:：]\s*/gi,
+      /\b(?:update_activity(?:\.text)?|activity_commentary|public_activity|assistant_activity(?:_delta)?)\s*[:\uFF1A]\s*/gi,
       "",
     )
     .trim();
+}
+
+function dedupeSimilarItems(items: ThinkingActivityItem[]) {
+  const kept: ThinkingActivityItem[] = [];
+  for (const item of items) {
+    const duplicateIndex = kept.findIndex((candidate) =>
+      isSimilarText(candidate.body, item.body),
+    );
+    if (duplicateIndex >= 0) kept.splice(duplicateIndex, 1);
+    kept.push(item);
+  }
+  return kept;
+}
+
+function isSimilarText(left: string, right: string) {
+  const a = canonicalText(left);
+  const b = canonicalText(right);
+  if (!a || !b) return false;
+  if (a === b) return true;
+
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length > b.length ? a : b;
+  if (shorter.length >= 24 && longer.includes(shorter)) return true;
+
+  const prefixRatio = commonPrefixLength(a, b) / Math.min(a.length, b.length);
+  if (prefixRatio >= 0.68) return true;
+
+  return diceCoefficient(a, b) >= 0.72;
+}
+
+function canonicalText(text: string) {
+  return text.toLocaleLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, "");
+}
+
+function commonPrefixLength(left: string, right: string) {
+  let length = 0;
+  while (length < left.length && length < right.length && left[length] === right[length]) {
+    length += 1;
+  }
+  return length;
+}
+
+function diceCoefficient(left: string, right: string) {
+  if (left.length < 2 || right.length < 2) return left === right ? 1 : 0;
+  const leftBigrams = bigramCounts(left);
+  let overlap = 0;
+  for (let index = 0; index < right.length - 1; index += 1) {
+    const bigram = right.slice(index, index + 2);
+    const count = leftBigrams.get(bigram) ?? 0;
+    if (count > 0) {
+      overlap += 1;
+      leftBigrams.set(bigram, count - 1);
+    }
+  }
+  return (2 * overlap) / (left.length + right.length - 2);
+}
+
+function bigramCounts(text: string) {
+  const counts = new Map<string, number>();
+  for (let index = 0; index < text.length - 1; index += 1) {
+    const bigram = text.slice(index, index + 2);
+    counts.set(bigram, (counts.get(bigram) ?? 0) + 1);
+  }
+  return counts;
 }
 
 function activityStatus(value: unknown): ThinkingActivityStatus {
