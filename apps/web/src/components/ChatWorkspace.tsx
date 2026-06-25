@@ -95,8 +95,16 @@ export function ChatWorkspace(props: Props) {
     }
   }, [activeThinkingRunId, props.runs]);
 
+  const workspaceClass = [
+    "chat-workspace",
+    empty ? "is-empty" : "has-messages",
+    activeThinkingRun ? "is-thinking-open" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <main className={`chat-workspace ${empty ? "is-empty" : "has-messages"}`}>
+    <main className={workspaceClass}>
       <TopPath
         compact={!empty}
         theme={props.theme}

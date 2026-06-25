@@ -12,7 +12,7 @@
   --accent-clay: #a5653f;
   --accent-running: #5f7b62;
   --accent-error: #a35b52;
-  --sidebar-w: 304px;
+  --sidebar-w: 280px;
   --sidebar-collapsed-w: 68px;
   --margin-w: 360px;
   --topbar-h: 86px;
@@ -956,7 +956,7 @@ hr {
   line-height: 1.45;
 }
 .app-shell.is-empty {
-  --sidebar-w: 304px;
+  --sidebar-w: 280px;
 }
 .app-shell.is-empty .sidebar {
   padding: 38px 22px 20px;
@@ -2522,11 +2522,11 @@ body,
 
 /* Readable chat pass: wide rail and UI-style text closer to modern assistant apps. */
 :root {
-  --sidebar-w: 304px;
+  --sidebar-w: 280px;
   --message-w: 800px;
 }
 .app-shell.is-empty {
-  --sidebar-w: 304px;
+  --sidebar-w: 280px;
 }
 .conversation-turn .user-message p,
 .conversation-turn .assistant-content {
@@ -2940,5 +2940,47 @@ body,
 
   .composer-footer {
     padding: 10px 0 18px;
+  }
+}
+
+/* Final desktop dock override. This intentionally comes last because app.css
+   carries older chat/layout passes above it. */
+@media (min-width: 901px) {
+  .chat-workspace.has-messages {
+    height: 100vh;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 58px minmax(0, 1fr) auto;
+    overflow: hidden;
+  }
+
+  .chat-workspace.has-messages.is-thinking-open {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+    --chat-rail-width: min(820px, calc(100% - 48px));
+  }
+
+  .chat-workspace.has-messages > .top-path {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .chat-workspace.has-messages > .message-list {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: 0;
+    padding: 34px 0 24px;
+  }
+
+  .chat-workspace.has-messages > .composer-footer {
+    grid-column: 1;
+    grid-row: 3;
+    min-width: 0;
   }
 }

@@ -206,12 +206,17 @@ describe("Klara app flow", () => {
     await waitFor(() =>
       expect(screen.getByRole("dialog", { name: /thinking/i })).toBeInTheDocument(),
     );
+    expect(container.querySelector(".chat-workspace.is-thinking-open")).toBeTruthy();
+    expect(
+      container.querySelector(".chat-workspace > .klara-thinking-drawer-layer"),
+    ).toBeTruthy();
     expect(
       within(screen.getByRole("dialog", { name: /thinking/i })).getByText(
         "The provider returned a safe reasoning summary.",
       ),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close thinking/i }));
+    expect(container.querySelector(".chat-workspace.is-thinking-open")).toBeFalsy();
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
       "tool_call_started",
