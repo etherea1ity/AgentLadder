@@ -13,12 +13,16 @@ const modelOptions: ModelOption[] = [
     model: "qwen/qwen-flash",
     label: "Qwen 3.7 Flash",
     use_when: "qwen provider",
+    supports_thinking: true,
+    default_thinking: false,
   },
   {
     id: "qwen/qwen3.7-max",
     model: "qwen/qwen3.7-max",
     label: "Qwen 3.7 Max",
     use_when: "qwen provider",
+    supports_thinking: true,
+    default_thinking: false,
   },
 ];
 
@@ -49,7 +53,9 @@ describe("popover dismissal", () => {
         onStop={vi.fn()}
         modelOptions={modelOptions}
         selectedModel="qwen/qwen-flash"
+        thinkingEnabled={false}
         onModelChange={onModelChange}
+        onThinkingChange={vi.fn()}
         theme="light"
         onToggleTheme={vi.fn()}
       />,
@@ -70,6 +76,37 @@ describe("popover dismissal", () => {
 
     expect(onModelChange).toHaveBeenCalledWith("qwen/qwen3.7-max");
     await waitFor(() => expect(picker).not.toHaveAttribute("open"));
+  });
+
+  it("toggles thinking separately from model selection", async () => {
+    const user = userEvent.setup();
+    const onThinkingChange = vi.fn();
+
+    render(
+      <ChatWorkspace
+        activeSessionId={null}
+        messages={[]}
+        runs={{}}
+        input=""
+        running={false}
+        submitting={false}
+        cancelling={false}
+        onInput={vi.fn()}
+        onSend={vi.fn()}
+        onStop={vi.fn()}
+        modelOptions={modelOptions}
+        selectedModel="qwen/qwen-flash"
+        thinkingEnabled={false}
+        onModelChange={vi.fn()}
+        onThinkingChange={onThinkingChange}
+        theme="light"
+        onToggleTheme={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /turn thinking on/i }));
+
+    expect(onThinkingChange).toHaveBeenCalledWith(true);
   });
 
   it("closes the conversation delete confirmation from outside click and Escape", async () => {

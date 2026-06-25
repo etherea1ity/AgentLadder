@@ -27,7 +27,8 @@ def _load_model_options(models: ModelsConfig) -> list[ModelOption]:
                     model=model_ref,
                     label=item.label or model_ref,
                     use_when=_model_use_when(provider_id, item.supports_vision),
-                    enable_thinking=item.enable_thinking,
+                    supports_thinking=item.supports_thinking,
+                    default_thinking=item.default_thinking,
                 )
             )
     return options
@@ -68,6 +69,8 @@ _run_service = RunService(
     llm_client=_llm,
     trace_path=os.getenv("KLARA_TRACE_PATH", "data/traces/runs.jsonl"),
     allowed_models={item.model for item in _model_options},
+    thinking_support={item.model: item.supports_thinking for item in _model_options},
+    default_thinking={item.model: item.default_thinking for item in _model_options},
     default_model=_default_model_ref,
     loop_policy=_runtime.loop_policy,
     user_context=_local_user_context(),

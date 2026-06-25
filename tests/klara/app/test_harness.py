@@ -53,6 +53,7 @@ class HarnessLlm:
         messages: tuple[KlaraMessage, ...],
         tools: tuple[ToolSpec, ...],
         model: str,
+        thinking_enabled: bool | None = None,
     ) -> ModelResponse:
         """Request a tool on the first call and final-answer on the second."""
 

@@ -21,6 +21,7 @@ type PersistedUi = {
 
 const UI_STORAGE_KEY = "klara_ui_state";
 const MODEL_STORAGE_KEY = "klara_selected_model";
+const THINKING_STORAGE_KEY = "klara_thinking_enabled";
 const THEME_STORAGE_KEY = "klara_theme";
 const RUN_POLL_MS = 12_000;
 
@@ -43,6 +44,7 @@ export default function App() {
   >({});
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
+  const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
@@ -87,9 +89,10 @@ export default function App() {
           savedModel && res.models.some((option) => option.model === savedModel)
             ? savedModel
             : null;
-        setSelectedModel(
-          usableSavedModel ?? res.default_model ?? res.models[0]?.model ?? "",
-        );
+        const nextModel =
+          usableSavedModel ?? res.default_model ?? res.models[0]?.model ?? "";
+        setSelectedModel(nextModel);
+        setThinkingEnabled(readThinkingEnabled(res.models, nextModel));
       })
       .catch(() => {
         const fallback = "qwen/qwen-flash";
@@ -102,6 +105,7 @@ export default function App() {
           },
         ]);
         setSelectedModel(fallback);
+        setThinkingEnabled(false);
       });
     return () => {
       cancelled = true;
@@ -137,6 +141,13 @@ export default function App() {
   }, [selectedModel]);
 
   useEffect(() => {
+    window.localStorage.setItem(
+      THINKING_STORAGE_KEY,
+      JSON.stringify(thinkingEnabled),
+    );
+  }, [thinkingEnabled]);
+
+  useEffect(() => {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
@@ -157,6 +168,12 @@ export default function App() {
   );
   const running = runningInActiveSession;
   const busy = isSubmittingRun || running;
+  const selectedModelOption = modelOptions.find(
+    (option) => option.model === selectedModel,
+  );
+  const effectiveThinkingEnabled = Boolean(
+    selectedModelOption?.supports_thinking && thinkingEnabled,
+  );
 
   useEffect(() => {
     const protectCenterRail = () => {
@@ -251,6 +268,7 @@ export default function App() {
       assistant_message_id: draftAssistantId,
       status: "queued",
       model: selectedModel || null,
+      thinking_enabled: effectiveThinkingEnabled,
       events: [],
       live: { streamed_chars: 0, current_label: "Preparing the run..." },
     };
@@ -293,6 +311,9 @@ export default function App() {
         runSessionId,
         question,
         selectedModel || undefined,
+        selectedModelOption?.supports_thinking
+          ? effectiveThinkingEnabled
+          : undefined,
       );
       const realUser: Message = {
         message_id: created.user_message_id,
@@ -318,6 +339,7 @@ export default function App() {
         assistant_message_id: created.assistant_message_id,
         status: created.status,
         model: selectedModel || null,
+        thinking_enabled: effectiveThinkingEnabled,
         events: [],
         live: { streamed_chars: 0, current_label: "Preparing the run..." },
       };
@@ -890,7 +912,12 @@ export default function App() {
         onStop={stop}
         modelOptions={modelOptions}
         selectedModel={selectedModel}
-        onModelChange={setSelectedModel}
+        thinkingEnabled={effectiveThinkingEnabled}
+        onThinkingChange={setThinkingEnabled}
+        onModelChange={(model) => {
+          setSelectedModel(model);
+          setThinkingEnabled(defaultThinkingForModel(modelOptions, model));
+        }}
         theme={theme}
         onToggleTheme={() =>
           setTheme((value) => (value === "dark" ? "light" : "dark"))
@@ -1047,6 +1074,21 @@ function readTheme(): "light" | "dark" {
   } catch {
     return "light";
   }
+}
+function readThinkingEnabled(options: ModelOption[], model: string) {
+  const option = options.find((item) => item.model === model);
+  if (!option?.supports_thinking) return false;
+  try {
+    const raw = window.localStorage.getItem(THINKING_STORAGE_KEY);
+    if (raw !== null) return JSON.parse(raw) === true;
+  } catch {
+    // Fall back to model defaults when local storage is unavailable.
+  }
+  return Boolean(option.default_thinking);
+}
+function defaultThinkingForModel(options: ModelOption[], model: string) {
+  const option = options.find((item) => item.model === model);
+  return Boolean(option?.supports_thinking && option.default_thinking);
 }
 function friendlyError(error: unknown) {
   if (error instanceof ApiError)

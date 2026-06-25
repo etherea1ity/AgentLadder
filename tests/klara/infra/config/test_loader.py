@@ -23,9 +23,17 @@ def test_load_models_config_reads_deepseek_and_qwen() -> None:
     assert qwen_flash.label == "Qwen 3.7 Flash"
     assert qwen_flash.supports_tools is True
     assert qwen_flash.supports_vision is False
-    assert qwen_flash.enable_thinking is False
+    assert qwen_flash.supports_thinking is True
+    assert qwen_flash.default_thinking is False
     assert qwen_plus is not None
     assert qwen_plus.supports_vision is True
+    assert qwen_plus.supports_thinking is True
+    assert qwen_plus.default_thinking is False
+    deepseek_pro = models.providers["deepseek"].model_entry("deepseek-v4-pro")
+    assert deepseek_pro is not None
+    assert deepseek_pro.label == "DeepSeek V4 Pro"
+    assert deepseek_pro.supports_thinking is True
+    assert deepseek_pro.default_thinking is True
     assert models.profile("agent").primary == "qwen/qwen-flash"
 
 

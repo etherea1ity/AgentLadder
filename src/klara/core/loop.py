@@ -36,6 +36,7 @@ class LlmClient(Protocol):
         messages: tuple[KlaraMessage, ...],
         tools: tuple[ToolSpec, ...],
         model: str,
+        thinking_enabled: bool | None = None,
     ) -> ModelResponse:
         """Produce one assistant response for the current model-visible state.
 
@@ -44,6 +45,7 @@ class LlmClient(Protocol):
             messages: Current transcript visible to the model.
             tools: Tool specs visible in this run.
             model: Model identifier selected by the harness.
+            thinking_enabled: Optional per-run provider thinking switch.
 
         Returns:
             Assistant content plus optional tool calls.
@@ -62,6 +64,7 @@ class StreamingLlmClient(LlmClient, Protocol):
         messages: tuple[KlaraMessage, ...],
         tools: tuple[ToolSpec, ...],
         model: str,
+        thinking_enabled: bool | None = None,
     ) -> Iterator[ModelStreamEvent]:
         """Yield provider reasoning/content/tool deltas and a final response."""
 
@@ -183,6 +186,7 @@ class KlaraLoop:
         policy: LoopPolicy | None = None,
         controllers: tuple[LoopController, ...] = (),
         model: str = "fake-model",
+        thinking_enabled: bool | None = None,
         system_prompt: str = "",
     ) -> None:
         """Create a loop with injected model, tools, hooks, and policy.
@@ -194,6 +198,7 @@ class KlaraLoop:
             policy: Optional stop/bounds policy.
             controllers: Optional runtime controllers around the loop.
             model: Model identifier passed through to the LLM client.
+            thinking_enabled: Optional per-run provider thinking switch.
             system_prompt: Prompt assembled outside core by the harness.
         """
 
@@ -204,6 +209,7 @@ class KlaraLoop:
         self.policy = policy or LoopPolicy()
         self.controllers = controllers
         self.model = model
+        self.thinking_enabled = thinking_enabled
         self.system_prompt = system_prompt
 
     def run(
@@ -266,7 +272,11 @@ class KlaraLoop:
                     sequencer,
                     active_run_id,
                     EventKind.LLM_STARTED,
-                    {"turn_index": turn_index, "model": self.model},
+                    {
+                        "turn_index": turn_index,
+                        "model": self.model,
+                        "thinking_enabled": self.thinking_enabled,
+                    },
                 )
                 # Ask the injected model using only the prompt, transcript, and specs.
                 llm_started = perf_counter()
@@ -275,6 +285,7 @@ class KlaraLoop:
                     messages=tuple(messages),
                     tools=self.tool_executor.specs,
                     model=self.model,
+                    thinking_enabled=self.thinking_enabled,
                 )
                 llm_duration_ms = _duration_ms(llm_started)
                 usage = _normalize_usage(response.usage)
@@ -523,6 +534,7 @@ class KlaraLoop:
                 "turn_index": final_turn_index,
                 "finalization": True,
                 "model": self.model,
+                "thinking_enabled": self.thinking_enabled,
             },
         )
         llm_started = perf_counter()
@@ -531,6 +543,7 @@ class KlaraLoop:
             messages=tuple(messages),
             tools=(),
             model=self.model,
+            thinking_enabled=self.thinking_enabled,
         )
         llm_duration_ms = _duration_ms(llm_started)
         usage = _normalize_usage(response.usage)
@@ -577,6 +590,7 @@ class KlaraLoop:
                     "turn_index": retry_turn_index,
                     "finalization": True,
                     "model": self.model,
+                    "thinking_enabled": self.thinking_enabled,
                     "retry_after_ignored_tools": True,
                 },
             )
@@ -586,6 +600,7 @@ class KlaraLoop:
                 messages=tuple(messages),
                 tools=(),
                 model=self.model,
+                thinking_enabled=self.thinking_enabled,
             )
             llm_duration_ms = _duration_ms(llm_started)
             usage = _normalize_usage(response.usage)

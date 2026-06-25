@@ -66,6 +66,8 @@ class ScriptedLlm:
         self.calls: list[tuple[tuple[KlaraMessage, ...], tuple[ToolSpec, ...]]] = []
         # System prompts prove finalization can add no-tool guidance.
         self.system_prompts: list[str] = []
+        # Thinking switches prove run-level model options are forwarded.
+        self.thinking_seen: list[bool | None] = []
 
     def complete(
         self,
@@ -74,12 +76,14 @@ class ScriptedLlm:
         messages: tuple[KlaraMessage, ...],
         tools: tuple[ToolSpec, ...],
         model: str,
+        thinking_enabled: bool | None = None,
     ) -> ModelResponse:
         """Return the next scripted model response."""
 
         # Capture each call before popping so failure cases still expose evidence.
         self.system_prompts.append(system_prompt)
         self.calls.append((messages, tools))
+        self.thinking_seen.append(thinking_enabled)
         if not self.responses:
             raise AssertionError("No scripted LLM response left")
         return self.responses.pop(0)
@@ -262,6 +266,19 @@ def test_no_tool_run_returns_final_answer() -> None:
     assert result.final_answer == "Hello from Klara."
     assert result.stop_reason == StopReason.FINAL
     assert [message.role for message in result.messages] == ["user", "assistant"]
+
+
+def test_loop_forwards_run_thinking_switch_to_model() -> None:
+    llm = ScriptedLlm([ModelResponse(content="done")])
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        thinking_enabled=True,
+    )
+
+    loop.run("hi", run_id="run-thinking-on")
+
+    assert llm.thinking_seen == [True]
 
 
 def test_controller_can_block_premature_no_tool_final_answer() -> None:

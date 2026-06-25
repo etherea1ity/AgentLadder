@@ -14,7 +14,7 @@ def test_routed_client_tries_profile_fallback(monkeypatch) -> None:
 
     calls: list[str] = []
 
-    def fake_complete(self, *, system_prompt, messages, tools, model):
+    def fake_complete(self, *, system_prompt, messages, tools, model, thinking_enabled=None):
         calls.append(model)
         if model == "deepseek/deepseek-v4-flash":
             raise LlmProviderError("primary down")

@@ -15,11 +15,13 @@ class RecordingFinalLlm:
 
         self.answer = answer
         self.calls: list[tuple[KlaraMessage, ...]] = []
+        self.thinking_seen: list[bool | None] = []
 
     def complete(self, **kwargs: object) -> ModelResponse:
         """Return one final answer while recording the transcript."""
 
         self.calls.append(kwargs["messages"])  # type: ignore[index]
+        self.thinking_seen.append(kwargs.get("thinking_enabled"))  # type: ignore[arg-type]
         return ModelResponse(content=self.answer)
 
 
@@ -89,6 +91,56 @@ def test_thinking_summary_started_and_completed_wrap_answer(tmp_path) -> None:
     assert started.payload["presentation"] == "gpt_style_collapsible"
     assert isinstance(completed.payload["duration_ms"], int)
     assert completed.payload["has_summary"] is False
+
+
+def test_run_service_uses_configured_default_thinking(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    llm = RecordingFinalLlm()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=llm,
+        allowed_models={"qwen/qwen-flash"},
+        thinking_support={"qwen/qwen-flash": True},
+        default_thinking={"qwen/qwen-flash": False},
+        default_model="qwen/qwen-flash",
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+
+    created = service.create_run(session.session_id, "hello", thinking_enabled=True)
+    service._threads[created.run_id].join(timeout=5)
+
+    run = store.get_run(created.run_id)
+    assert run is not None
+    assert run.thinking_enabled is True
+    assert llm.thinking_seen == [True]
+
+
+def test_run_service_rejects_thinking_for_unsupported_model(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=RecordingFinalLlm(),
+        allowed_models={"deepseek/deepseek-v4-flash"},
+        thinking_support={"deepseek/deepseek-v4-flash": False},
+        default_model="deepseek/deepseek-v4-flash",
+        trace_path=str(tmp_path / "trace.jsonl"),
+    )
+
+    try:
+        service.create_run(
+            session.session_id,
+            "hello",
+            model="deepseek/deepseek-v4-flash",
+            thinking_enabled=True,
+        )
+    except ValueError as exc:
+        assert str(exc) == "thinking_not_supported"
+    else:
+        raise AssertionError("Expected unsupported thinking to fail")
 
 
 def test_run_service_does_not_emit_legacy_public_summary_events(tmp_path) -> None:

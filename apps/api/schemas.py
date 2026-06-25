@@ -102,6 +102,7 @@ class RunRecord(BaseModel):
     token_source: TokenSource | None = None
     trace_saved: bool = False
     error: RunError | None = None
+    thinking_enabled: bool | None = None
 
 
 class RunEventRecord(BaseModel):
@@ -150,6 +151,7 @@ class CreateRunRequest(BaseModel):
     session_id: str
     question: str
     model: str | None = None
+    thinking_enabled: bool | None = None
 
     @field_validator("question")
     @classmethod
@@ -199,7 +201,8 @@ class ModelOption(BaseModel):
     model: str
     label: str
     use_when: str | None = None
-    enable_thinking: bool | None = None
+    supports_thinking: bool = False
+    default_thinking: bool = False
 
 
 class ListModelsResponse(BaseModel):

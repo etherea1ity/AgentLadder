@@ -50,6 +50,8 @@ class RunService:
         llm_client: LlmClient,
         trace_path: str = "data/traces/runs.jsonl",
         allowed_models: set[str] | None = None,
+        thinking_support: dict[str, bool] | None = None,
+        default_thinking: dict[str, bool] | None = None,
         default_model: str | None = None,
         loop_policy: LoopPolicy | None = None,
         user_context: UserContext | None = None,
@@ -64,6 +66,8 @@ class RunService:
             llm_client: Klara-compatible model client.
             trace_path: Optional JSONL lifecycle trace destination.
             allowed_models: Model refs accepted from the UI.
+            thinking_support: Model refs that can accept thinking mode.
+            default_thinking: Default thinking mode per model ref.
             default_model: Model ref used when a run does not select one.
             loop_policy: Bounded execution policy for loop safety.
             user_context: Local user partition and prompt timezone context.
@@ -75,6 +79,8 @@ class RunService:
         self.bus = bus
         self.llm_client = llm_client
         self.allowed_models = allowed_models or set()
+        self.thinking_support = thinking_support or {}
+        self.default_thinking = default_thinking or {}
         self.default_model = default_model
         self.loop_policy = loop_policy or LoopPolicy()
         self.user_context = user_context or UserContext.local_default()
@@ -84,13 +90,23 @@ class RunService:
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
 
-    def create_run(self, session_id: str, question: str, model: str | None = None) -> CreateRunResponse:
+    def create_run(
+        self,
+        session_id: str,
+        question: str,
+        model: str | None = None,
+        thinking_enabled: bool | None = None,
+    ) -> CreateRunResponse:
         """Create user/assistant messages and start a background Klara loop."""
 
         session = self.store.get_visible_session(session_id)
         if session is None:
             raise KeyError("session_not_found")
         selected_model = self._select_model(model)
+        selected_thinking_enabled = self._select_thinking_enabled(
+            selected_model,
+            thinking_enabled,
+        )
 
         title = _title_from_question(question)
         if session.title == "Untitled":
@@ -105,6 +121,7 @@ class RunService:
             assistant_message_id="pending",
             status="queued",
             model=selected_model,
+            thinking_enabled=selected_thinking_enabled,
         )
         assistant_message = MessageRecord(
             session_id=session_id,
@@ -116,7 +133,15 @@ class RunService:
         run = run.model_copy(update={"assistant_message_id": assistant_message.message_id})
         self.store.save_message(assistant_message)
         self.store.save_run(run)
-        self._emit(run.run_id, "run_created", "Run created.", {"session_id": session_id})
+        self._emit(
+            run.run_id,
+            "run_created",
+            "Run created.",
+            {
+                "session_id": session_id,
+                "thinking_enabled": selected_thinking_enabled,
+            },
+        )
 
         thread = threading.Thread(target=self._run_thread, args=(run.run_id,), daemon=True)
         self._threads[run.run_id] = thread
@@ -172,6 +197,7 @@ class RunService:
         current = run.model_copy(update={"status": "thinking", "started_at": now_iso()})
         self.store.save_run(current)
         selected_model = current.model or self.default_model or "fake-model"
+        thinking_enabled = current.thinking_enabled
         self._emit(run_id, "thinking_started", "Klara is preparing the runtime loop.", {})
         self._emit(
             run_id,
@@ -202,6 +228,7 @@ class RunService:
                     WebResearchController(user_timezone=self.user_context.timezone),
                 ),
                 model=selected_model,
+                thinking_enabled=thinking_enabled,
                 system_prompt=_system_prompt(self.user_context),
             )
             model_visible_user_input = self._model_visible_content(user_message)
@@ -415,6 +442,24 @@ class RunService:
         if model and self.allowed_models and model not in self.allowed_models:
             raise ValueError("model_not_allowed")
         return model
+
+    def _select_thinking_enabled(
+        self,
+        model: str | None,
+        requested: bool | None,
+    ) -> bool | None:
+        """Return the per-run thinking switch after model capability checks."""
+
+        if model is None:
+            return requested
+        supports_thinking = self.thinking_support.get(model, False)
+        if requested is True and not supports_thinking:
+            raise ValueError("thinking_not_supported")
+        if not supports_thinking:
+            return False
+        if requested is None:
+            return self.default_thinking.get(model, False)
+        return requested
 
     def _conversation_history(
         self,

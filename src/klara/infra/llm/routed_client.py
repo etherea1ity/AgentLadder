@@ -33,6 +33,7 @@ class RoutedLlmClient:
         messages: tuple[KlaraMessage, ...],
         tools: tuple[ToolSpec, ...],
         model: str,
+        thinking_enabled: bool | None = None,
     ) -> ModelResponse:
         """Complete one model turn, trying profile fallbacks when configured.
 
@@ -41,6 +42,7 @@ class RoutedLlmClient:
             messages: Current Klara transcript.
             tools: Visible tool specs for this model turn.
             model: Requested provider/model reference.
+            thinking_enabled: Optional per-run provider thinking switch.
 
         Returns:
             Normalized model response.
@@ -55,6 +57,7 @@ class RoutedLlmClient:
                     messages=messages,
                     tools=tools,
                     model=candidate,
+                    thinking_enabled=thinking_enabled,
                 )
             except LlmProviderError as exc:
                 errors.append(f"{candidate}: {exc}")

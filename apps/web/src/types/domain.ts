@@ -145,6 +145,7 @@ export type Run = {
   total_tokens?: number | null;
   token_source?: 'reported' | 'estimated' | 'unknown' | null;
   trace_saved?: boolean;
+  thinking_enabled?: boolean | null;
   error?: { code?: string | null; message: string; stage?: string | null } | null;
   events: RunEvent[];
   live?: { elapsed_ms?: number; streamed_chars: number; current_label: string };
@@ -162,7 +163,8 @@ export type ModelOption = {
   model: string;
   label: string;
   use_when?: string | null;
-  enable_thinking?: boolean | null;
+  supports_thinking?: boolean;
+  default_thinking?: boolean;
 };
 
 // Klara Presence public event model. This is intentionally separate from the

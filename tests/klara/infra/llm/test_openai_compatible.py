@@ -78,8 +78,8 @@ def test_payload_omits_max_tokens_by_default() -> None:
     assert "max_tokens" not in payload
 
 
-def test_payload_can_disable_qwen_thinking_for_tool_calls() -> None:
-    """Qwen tool calling should be able to opt out of thinking mode."""
+def test_payload_can_set_provider_thinking_mode() -> None:
+    """Provider thinking mode should be an explicit per-request payload option."""
 
     payload = build_chat_completion_payload(
         system_prompt="system",
@@ -87,10 +87,107 @@ def test_payload_can_disable_qwen_thinking_for_tool_calls() -> None:
         tools=(),
         model="qwen3.7-plus",
         settings=OpenAICompatibleSettings(),
-        enable_thinking=False,
+        enable_thinking=True,
     )
 
-    assert payload["enable_thinking"] is False
+    assert payload["enable_thinking"] is True
+
+
+def test_openai_compatible_client_uses_model_default_thinking(monkeypatch) -> None:
+    """Model config defaults should control thinking when the run has no override."""
+
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode("utf-8")
+
+    def fake_urlopen(request: urllib.request.Request, timeout: int) -> FakeResponse:
+        captured["payload"] = json.loads(request.data.decode("utf-8"))  # type: ignore[union-attr]
+        return FakeResponse()
+
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    client = OpenAICompatibleLlmClient(
+        provider_id="qwen",
+        provider=ProviderConfig(
+            api="openai-completions",
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            api_key_env="DASHSCOPE_API_KEY",
+            models=(
+                ProviderModel(
+                    id="qwen-flash",
+                    supports_thinking=True,
+                    default_thinking=False,
+                ),
+            ),
+        ),
+        settings=OpenAICompatibleSettings(retry_attempts=1),
+    )
+
+    client.complete(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen/qwen-flash",
+    )
+
+    assert captured["payload"]["enable_thinking"] is False
+
+
+def test_openai_compatible_client_accepts_run_thinking_override(monkeypatch) -> None:
+    """Run-level thinking should override the model default for supported models."""
+
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode("utf-8")
+
+    def fake_urlopen(request: urllib.request.Request, timeout: int) -> FakeResponse:
+        captured["payload"] = json.loads(request.data.decode("utf-8"))  # type: ignore[union-attr]
+        return FakeResponse()
+
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    client = OpenAICompatibleLlmClient(
+        provider_id="qwen",
+        provider=ProviderConfig(
+            api="openai-completions",
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            api_key_env="DASHSCOPE_API_KEY",
+            models=(
+                ProviderModel(
+                    id="qwen-flash",
+                    supports_thinking=True,
+                    default_thinking=False,
+                ),
+            ),
+        ),
+        settings=OpenAICompatibleSettings(retry_attempts=1),
+    )
+
+    client.complete(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen/qwen-flash",
+        thinking_enabled=True,
+    )
+
+    assert captured["payload"]["enable_thinking"] is True
 
 
 def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None:

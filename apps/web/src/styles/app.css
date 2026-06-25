@@ -596,7 +596,8 @@ button:disabled {
 .input-tools {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
+  min-width: 0;
 }
 .send-button,
 .stop-button {
@@ -1250,6 +1251,11 @@ hr {
   color: var(--text-muted);
   font-size: 11px;
 }
+.model-menu small .model-capability {
+  margin-left: 6px;
+  color: var(--accent-running);
+  font-weight: 650;
+}
 .model-menu button svg {
   position: absolute;
   right: 10px;
@@ -1257,8 +1263,37 @@ hr {
   transform: translateY(-50%);
   color: var(--accent-running);
 }
+.thinking-toggle {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.thinking-toggle:hover,
+.thinking-toggle:focus-visible,
+.thinking-toggle.is-enabled {
+  background: rgba(239, 231, 216, 0.62);
+  color: var(--text-primary);
+}
+.thinking-toggle.is-enabled svg {
+  color: var(--accent-running);
+}
+.thinking-toggle[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
 .theme-dark .model-picker summary:hover,
 .theme-dark .model-picker[open] summary,
+.theme-dark .thinking-toggle:hover,
+.theme-dark .thinking-toggle:focus-visible,
+.theme-dark .thinking-toggle.is-enabled,
 .theme-dark .model-menu button:hover,
 .theme-dark .model-menu button.is-selected,
 .theme-dark .message-actions button:hover {

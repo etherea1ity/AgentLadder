@@ -38,7 +38,23 @@ export const api = {
   renameSession: (id: string, title: string, signal?: AbortSignal) => request<Session>(`/api/sessions/${id}`, { method: 'PATCH', body: JSON.stringify({ title }), signal }),
   deleteSession: (id: string, signal?: AbortSignal) => request<{ session_id: string; deleted: boolean; deleted_at: string }>(`/api/sessions/${id}`, { method: 'DELETE', signal }),
   listModels: (signal?: AbortSignal) => request<{ default_model: string; models: ModelOption[] }>('/api/models', { signal }),
-  createRun: (session_id: string, question: string, model?: string | null, signal?: AbortSignal) => request<CreateRunResponse>('/api/runs', { method: 'POST', body: JSON.stringify({ session_id, question, model: model || undefined }), signal }),
+  createRun: (
+    session_id: string,
+    question: string,
+    model?: string | null,
+    thinking_enabled?: boolean | null,
+    signal?: AbortSignal,
+  ) =>
+    request<CreateRunResponse>('/api/runs', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id,
+        question,
+        model: model || undefined,
+        thinking_enabled: thinking_enabled ?? undefined,
+      }),
+      signal,
+    }),
   getRun: (id: string, signal?: AbortSignal) => request<RunDetail>(`/api/runs/${id}`, { signal }),
   cancelRun: (id: string, signal?: AbortSignal) => request<{ run_id: string; status: Run['status'] }>(`/api/runs/${id}/cancel`, { method: 'POST', body: '{}', signal }),
   subscribeRunEvents(runId: string, onEvent: (event: RunEvent) => void, onClose?: () => void) {

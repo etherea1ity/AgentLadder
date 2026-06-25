@@ -10,7 +10,8 @@ label = "Qwen 3.7 Flash"
 supports_tools = true
 supports_json = true
 supports_vision = false
-enable_thinking = false
+supports_thinking = true
+default_thinking = false
 
 [[models.providers.qwen.models]]
 id = "qwen3.7-plus"
@@ -18,7 +19,8 @@ label = "Qwen 3.7 Plus"
 supports_tools = true
 supports_json = true
 supports_vision = true
-enable_thinking = false
+supports_thinking = true
+default_thinking = false
 
 [[models.providers.qwen.models]]
 id = "qwen3.7-max"
@@ -26,7 +28,8 @@ label = "Qwen 3.7 Max"
 supports_tools = true
 supports_json = true
 supports_vision = false
-enable_thinking = false
+supports_thinking = true
+default_thinking = false
 
 [[models.providers.qwen.models]]
 id = "qwen3.6-plus"
@@ -34,7 +37,8 @@ label = "Qwen 3.6 Plus"
 supports_tools = true
 supports_json = true
 supports_vision = false
-enable_thinking = false
+supports_thinking = true
+default_thinking = false
 
 [models.providers.deepseek]
 api = "openai-completions"
@@ -47,14 +51,16 @@ id = "deepseek-v4-flash"
 label = "DeepSeek V4 Flash"
 supports_tools = true
 supports_json = true
-enable_thinking = false
+supports_thinking = false
+default_thinking = false
 
 [[models.providers.deepseek.models]]
 id = "deepseek-v4-pro"
-label = "DeepSeek V4 Pro Thinking"
+label = "DeepSeek V4 Pro"
 supports_tools = true
 supports_json = true
-enable_thinking = true
+supports_thinking = true
+default_thinking = true
 
 [models.profiles.agent]
 primary = "qwen/qwen-flash"

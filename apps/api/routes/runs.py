@@ -17,12 +17,19 @@ router = APIRouter(prefix="/api/runs", tags=["runs"])
 @router.post("", response_model=CreateRunResponse)
 def create_run(request: CreateRunRequest, run_service: RunService = Depends(get_run_service)):
     try:
-        return run_service.create_run(session_id=request.session_id, question=request.question, model=request.model)
+        return run_service.create_run(
+            session_id=request.session_id,
+            question=request.question,
+            model=request.model,
+            thinking_enabled=request.thinking_enabled,
+        )
     except KeyError:
         raise HTTPException(status_code=404, detail="session_not_found") from None
     except ValueError as exc:
         if str(exc) == "model_not_allowed":
             raise HTTPException(status_code=400, detail="model_not_allowed") from None
+        if str(exc) == "thinking_not_supported":
+            raise HTTPException(status_code=400, detail="thinking_not_supported") from None
         raise
 
 

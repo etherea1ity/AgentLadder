@@ -79,6 +79,7 @@ class OpenAICompatibleLlmClient:
         messages: tuple[KlaraMessage, ...],
         tools: tuple[ToolSpec, ...],
         model: str,
+        thinking_enabled: bool | None = None,
     ) -> ModelResponse:
         """Call the configured provider and return a normalized model response.
 
@@ -87,6 +88,7 @@ class OpenAICompatibleLlmClient:
             messages: Current model-visible transcript.
             tools: Tool specs exposed to this model turn.
             model: Provider/model reference, such as deepseek/deepseek-v4-flash.
+            thinking_enabled: Optional per-run provider thinking switch.
 
         Returns:
             Normalized assistant content, tool calls, and usage metadata.
@@ -108,7 +110,10 @@ class OpenAICompatibleLlmClient:
             model=model_ref.model,
             settings=self.settings,
             include_reasoning_content=model_ref.provider == "deepseek",
-            enable_thinking=self._enable_thinking(model_ref.model),
+            enable_thinking=self._enable_thinking(
+                model_ref.model,
+                requested=thinking_enabled,
+            ),
         )
         request = self._build_http_request(payload)
         raw = _urlopen_with_retries(
@@ -124,11 +129,22 @@ class OpenAICompatibleLlmClient:
             raise LlmProviderError(f"unexpected provider response: {raw[:500]}") from exc
         return response_from_completion_data(data, model_ref=model_ref, raw_preview=raw[:500])
 
-    def _enable_thinking(self, model_id: str) -> bool | None:
-        """Return provider-specific thinking mode when configured."""
+    def _enable_thinking(
+        self,
+        model_id: str,
+        *,
+        requested: bool | None,
+    ) -> bool | None:
+        """Return provider-specific thinking mode for this model turn."""
 
         model = self.provider.model_entry(model_id)
-        return model.enable_thinking if model is not None else None
+        if model is None or not model.supports_thinking:
+            if requested:
+                raise LlmProviderError(f"thinking not supported by model: {model_id}")
+            return None
+        if requested is None:
+            return model.default_thinking
+        return requested
 
     def _build_http_request(self, payload: dict[str, Any]) -> urllib.request.Request:
         """Build one authenticated HTTP request for chat completions."""

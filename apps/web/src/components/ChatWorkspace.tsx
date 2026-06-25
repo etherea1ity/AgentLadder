@@ -9,6 +9,7 @@ import {
   Copy,
   Moon,
   SlidersHorizontal,
+  Sparkles,
   Sun,
   ThumbsDown,
   ThumbsUp,
@@ -42,7 +43,9 @@ type Props = {
   onStop: () => void;
   modelOptions: ModelOption[];
   selectedModel: string;
+  thinkingEnabled: boolean;
   onModelChange: (model: string) => void;
+  onThinkingChange: (enabled: boolean) => void;
   theme: "light" | "dark";
   onToggleTheme: () => void;
   handoffTriggerRunId?: string | null;
@@ -117,7 +120,9 @@ export function ChatWorkspace(props: Props) {
             home
             modelOptions={props.modelOptions}
             selectedModel={props.selectedModel}
+            thinkingEnabled={props.thinkingEnabled}
             onModelChange={props.onModelChange}
+            onThinkingChange={props.onThinkingChange}
             onFocusChange={setComposerFocused}
             onTypingPulse={pulseTyping}
           />
@@ -145,7 +150,9 @@ export function ChatWorkspace(props: Props) {
               placeholder="Ask anything..."
               modelOptions={props.modelOptions}
               selectedModel={props.selectedModel}
+              thinkingEnabled={props.thinkingEnabled}
               onModelChange={props.onModelChange}
+              onThinkingChange={props.onThinkingChange}
               onFocusChange={setComposerFocused}
               onTypingPulse={pulseTyping}
             />
@@ -562,7 +569,9 @@ function ChatInput({
   onStop,
   modelOptions,
   selectedModel,
+  thinkingEnabled,
   onModelChange,
+  onThinkingChange,
   onFocusChange,
   onTypingPulse,
 }: {
@@ -577,7 +586,9 @@ function ChatInput({
   onStop: () => void;
   modelOptions: ModelOption[];
   selectedModel: string;
+  thinkingEnabled: boolean;
   onModelChange: (model: string) => void;
+  onThinkingChange: (enabled: boolean) => void;
   onFocusChange?: (focused: boolean) => void;
   onTypingPulse?: () => void;
 }) {
@@ -586,6 +597,7 @@ function ChatInput({
   const selectedOption = modelOptions.find(
     (option) => option.model === selectedModel,
   );
+  const supportsThinking = Boolean(selectedOption?.supports_thinking);
   const busy = running || submitting || cancelling;
   const canSend = Boolean(input.trim()) && !submitting && !cancelling;
   const klaraEngaged = running || submitting || canSend || focused;
@@ -643,6 +655,12 @@ function ChatInput({
             onChange={onModelChange}
             disabled={busy}
           />
+          <ThinkingToggle
+            enabled={thinkingEnabled && supportsThinking}
+            supported={supportsThinking}
+            disabled={busy}
+            onChange={onThinkingChange}
+          />
           <span>Enter to send, Shift + Enter for new line</span>
         </span>
         {running ? (
@@ -670,6 +688,41 @@ function ChatInput({
         </button>
       </div>
     </div>
+  );
+}
+
+function ThinkingToggle({
+  enabled,
+  supported,
+  disabled,
+  onChange,
+}: {
+  enabled: boolean;
+  supported: boolean;
+  disabled: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  const locked = disabled || !supported;
+  const label = !supported
+    ? "Thinking unavailable for this model"
+    : enabled
+      ? "Turn thinking off"
+      : "Turn thinking on";
+  return (
+    <button
+      type="button"
+      className={`thinking-toggle ${enabled ? "is-enabled" : ""}`}
+      aria-label={label}
+      aria-pressed={supported ? enabled : false}
+      aria-disabled={locked}
+      title={label}
+      onClick={() => {
+        if (!locked) onChange(!enabled);
+      }}
+    >
+      <Sparkles size={15} />
+      <span>{enabled ? "Thinking On" : "Thinking Off"}</span>
+    </button>
   );
 }
 
@@ -730,7 +783,12 @@ function ModelPicker({
             }}
           >
             <span>{option.label}</span>
-            <small>{option.use_when ?? option.model}</small>
+            <small>
+              {option.use_when ?? option.model}
+              {option.supports_thinking ? (
+                <span className="model-capability">Thinking</span>
+              ) : null}
+            </small>
             {option.model === selectedModel ? <Check size={15} /> : null}
           </button>
         ))}

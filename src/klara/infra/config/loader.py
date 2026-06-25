@@ -135,10 +135,17 @@ def _models(data: dict[str, Any]) -> ModelsConfig:
                 supports_tools=bool(item.get("supports_tools", False)),
                 supports_json=bool(item.get("supports_json", False)),
                 supports_vision=bool(item.get("supports_vision", False)),
-                enable_thinking=(
-                    bool(item["enable_thinking"])
-                    if "enable_thinking" in item
-                    else None
+                supports_thinking=bool(
+                    item.get(
+                        "supports_thinking",
+                        item.get("enable_thinking", False),
+                    )
+                ),
+                default_thinking=bool(
+                    item.get(
+                        "default_thinking",
+                        item.get("enable_thinking", False),
+                    )
                 ),
             )
             for item in provider_data.get("models", [])

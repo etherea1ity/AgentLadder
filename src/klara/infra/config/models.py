@@ -19,8 +19,10 @@ class ProviderModel:
     supports_json: bool = False
     # Whether this model can accept image inputs in chat messages.
     supports_vision: bool = False
-    # Provider-specific thinking switch; Qwen tools need this disabled.
-    enable_thinking: bool | None = None
+    # Whether provider accepts a public thinking/reasoning mode switch.
+    supports_thinking: bool = False
+    # Default thinking mode when a run does not override it.
+    default_thinking: bool = False
 
 
 @dataclass(frozen=True)
