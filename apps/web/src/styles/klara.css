@@ -447,46 +447,6 @@
 .klara-thinking-current[aria-expanded="true"] .klara-thinking-toggle {
   transform: rotate(90deg);
 }
-.klara-thinking-inline-cursor {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 8px;
-  vertical-align: -0.32em;
-  white-space: nowrap;
-  color: var(--text-muted);
-}
-.klara-thinking-cursor-mark {
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.klara-thinking-cursor-mark .klara-presence {
-  --klara-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-.klara-thinking-cursor-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.klara-thinking-cursor-dots span {
-  width: 4px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--accent-strong);
-  opacity: 0.28;
-  animation: klara-thinking-dot 1.15s ease-in-out infinite;
-}
-.klara-thinking-cursor-dots span:nth-child(2) {
-  animation-delay: 0.14s;
-}
-.klara-thinking-cursor-dots span:nth-child(3) {
-  animation-delay: 0.28s;
-}
 .klara-thinking-drawer-layer {
   position: fixed;
   inset: 0;
@@ -1197,7 +1157,7 @@
   .klara-link-particles {
     display: none !important;
   }
-  .klara-thinking-cursor-dots span {
+  .klara-answer-cursor-dots span {
     animation: none !important;
   }
 }

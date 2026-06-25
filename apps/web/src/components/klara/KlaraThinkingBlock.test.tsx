@@ -73,8 +73,8 @@ describe("KlaraThinkingBlock", () => {
     ).toBeInTheDocument();
     expect(container.querySelector(".klara-thinking-current")).toBeTruthy();
     expect(
-      container.querySelector(".klara-thinking-inline-cursor .klara-presence"),
-    ).toBeTruthy();
+      container.querySelector(".klara-thinking-block .klara-presence"),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText("Then I will separate confirmed facts from unknowns."),
     ).toHaveClass("is-current");

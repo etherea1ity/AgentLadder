@@ -1,7 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import type { Run } from "../../types/domain";
-import { KlaraPresence } from "./KlaraPresence";
 import { formatThinkingDuration, thinkingDurationMs } from "./thinkingDuration";
 import { visibleThinkingItems } from "./thinkingItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
@@ -65,34 +64,11 @@ export function KlaraThinkingBlock({
           }
         >
           {label}
-          {active ? <ThinkingCursor pulseKey={events.length} /> : null}
         </span>
         <span className="klara-thinking-toggle" aria-hidden="true">
           <ChevronRight size={16} />
         </span>
       </button>
     </section>
-  );
-}
-
-function ThinkingCursor({ pulseKey }: { pulseKey: number }) {
-  return (
-    <span className="klara-thinking-inline-cursor" aria-hidden="true">
-      <span className="klara-thinking-cursor-mark">
-        <KlaraPresence
-          active
-          phase="thinking"
-          size="status"
-          capabilities={["model"]}
-          elevated
-          pulseKey={pulseKey}
-        />
-      </span>
-      <span className="klara-thinking-cursor-dots">
-        <span />
-        <span />
-        <span />
-      </span>
-    </span>
   );
 }

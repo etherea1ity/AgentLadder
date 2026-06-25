@@ -1,10 +1,8 @@
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import type { Run, ThinkingActivityItem } from "../../types/domain";
-import { KlaraPresence } from "./KlaraPresence";
 import { formatThinkingDuration, thinkingDurationMs } from "./thinkingDuration";
 import { visibleThinkingItems } from "./thinkingItems";
-import { isKlaraRunActive } from "./useKlaraRunMotion";
 
 type Props = {
   run?: Run | null;
@@ -23,7 +21,6 @@ export function KlaraThinkingDrawer({ run, open, onClose }: Props) {
   );
   const thoughtItems = useMemo(() => visibleThinkingItems(events), [events]);
   const hasVisibleContent = thoughtItems.length > 0;
-  const active = isKlaraRunActive(run);
   const durationLabel = run
     ? formatThinkingDuration(thinkingDurationMs(run, events))
     : "";
@@ -71,11 +68,7 @@ export function KlaraThinkingDrawer({ run, open, onClose }: Props) {
           </button>
         </header>
 
-        <ThoughtList
-          items={thoughtItems}
-          active={active}
-          pulseKey={events.length}
-        />
+        <ThoughtList items={thoughtItems} />
       </aside>
     </div>
   );
@@ -83,12 +76,8 @@ export function KlaraThinkingDrawer({ run, open, onClose }: Props) {
 
 function ThoughtList({
   items,
-  active,
-  pulseKey,
 }: {
   items: ThinkingActivityItem[];
-  active: boolean;
-  pulseKey: number;
 }) {
   return (
     <ol className="klara-thought-list">
@@ -99,28 +88,7 @@ function ThoughtList({
             key={item.id}
             className={isCurrent ? "is-current" : undefined}
           >
-            <p>
-              {item.body}
-              {active && isCurrent ? (
-                <span className="klara-thinking-inline-cursor" aria-hidden="true">
-                  <span className="klara-thinking-cursor-mark">
-                    <KlaraPresence
-                      active
-                      phase="thinking"
-                      size="status"
-                      capabilities={["model"]}
-                      elevated
-                      pulseKey={pulseKey}
-                    />
-                  </span>
-                  <span className="klara-thinking-cursor-dots">
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                </span>
-              ) : null}
-            </p>
+            <p>{item.body}</p>
           </li>
         );
       })}

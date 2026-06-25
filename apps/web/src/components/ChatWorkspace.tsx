@@ -524,7 +524,28 @@ function AssistantContent({
           {normalizeMathMarkdown(content)}
         </ReactMarkdown>
       ) : null}
+      {running ? <KlaraAnswerCursor pulseKey={content.length} /> : null}
     </div>
+  );
+}
+
+function KlaraAnswerCursor({ pulseKey }: { pulseKey: number }) {
+  return (
+    <span className="klara-answer-cursor" aria-hidden="true">
+      <KlaraPresence
+        active
+        phase="writing"
+        size="status"
+        capabilities={["model"]}
+        elevated
+        pulseKey={pulseKey}
+      />
+      <span className="klara-answer-cursor-dots">
+        <span />
+        <span />
+        <span />
+      </span>
+    </span>
   );
 }
 

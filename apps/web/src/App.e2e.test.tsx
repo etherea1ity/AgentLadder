@@ -217,6 +217,7 @@ describe("Klara app flow", () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /close thinking/i }));
     expect(container.querySelector(".chat-workspace.is-thinking-open")).toBeFalsy();
+    expect(container.querySelector(".klara-answer-cursor .klara-presence")).toBeTruthy();
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
     source.emit(
       "tool_call_started",
@@ -238,6 +239,9 @@ describe("Klara app flow", () => {
       }),
     );
     source.emit("answer_streaming_started", evt("answer_streaming_started", "Klara is writing."));
+    await waitFor(() =>
+      expect(container.querySelector(".klara-answer-cursor .klara-presence")).toBeTruthy(),
+    );
     const generatedImageUrl =
       "/api/assets/local?path=data/assets/images/20260617/sample.png";
     source.emit(
@@ -256,6 +260,7 @@ describe("Klara app flow", () => {
     );
 
     expect(await screen.findByText(/Klara completed the runtime loop/)).toBeInTheDocument();
+    await waitFor(() => expect(container.querySelector(".klara-answer-cursor")).toBeFalsy());
     expect(container.querySelector(".assistant-content")?.textContent).not.toContain(
       "Klara summarized a public tool step.",
     );
