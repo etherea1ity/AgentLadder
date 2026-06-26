@@ -77,7 +77,11 @@ describe("KlaraThinkingBlock", () => {
     ).toBeInTheDocument();
     expect(container.querySelector(".klara-thinking-current")).toBeTruthy();
     expect(
-      container.querySelector(".klara-thinking-block .klara-presence"),
+      container.querySelector(".klara-thinking-current .klara-presence"),
+    ).toBeNull();
+    expect(screen.getByLabelText("Klara is still thinking")).toBeInTheDocument();
+    expect(
+      container.querySelector(".klara-thinking-cursor-row .klara-presence"),
     ).toBeTruthy();
     expect(
       screen.getByText("Then I will separate confirmed facts from unknowns."),
@@ -110,6 +114,8 @@ describe("KlaraThinkingBlock", () => {
       screen.getByText("I will search the latest World Model papers before answering."),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".klara-thinking-current")).toHaveLength(1);
+    expect(container.querySelectorAll(".klara-thinking-cursor-row")).toHaveLength(1);
+    expect(container.querySelector(".klara-thinking-current .klara-presence")).toBeNull();
   });
 
   it("does not show active thinking when only runtime action transcript exists", () => {

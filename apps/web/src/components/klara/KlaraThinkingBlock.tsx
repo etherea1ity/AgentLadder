@@ -84,22 +84,27 @@ export function KlaraThinkingBlock({
           }
         >
           {label}
-          {active ? <ThinkingCursor inline /> : null}
         </span>
         <span className="klara-thinking-toggle" aria-hidden="true">
           <ChevronRight size={16} />
         </span>
       </button>
+      {active ? (
+        <div
+          className="klara-thinking-cursor-row"
+          aria-label="Klara is still thinking"
+        >
+          <ThinkingCursor />
+          <span className="klara-thinking-pending-text">Thinking</span>
+        </div>
+      ) : null}
     </section>
   );
 }
 
-function ThinkingCursor({ inline = false }: { inline?: boolean }) {
+function ThinkingCursor() {
   return (
-    <span
-      className={`klara-thinking-cursor ${inline ? "is-inline" : ""}`}
-      aria-hidden="true"
-    >
+    <span className="klara-thinking-cursor" aria-hidden="true">
       <KlaraPresence
         active
         phase="thinking"

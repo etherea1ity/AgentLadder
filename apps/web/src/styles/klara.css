@@ -464,6 +464,15 @@
 .klara-thinking-current[aria-expanded="true"] .klara-thinking-toggle {
   transform: rotate(90deg);
 }
+.klara-thinking-cursor-row {
+  width: min(760px, 100%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 1px 0;
+  color: var(--text-muted);
+}
 .klara-thinking-cursor {
   display: inline-flex;
   align-items: center;
@@ -472,13 +481,10 @@
   white-space: nowrap;
   vertical-align: -0.24em;
 }
-.klara-thinking-cursor.is-inline {
-  margin-left: 7px;
-}
 .klara-thinking-cursor .klara-presence {
-  --klara-size: 17px;
-  width: 17px;
-  height: 17px;
+  --klara-size: 15px;
+  width: 15px;
+  height: 15px;
   filter: drop-shadow(0 0 10px rgba(202, 151, 66, 0.28));
 }
 .klara-thinking-cursor-dots {
