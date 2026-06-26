@@ -1,7 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import type { Run } from "../../types/domain";
-import { KlaraPresence } from "./KlaraPresence";
 import { formatThinkingDuration, thinkingDurationMs } from "./thinkingDuration";
 import {
   visibleMainModelCommentaryItems,
@@ -41,20 +40,7 @@ export function KlaraThinkingBlock({
     : "";
 
   if (!run) return null;
-  if (active && !latestMainThinking) {
-    if (!active) return null;
-    return (
-      <section
-        className="klara-thinking-block is-active is-pending"
-        aria-label="Thinking"
-      >
-        <div className="klara-thinking-pending" aria-label="Klara is thinking">
-          <ThinkingCursor />
-          <span className="klara-thinking-pending-text">Thinking</span>
-        </div>
-      </section>
-    );
-  }
+  if (active && !latestMainThinking) return null;
   if (!active && !hasThinkingDetails) return null;
 
   const label = active
@@ -89,34 +75,6 @@ export function KlaraThinkingBlock({
           <ChevronRight size={16} />
         </span>
       </button>
-      {active ? (
-        <div
-          className="klara-thinking-cursor-row"
-          aria-label="Klara is still thinking"
-        >
-          <ThinkingCursor />
-          <span className="klara-thinking-pending-text">Thinking</span>
-        </div>
-      ) : null}
     </section>
-  );
-}
-
-function ThinkingCursor() {
-  return (
-    <span className="klara-thinking-cursor" aria-hidden="true">
-      <KlaraPresence
-        active
-        phase="thinking"
-        size="status"
-        capabilities={["model"]}
-        elevated
-      />
-      <span className="klara-thinking-cursor-dots">
-        <span />
-        <span />
-        <span />
-      </span>
-    </span>
   );
 }

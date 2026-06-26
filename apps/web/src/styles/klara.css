@@ -387,22 +387,6 @@
   position: relative;
   z-index: 80;
 }
-.klara-thinking-pending {
-  width: min(220px, 100%);
-  min-height: 24px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 0;
-  color: var(--text-muted);
-}
-.klara-thinking-pending-text {
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 640;
-  letter-spacing: 0;
-  animation: klara-thinking-copy-wave 1.65s ease-in-out infinite;
-}
 .klara-thinking-current {
   appearance: none;
   width: min(760px, 100%);
@@ -463,48 +447,6 @@
 }
 .klara-thinking-current[aria-expanded="true"] .klara-thinking-toggle {
   transform: rotate(90deg);
-}
-.klara-thinking-cursor-row {
-  width: min(760px, 100%);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 1px 0;
-  color: var(--text-muted);
-}
-.klara-thinking-cursor {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 0;
-  white-space: nowrap;
-  vertical-align: -0.24em;
-}
-.klara-thinking-cursor .klara-presence {
-  --klara-size: 15px;
-  width: 15px;
-  height: 15px;
-  filter: drop-shadow(0 0 10px rgba(202, 151, 66, 0.28));
-}
-.klara-thinking-cursor-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-.klara-thinking-cursor-dots span {
-  width: 3px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--accent-strong);
-  opacity: 0.28;
-  animation: klara-thinking-dot 1.15s ease-in-out infinite;
-}
-.klara-thinking-cursor-dots span:nth-child(2) {
-  animation-delay: 0.14s;
-}
-.klara-thinking-cursor-dots span:nth-child(3) {
-  animation-delay: 0.28s;
 }
 .klara-thinking-drawer-layer {
   position: fixed;
@@ -1238,8 +1180,6 @@
     display: none !important;
   }
   .klara-answer-cursor-dots span,
-  .klara-thinking-cursor-dots span,
-  .klara-thinking-pending-text,
   .klara-thinking-text.is-current {
     animation: none !important;
   }

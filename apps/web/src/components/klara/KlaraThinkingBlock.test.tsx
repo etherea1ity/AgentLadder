@@ -17,7 +17,7 @@ const baseRun: Run = {
 };
 
 describe("KlaraThinkingBlock", () => {
-  it("shows a pending thinking animation before visible activity exists", () => {
+  it("does not render a pending thinking row before visible activity exists", () => {
     const { container } = render(
       <KlaraThinkingBlock
         run={{
@@ -28,13 +28,12 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.queryByText(/Thinking\.\.\./)).not.toBeInTheDocument();
+    expect(screen.queryByText("Thinking")).not.toBeInTheDocument();
     expect(screen.queryByText(/Completed in/)).not.toBeInTheDocument();
     expect(screen.queryByRole("img", { name: /mini klara/i })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Klara is thinking")).toBeInTheDocument();
-    expect(screen.getByText("Thinking")).toBeInTheDocument();
-    expect(container.querySelector(".klara-thinking-pending")).toBeTruthy();
-    expect(container.querySelector(".klara-thinking-cursor .klara-presence")).toBeTruthy();
-    expect(container.querySelectorAll(".klara-thinking-cursor-dots span")).toHaveLength(3);
+    expect(screen.queryByLabelText("Klara is thinking")).not.toBeInTheDocument();
+    expect(container.querySelector(".klara-thinking-pending")).toBeNull();
+    expect(container.querySelector(".klara-thinking-cursor")).toBeNull();
     expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
@@ -79,10 +78,8 @@ describe("KlaraThinkingBlock", () => {
     expect(
       container.querySelector(".klara-thinking-current .klara-presence"),
     ).toBeNull();
-    expect(screen.getByLabelText("Klara is still thinking")).toBeInTheDocument();
-    expect(
-      container.querySelector(".klara-thinking-cursor-row .klara-presence"),
-    ).toBeTruthy();
+    expect(screen.queryByLabelText("Klara is still thinking")).not.toBeInTheDocument();
+    expect(container.querySelector(".klara-thinking-cursor-row")).toBeNull();
     expect(
       screen.getByText("Then I will separate confirmed facts from unknowns."),
     ).toHaveClass("is-current");
@@ -114,7 +111,7 @@ describe("KlaraThinkingBlock", () => {
       screen.getByText("I will search the latest World Model papers before answering."),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".klara-thinking-current")).toHaveLength(1);
-    expect(container.querySelectorAll(".klara-thinking-cursor-row")).toHaveLength(1);
+    expect(container.querySelectorAll(".klara-thinking-cursor-row")).toHaveLength(0);
     expect(container.querySelector(".klara-thinking-current .klara-presence")).toBeNull();
   });
 
