@@ -283,7 +283,13 @@ def project_assistant_activity(event: RunEventRecord) -> tuple[ProjectedRunEvent
         return ()
     source = _string_or_none(activity.get("source")) or "main_model_commentary"
     phase = _activity_phase(activity.get("phase"))
+    activity_id = _string_or_none(activity.get("activity_id")) or f"activity_{event.event_id}"
+    sequence = activity.get("sequence")
+    status = _activity_status(activity.get("status"))
     payload = {
+        "activity_id": activity_id,
+        "sequence": sequence if isinstance(sequence, int) else None,
+        "status": status,
         "text": text,
         "source": "main_model_commentary",
         "source_detail": source,
@@ -300,6 +306,9 @@ def project_assistant_activity(event: RunEventRecord) -> tuple[ProjectedRunEvent
             event_type="assistant_activity_completed",
             message="Assistant public activity commentary completed.",
             payload={
+                "activity_id": activity_id,
+                "sequence": sequence if isinstance(sequence, int) else None,
+                "status": status,
                 "source": "main_model_commentary",
                 "phase": phase,
                 "evidence_event_ids": [event.event_id],
@@ -742,6 +751,14 @@ def _activity_phase(value: object) -> str:
     if value in {"before_tool", "between_tools", "finalizing"}:
         return str(value)
     return "before_tool"
+
+
+def _activity_status(value: object) -> str:
+    """Return a known public activity update status."""
+
+    if value in {"running", "completed", "failed"}:
+        return str(value)
+    return "completed"
 
 
 def _redact_public_text(text: str) -> str:

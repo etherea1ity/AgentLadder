@@ -7,7 +7,7 @@ import type {
 } from "../../types/domain";
 
 export function visibleProviderReasoningItems(events: RunEvent[]) {
-  return events
+  return mergeActivityItems(events
     .filter((event) => event.event_type === "provider_reasoning_delta")
     .flatMap((event) => {
       const items = event.payload?.items;
@@ -16,28 +16,15 @@ export function visibleProviderReasoningItems(events: RunEvent[]) {
         : [];
     })
     .filter((item) => item.source === "provider_reasoning")
-    .filter(isSafeActivityItem);
+    .filter(isSafeActivityItem));
 }
 
 export function visibleThinkingItems(events: RunEvent[]) {
-  return events
+  return mergeActivityItems(events
     .flatMap((event) => {
       if (event.event_type === "assistant_activity_delta") {
-        const text = safeText(event.payload?.text);
-        if (!text) return [];
-        const phase = activityPhase(event.payload?.phase);
-        return [
-          {
-            id: `activity_${event.event_id}`,
-            title: "thinking",
-            body: text,
-            status: "completed",
-            kind: phaseToKind(phase),
-            source: "main_model_commentary",
-            evidence_event_ids: evidenceIds(event),
-            confidence: 1,
-          } satisfies ThinkingActivityItem,
-        ];
+        const item = activityDeltaItem(event);
+        return item ? [item] : [];
       }
       if (event.event_type === "provider_reasoning_delta") {
         const items = event.payload?.items;
@@ -52,30 +39,44 @@ export function visibleThinkingItems(events: RunEvent[]) {
         item.source === "main_model_commentary" ||
         item.source === "provider_reasoning",
     )
-    .filter(isSafeActivityItem);
+    .filter(isSafeActivityItem));
 }
 
 export function visibleMainModelCommentaryItems(events: RunEvent[]) {
-  return events
+  return mergeActivityItems(events
     .filter((event) => event.event_type === "assistant_activity_delta")
-    .map((event) => {
-      const text = safeText(event.payload?.text);
-      if (!text) return null;
-      const phase = activityPhase(event.payload?.phase);
-      const item: ThinkingActivityItem = {
-        id: `activity_${event.event_id}`,
-        title: "activity",
-        body: text,
-        status: "completed",
-        kind: phaseToKind(phase),
-        source: "main_model_commentary",
-        evidence_event_ids: evidenceIds(event),
-        confidence: 1,
-      };
-      return item;
-    })
+    .map(activityDeltaItem)
     .filter(isActivityItem)
-    .filter(isSafeActivityItem);
+    .filter(isSafeActivityItem));
+}
+
+function activityDeltaItem(event: RunEvent): ThinkingActivityItem | null {
+  const text = safeText(event.payload?.text);
+  if (!text) return null;
+  const phase = activityPhase(event.payload?.phase);
+  return {
+    id: stringField(event.payload?.activity_id) || `activity_${event.event_id}`,
+    title: "thinking",
+    body: text,
+    status: activityStatus(event.payload?.status),
+    kind: phaseToKind(phase),
+    source: "main_model_commentary",
+    sequence:
+      typeof event.payload?.sequence === "number" &&
+      Number.isFinite(event.payload.sequence)
+        ? event.payload.sequence
+        : undefined,
+    evidence_event_ids: evidenceIds(event),
+    confidence: 1,
+  };
+}
+
+function mergeActivityItems(items: ThinkingActivityItem[]) {
+  const merged = new Map<string, ThinkingActivityItem>();
+  for (const item of items) {
+    merged.set(item.id, item);
+  }
+  return Array.from(merged.values());
 }
 
 function normalizeActivityItem(value: unknown): ThinkingActivityItem | null {
@@ -90,6 +91,10 @@ function normalizeActivityItem(value: unknown): ThinkingActivityItem | null {
     status: activityStatus(record.status),
     kind: activityKind(record.kind),
     source: activitySource(record.source),
+    sequence:
+      typeof record.sequence === "number" && Number.isFinite(record.sequence)
+        ? record.sequence
+        : undefined,
     evidence_fact_ids: Array.isArray(evidenceFacts)
       ? evidenceFacts.filter((item): item is string => typeof item === "string")
       : undefined,
@@ -122,10 +127,20 @@ function stringField(value: unknown) {
 
 function safeText(value: unknown) {
   const text = stripInternalActivityLabels(
-    stringField(value).replace(/\s+/g, " "),
+    normalizeVisibleText(stringField(value)),
   );
   if (!text || containsFullUrl(text) || containsRawPayloadTerms(text)) return "";
   return text;
+}
+
+function normalizeVisibleText(text: string) {
+  return text
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function stripInternalActivityLabels(text: string) {
@@ -192,7 +207,6 @@ function containsFullUrl(...parts: string[]) {
 function containsRawPayloadTerms(...parts: string[]) {
   const text = parts.join("\n").toLowerCase();
   return [
-    "query",
     "argument",
     "arguments",
     "raw args",

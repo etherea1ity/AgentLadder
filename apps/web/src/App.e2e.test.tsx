@@ -200,6 +200,21 @@ describe("Klara app flow", () => {
     expect(
       screen.queryByText("The provider returned a safe reasoning summary."),
     ).not.toBeInTheDocument();
+    source.emit(
+      "assistant_activity_delta",
+      evt("assistant_activity_delta", "", {
+        activity_id: "activity_turn_1",
+        sequence: 1,
+        status: "completed",
+        text: "I will check one runtime step before answering.",
+        source: "main_model_commentary",
+        phase: "before_tool",
+        evidence_event_ids: ["evt_llm_completed"],
+      }),
+    );
+    expect(
+      await screen.findByText("I will check one runtime step before answering."),
+    ).toBeInTheDocument();
     fireEvent.click(
       await screen.findByRole("button", { name: /toggle thinking details/i }),
     );

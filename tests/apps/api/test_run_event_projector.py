@@ -497,6 +497,9 @@ def test_assistant_activity_projects_delta_and_completed_events() -> None:
         "assistant_activity_completed",
     ]
     assert projected[0].payload == {
+        "activity_id": "activity_" + event.event_id,
+        "sequence": None,
+        "status": "completed",
         "text": "I will check public sources first.",
         "source": "main_model_commentary",
         "source_detail": "assistant.content_with_tool_calls",

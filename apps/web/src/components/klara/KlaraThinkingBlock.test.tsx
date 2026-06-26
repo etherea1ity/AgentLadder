@@ -28,12 +28,13 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.queryByText(/Thinking\.\.\./)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Completed in/)).not.toBeInTheDocument();
     expect(screen.queryByRole("img", { name: /mini klara/i })).not.toBeInTheDocument();
-    expect(container.querySelector(".klara-thinking-mini .klara-presence")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Klara is thinking")).toBeInTheDocument();
+    expect(screen.getByText("Thinking")).toBeInTheDocument();
     expect(container.querySelector(".klara-thinking-pending")).toBeTruthy();
-    expect(container.querySelectorAll(".klara-thinking-loader span")).toHaveLength(3);
+    expect(container.querySelector(".klara-thinking-cursor .klara-presence")).toBeTruthy();
+    expect(container.querySelectorAll(".klara-thinking-cursor-dots span")).toHaveLength(3);
     expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
@@ -48,7 +49,7 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Completed in/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
@@ -77,7 +78,7 @@ describe("KlaraThinkingBlock", () => {
     expect(container.querySelector(".klara-thinking-current")).toBeTruthy();
     expect(
       container.querySelector(".klara-thinking-block .klara-presence"),
-    ).not.toBeInTheDocument();
+    ).toBeTruthy();
     expect(
       screen.getByText("Then I will separate confirmed facts from unknowns."),
     ).toHaveClass("is-current");
@@ -145,7 +146,7 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText("Thought for 0.8s")).toBeInTheDocument();
+    expect(screen.getByText("Completed in 0.8s")).toBeInTheDocument();
     expect(screen.queryByText("The provider returned a safe reasoning summary.")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /toggle thinking details/i })).toBeInTheDocument();
   });
@@ -160,7 +161,7 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    expect(screen.getByText("Thought for 0.8s")).toBeInTheDocument();
+    expect(screen.getByText("Completed in 0.8s")).toBeInTheDocument();
     expect(screen.queryByText("I will use a tool before answering.")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /toggle thinking details/i })).toBeInTheDocument();
   });
@@ -184,7 +185,7 @@ describe("KlaraThinkingBlock", () => {
     );
 
     expect(screen.queryByText(/Worked for/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Thought for/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Completed in/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /toggle thinking details/i })).not.toBeInTheDocument();
   });
 
@@ -200,7 +201,7 @@ describe("KlaraThinkingBlock", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Thought for 0.8s"));
+    fireEvent.click(screen.getByText("Completed in 0.8s"));
     expect(onToggleThinking).toHaveBeenCalledTimes(1);
   });
 

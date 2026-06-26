@@ -321,6 +321,7 @@ class KlaraLoop:
                 prepared_calls = _prepare_tool_calls(response.tool_calls)
                 activity_payload = _activity_payload(
                     response,
+                    turn_index=turn_index,
                     phase=_activity_phase(
                         turn_index=turn_index,
                         has_tool_calls=bool(prepared_calls.external_calls),
@@ -643,7 +644,11 @@ class KlaraLoop:
                     "metrics": llm_metrics,
                     "finalization": True,
                     **_reasoning_payload(response),
-                    **_activity_payload(response, phase="finalizing"),
+                    **_activity_payload(
+                        response,
+                        turn_index=final_turn_index,
+                        phase="finalizing",
+                    ),
                 },
             )
         if not response.content.strip() and ignored_tool_call_count:
@@ -701,7 +706,11 @@ class KlaraLoop:
                     "finalization": True,
                     "retry_after_ignored_tools": True,
                     **_reasoning_payload(response),
-                    **_activity_payload(response, phase="finalizing"),
+                    **_activity_payload(
+                        response,
+                        turn_index=retry_turn_index,
+                        phase="finalizing",
+                    ),
                 },
             )
         final_answer = response.content.strip()
@@ -1125,6 +1134,7 @@ def _activity_text_from_call(call: ToolCall) -> str:
 def _activity_payload(
     response: ModelResponse,
     *,
+    turn_index: int,
     phase: str,
     tool_calls: tuple[ToolCall, ...] | None = None,
     activity_tool_text: str = "",
@@ -1145,6 +1155,9 @@ def _activity_payload(
         return {}
     return {
         "activity_commentary": {
+            "activity_id": f"activity_turn_{turn_index}",
+            "sequence": turn_index,
+            "status": "completed",
             "text": text,
             "source": source,
             "phase": phase,

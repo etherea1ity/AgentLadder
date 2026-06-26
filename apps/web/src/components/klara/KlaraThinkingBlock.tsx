@@ -1,8 +1,12 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import type { Run } from "../../types/domain";
+import { KlaraPresence } from "./KlaraPresence";
 import { formatThinkingDuration, thinkingDurationMs } from "./thinkingDuration";
-import { visibleThinkingItems } from "./thinkingItems";
+import {
+  visibleMainModelCommentaryItems,
+  visibleThinkingItems,
+} from "./thinkingItems";
 import { isKlaraRunActive } from "./useKlaraRunMotion";
 
 type Props = {
@@ -25,17 +29,19 @@ export function KlaraThinkingBlock({
       ),
     [run?.events],
   );
-  const thinkingItems = useMemo(
-    () => visibleThinkingItems(events),
+  const thinkingItems = useMemo(() => visibleThinkingItems(events), [events]);
+  const mainThinkingItems = useMemo(
+    () => visibleMainModelCommentaryItems(events),
     [events],
   );
-  const latestThinking = thinkingItems[thinkingItems.length - 1];
+  const latestMainThinking = mainThinkingItems[mainThinkingItems.length - 1];
+  const hasThinkingDetails = thinkingItems.length > 0;
   const durationLabel = run
     ? formatThinkingDuration(thinkingDurationMs(run, events))
     : "";
 
   if (!run) return null;
-  if (!latestThinking) {
+  if (active && !latestMainThinking) {
     if (!active) return null;
     return (
       <section
@@ -43,21 +49,19 @@ export function KlaraThinkingBlock({
         aria-label="Thinking"
       >
         <div className="klara-thinking-pending" aria-label="Klara is thinking">
-          <span className="klara-thinking-loader" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
+          <ThinkingCursor />
+          <span className="klara-thinking-pending-text">Thinking</span>
         </div>
       </section>
     );
   }
+  if (!active && !hasThinkingDetails) return null;
 
   const label = active
-    ? latestThinking.body
+    ? latestMainThinking?.body
     : durationLabel
-      ? `Thought for ${durationLabel}`
-      : "Thought";
+      ? `Completed in ${durationLabel}`
+      : "Completed";
 
   return (
     <section
@@ -80,11 +84,34 @@ export function KlaraThinkingBlock({
           }
         >
           {label}
+          {active ? <ThinkingCursor inline /> : null}
         </span>
         <span className="klara-thinking-toggle" aria-hidden="true">
           <ChevronRight size={16} />
         </span>
       </button>
     </section>
+  );
+}
+
+function ThinkingCursor({ inline = false }: { inline?: boolean }) {
+  return (
+    <span
+      className={`klara-thinking-cursor ${inline ? "is-inline" : ""}`}
+      aria-hidden="true"
+    >
+      <KlaraPresence
+        active
+        phase="thinking"
+        size="status"
+        capabilities={["model"]}
+        elevated
+      />
+      <span className="klara-thinking-cursor-dots">
+        <span />
+        <span />
+        <span />
+      </span>
+    </span>
   );
 }

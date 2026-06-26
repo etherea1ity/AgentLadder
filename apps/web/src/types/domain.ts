@@ -115,6 +115,7 @@ export type ThinkingActivityItem = {
   status: ThinkingActivityStatus;
   kind: ThinkingActivityKind;
   source: ThinkingActivitySource;
+  sequence?: number;
   evidence_fact_ids?: string[];
   evidence_event_ids: string[];
   confidence?: number;
