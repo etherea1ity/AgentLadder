@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+import hashlib
 import json
 import re
 from time import perf_counter
@@ -299,6 +300,9 @@ class KlaraLoop:
             # Iterate through bounded turns so a model cannot request tools forever.
             for turn_index in range(1, self.policy.max_turns + 1):
                 self._emit(sequencer, active_run_id, EventKind.TURN_STARTED, {"turn_index": turn_index})
+                model_messages = tuple(messages)
+                system_prompt = self._system_prompt_for_turn(public_activity_updates)
+                model_tools = _model_visible_tool_specs(self.tool_executor.specs)
                 self._emit(
                     sequencer,
                     active_run_id,
@@ -307,14 +311,21 @@ class KlaraLoop:
                         "turn_index": turn_index,
                         "model": self.model,
                         "thinking_enabled": self.thinking_enabled,
+                        "input_profile": _llm_input_profile(
+                            system_prompt=system_prompt,
+                            messages=model_messages,
+                            tools=model_tools,
+                            public_activity_updates=public_activity_updates,
+                            controller_count=len(self.controllers),
+                        ),
                     },
                 )
                 # Ask the injected model using only the prompt, transcript, and specs.
                 llm_started = perf_counter()
                 response = self.llm.complete(
-                    system_prompt=self._system_prompt_for_turn(public_activity_updates),
-                    messages=tuple(messages),
-                    tools=_model_visible_tool_specs(self.tool_executor.specs),
+                    system_prompt=system_prompt,
+                    messages=model_messages,
+                    tools=model_tools,
                     model=self.model,
                     thinking_enabled=self.thinking_enabled,
                 )
@@ -343,6 +354,11 @@ class KlaraLoop:
                         "internal_activity_call_count": prepared_calls.internal_activity_count,
                         "usage": usage,
                         "metrics": llm_metrics,
+                        "response_profile": _llm_response_profile(
+                            response=response,
+                            prepared_calls=prepared_calls,
+                            activity_payload=activity_payload,
+                        ),
                         **_reasoning_payload(response),
                         **activity_payload,
                     },
@@ -606,6 +622,7 @@ class KlaraLoop:
                 ),
             ]
         ).strip()
+        model_messages = tuple(messages)
         self._emit(
             sequencer,
             run_id,
@@ -615,12 +632,20 @@ class KlaraLoop:
                 "finalization": True,
                 "model": self.model,
                 "thinking_enabled": self.thinking_enabled,
+                "input_profile": _llm_input_profile(
+                    system_prompt=finalization_prompt,
+                    messages=model_messages,
+                    tools=(),
+                    public_activity_updates=(),
+                    controller_count=len(self.controllers),
+                    finalization=True,
+                ),
             },
         )
         llm_started = perf_counter()
         response = self.llm.complete(
             system_prompt=finalization_prompt,
-            messages=tuple(messages),
+            messages=model_messages,
             tools=(),
             model=self.model,
             thinking_enabled=self.thinking_enabled,
@@ -630,6 +655,12 @@ class KlaraLoop:
         llm_metrics = _llm_metrics(llm_duration_ms, usage)
         run_metrics.add_llm_metrics(llm_metrics)
         ignored_tool_call_count = len(response.tool_calls)
+        prepared_calls = _prepare_tool_calls(response.tool_calls)
+        activity_payload = _activity_payload(
+            response,
+            turn_index=final_turn_index,
+            phase="finalizing",
+        )
         self._emit(
             sequencer,
             run_id,
@@ -643,12 +674,13 @@ class KlaraLoop:
                     "usage": usage,
                     "metrics": llm_metrics,
                     "finalization": True,
-                    **_reasoning_payload(response),
-                    **_activity_payload(
-                        response,
-                        turn_index=final_turn_index,
-                        phase="finalizing",
+                    "response_profile": _llm_response_profile(
+                        response=response,
+                        prepared_calls=prepared_calls,
+                        activity_payload=activity_payload,
                     ),
+                    **_reasoning_payload(response),
+                    **activity_payload,
                 },
             )
         if not response.content.strip() and ignored_tool_call_count:
@@ -666,6 +698,7 @@ class KlaraLoop:
             )
             messages.append(retry_prompt)
             retry_turn_index = final_turn_index + 1
+            retry_messages = tuple(messages)
             self._emit(
                 sequencer,
                 run_id,
@@ -676,12 +709,20 @@ class KlaraLoop:
                     "model": self.model,
                     "thinking_enabled": self.thinking_enabled,
                     "retry_after_ignored_tools": True,
+                    "input_profile": _llm_input_profile(
+                        system_prompt=finalization_prompt,
+                        messages=retry_messages,
+                        tools=(),
+                        public_activity_updates=(),
+                        controller_count=len(self.controllers),
+                        finalization=True,
+                    ),
                 },
             )
             llm_started = perf_counter()
             response = self.llm.complete(
                 system_prompt=finalization_prompt,
-                messages=tuple(messages),
+                messages=retry_messages,
                 tools=(),
                 model=self.model,
                 thinking_enabled=self.thinking_enabled,
@@ -691,6 +732,12 @@ class KlaraLoop:
             llm_metrics = _llm_metrics(llm_duration_ms, usage)
             run_metrics.add_llm_metrics(llm_metrics)
             ignored_tool_call_count = len(response.tool_calls)
+            prepared_calls = _prepare_tool_calls(response.tool_calls)
+            activity_payload = _activity_payload(
+                response,
+                turn_index=retry_turn_index,
+                phase="finalizing",
+            )
             self._emit(
                 sequencer,
                 run_id,
@@ -705,12 +752,13 @@ class KlaraLoop:
                     "metrics": llm_metrics,
                     "finalization": True,
                     "retry_after_ignored_tools": True,
-                    **_reasoning_payload(response),
-                    **_activity_payload(
-                        response,
-                        turn_index=retry_turn_index,
-                        phase="finalizing",
+                    "response_profile": _llm_response_profile(
+                        response=response,
+                        prepared_calls=prepared_calls,
+                        activity_payload=activity_payload,
                     ),
+                    **_reasoning_payload(response),
+                    **activity_payload,
                 },
             )
         final_answer = response.content.strip()
@@ -1076,6 +1124,104 @@ def _llm_metrics(
         "total_tokens": usage.get("total_tokens"),
         "token_source": token_source,
     }
+
+
+def _llm_input_profile(
+    *,
+    system_prompt: str,
+    messages: tuple[KlaraMessage, ...],
+    tools: tuple[ToolSpec, ...],
+    public_activity_updates: list[str] | tuple[str, ...],
+    controller_count: int,
+    finalization: bool = False,
+) -> dict[str, object]:
+    """Return trace-safe metadata for one model-visible request boundary."""
+
+    role_counts: dict[str, int] = {}
+    total_content_chars = 0
+    tool_result_count = 0
+    assistant_tool_call_message_count = 0
+    for message in messages:
+        role_counts[message.role] = role_counts.get(message.role, 0) + 1
+        total_content_chars += len(message.content)
+        if message.role == "tool":
+            tool_result_count += 1
+        if message.tool_calls:
+            assistant_tool_call_message_count += 1
+
+    last_message = messages[-1] if messages else None
+    tool_names = [tool.name for tool in tools]
+    tool_spec_fingerprint = _stable_fingerprint(
+        [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "input_schema": tool.input_schema,
+            }
+            for tool in tools
+        ]
+    )
+    return {
+        "message_count": len(messages),
+        "role_counts": role_counts,
+        "total_content_chars": total_content_chars,
+        "last_message_role": last_message.role if last_message else None,
+        "last_message_chars": len(last_message.content) if last_message else 0,
+        "tool_result_count": tool_result_count,
+        "assistant_tool_call_message_count": assistant_tool_call_message_count,
+        "system_prompt_chars": len(system_prompt),
+        "system_prompt_hash": _stable_fingerprint(system_prompt),
+        "tool_spec_count": len(tools),
+        "tool_names": tool_names,
+        "tool_spec_hash": tool_spec_fingerprint,
+        "public_activity_update_count": len(public_activity_updates),
+        "controller_count": controller_count,
+        "finalization": finalization,
+    }
+
+
+def _llm_response_profile(
+    *,
+    response: ModelResponse,
+    prepared_calls: _PreparedToolCalls,
+    activity_payload: dict[str, object],
+) -> dict[str, object]:
+    """Return trace-safe metadata for one model response boundary."""
+
+    activity_text = _activity_text_from_payload(activity_payload)
+    reasoning_text = (
+        response.reasoning_summary.strip()
+        if isinstance(response.reasoning_summary, str)
+        else ""
+    )
+    return {
+        "content_chars": len(response.content),
+        "has_content": bool(response.content.strip()),
+        "external_tool_call_count": len(prepared_calls.external_calls),
+        "internal_activity_call_count": prepared_calls.internal_activity_count,
+        "tool_call_names": [call.name for call in prepared_calls.external_calls],
+        "tool_call_ids": [call.id for call in prepared_calls.external_calls],
+        "has_activity_commentary": bool(activity_text),
+        "activity_commentary_chars": len(activity_text),
+        "has_provider_reasoning": bool(reasoning_text),
+        "provider_reasoning_chars": len(reasoning_text),
+    }
+
+
+def _stable_fingerprint(value: object) -> str:
+    """Return a short stable hash for trace joins without exposing raw content."""
+
+    if isinstance(value, str):
+        payload = value
+    else:
+        payload = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
 def _reasoning_payload(response: ModelResponse) -> dict[str, object]:

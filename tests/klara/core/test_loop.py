@@ -410,6 +410,79 @@ def test_llm_completed_event_includes_duration_ms() -> None:
     assert usage["completion_tokens"] == 3
 
 
+def test_llm_started_event_includes_trace_safe_input_profile() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm([ModelResponse(content="done")])
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+        system_prompt="private system prompt text",
+    )
+
+    loop.run("private user prompt", run_id="run-input-profile")
+
+    started = next(
+        event for event in recorder.events if str(getattr(event, "type")) == "llm.started"
+    )
+    payload = getattr(started, "payload")
+    profile = payload["input_profile"]
+    serialized = str(profile)
+    assert profile["message_count"] == 1
+    assert profile["role_counts"] == {"user": 1}
+    assert profile["system_prompt_chars"] == len("private system prompt text")
+    assert len(profile["system_prompt_hash"]) == 16
+    assert profile["tool_spec_count"] == 2
+    assert profile["tool_names"] == ["test_echo", "update_activity"]
+    assert "private system prompt text" not in serialized
+    assert "private user prompt" not in serialized
+    assert "system_prompt" not in payload
+    assert "messages" not in payload
+
+
+def test_llm_completed_event_includes_trace_safe_response_profile() -> None:
+    recorder = EventRecorder()
+    tool_call = ToolCall(
+        id="call-profile",
+        name="test_echo",
+        arguments={"text": "observed"},
+    )
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="I will use a tool.",
+                tool_calls=(tool_call,),
+                reasoning_summary="provider reasoning summary",
+            ),
+            ModelResponse(content="done"),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor([EchoFixtureTool()]),
+        hooks=HookManager([recorder]),
+    )
+
+    loop.run("profile response", run_id="run-response-profile")
+
+    completed = next(
+        event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
+    )
+    payload = getattr(completed, "payload")
+    profile = payload["response_profile"]
+    serialized = str(profile)
+    assert profile["content_chars"] == len("I will use a tool.")
+    assert profile["has_content"] is True
+    assert profile["external_tool_call_count"] == 1
+    assert profile["internal_activity_call_count"] == 0
+    assert profile["tool_call_names"] == ["test_echo"]
+    assert profile["tool_call_ids"] == ["call-profile"]
+    assert profile["has_activity_commentary"] is True
+    assert profile["has_provider_reasoning"] is True
+    assert "I will use a tool." not in serialized
+    assert "provider reasoning summary" not in serialized
+
+
 def test_tool_terminal_event_includes_duration_ms() -> None:
     recorder = EventRecorder()
     tool_call = ToolCall(

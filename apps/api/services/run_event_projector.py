@@ -79,6 +79,7 @@ class RunEventProjector:
         """Return API events derived from one public core event."""
 
         if event.type == "llm.started":
+            input_profile = _dict_payload(event.payload.get("input_profile"))
             return (
                 ProjectedRunEvent(
                     event_type="llm_call_started",
@@ -87,6 +88,7 @@ class RunEventProjector:
                         "turn_index": event.payload.get("turn_index"),
                         "model": event.payload.get("model") or self.selected_model,
                         "finalization": bool(event.payload.get("finalization", False)),
+                        **({"input_profile": input_profile} if input_profile else {}),
                     },
                 ),
             )
@@ -99,6 +101,7 @@ class RunEventProjector:
             metrics = _dict_payload(event.payload.get("metrics"))
             reasoning = _dict_payload(event.payload.get("reasoning"))
             activity = _dict_payload(event.payload.get("activity_commentary"))
+            response_profile = _dict_payload(event.payload.get("response_profile"))
             usage_fields = _usage_payload(usage)
             token_source = _token_source(metrics, usage_fields)
             duration_ms = _int_or_none(metrics.get("duration_ms"))
@@ -123,6 +126,11 @@ class RunEventProjector:
                         },
                         **({"reasoning": reasoning} if reasoning else {}),
                         **({"activity_commentary": activity} if activity else {}),
+                        **(
+                            {"response_profile": response_profile}
+                            if response_profile
+                            else {}
+                        ),
                     },
                 ),
             )
@@ -386,6 +394,8 @@ def _llm_activity_fact(event: RunEventRecord, *, status: str) -> dict[str, Any]:
             "model": _string_or_none(event.payload.get("model")),
             "finalization": bool(event.payload.get("finalization", False)),
             "tool_call_count": event.payload.get("tool_call_count"),
+            "input_profile": _dict_payload(event.payload.get("input_profile")),
+            "response_profile": _dict_payload(event.payload.get("response_profile")),
         },
         metrics=_fact_metrics(event),
     )

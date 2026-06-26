@@ -31,6 +31,31 @@ def test_llm_started_projection_includes_model_and_finalization() -> None:
     }
 
 
+def test_llm_started_projection_preserves_input_profile() -> None:
+    projector = RunEventProjector()
+    input_profile = {
+        "message_count": 3,
+        "role_counts": {"user": 2, "assistant": 1},
+        "system_prompt_hash": "abc123def4567890",
+        "tool_spec_count": 2,
+        "tool_names": ["web_search", "update_activity"],
+    }
+    event = KlaraEvent(
+        type="llm.started",
+        run_id="run-1",
+        payload={
+            "turn_index": 1,
+            "model": "selected-model",
+            "input_profile": input_profile,
+        },
+    )
+
+    projected = projector.project(event)[0]
+
+    assert projected.event_type == "llm_call_started"
+    assert projected.payload["input_profile"] == input_profile
+
+
 def test_llm_completed_projection_updates_usage_totals() -> None:
     projector = RunEventProjector()
     event = KlaraEvent(
@@ -51,6 +76,32 @@ def test_llm_completed_projection_updates_usage_totals() -> None:
     assert projected[0].payload["total_tokens"] == 8
     assert projector.usage_totals.has_reported is True
     assert projector.usage_totals.total_tokens == 8
+
+
+def test_llm_completed_projection_preserves_response_profile() -> None:
+    projector = RunEventProjector()
+    response_profile = {
+        "content_chars": 14,
+        "has_content": True,
+        "external_tool_call_count": 1,
+        "tool_call_names": ["web_fetch"],
+        "has_activity_commentary": True,
+    }
+    event = KlaraEvent(
+        type="llm.completed",
+        run_id="run-1",
+        payload={
+            "turn_index": 1,
+            "tool_call_count": 1,
+            "usage": {},
+            "response_profile": response_profile,
+        },
+    )
+
+    projected = projector.project(event)[0]
+
+    assert projected.event_type == "llm_call_completed"
+    assert projected.payload["response_profile"] == response_profile
 
 
 def test_llm_completed_projection_includes_duration_and_usage() -> None:
@@ -316,7 +367,13 @@ def test_llm_call_started_run_event_projects_activity_fact() -> None:
         run_id="run-1",
         event_type="llm_call_started",
         message="Klara is calling the model.",
-        payload={"model": "qwen/qwen-flash"},
+        payload={
+            "model": "qwen/qwen-flash",
+            "input_profile": {
+                "message_count": 1,
+                "system_prompt_hash": "abc123def4567890",
+            },
+        },
     )
 
     projected = project_activity_fact(event)
@@ -327,6 +384,8 @@ def test_llm_call_started_run_event_projects_activity_fact() -> None:
     assert fact["kind"] == "llm_round"
     assert fact["status"] == "started"
     assert fact["llm"]["model"] == "qwen/qwen-flash"
+    assert fact["llm"]["input_profile"]["message_count"] == 1
+    assert fact["llm"]["input_profile"]["system_prompt_hash"] == "abc123def4567890"
     assert fact["evidence_event_ids"] == [event.event_id]
     assert "title" not in fact
     assert "body" not in fact
