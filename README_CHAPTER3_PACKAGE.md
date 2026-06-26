@@ -1,63 +1,47 @@
-# Klara Chapter 3 Package: Hooks, Trace, Activity
+# Klara Chapter 3 Package: Hooks, Trace, Thinking
 
-This package documents the Chapter 3 boundary: user-facing Thinking, fact-bound Activity, and Developer Debug are separate surfaces.
+This package documents the Chapter 3 boundary: hooks observe the loop, trace records the evidence, Thinking stays user-facing, and Developer Debug stays engineering-facing.
 
 ## User-Facing Shape
 
-Thinking lives inside the assistant message, before the final answer:
+Thinking lives inside the assistant message, before the final answer.
 
 ```text
-active:    Klara · Thinking... + timer
-           one compact live preamble when available
-complete:  Klara · Thought for X >
+active:    Klara + latest public commentary when the model produced one
+complete:  Thought for X > when there is visible Thinking content
 ```
 
-Completed `Thought for X` is content-backed. It appears only when at least one of these exists:
+The visible Thinking content can come from:
 
-- a safe provider/model reasoning summary;
-- a safe `thinking_preamble_delta`;
-- safe narrator activity items.
+- provider reasoning summaries, when the selected model exposes one;
+- main-model public commentary, such as assistant text emitted alongside tool calls;
+- compact runtime action transcript entries in the Activity drawer.
 
-If none exist, the trigger is not shown. The label itself does not open the drawer; only the right chevron does.
+If none of those exists, Klara does not show an empty Thought trigger. Duration still belongs in Developer Debug.
 
 ## Activity Drawer
 
-- `Klara preamble`: the public live preamble, when available.
-- `Model thinking`: safe `provider_reasoning` summaries only; hidden when unavailable.
-- `Klara activity`: `narrator_model` items generated from structured `activity_fact_recorded` events.
-- No runtime/fallback template prose is shown.
-- If the narrator fails or is unavailable, diagnostics go to Developer Debug instead of public activity.
+The drawer is a user-facing explanation surface, not raw debug.
+
+- Klara activity: public commentary produced by the main model.
+- Agent activity: safe summaries of real runtime actions, such as tool name, status, result count, title, or domain.
+- Provider reasoning: provider-visible reasoning summary when the model exposes one.
+
+The drawer must not show full URLs, full queries, raw tool arguments, raw observations, raw payloads, secrets, or hidden chain-of-thought.
 
 ## Developer Debug
 
-- LLM rounds with token and duration fields when present.
-- Tool cards with status, duration, argument preview, observation preview.
-- Activity facts with request preview and evidence ids.
-- Narrator diagnostics: started, completed, rejected, failed.
-- Trace events and raw payloads only inside the developer panel.
+Developer Debug stays under the assistant answer and is collapsed by default.
 
-## Why This Is The Chapter 3 Contract
+It is allowed to show engineering details:
 
-Klara follows the product pattern we want to teach:
+- LLM rounds and model names;
+- input and response profiles;
+- token and duration fields when available;
+- tool arguments and observation previews;
+- raw trace payloads in expandable debug sections.
 
-```text
-GPT-like live preamble + Thought entry
-+ safe provider reasoning when available
-+ evidence-bound narrator activity
-+ developer-only trace/debug
-```
-
-The important separation is:
-
-```text
-provider reasoning summary != raw chain-of-thought
-live preamble              != final answer
-narrator activity          != runtime template prose
-developer debug            != user thinking UI
-runtime facts              != answer content
-```
-
-The narrator model is not the answer model. It reads only structured public facts or a redacted request preview, writes strict JSON, and never enters the conversation history.
+The new trace profiles are intentionally boundary-shaped: they explain how many messages, tool specs, tool results, public activity updates, and response fields crossed the runtime boundary without storing raw prompts.
 
 ## Files To Read
 
@@ -67,11 +51,10 @@ docs/chapters/ch03-hooks-and-trace.en.md
 apps/api/schemas.py
 apps/api/services/run_event_projector.py
 apps/api/services/run_service.py
-apps/api/services/workstream_narrator.py
+src/klara/core/loop.py
+src/klara/core/hooks.py
 src/klara/core/messages.py
 src/klara/infra/llm/openai_compatible.py
-src/klara/prompts/thinking_preamble_narrator.md
-src/klara/prompts/thinking_activity_narrator.md
 apps/web/src/components/klara/KlaraThinkingBlock.tsx
 apps/web/src/components/klara/KlaraActivityDrawer.tsx
 apps/web/src/components/klara/KlaraRunSurface.tsx
@@ -85,7 +68,6 @@ python -m pytest
 cd apps\web
 npm test
 npm run build
-npm audit --omit=dev
 ```
 
 Do not commit generated folders or secrets:
