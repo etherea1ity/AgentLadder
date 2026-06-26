@@ -1,13 +1,17 @@
-"""No-key public web search service backed by DuckDuckGo HTML results."""
+"""Public web search service with configurable provider fallback."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+import os
 from html import unescape
 from html.parser import HTMLParser
 from typing import Callable
 from urllib.parse import parse_qsl, quote_plus, urlparse
+from urllib.request import Request, urlopen
 
+from klara.infra.config.env import get_env_secret
 from klara.services.web.fetcher import DEFAULT_TIMEOUT_SECONDS, HttpDocument, read_http_text
 from klara.services.web.safety import host_matches_domain_list
 
@@ -15,6 +19,9 @@ from klara.services.web.safety import host_matches_domain_list
 DEFAULT_RESULT_COUNT = 20
 DEFAULT_SEARCH_MAX_BYTES = 300_000
 DUCKDUCKGO_HTML_URL = "https://lite.duckduckgo.com/lite/"
+TAVILY_SEARCH_URL = "https://api.tavily.com/search"
+SERPAPI_SEARCH_URL = "https://serpapi.com/search.json"
+DEFAULT_PROVIDER_ORDER = ("duckduckgo_lite", "tavily", "serpapi")
 
 
 class WebSearchError(RuntimeError):
@@ -39,6 +46,8 @@ class SearchResponse:
     results: tuple[SearchHit, ...]
     searched_url: str
     truncated: bool
+    provider_attempts: tuple[dict[str, object], ...] = ()
+    freshness_enforced: bool = False
 
 
 ReadSearchPage = Callable[..., HttpDocument]
@@ -158,9 +167,11 @@ def search_web(
     blocked_domains: tuple[str, ...] = (),
     count: int = DEFAULT_RESULT_COUNT,
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    freshness: str = "",
+    search_depth: str = "basic",
     reader: ReadSearchPage = read_http_text,
 ) -> SearchResponse:
-    """Search the public web with the default no-key provider.
+    """Search the public web with configured providers.
 
     Args:
         query: Search query text.
@@ -183,7 +194,89 @@ def search_web(
     if count < 1 or count > DEFAULT_RESULT_COUNT:
         raise WebSearchError(f"count must be between 1 and {DEFAULT_RESULT_COUNT}")
 
-    search_url = f"{DUCKDUCKGO_HTML_URL}?q={quote_plus(normalized_query)}"
+    attempts: list[dict[str, object]] = []
+    providers = _provider_order()
+
+    for provider in providers:
+        try:
+            if provider == "duckduckgo_lite":
+                response = search_duckduckgo_lite(
+                    normalized_query,
+                    allowed_domains=allowed_domains,
+                    blocked_domains=blocked_domains,
+                    count=count,
+                    timeout_seconds=timeout_seconds,
+                    reader=reader,
+                )
+            elif provider == "tavily":
+                response = search_tavily(
+                    normalized_query,
+                    allowed_domains=allowed_domains,
+                    blocked_domains=blocked_domains,
+                    count=count,
+                    timeout_seconds=timeout_seconds,
+                    freshness=freshness,
+                    search_depth=search_depth,
+                )
+            elif provider == "serpapi":
+                response = search_serpapi(
+                    normalized_query,
+                    allowed_domains=allowed_domains,
+                    blocked_domains=blocked_domains,
+                    count=count,
+                    timeout_seconds=timeout_seconds,
+                )
+            else:
+                attempts.append(
+                    {
+                        "provider": provider,
+                        "ok": False,
+                        "failure_type": "unsupported_provider",
+                    }
+                )
+                continue
+        except WebSearchError as exc:
+            attempts.append(
+                {
+                    "provider": provider,
+                    "ok": False,
+                    "failure_type": _failure_type(str(exc)),
+                    "error": str(exc),
+                }
+            )
+            continue
+        attempts.append({"provider": provider, "ok": True})
+        return SearchResponse(
+            query=response.query,
+            provider=response.provider,
+            results=response.results,
+            searched_url=response.searched_url,
+            truncated=response.truncated,
+            provider_attempts=tuple(attempts),
+            freshness_enforced=response.freshness_enforced,
+        )
+
+    if not attempts:
+        raise WebSearchError("no search provider is configured")
+    details = "; ".join(
+        f"{attempt['provider']}={attempt.get('failure_type', 'failed')}"
+        for attempt in attempts
+    )
+    raise WebSearchError(f"all search providers failed: {details}")
+
+
+def search_duckduckgo_lite(
+    query: str,
+    *,
+    allowed_domains: tuple[str, ...] = (),
+    blocked_domains: tuple[str, ...] = (),
+    count: int = DEFAULT_RESULT_COUNT,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    reader: ReadSearchPage = read_http_text,
+) -> SearchResponse:
+    """Search DuckDuckGo Lite and parse public result links."""
+
+    search_url = f"{DUCKDUCKGO_HTML_URL}?q={quote_plus(query)}"
     try:
         document = reader(
             search_url,
@@ -194,7 +287,7 @@ def search_web(
         raise WebSearchError(str(exc)) from exc
 
     if _looks_like_challenge_page(document.text):
-        raise WebSearchError("search provider returned a challenge page")
+        raise WebSearchError("anti_bot_challenge")
 
     hits = parse_duckduckgo_results(document.text)
     if not hits:
@@ -206,11 +299,175 @@ def search_web(
     )
     hits = _dedupe_hits(hits)
     return SearchResponse(
-        query=normalized_query,
+        query=query,
         provider="duckduckgo_lite",
         results=tuple(hits[:count]),
         searched_url=document.final_url,
         truncated=document.truncated,
+    )
+
+
+def search_tavily(
+    query: str,
+    *,
+    allowed_domains: tuple[str, ...] = (),
+    blocked_domains: tuple[str, ...] = (),
+    count: int = DEFAULT_RESULT_COUNT,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    freshness: str = "",
+    search_depth: str = "basic",
+) -> SearchResponse:
+    """Search Tavily's official API and normalize result cards."""
+
+    api_key = get_env_secret("TAVILY_API_KEY", dotenv_path=".env").strip()
+    if not api_key:
+        raise WebSearchError("provider_not_configured")
+
+    request_payload: dict[str, object] = {
+        "query": query,
+        "search_depth": search_depth or "basic",
+        "max_results": count,
+        "include_answer": False,
+        "include_raw_content": False,
+        "include_images": False,
+        "include_image_descriptions": False,
+    }
+    if freshness and freshness != "any":
+        request_payload["topic"] = "news"
+        request_payload["time_range"] = freshness
+    if allowed_domains:
+        request_payload["include_domains"] = list(allowed_domains)
+    if blocked_domains:
+        request_payload["exclude_domains"] = list(blocked_domains)
+
+    body = json.dumps(request_payload).encode("utf-8")
+    request = Request(
+        TAVILY_SEARCH_URL,
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "KlaraAgentLadder/0.1",
+        },
+    )
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            response_body = response.read(DEFAULT_SEARCH_MAX_BYTES + 1)
+            status = response.getcode()
+    except Exception as exc:
+        raise WebSearchError(f"tavily_request_failed: {exc}") from exc
+
+    truncated = len(response_body) > DEFAULT_SEARCH_MAX_BYTES
+    response_body = response_body[:DEFAULT_SEARCH_MAX_BYTES]
+    try:
+        payload = json.loads(response_body.decode("utf-8", errors="replace"))
+    except json.JSONDecodeError as exc:
+        raise WebSearchError("tavily_invalid_json") from exc
+    if status is not None and status >= 400:
+        raise WebSearchError(f"tavily_http_{status}")
+    if not isinstance(payload, dict):
+        raise WebSearchError("tavily_invalid_payload")
+
+    raw_results = payload.get("results", [])
+    if not isinstance(raw_results, list):
+        raise WebSearchError("tavily_invalid_results")
+    hits: list[SearchHit] = []
+    for item in raw_results:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or "").strip()
+        url = str(item.get("url") or "").strip()
+        snippet = str(item.get("content") or "").strip()
+        if title and url:
+            hits.append(SearchHit(title=title, url=url, snippet=snippet))
+
+    hits = _filter_hits(
+        hits,
+        allowed_domains=allowed_domains,
+        blocked_domains=blocked_domains,
+    )
+    hits = _dedupe_hits(hits)
+    return SearchResponse(
+        query=query,
+        provider="tavily",
+        results=tuple(hits[:count]),
+        searched_url=TAVILY_SEARCH_URL,
+        truncated=truncated,
+        freshness_enforced=bool(freshness and freshness != "any"),
+    )
+
+
+def search_serpapi(
+    query: str,
+    *,
+    allowed_domains: tuple[str, ...] = (),
+    blocked_domains: tuple[str, ...] = (),
+    count: int = DEFAULT_RESULT_COUNT,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+) -> SearchResponse:
+    """Search SerpAPI's Google engine and normalize organic results."""
+
+    api_key = get_env_secret("SERPAPI_API_KEY", dotenv_path=".env").strip()
+    if not api_key:
+        raise WebSearchError("provider_not_configured")
+
+    search_url = (
+        f"{SERPAPI_SEARCH_URL}?engine=google"
+        f"&q={quote_plus(query)}"
+        f"&num={count}"
+        f"&api_key={quote_plus(api_key)}"
+    )
+    request = Request(
+        search_url,
+        headers={"User-Agent": "KlaraAgentLadder/0.1"},
+    )
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            response_body = response.read(DEFAULT_SEARCH_MAX_BYTES + 1)
+            status = response.getcode()
+            final_url = response.geturl()
+    except Exception as exc:
+        raise WebSearchError(f"serpapi_request_failed: {exc}") from exc
+
+    truncated = len(response_body) > DEFAULT_SEARCH_MAX_BYTES
+    response_body = response_body[:DEFAULT_SEARCH_MAX_BYTES]
+    try:
+        payload = json.loads(response_body.decode("utf-8", errors="replace"))
+    except json.JSONDecodeError as exc:
+        raise WebSearchError("serpapi_invalid_json") from exc
+    if status is not None and status >= 400:
+        raise WebSearchError(f"serpapi_http_{status}")
+    if not isinstance(payload, dict):
+        raise WebSearchError("serpapi_invalid_payload")
+    if error := payload.get("error"):
+        raise WebSearchError(f"serpapi_error: {error}")
+
+    raw_results = payload.get("organic_results", [])
+    if not isinstance(raw_results, list):
+        raise WebSearchError("serpapi_invalid_results")
+    hits: list[SearchHit] = []
+    for item in raw_results:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or "").strip()
+        url = str(item.get("link") or "").strip()
+        snippet = str(item.get("snippet") or "").strip()
+        if title and url:
+            hits.append(SearchHit(title=title, url=url, snippet=snippet))
+
+    hits = _filter_hits(
+        hits,
+        allowed_domains=allowed_domains,
+        blocked_domains=blocked_domains,
+    )
+    hits = _dedupe_hits(hits)
+    return SearchResponse(
+        query=query,
+        provider="serpapi",
+        results=tuple(hits[:count]),
+        searched_url=SERPAPI_SEARCH_URL,
+        truncated=truncated,
     )
 
 
@@ -368,6 +625,39 @@ def _dedupe_hits(hits: list[SearchHit]) -> list[SearchHit]:
         seen_urls.add(hit.url)
         deduped.append(hit)
     return deduped
+
+
+def _provider_order() -> tuple[str, ...]:
+    """Return configured search providers in fallback order."""
+
+    raw = get_env_secret("WEB_SEARCH_PROVIDER_ORDER", dotenv_path=".env").strip()
+    if not raw:
+        return DEFAULT_PROVIDER_ORDER
+    providers = tuple(
+        provider.strip().lower()
+        for provider in raw.split(",")
+        if provider.strip()
+    )
+    return providers or DEFAULT_PROVIDER_ORDER
+
+
+def _failure_type(error: str) -> str:
+    """Classify provider failures for model-visible recovery."""
+
+    lowered = error.lower()
+    if "anti_bot_challenge" in lowered or "challenge" in lowered:
+        return "anti_bot_challenge"
+    if "provider_not_configured" in lowered:
+        return "provider_not_configured"
+    if "timeout" in lowered or "timed out" in lowered:
+        return "timeout"
+    if "http 429" in lowered or "rate" in lowered:
+        return "rate_limited"
+    if "http" in lowered:
+        return "http_error"
+    if "network" in lowered or "urlopen" in lowered:
+        return "network_error"
+    return "provider_error"
 
 
 def _looks_like_challenge_page(html: str) -> bool:

@@ -166,6 +166,8 @@ def test_web_search_tool_returns_candidate_results() -> None:
         blocked_domains: tuple[str, ...],
         count: int,
         timeout_seconds: float,
+        freshness: str = '',
+        search_depth: str = 'basic',
     ) -> SearchResponse:
         return SearchResponse(
             query=query,
@@ -209,6 +211,8 @@ def test_web_search_tool_preserves_provider_order_for_generic_queries() -> None:
         blocked_domains: tuple[str, ...],
         count: int,
         timeout_seconds: float,
+        freshness: str = '',
+        search_depth: str = 'basic',
     ) -> SearchResponse:
         return SearchResponse(
             query=query,
@@ -242,6 +246,8 @@ def test_web_search_tool_preserves_provider_order_for_all_queries() -> None:
         blocked_domains: tuple[str, ...],
         count: int,
         timeout_seconds: float,
+        freshness: str = '',
+        search_depth: str = 'basic',
     ) -> SearchResponse:
         assert count == 3
         return SearchResponse(
@@ -284,6 +290,8 @@ def test_web_search_tool_applies_portable_search_hints() -> None:
         blocked_domains: tuple[str, ...],
         count: int,
         timeout_seconds: float,
+        freshness: str = '',
+        search_depth: str = 'basic',
     ) -> SearchResponse:
         nonlocal captured_query
         captured_query = query

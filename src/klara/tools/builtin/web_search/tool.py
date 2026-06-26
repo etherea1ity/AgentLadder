@@ -77,6 +77,8 @@ class WebSearchTool(BaseTool):
                 blocked_domains=blocked_domains,
                 count=count,
                 timeout_seconds=self.metadata.timeout_seconds,
+                freshness=freshness,
+                search_depth=search_depth,
             )
         except WebSearchError as exc:
             return self.failure(arguments, str(exc))
@@ -100,7 +102,8 @@ class WebSearchTool(BaseTool):
                     "time-sensitive facts with fetched source text."
                 ),
                 "provider": response.provider,
-                "freshness_enforced": False,
+                "provider_attempts": list(response.provider_attempts),
+                "freshness_enforced": response.freshness_enforced,
                 "result_count": len(results),
                 "results": results,
                 "searched_url": response.searched_url,
