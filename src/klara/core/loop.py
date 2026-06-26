@@ -362,6 +362,13 @@ class KlaraLoop:
                 if not prepared_calls.external_calls:
                     final_decision = self._before_final_answer(response.content)
                     self._emit_controller_events(sequencer, active_run_id)
+                    if final_decision.allowed:
+                        activity_only_decision = _activity_only_final_decision(
+                            content=response.content,
+                            activity_text=activity_text,
+                        )
+                        if activity_only_decision is not None:
+                            final_decision = activity_only_decision
                     if not final_decision.allowed:
                         block_signature = _final_decision_signature(final_decision)
                         block_count = final_block_signatures.get(block_signature, 0) + 1
@@ -1153,6 +1160,27 @@ def _activity_text_from_payload(payload: dict[str, object]) -> str:
         return ""
     text = activity.get("text")
     return text.strip() if isinstance(text, str) and text.strip() else ""
+
+
+def _activity_only_final_decision(
+    *,
+    content: str,
+    activity_text: str,
+) -> FinalAnswerDecision | None:
+    """Reject activity-only no-tool turns because activity is not final answer."""
+
+    if content.strip() or not activity_text.strip():
+        return None
+    return FinalAnswerDecision(
+        allowed=False,
+        reason="activity_without_final_answer",
+        feedback=(
+            "The previous assistant turn only emitted public activity/thinking, "
+            "not a final answer. Write the final answer for the user now from "
+            "the available observations. Do not repeat the public activity "
+            "update. Call a tool only if more evidence is still required."
+        ),
+    )
 
 
 def _public_activity_context(updates: list[str] | tuple[str, ...]) -> str:

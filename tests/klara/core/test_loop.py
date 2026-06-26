@@ -739,6 +739,81 @@ def test_structured_activity_commentary_emits_without_replacing_final_answer() -
     )
 
 
+def test_activity_only_no_tool_turn_requests_real_final_answer() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="",
+                activity_commentary="I am organizing the observations.",
+                activity_source="message.activity_commentary",
+            ),
+            ModelResponse(content="Here is the final answer."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("answer from context", run_id="run-activity-only-final")
+
+    blocked = [
+        event
+        for event in recorder.events
+        if str(getattr(event, "type")) == "final_answer.blocked"
+    ]
+    assert result.final_answer == "Here is the final answer."
+    assert [message.role for message in result.messages] == ["user", "user", "assistant"]
+    assert result.messages[-1].content == "Here is the final answer."
+    assert "I am organizing the observations." not in [
+        message.content for message in result.messages
+    ]
+    assert blocked
+    assert getattr(blocked[0], "payload")["reason"] == "activity_without_final_answer"
+    assert "<runtime_policy_feedback>" in llm.calls[1][0][-1].content
+    assert "not a final answer" in llm.calls[1][0][-1].content
+
+
+def test_internal_activity_tool_alone_does_not_complete_empty_answer() -> None:
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="",
+                tool_calls=(_activity_call("I am preparing the answer."),),
+            ),
+            ModelResponse(content="Prepared final answer."),
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+    )
+
+    result = loop.run("answer after activity", run_id="run-internal-activity-only")
+
+    llm_completed = [
+        event
+        for event in recorder.events
+        if str(getattr(event, "type")) == "llm.completed"
+    ]
+    assert result.final_answer == "Prepared final answer."
+    assert getattr(llm_completed[0], "payload")["internal_activity_call_count"] == 1
+    assert getattr(llm_completed[0], "payload")["tool_call_count"] == 0
+    assert (
+        getattr(llm_completed[0], "payload")["activity_commentary"]["text"]
+        == "I am preparing the answer."
+    )
+    assert "final_answer.blocked" in recorder.event_types
+    assert all(
+        "I am preparing the answer." not in message.content
+        for message in result.messages
+    )
+
+
 def test_pre_tool_use_defaults_to_allow() -> None:
     recorder = EventRecorder()
     hooks = HookManager([recorder])
