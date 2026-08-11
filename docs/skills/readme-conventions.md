@@ -496,6 +496,53 @@ field -> who reads it -> current behavior -> future behavior if any
 This is especially important when a metadata field exists for future policy but
 is not yet consumed by the current algorithm.
 
+## Advanced Lab README Structure
+
+Advanced Labs are experiments, but they are still teaching documents. Each lab
+must answer one causal question: what changed from the controlled baseline, and
+what evidence shows the effect?
+
+Use this order:
+
+1. Question and falsifiable hypothesis.
+2. Runnable result and one-command quick experience.
+3. Baseline, controlled variable, and explicit exclusions.
+4. Data provenance, redaction, deduplication, and train/eval split contract.
+5. Model or algorithm contract, including tensor shapes and precision semantics
+   when relevant.
+6. Training/evaluation commands and clean checkpoint load path.
+7. Named metrics, acceptance thresholds, and per-case failure taxonomy.
+8. Reproducibility manifest and produced artifacts.
+9. Measured results, limitations, and the next experiment.
+
+A lab run manifest should record at least:
+
+```text
+git commit
+dataset version and split hashes
+model and tokenizer configuration
+teacher ids and prompt version when distilling
+optimizer, seed, precision, and checkpoint
+hardware and relevant library versions
+scorer version
+artifact paths
+```
+
+The required proof surface is repository-native:
+
+```text
+CLI command
+-> versioned JSON/JSONL data
+-> checkpoint or quantized weights when applicable
+-> static metric/curve artifact when useful
+-> Markdown result report
+```
+
+No frontend is required. Do not claim an improvement without a frozen baseline,
+the same held-out set, and the same scorer version. Do not claim native FP4
+compute or speed when the implementation only packs/dequantizes FP4 weights for
+FP16 execution.
+
 For Chapter 1, `KlaraLoop.run()` must be explained in this order:
 
 1. Create `run_id` and the first user message.

@@ -15,8 +15,9 @@ Foundation Track:
   build a complete Claude-Code-like Klara harness around one loop
 
 Advanced Labs:
-  use Klara traces and runtime surfaces to study training, MoE, RAG,
-  memory, and RL optimization
+  use Klara traces and runtime surfaces to study evaluation, trajectory
+  distillation, tiny-model training, sparse MoE, low precision, RAG, memory,
+  and RL optimization
 ```
 
 The foundation track is about the harness: tools, hooks, context, memory, RAG,
@@ -43,8 +44,10 @@ Examples:
 - Permission should not be an early standalone chapter. It is first represented
   as metadata and hook placement, then taught concretely when external tools,
   background work, MCP, teams, and production risks make approval meaningful.
-- The UI/window is not a standalone chapter. The frontend is the visible proof
-  surface for each runnable chapter.
+- The UI/window is not a standalone chapter. For the current algorithm path,
+  proof comes from CLI output, versioned JSON/JSONL artifacts, tests, and
+  Markdown reports. Existing frontend code may remain, but new frontend work is
+  not required for an algorithm chapter or lab to be complete.
 
 ## Compact Foundation Line
 
@@ -406,6 +409,8 @@ Runnable result:
 
 - request is normalized
 - search/fetch/evidence/write/verify steps are visible
+- each material answer claim is linked to supporting evidence or marked as
+  unsupported, contradicted, or still uncertain
 - insufficient evidence is an explicit outcome
 
 Includes:
@@ -416,8 +421,11 @@ Includes:
 - multi-path retrieval
 - evidence pack
 - source selection
+- `Claim` and `ClaimEvidenceLink` contracts
+- source provenance, content hash, and retrieval timestamp
 - answer writer
-- verifier
+- claim-level verifier with `supported | contradicted | insufficient` outcomes
+- explicit abstention when required claims do not pass the evidence gate
 - DecisionRecord trace
 - old AgentLadder Agentic RAG lessons
 
@@ -425,6 +433,8 @@ Excludes:
 
 - arbitrary tool autonomy
 - web-scale crawling
+- domain-specific truth patches or hidden answer rewriting
+- hidden chain-of-thought collection
 - RL optimization
 
 ### Chapter 13 - Research Agent
@@ -570,8 +580,9 @@ become improvement data?
 Runnable result:
 
 - local production-shaped run path works
-- redacted trace can be exported into an eval dataset
-- regression report can be generated
+- redacted trace can be exported into a versioned trajectory dataset
+- a CLI evaluator can compare a baseline and candidate run
+- JSON and Markdown regression reports can be generated without a frontend
 
 Includes:
 
@@ -581,10 +592,12 @@ Includes:
 - user/auth boundary as a production concern
 - privacy and redaction
 - observability
-- eval dataset extraction
+- normalized `state -> action -> observation -> policy decision -> outcome`
+  trajectory extraction
+- schema version, source-run lineage, content hashes, and deterministic splits
 - gold examples
-- scorers/rubrics
-- regression report
+- evidence-control, tool-use, quality, latency, token, and cost scorers
+- machine-readable JSON plus human-readable Markdown regression reports
 - final comprehensive Klara freeze
 
 Excludes:
@@ -592,52 +605,108 @@ Excludes:
 - live policy mutation
 - full production deployment
 - training jobs
+- an evaluation dashboard or other frontend dependency
 
 ## Advanced Labs
 
 Advanced labs are not regular foundation chapters. They are compact runnable
 experiments that use Klara's traces, tools, memory, and RAG surfaces.
+They keep the same teaching discipline as chapters: one question, one runnable
+result, an explicit baseline, versioned data, named metrics, reproducible
+artifacts, and a clear exclusion boundary.
 
 ### Lab A - Trace Dataset And Evaluation
 
-Question: how do Klara traces become reusable data?
+Question: how do Klara traces become reusable evidence-control and tool-use
+evaluation data?
+
+Runnable result:
+
+- one command exports redacted JSONL trajectories deterministically
+- one command scores a baseline or compares baseline versus candidate
+- the run produces versioned JSON and Markdown reports with per-case failures
 
 Includes:
 
 - trace normalization
-- state/action/outcome records
-- train/eval split
-- rubric scoring
-- regression dashboard artifact
+- `state/action/observation/policy_decision/outcome` records
+- schema version, dataset manifest, hashes, lineage, and leakage-safe splits
+- gold labels and deterministic rubric inputs
+- tool decision and argument-validity metrics
+- Evidence Selection Precision / Recall / F1
+- Citation Precision / Recall
+- Claim Support Rate, Contradiction Recall, and Abstention Accuracy
+- latency, token, and cost summaries
+- regression thresholds suitable for CI
+
+Excludes:
+
+- raw prompts, secrets, provider-hidden reasoning, or hidden chain-of-thought
+- a required web dashboard
 
 ### Lab B - Tiny Pretrain
 
 Question: what is the smallest visible pretraining pipeline?
 
+Runnable result:
+
+- a small decoder-only Transformer written in this repository trains from
+  random initialization
+- a checkpoint, loss curve, run manifest, and deterministic generation sample
+  are produced by documented commands
+
 Includes:
 
 - tokenizer
-- tiny transformer
+- custom embeddings, causal self-attention, MLP, normalization, and LM head
 - dataset preparation
 - pretraining loop
-- loss curves
+- FP32 dense baseline and seeded run manifest
+- loss curves and checkpoint save/load
 - simple generation check
 
-### Lab C - Tool-Use SFT
+Excludes:
 
-Question: can Klara traces teach a small model tool-use format?
+- wrapping a pretrained large model and calling it a model built from scratch
+- claims about model quality without a held-out baseline
+
+### Lab C - Tool-Use SFT And Trajectory Distillation
+
+Question: can filtered trajectories from several teacher LLMs teach a small
+student model tool-use and evidence-control behavior?
+
+Runnable result:
+
+- configured teacher adapters generate the same public trajectory schema
+- invalid, unsafe, unsupported, and duplicate trajectories are filtered out
+- a dense student is fine-tuned and compared with its pre-SFT baseline on a
+  held-out set using Lab A metrics
 
 Includes:
 
-- tool-call trace filtering
-- supervised examples
-- SFT run
-- held-out tool-call validation
+- OpenAI-compatible teacher adapters, including configured Qwen and DeepSeek
+- teacher and dataset manifests with model id, prompt version, seed, and hashes
+- public `state/action/observation/final` trajectory normalization
+- tool-schema, evidence-support, redaction, deduplication, and quality filters
+- hard-label SFT as the reproducible distillation baseline
+- optional logit/KL distillation only when a teacher actually exposes logits
+- held-out tool-use and evidence-control validation
 - failure taxonomy
+
+Excludes:
+
+- collecting or training on provider-hidden reasoning or chain-of-thought
+- training on the evaluation split
+- comparing teachers and students without the same task set and scorer version
 
 ### Lab D - Preference / DPO
 
 Question: how does post-training improve answer or policy preferences?
+
+Runnable result:
+
+- a versioned preference dataset trains one small-model update
+- before/after results are reported on the same held-out evaluation set
 
 Includes:
 
@@ -647,21 +716,48 @@ Includes:
 - before/after eval
 - safety gate before use
 
-### Lab E - MoE Router
+Excludes:
 
-Question: can several small experts behave like a routed system?
+- replacing evidence verification with answer-style preference
+- deploying an unverified learned policy into the runtime
+
+### Lab E - Tiny Sparse MoE
+
+Question: can a small Transformer replace its dense feed-forward block with a
+real token-level sparse mixture of experts and beat a controlled dense baseline?
+
+Runnable result:
+
+- the custom tiny decoder can switch between dense FFN and sparse MoE blocks
+- a four-expert, top-2 routed model trains end to end
+- one report compares quality, active parameters/FLOPs, throughput, routing
+  balance, and expert specialization against the dense baseline
 
 Includes:
 
-- expert roles
-- router/gating model
-- load balancing check
-- expert specialization eval
-- distillation option
+- custom expert MLPs, router logits, top-k dispatch, weighted combine, and
+  shape/gradient tests
+- four experts with top-2 token routing as the primary configuration
+- load-balancing auxiliary loss and router z-loss
+- expert utilization, router entropy, token drop/capacity, and specialization
+  metrics
+- parameter-matched or active-FLOP-matched dense baseline
+- optional trajectory-distilled MoE student using Lab C data
+
+Excludes:
+
+- four prompt personas or API calls presented as a token-level MoE model
+- distributed expert parallelism or production fused kernels
 
 ### Lab F - RAG Optimization
 
 Question: how do retrieval choices change recall, faithfulness, and latency?
+
+Runnable result:
+
+- one benchmark command compares retrieval configurations on a frozen corpus
+  and query set
+- recall, evidence support, citation quality, latency, and cost are reported
 
 Includes:
 
@@ -673,9 +769,19 @@ Includes:
 - multi-hop retrieval
 - multimodal/figure-aware extension when available
 
+Excludes:
+
+- tuning on the held-out test queries
+- reporting answer quality without retrieval and evidence metrics
+
 ### Lab G - Memory And RL Policy
 
 Question: can memory and policy improve from experience?
+
+Runnable result:
+
+- one offline experiment compares a fixed baseline with a learned or adaptive
+  memory/tool policy under a bounded task set
 
 Includes:
 
@@ -684,6 +790,42 @@ Includes:
 - dream-like offline memory review
 - bandit-style tool/retrieval policy
 - GRPO/PPO-style toy policy experiment when feasible
+
+Excludes:
+
+- online self-modification of the production runtime
+- an RL claim without a frozen baseline and held-out task set
+
+### Lab H - FP16 And FP4 Low-Precision MoE
+
+Question: what quality, size, memory, and throughput trade-offs appear when the
+tiny dense and MoE models move from FP32 to FP16 and a reproducible FP4 path?
+
+Runnable result:
+
+- the same checkpoint can be evaluated in FP32 and FP16
+- MoE expert weights can be quantized to a documented FP4 E2M1 block-scaled
+  representation and packed two values per byte
+- a report compares quality, model bytes, peak memory, latency, and throughput
+  across FP32, FP16, and FP4-weight/FP16-activation (`W4A16`) runs
+
+Includes:
+
+- FP16 automatic mixed precision and gradient scaling where hardware supports it
+- reference FP4 E2M1 encode/decode, block scales, nibble packing, and round-trip
+  tests
+- post-training weight quantization as the baseline
+- optional fake-quantization/QAT experiment when the baseline loses too much
+  quality
+- dense-versus-MoE and precision ablations using the same evaluation manifest
+- a clearly separated optional native-FP4 backend when supported hardware and
+  libraries are actually available
+
+Excludes:
+
+- claiming native FP4 arithmetic or speed from an emulated W4A16 path
+- writing a production CUDA/Triton fused kernel in the one-week scope
+- comparing precision modes with different data, seeds, or scorer versions
 
 ## One-Month Execution Plan
 
@@ -732,18 +874,125 @@ Outcome:
 
 ### Week 4 - July 7 to July 15
 
-Target labs: A through G plus final freeze.
+Target labs: A through H plus final freeze.
 
 Outcome:
 
 - trace dataset
 - tiny pretrain
-- tool-use SFT
+- tool-use SFT and trajectory distillation
 - preference/DPO
-- MoE router
+- tiny sparse MoE
+- FP16 and FP4 low-precision evaluation
 - RAG optimization
 - memory/RL policy experiment
 - final documentation, README cleanup, and freeze notes
+
+## Current One-Week Algorithm Completion Overlay
+
+Target window: August 11, 2026 through August 17, 2026.
+
+This is a narrow implementation overlay on the existing roadmap, not a new
+chapter sequence. It does not mark Chapters 4 through 18 complete. Algorithm
+artifacts are incubated in their canonical Lab locations and later integrated
+when the matching foundation chapter is built.
+
+No new frontend is part of this window. The required proof surfaces are CLI
+commands, tests, JSON/JSONL datasets, checkpoints, static plots where useful,
+and Markdown reports.
+
+### Day 1 - Trace And Reproducibility Contract
+
+Canonical slots: Chapter 3, Chapter 18, and Lab A.
+
+- freeze the latest Chapter 3 public/private trace boundary
+- define the versioned trajectory, run-manifest, redaction, and lineage schemas
+- add deterministic export and dataset-validation commands
+
+Exit gate: a fixture run exports stable, redacted JSONL and passes schema,
+ordering, id-linkage, and leakage checks.
+
+### Day 2 - Evidence Control And Evaluation
+
+Canonical slots: Chapters 12 and 13 plus Lab A.
+
+- implement the smallest `Claim`, `EvidenceRecord`, `ClaimEvidenceLink`,
+  verifier, contradiction, and abstention contracts outside `klara.core`
+- create a small gold set covering supported, contradicted, insufficient,
+  stale, and irrelevant evidence
+- implement the evidence, citation, contradiction, and abstention metrics
+
+Exit gate: the evidence controller cannot finalize required unsupported claims,
+and the evaluator produces JSON plus Markdown results from the gold set.
+
+### Day 3 - Tiny Dense Baseline
+
+Canonical slot: Lab B.
+
+- build the custom decoder-only Transformer and training loop
+- run a seeded FP32 pretraining baseline
+- save the model config, data hash, checkpoint, loss curve, and generation sample
+
+Exit gate: a clean command can reproduce training, checkpoint reload, held-out
+loss, and deterministic sample generation.
+
+### Day 4 - Multi-Teacher Trajectory Distillation
+
+Canonical slot: Lab C.
+
+- generate public trajectories from configured Qwen/DeepSeek/OpenAI-compatible
+  teachers using one task manifest
+- filter by schema validity, tool validity, evidence support, redaction, and
+  deduplication
+- fine-tune the dense student and compare it with the Day 3 baseline
+
+Exit gate: the student evaluation uses a held-out split and the same frozen Lab
+A scorer version; no provider-hidden reasoning enters the dataset.
+
+### Day 5 - Tiny Sparse MoE
+
+Canonical slot: Lab E.
+
+- replace the dense FFN with the four-expert, top-2 sparse MoE block
+- add routing, auxiliary-loss, utilization, entropy, capacity, and gradient tests
+- train against a controlled dense baseline
+
+Exit gate: all experts receive traffic, routing does not collapse, checkpoint
+reload is stable, and the dense/MoE comparison uses the same data and budget.
+
+### Day 6 - FP16 And FP4
+
+Canonical slot: Lab H.
+
+- run supported FP16 AMP training/evaluation
+- implement and test FP4 E2M1 block quantization plus packed storage
+- evaluate the primary W4A16 path on dense and MoE checkpoints
+
+Exit gate: the report separates real FP16 execution, FP4 storage/quantization,
+and any emulated compute path; it does not claim unsupported native FP4 speed.
+
+### Day 7 - End-To-End Gate And Freeze
+
+Canonical slots: Chapter 18 and Labs A, C, E, and H.
+
+- run the evidence-control, distillation, dense/MoE, and precision matrix
+- produce the final JSON/Markdown comparison and failure taxonomy
+- verify clean-setup commands, tests, manifests, hashes, checkpoints, and docs
+- write freeze notes stating exactly what is implemented, measured, and deferred
+
+Exit gate: every reported number links to a run manifest and artifact; every
+required command runs without a frontend; unsupported or unmeasured claims are
+explicitly excluded from the freeze.
+
+### One-Week Definition Of Done
+
+| Workstream | Canonical home | Required artifact | Acceptance gate |
+| --- | --- | --- | --- |
+| Evidence control | Chapters 12-13 | contracts, verifier, gold cases, decision trace | unsupported required claims block or abstain |
+| Trace/evaluation | Chapter 18 + Lab A | versioned JSONL, scorer CLI, JSON/Markdown report | deterministic export and regression thresholds |
+| Distillation | Lab C | teacher manifest, filtered dataset, student checkpoint | held-out improvement reported against dense baseline |
+| Tiny MoE | Lab E | custom 4-expert top-2 model and routing report | no collapse; fair dense/MoE comparison |
+| FP16/FP4 | Lab H | FP16 run, FP4 codec/packed weights, ablation report | precision semantics and hardware path are truthful |
 
 ## Keep / Rebuild / Defer
 
@@ -752,7 +1001,8 @@ Keep:
 - Klara persona and calm observable identity
 - one loop as the runtime center
 - chapter/freeze documentation habit
-- existing frontend as proof surface
+- existing frontend code where it already works, without making new frontend
+  work a dependency of the algorithm completion path
 - old RAG contracts around sources, citations, and answer frames
 - old Agentic RAG lessons around EvidencePack, verifier, and DecisionRecord
 
@@ -771,6 +1021,8 @@ Defer:
 - production queue scaling
 - model training before trace/eval export exists
 - advanced memory/RL until foundation memory and traces exist
+- native FP4 kernels and distributed expert parallelism until the reference
+  low-precision and single-device MoE baselines are measured
 
 Drop or archive:
 

@@ -91,9 +91,22 @@ teams, MCP, and production boundaries create real approval pressure.
 Advanced training topics live in labs after the foundation track:
 
 ```text
-Trace Dataset -> Tiny Pretrain -> Tool-Use SFT -> Preference/DPO
--> MoE Router -> RAG Optimization -> Memory/RL Policy
+Trace Dataset -> Tiny Pretrain -> Tool-Use SFT/Trajectory Distillation
+-> Preference/DPO -> Tiny Sparse MoE -> FP16/FP4 Low Precision
+-> RAG Optimization -> Memory/RL Policy
 ```
+
+Lab artifacts must not move training policy back into the runtime core:
+
+- evaluation and training consume versioned, redacted trace exports
+- teacher datasets contain public state/action/observation/final records, never
+  provider-hidden reasoning or chain-of-thought
+- the custom dense Transformer and sparse MoE live in training/lab modules, not
+  under `src/klara/core`
+- FP16 execution and FP4 quantization report their actual storage and compute
+  paths; emulation must not be presented as native FP4 arithmetic
+- CLI, JSON/JSONL, checkpoints, plots, and Markdown reports are sufficient proof
+  surfaces; advanced labs do not require new frontend work
 
 ## Tool Package Layout
 
