@@ -1,0 +1,278 @@
+{
+  "stage": "lab-a-evidence-eval",
+  "scorer_version": "klara.evidence-eval.v1",
+  "evaluated_at": "2026-08-11T00:00:00+00:00",
+  "trajectory_file": "gate1_trajectories.jsonl",
+  "cases": [
+    {
+      "case_id": "supported",
+      "evidence": {
+        "records": [
+          {
+            "source_id": "src_supported",
+            "title": "Release note",
+            "url": "https://example.test/release",
+            "content": "Klara 1.0 was released on 2026-08-01.",
+            "fetched_at": "2026-08-10T09:00:00+00:00",
+            "status": "admissible",
+            "limitations": []
+          }
+        ]
+      },
+      "answer": {
+        "claims": [
+          {
+            "claim_id": "claim_supported",
+            "text": "Klara 1.0 was released on 2026-08-01.",
+            "required": true
+          }
+        ],
+        "links": [
+          {
+            "claim_id": "claim_supported",
+            "source_id": "src_supported",
+            "judgment": "supported",
+            "support_note": "The release date is stated directly."
+          }
+        ],
+        "citations": [
+          {"claim_id": "claim_supported", "source_id": "src_supported"}
+        ],
+        "final_text": "Klara 1.0 was released on 2026-08-01."
+      },
+      "gold": {
+        "selected_source_ids": ["src_supported"],
+        "citation_keys": ["claim_supported::src_supported"],
+        "claim_judgments": {"claim_supported": "supported"},
+        "abstained": false
+      },
+      "tool_decisions": [
+        {
+          "predicted": {
+            "name": "web_fetch",
+            "arguments": {"url": "https://example.test/release"}
+          },
+          "expected": {
+            "name": "web_fetch",
+            "arguments": {"url": "https://example.test/release"}
+          }
+        }
+      ],
+      "operational": {
+        "latency_ms": 18.5,
+        "input_tokens": 42,
+        "output_tokens": 17,
+        "cost_usd": 0.00012
+      }
+    },
+    {
+      "case_id": "contradicted",
+      "evidence": {
+        "records": [
+          {
+            "source_id": "src_contradicted",
+            "title": "Launch record",
+            "url": "https://example.test/launch",
+            "content": "The launch occurred in 2025, not 2024.",
+            "fetched_at": "2026-08-10T09:05:00+00:00",
+            "status": "admissible",
+            "limitations": []
+          }
+        ]
+      },
+      "answer": {
+        "claims": [
+          {
+            "claim_id": "claim_contradicted",
+            "text": "The launch occurred in 2024.",
+            "required": true
+          }
+        ],
+        "links": [
+          {
+            "claim_id": "claim_contradicted",
+            "source_id": "src_contradicted",
+            "judgment": "contradicted",
+            "support_note": "The source explicitly gives a different year."
+          }
+        ],
+        "citations": [
+          {"claim_id": "claim_contradicted", "source_id": "src_contradicted"}
+        ],
+        "final_text": "The launch occurred in 2024."
+      },
+      "gold": {
+        "selected_source_ids": ["src_contradicted"],
+        "citation_keys": ["claim_contradicted::src_contradicted"],
+        "claim_judgments": {"claim_contradicted": "contradicted"},
+        "abstained": true
+      },
+      "tool_decisions": [
+        {
+          "predicted": {
+            "name": "web_search",
+            "arguments": {"query": "launch date"}
+          },
+          "expected": {
+            "name": "web_search",
+            "arguments": {"query": "launch date"}
+          }
+        }
+      ],
+      "operational": {
+        "latency_ms": 21.0,
+        "input_tokens": 39,
+        "output_tokens": 11,
+        "cost_usd": 0.0001
+      }
+    },
+    {
+      "case_id": "insufficient",
+      "evidence": {
+        "records": [
+          {
+            "source_id": "src_insufficient",
+            "title": "Announcement",
+            "url": "https://example.test/announcement",
+            "content": "The announcement discusses growth but gives no revenue value.",
+            "fetched_at": "2026-08-10T09:10:00+00:00",
+            "status": "admissible",
+            "limitations": ["No numeric revenue statement"]
+          }
+        ]
+      },
+      "answer": {
+        "claims": [
+          {
+            "claim_id": "claim_insufficient",
+            "text": "Revenue was exactly 10 million dollars.",
+            "required": true
+          }
+        ],
+        "links": [
+          {
+            "claim_id": "claim_insufficient",
+            "source_id": "src_insufficient",
+            "judgment": "insufficient",
+            "support_note": "The source has no numeric value."
+          }
+        ],
+        "citations": [],
+        "final_text": "Revenue was exactly 10 million dollars."
+      },
+      "gold": {
+        "selected_source_ids": ["src_insufficient"],
+        "citation_keys": [],
+        "claim_judgments": {"claim_insufficient": "insufficient"},
+        "abstained": true
+      },
+      "tool_decisions": [],
+      "operational": {
+        "latency_ms": 12.0,
+        "input_tokens": 34,
+        "output_tokens": 9,
+        "cost_usd": 0.00008
+      }
+    },
+    {
+      "case_id": "stale",
+      "evidence": {
+        "records": [
+          {
+            "source_id": "src_stale",
+            "title": "Old status page",
+            "url": "https://example.test/status-2023",
+            "content": "The service status was green on 2023-01-01.",
+            "fetched_at": "2026-08-10T09:15:00+00:00",
+            "status": "stale",
+            "limitations": ["Too old for a current-status claim"]
+          }
+        ]
+      },
+      "answer": {
+        "claims": [
+          {
+            "claim_id": "claim_stale",
+            "text": "The service is currently healthy.",
+            "required": true
+          }
+        ],
+        "links": [
+          {
+            "claim_id": "claim_stale",
+            "source_id": "src_stale",
+            "judgment": "supported",
+            "support_note": "The producer attempted to use an expired status."
+          }
+        ],
+        "citations": [],
+        "final_text": "The service is currently healthy."
+      },
+      "gold": {
+        "selected_source_ids": ["src_stale"],
+        "citation_keys": [],
+        "claim_judgments": {"claim_stale": "insufficient"},
+        "abstained": true
+      },
+      "tool_decisions": [
+        {
+          "predicted": {
+            "name": "web_search",
+            "arguments": {"query": "current service status"}
+          },
+          "expected": {
+            "name": "web_search",
+            "arguments": {"query": "current service status"}
+          }
+        }
+      ],
+      "operational": {
+        "latency_ms": 16.25,
+        "input_tokens": 31,
+        "output_tokens": 8,
+        "cost_usd": 0.00007
+      }
+    },
+    {
+      "case_id": "irrelevant",
+      "evidence": {
+        "records": [
+          {
+            "source_id": "src_irrelevant",
+            "title": "Weather report",
+            "url": "https://example.test/weather",
+            "content": "The afternoon temperature was 24 degrees Celsius.",
+            "fetched_at": "2026-08-10T09:20:00+00:00",
+            "status": "irrelevant",
+            "limitations": ["Unrelated to the required claim"]
+          }
+        ]
+      },
+      "answer": {
+        "claims": [
+          {
+            "claim_id": "claim_irrelevant",
+            "text": "The project has 500 users.",
+            "required": true
+          }
+        ],
+        "links": [],
+        "citations": [],
+        "final_text": "The project has 500 users."
+      },
+      "gold": {
+        "selected_source_ids": [],
+        "citation_keys": [],
+        "claim_judgments": {"claim_irrelevant": "insufficient"},
+        "abstained": true
+      },
+      "tool_decisions": [],
+      "operational": {
+        "latency_ms": 9.0,
+        "input_tokens": 25,
+        "output_tokens": 7,
+        "cost_usd": 0.00005
+      }
+    }
+  ]
+}

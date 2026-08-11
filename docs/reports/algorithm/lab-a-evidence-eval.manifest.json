@@ -1,0 +1,52 @@
+{
+  "stage": "lab-a-evidence-eval",
+  "status": "passed",
+  "created_at": "2026-08-11T00:00:00+00:00",
+  "command_windows_powershell": "$env:PYTHONPATH='src'; python -m klara.eval.cli gate --fixture tests/fixtures/algorithm/gate1_gold.json --config config/experiments/lab_a_evidence_eval.toml --json-out docs/reports/algorithm/lab-a-evidence-eval.json --markdown-out docs/reports/algorithm/lab-a-evidence-eval.md",
+  "inputs": {
+    "config": {
+      "path": "config/experiments/lab_a_evidence_eval.toml",
+      "sha256": "c8282be5656a69ba1c6b52b7603b59c2117cec8de29e00c5b6c9eb875ddf14ae"
+    },
+    "fixture": {
+      "path": "tests/fixtures/algorithm/gate1_gold.json",
+      "raw_file_sha256": "f796adb7c77cde9cb76afad4a7a6e03399ef72afc6487ee395a9e822fffe0994",
+      "canonical_content_sha256": "97e907508177ad6eb137eaa77ea004e8d78073f58e50ce4ce99d5d746ac7a57e"
+    },
+    "trajectory": {
+      "path": "tests/fixtures/algorithm/gate1_trajectories.jsonl",
+      "raw_file_sha256": "271d05c607fdd77c24e75fe68a01fbae2aa6ba0f95da458737d6c91b5736ab33",
+      "canonical_export_sha256": "a1c2f1df4c88f61f940e2ef30905cf7b22d29fd9b93ad092e552aed69d08c19b"
+    }
+  },
+  "outputs": {
+    "json": {
+      "path": "docs/reports/algorithm/lab-a-evidence-eval.json",
+      "sha256": "9f13b372ff7dffc1287f18eea4b0a810a6ab91873ef6f593e42957aa1fc66d6f"
+    },
+    "markdown": {
+      "path": "docs/reports/algorithm/lab-a-evidence-eval.md",
+      "sha256": "68b21952b576a375d0339ec399f39604a09f4eae8c9cbd8bf8e0c7a1c3920e3e"
+    }
+  },
+  "validation": {
+    "narrow_suite": {
+      "command": "python -m pytest tests/klara/services/evidence tests/klara/eval -q",
+      "passed": 26,
+      "failed": 0
+    },
+    "full_suite": {
+      "command": "python -m pytest -q",
+      "collected": 194,
+      "passed": 194,
+      "failed": 0
+    },
+    "core_boundary_import_scan": "passed",
+    "git_diff_check": "passed"
+  },
+  "scope_notes": [
+    "The five-case gold fixture proves deterministic scorer and policy behavior; it is not a statistical quality claim.",
+    "Provider-hidden reasoning, raw prompts, tool arguments, and raw tool results are excluded from trajectory projection.",
+    "Operational totals are fixture values used to validate aggregation, not live provider benchmarks."
+  ]
+}

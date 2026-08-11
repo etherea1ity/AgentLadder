@@ -1,0 +1,16 @@
+schema_version = "klara.trajectory.v1"
+scorer_version = "klara.evidence-eval.v1"
+
+[thresholds]
+schema_validation_rate = 1.0
+id_linkage_rate = 1.0
+max_leakage_findings = 0
+citation_precision = 1.0
+citation_recall = 1.0
+claim_support_accuracy = 1.0
+contradiction_recall = 1.0
+abstention_accuracy = 1.0
+tool_decision_accuracy = 1.0
+tool_argument_exactness = 1.0
+evidence_selection_precision = 1.0
+evidence_selection_recall = 1.0
