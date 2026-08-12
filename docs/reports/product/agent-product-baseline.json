@@ -1,0 +1,2646 @@
+{
+  "branch_documentation_matrix": [
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 72,
+      "decision": "preserve Chapter 2 tool boundary",
+      "documents": [
+        {
+          "blob": "8872272e8ac160d4fc1fe4af88cb69ec442de2d9",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "02bdc43c3a2863d0afb205c4103127c5770f8ce9",
+          "path": "README.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "099a52a88a786802082d4586144f139324e7159c",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "a94928be0837fa22c6dd2883567bd086d470f257",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "cbb6a1a49248c99fbdd9b2fd11b07b54ddecf301",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "01639751850451a36166db5f45688cc58a293af7",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "3f1fb1e73c12c213256d24edbb632239c4166191",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "8deb1f62bd5971d96e349b60a18a578e36b0215d",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "3ec76ff4e8e4efcd07e79a894b6a9028d994fcc7",
+          "path": "docs/skills/roadmap.md"
+        }
+      ],
+      "head": "bd3c13d805e96e2ef84b2a819e6fa2269bda665e",
+      "merge_base": "bd3c13d805e96e2ef84b2a819e6fa2269bda665e",
+      "ref": "chapter-2-tool-calling",
+      "role": "foundation_chapter",
+      "unique_lesson": "what-stays-the-same tool boundary and real incident walkthrough"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 0,
+      "decision": "current baseline work branch",
+      "documents": [
+        {
+          "blob": "b753f560baa73129b61663ec1767912204b5b71f",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "b50b884931105bceec764d63cab6c5fad723c341",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "b015b9fbfd9106bd3db2c862f093045ef2e22fd3",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "e577f53c9696d4d1524c919a4c1444ace570ea2e",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "b7c18d472a9f824ae2caf8039e179665eb5b2c43",
+          "path": "docs/freezes/algorithm-suite-freeze.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "3605ce45421509f115cb91394603d87d38a38e3b",
+          "path": "docs/labs/algorithm-suite.en.md"
+        },
+        {
+          "blob": "13042875705496a2a3adac4d423a0df7e80fc1cf",
+          "path": "docs/labs/algorithm-suite.md"
+        },
+        {
+          "blob": "7816c7cc673d91ff1e5816d17504cf7586b0d166",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "4c82e7806660f13781064ca303b2225fd6c34b21",
+          "path": "docs/reports/algorithm/algorithm-suite-freeze.md"
+        },
+        {
+          "blob": "631cc3d422391239aa9b97ae48b67a5d85698159",
+          "path": "docs/reports/algorithm/final-branch-report.md"
+        },
+        {
+          "blob": "2ccae7409b8cfe2bfd414db59ced5cd86242a279",
+          "path": "docs/reports/algorithm/final-experiment-report.md"
+        },
+        {
+          "blob": "94b22c2bc9270e82769cdc86a71af7ccd5da0d34",
+          "path": "docs/reports/algorithm/final-implementation-report.md"
+        },
+        {
+          "blob": "02c2d2deac961a364ac6c3c9c9b6996793887725",
+          "path": "docs/reports/algorithm/final-limitations-report.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "f9e595827a331b2000c46124c146dd5ef7717bb2",
+          "path": "docs/reports/algorithm/lab-e-fp16-fp4.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "054e55111e6e45eff63855308c0cf82c6220ac8a",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "6f42851bcc70dda5182a4c286e46f4d4dd5f56ac",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+      "merge_base": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+      "ref": "codex/agent-product-baseline",
+      "role": "product_stage",
+      "unique_lesson": "no additional unique lesson selected"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 0,
+      "decision": "authoritative product parent and lab evidence",
+      "documents": [
+        {
+          "blob": "b753f560baa73129b61663ec1767912204b5b71f",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "b50b884931105bceec764d63cab6c5fad723c341",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "b015b9fbfd9106bd3db2c862f093045ef2e22fd3",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "e577f53c9696d4d1524c919a4c1444ace570ea2e",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "b7c18d472a9f824ae2caf8039e179665eb5b2c43",
+          "path": "docs/freezes/algorithm-suite-freeze.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "3605ce45421509f115cb91394603d87d38a38e3b",
+          "path": "docs/labs/algorithm-suite.en.md"
+        },
+        {
+          "blob": "13042875705496a2a3adac4d423a0df7e80fc1cf",
+          "path": "docs/labs/algorithm-suite.md"
+        },
+        {
+          "blob": "7816c7cc673d91ff1e5816d17504cf7586b0d166",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "4c82e7806660f13781064ca303b2225fd6c34b21",
+          "path": "docs/reports/algorithm/algorithm-suite-freeze.md"
+        },
+        {
+          "blob": "631cc3d422391239aa9b97ae48b67a5d85698159",
+          "path": "docs/reports/algorithm/final-branch-report.md"
+        },
+        {
+          "blob": "2ccae7409b8cfe2bfd414db59ced5cd86242a279",
+          "path": "docs/reports/algorithm/final-experiment-report.md"
+        },
+        {
+          "blob": "94b22c2bc9270e82769cdc86a71af7ccd5da0d34",
+          "path": "docs/reports/algorithm/final-implementation-report.md"
+        },
+        {
+          "blob": "02c2d2deac961a364ac6c3c9c9b6996793887725",
+          "path": "docs/reports/algorithm/final-limitations-report.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "f9e595827a331b2000c46124c146dd5ef7717bb2",
+          "path": "docs/reports/algorithm/lab-e-fp16-fp4.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "054e55111e6e45eff63855308c0cf82c6220ac8a",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "6f42851bcc70dda5182a4c286e46f4d4dd5f56ac",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+      "merge_base": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+      "ref": "codex/algorithm-suite-freeze",
+      "role": "algorithm_freeze",
+      "unique_lesson": "causal Advanced Lab contract and cloud-verified algorithm lineage"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 6,
+      "decision": "preserve planning decision record",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        }
+      ],
+      "head": "65ca523c99c8fe03c6ef438a7e914c836a32709a",
+      "merge_base": "65ca523c99c8fe03c6ef438a7e914c836a32709a",
+      "ref": "codex/ch03-algorithm-roadmap",
+      "role": "algorithm_plan",
+      "unique_lesson": "no additional unique lesson selected"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 5,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        }
+      ],
+      "head": "445fad2ba6b3284478276ee0f4e815946218221e",
+      "merge_base": "445fad2ba6b3284478276ee0f4e815946218221e",
+      "ref": "codex/lab-a-evidence-eval",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 4,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "cf16dbbf29366669019a0528935f6fba268e3bab",
+      "merge_base": "cf16dbbf29366669019a0528935f6fba268e3bab",
+      "ref": "codex/lab-b-tiny-pretrain",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 3,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "dd1c52f6c847fe136f6f877ca803fcc7fff6d216",
+      "merge_base": "dd1c52f6c847fe136f6f877ca803fcc7fff6d216",
+      "ref": "codex/lab-c-trajectory-distillation",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 2,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "merge_base": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "ref": "codex/lab-d-tiny-moe",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 1,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "f9e595827a331b2000c46124c146dd5ef7717bb2",
+          "path": "docs/reports/algorithm/lab-e-fp16-fp4.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "merge_base": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "ref": "codex/lab-e-fp16-fp4",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 2,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "merge_base": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "ref": "codex/lab-e-tiny-sparse-moe",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 1,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "f9e595827a331b2000c46124c146dd5ef7717bb2",
+          "path": "docs/reports/algorithm/lab-e-fp16-fp4.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "merge_base": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "ref": "codex/lab-h-fp16-fp4",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 90,
+      "decision": "preserve Chapter 1 teaching checkpoint",
+      "documents": [
+        {
+          "blob": "5ab23f41e87c0fcebe3ef714a61a5d7e48c585af",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "30cabcd3bdbaf215c6333388fdc4848d4bd86a3a",
+          "path": "README.md"
+        },
+        {
+          "blob": "5cd9286443bf9c097ab4c14a0dcc31d07cc0efd1",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "328937aebfedc45f9bcb8533fc9c79cc30bf0151",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "7033877f575d454131926d7c056cab6f551a4783",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "352cc743c250b1e643988097f09b7da35dc40f2a",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "760316ef131034b9af8312948f883fb4eada0b57",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "7d7b2e105231e1b836686df68092cf578e210dc4",
+          "path": "docs/skills/roadmap.md"
+        }
+      ],
+      "head": "799c5dc591fc1522f0135222db774c7c43983097",
+      "merge_base": "799c5dc591fc1522f0135222db774c7c43983097",
+      "ref": "main",
+      "role": "foundation_chapter",
+      "unique_lesson": "mechanism-first minimal loop and bilingual root/chapter mirror"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 90,
+      "decision": "preserve Chapter 1 teaching checkpoint",
+      "documents": [
+        {
+          "blob": "5ab23f41e87c0fcebe3ef714a61a5d7e48c585af",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "30cabcd3bdbaf215c6333388fdc4848d4bd86a3a",
+          "path": "README.md"
+        },
+        {
+          "blob": "5cd9286443bf9c097ab4c14a0dcc31d07cc0efd1",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "328937aebfedc45f9bcb8533fc9c79cc30bf0151",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "7033877f575d454131926d7c056cab6f551a4783",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "352cc743c250b1e643988097f09b7da35dc40f2a",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "760316ef131034b9af8312948f883fb4eada0b57",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "7d7b2e105231e1b836686df68092cf578e210dc4",
+          "path": "docs/skills/roadmap.md"
+        }
+      ],
+      "head": "799c5dc591fc1522f0135222db774c7c43983097",
+      "merge_base": "799c5dc591fc1522f0135222db774c7c43983097",
+      "ref": "origin/chapter-1-minimal-loop",
+      "role": "foundation_chapter",
+      "unique_lesson": "mechanism-first minimal loop and bilingual root/chapter mirror"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 72,
+      "decision": "preserve Chapter 2 tool boundary",
+      "documents": [
+        {
+          "blob": "8872272e8ac160d4fc1fe4af88cb69ec442de2d9",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "02bdc43c3a2863d0afb205c4103127c5770f8ce9",
+          "path": "README.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "099a52a88a786802082d4586144f139324e7159c",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "a94928be0837fa22c6dd2883567bd086d470f257",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "cbb6a1a49248c99fbdd9b2fd11b07b54ddecf301",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "01639751850451a36166db5f45688cc58a293af7",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "3f1fb1e73c12c213256d24edbb632239c4166191",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "8deb1f62bd5971d96e349b60a18a578e36b0215d",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "3ec76ff4e8e4efcd07e79a894b6a9028d994fcc7",
+          "path": "docs/skills/roadmap.md"
+        }
+      ],
+      "head": "bd3c13d805e96e2ef84b2a819e6fa2269bda665e",
+      "merge_base": "bd3c13d805e96e2ef84b2a819e6fa2269bda665e",
+      "ref": "origin/chapter-2-tool-calling",
+      "role": "foundation_chapter",
+      "unique_lesson": "what-stays-the-same tool boundary and real incident walkthrough"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 7,
+      "decision": "preserve Chapter 3 trace/activity boundary",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "16795514c74e4390756195993e0613aab07b096e",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "8deb1f62bd5971d96e349b60a18a578e36b0215d",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "030065dbda3e3f87d984124b3ff1470a5fe6f85f",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        }
+      ],
+      "head": "c12530f033d23a94639943879ee738d7b3bef54c",
+      "merge_base": "c12530f033d23a94639943879ee738d7b3bef54c",
+      "ref": "origin/chapter-3-hooks-and-trace",
+      "role": "foundation_chapter",
+      "unique_lesson": "public activity, provider reasoning, trace, and debug separation"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 0,
+      "decision": "authoritative product parent and lab evidence",
+      "documents": [
+        {
+          "blob": "b753f560baa73129b61663ec1767912204b5b71f",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "b50b884931105bceec764d63cab6c5fad723c341",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "b015b9fbfd9106bd3db2c862f093045ef2e22fd3",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "e577f53c9696d4d1524c919a4c1444ace570ea2e",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "b7c18d472a9f824ae2caf8039e179665eb5b2c43",
+          "path": "docs/freezes/algorithm-suite-freeze.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "3605ce45421509f115cb91394603d87d38a38e3b",
+          "path": "docs/labs/algorithm-suite.en.md"
+        },
+        {
+          "blob": "13042875705496a2a3adac4d423a0df7e80fc1cf",
+          "path": "docs/labs/algorithm-suite.md"
+        },
+        {
+          "blob": "7816c7cc673d91ff1e5816d17504cf7586b0d166",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "4c82e7806660f13781064ca303b2225fd6c34b21",
+          "path": "docs/reports/algorithm/algorithm-suite-freeze.md"
+        },
+        {
+          "blob": "631cc3d422391239aa9b97ae48b67a5d85698159",
+          "path": "docs/reports/algorithm/final-branch-report.md"
+        },
+        {
+          "blob": "2ccae7409b8cfe2bfd414db59ced5cd86242a279",
+          "path": "docs/reports/algorithm/final-experiment-report.md"
+        },
+        {
+          "blob": "94b22c2bc9270e82769cdc86a71af7ccd5da0d34",
+          "path": "docs/reports/algorithm/final-implementation-report.md"
+        },
+        {
+          "blob": "02c2d2deac961a364ac6c3c9c9b6996793887725",
+          "path": "docs/reports/algorithm/final-limitations-report.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "f9e595827a331b2000c46124c146dd5ef7717bb2",
+          "path": "docs/reports/algorithm/lab-e-fp16-fp4.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "054e55111e6e45eff63855308c0cf82c6220ac8a",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "6f42851bcc70dda5182a4c286e46f4d4dd5f56ac",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+      "merge_base": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+      "ref": "origin/codex/algorithm-suite-freeze",
+      "role": "algorithm_freeze",
+      "unique_lesson": "causal Advanced Lab contract and cloud-verified algorithm lineage"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 6,
+      "decision": "preserve planning decision record",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        }
+      ],
+      "head": "65ca523c99c8fe03c6ef438a7e914c836a32709a",
+      "merge_base": "65ca523c99c8fe03c6ef438a7e914c836a32709a",
+      "ref": "origin/codex/ch03-algorithm-roadmap",
+      "role": "algorithm_plan",
+      "unique_lesson": "no additional unique lesson selected"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 5,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        }
+      ],
+      "head": "445fad2ba6b3284478276ee0f4e815946218221e",
+      "merge_base": "445fad2ba6b3284478276ee0f4e815946218221e",
+      "ref": "origin/codex/lab-a-evidence-eval",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 4,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "cf16dbbf29366669019a0528935f6fba268e3bab",
+      "merge_base": "cf16dbbf29366669019a0528935f6fba268e3bab",
+      "ref": "origin/codex/lab-b-tiny-pretrain",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 3,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "dd1c52f6c847fe136f6f877ca803fcc7fff6d216",
+      "merge_base": "dd1c52f6c847fe136f6f877ca803fcc7fff6d216",
+      "ref": "origin/codex/lab-c-trajectory-distillation",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 2,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "merge_base": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "ref": "origin/codex/lab-d-tiny-moe",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 1,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "f9e595827a331b2000c46124c146dd5ef7717bb2",
+          "path": "docs/reports/algorithm/lab-e-fp16-fp4.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "merge_base": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "ref": "origin/codex/lab-e-fp16-fp4",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 2,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "merge_base": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "ref": "origin/codex/lab-e-tiny-sparse-moe",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 1,
+      "decision": "preserve verified stacked experiment",
+      "documents": [
+        {
+          "blob": "05b1cb4146eced23ef8be3a128b4a8394abdada5",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "7406ee54800338d633b72fe9434d6041c88e1c79",
+          "path": "README.md"
+        },
+        {
+          "blob": "3d3035c1fdffeacba4e5c2484ebfcf0808a18fb5",
+          "path": "README_CHAPTER3_PACKAGE.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "b7dd8267a4449cd799fc0b1017f701c91c01070e",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "0da6da8b022504b3a07c21ed6148f35aa1f35448",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "6ee5a42339c2e3b744c0be6825c80b118a30441e",
+          "path": "docs/chapters/ch03-hooks-and-trace.en.md"
+        },
+        {
+          "blob": "6599b42e1edc5956efd459a09061164281aa7b41",
+          "path": "docs/chapters/ch03-hooks-and-trace.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "def0078158089538a1a548f0b9a025f05a1f951f",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "1bccd4c226ef2838ebeee7fbfae9bbef37891416",
+          "path": "docs/reports/algorithm-completion-readiness-audit.md"
+        },
+        {
+          "blob": "12dded031cfbd2a653610fc5999bef2fea16f9be",
+          "path": "docs/reports/algorithm/lab-a-evidence-eval.md"
+        },
+        {
+          "blob": "e5eeaedf41ea937d1a139ec37a5a602365079e6d",
+          "path": "docs/reports/algorithm/lab-b-tiny-pretrain.md"
+        },
+        {
+          "blob": "6afa33b7c6edabaa9a2e41b29467ef5b917fe2bf",
+          "path": "docs/reports/algorithm/lab-c-trajectory-distillation.md"
+        },
+        {
+          "blob": "d0a99f8ee5a9c08f637bbd46e5a3ce7992eb5531",
+          "path": "docs/reports/algorithm/lab-d-tiny-moe.md"
+        },
+        {
+          "blob": "f9e595827a331b2000c46124c146dd5ef7717bb2",
+          "path": "docs/reports/algorithm/lab-e-fp16-fp4.md"
+        },
+        {
+          "blob": "c3bbb75dbcc6783d9cb55825f30376c7635c4bab",
+          "path": "docs/reports/ch03-thinking-web-search-diagnosis-for-gpt.md"
+        },
+        {
+          "blob": "4258b2553b0594e8615ffad167d5815c0f78f9cc",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "274a4b24e001c678c058d6b5fd55be04422beb35",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "085c039d4414dcc4f7fb32dc6d4c5599d6b81035",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "c260b1b8ba2a888de64921028ecec345234677af",
+          "path": "docs/skills/roadmap.md"
+        },
+        {
+          "blob": "bbd485ed9eafc2f4e1ca39596c7a940cd6f9dbbd",
+          "path": "docs/skills/web-research-state-machine.md"
+        },
+        {
+          "blob": "90aba0c1157add56235447d652720391c6c499fe",
+          "path": "scripts/hku/README.md"
+        }
+      ],
+      "head": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "merge_base": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "ref": "origin/codex/lab-h-fp16-fp4",
+      "role": "algorithm_stage",
+      "unique_lesson": "one-gate experiment branch with machine and Markdown reports"
+    },
+    {
+      "ahead_of_authoritative_parent": 0,
+      "behind_authoritative_parent": 67,
+      "decision": "preserve Chapter 2 tool boundary",
+      "documents": [
+        {
+          "blob": "8872272e8ac160d4fc1fe4af88cb69ec442de2d9",
+          "path": "README.en.md"
+        },
+        {
+          "blob": "02bdc43c3a2863d0afb205c4103127c5770f8ce9",
+          "path": "README.md"
+        },
+        {
+          "blob": "f51a0147eb4c3b6da982f2589884fab9a9426357",
+          "path": "docs/chapters/ch01-minimal-agent-loop.en.md"
+        },
+        {
+          "blob": "99db67ffc65a9a0d0fa26515aa41e749df75105a",
+          "path": "docs/chapters/ch01-minimal-agent-loop.md"
+        },
+        {
+          "blob": "099a52a88a786802082d4586144f139324e7159c",
+          "path": "docs/chapters/ch02-tool-calling.en.md"
+        },
+        {
+          "blob": "a94928be0837fa22c6dd2883567bd086d470f257",
+          "path": "docs/chapters/ch02-tool-calling.md"
+        },
+        {
+          "blob": "4a05a1b4adeeaf332e5208cf49b009b4f0b777c4",
+          "path": "docs/freezes/ch01-minimal-llm-loop-freeze.md"
+        },
+        {
+          "blob": "cbb6a1a49248c99fbdd9b2fd11b07b54ddecf301",
+          "path": "docs/freezes/ch02-tool-calling-freeze.md"
+        },
+        {
+          "blob": "01639751850451a36166db5f45688cc58a293af7",
+          "path": "docs/skills/architecture.md"
+        },
+        {
+          "blob": "3f1fb1e73c12c213256d24edbb632239c4166191",
+          "path": "docs/skills/coding-conventions.md"
+        },
+        {
+          "blob": "8deb1f62bd5971d96e349b60a18a578e36b0215d",
+          "path": "docs/skills/readme-conventions.md"
+        },
+        {
+          "blob": "3ec76ff4e8e4efcd07e79a894b6a9028d994fcc7",
+          "path": "docs/skills/roadmap.md"
+        }
+      ],
+      "head": "aa19ae8d314184d31ef11eed69a785ef748596b6",
+      "merge_base": "aa19ae8d314184d31ef11eed69a785ef748596b6",
+      "ref": "origin/main",
+      "role": "foundation_chapter",
+      "unique_lesson": "what-stays-the-same tool boundary and real incident walkthrough"
+    },
+    {
+      "ahead_of_authoritative_parent": 21,
+      "behind_authoritative_parent": 112,
+      "decision": "port evidence contracts; never merge package tree",
+      "documents": [
+        {
+          "blob": "ed2decae61c0f468fdef307479e7b06e819047fa",
+          "path": "README.md"
+        },
+        {
+          "blob": "0dcaefaa3c6a12e125add165f5a7e7f32f5f68dd",
+          "path": "docs/chapters/ch01-minimal-agent.md"
+        },
+        {
+          "blob": "6939ba387b88a84eaad2a16d70aa55960cee23bf",
+          "path": "docs/chapters/ch02-rag-agent.md"
+        },
+        {
+          "blob": "c6976b456c78f5926b69654bf1bd549b976668f8",
+          "path": "docs/chapters/ch03-agentic-rag.md"
+        },
+        {
+          "blob": "ced9b005b0b2447f6e2c0150f6a402fb21f08b7e",
+          "path": "docs/freezes/v0.1-minimal-agent-freeze.md"
+        },
+        {
+          "blob": "41076cd91f4c4f6b798b8d2aa580b2a9d64c347e",
+          "path": "docs/freezes/v0.2-rag-agent-freeze.md"
+        },
+        {
+          "blob": "339223c5463c6da716bf41569fbbb9815ec4422e",
+          "path": "docs/freezes/v0.3-agentic-rag-freeze.md"
+        },
+        {
+          "blob": "7d1cac57ead91c627574b40624eaf2a4d2b14fcc",
+          "path": "docs/labs/ch03-multimodal-rag-labs.md"
+        },
+        {
+          "blob": "e0ebf9499d5aa356e7bcd5f4a37f5d31d4326377",
+          "path": "docs/reports/ch03-agentic-rag-implementation-report.md"
+        },
+        {
+          "blob": "9d38fb6bd32060d6a2dd01990243b071e7b55b51",
+          "path": "docs/reports/ch03-fullstack-integration-final-report.md"
+        },
+        {
+          "blob": "79220a2c90064cc33703c72d1da22a5ed04cc6b8",
+          "path": "docs/reports/ch03-fullstack-smoke-report.md"
+        },
+        {
+          "blob": "3bab011e66bc8968ab4412f0624ab6e84708a812",
+          "path": "docs/reports/ch03-real-corpus-integration-report.md"
+        },
+        {
+          "blob": "a6414c0108aad2943fb1672c6b48df6fc270b4a2",
+          "path": "docs/reports/ch03-single-chain-correction-report.md"
+        },
+        {
+          "blob": "03c729e7f43343bd6cb9c2bd7e7a7ee8a250c01f",
+          "path": "docs/reports/ch03-visual-rag-ui-report.md"
+        },
+        {
+          "blob": "fb6134e76c75a781c2c6c4591c4c003dff78d343",
+          "path": "docs/reports/ch03-wrong-chain-audit.md"
+        },
+        {
+          "blob": "3da02235d3a08c6faf8f7357d8279ac58d5cacf8",
+          "path": "docs/reports/corpus_gap_analysis.md"
+        },
+        {
+          "blob": "f726da5ebbb68c6fa6becff51dbb0078501c593c",
+          "path": "docs/reports/current_corpus_inventory.md"
+        },
+        {
+          "blob": "354f1657e0187543e96011af0ca7c82bb65940cb",
+          "path": "docs/reports/paper_processing_plan.md"
+        },
+        {
+          "blob": "352cc743c250b1e643988097f09b7da35dc40f2a",
+          "path": "docs/skills/coding-conventions.md"
+        }
+      ],
+      "head": "ecd70e715d68ced576837f7bf6581b335b5aae3b",
+      "merge_base": null,
+      "ref": "origin/rag",
+      "role": "legacy_design_source",
+      "unique_lesson": "EvidencePack, SourceCard, Citation, DecisionRecord, insufficient evidence"
+    },
+    {
+      "ahead_of_authoritative_parent": 19,
+      "behind_authoritative_parent": 112,
+      "decision": "port evidence contracts; never merge package tree",
+      "documents": [
+        {
+          "blob": "5f9339f6312dd81e2a52b5dfba82c3c1c618c6fa",
+          "path": "README.md"
+        },
+        {
+          "blob": "0dcaefaa3c6a12e125add165f5a7e7f32f5f68dd",
+          "path": "docs/chapters/ch01-minimal-agent.md"
+        },
+        {
+          "blob": "6939ba387b88a84eaad2a16d70aa55960cee23bf",
+          "path": "docs/chapters/ch02-rag-agent.md"
+        },
+        {
+          "blob": "ced9b005b0b2447f6e2c0150f6a402fb21f08b7e",
+          "path": "docs/freezes/v0.1-minimal-agent-freeze.md"
+        },
+        {
+          "blob": "41076cd91f4c4f6b798b8d2aa580b2a9d64c347e",
+          "path": "docs/freezes/v0.2-rag-agent-freeze.md"
+        },
+        {
+          "blob": "352cc743c250b1e643988097f09b7da35dc40f2a",
+          "path": "docs/skills/coding-conventions.md"
+        }
+      ],
+      "head": "da027f2175ff92661a404fa6912dfccb5696e93f",
+      "merge_base": null,
+      "ref": "v0.3-agentic-rag",
+      "role": "legacy_design_source",
+      "unique_lesson": "EvidencePack, SourceCard, Citation, DecisionRecord, insufficient evidence"
+    }
+  ],
+  "capabilities": [
+    {
+      "evidence": "historical chapter branches and 228-test baseline",
+      "id": "ch01-03",
+      "status": "passed"
+    },
+    {
+      "evidence": "b440df3 freeze; cloud reports retained",
+      "id": "algorithm-suite",
+      "status": "passed"
+    },
+    {
+      "evidence": "KlaraHarness exists; immutable run profile/capability negotiation absent",
+      "id": "ch04-harness-config",
+      "status": "partial"
+    },
+    {
+      "evidence": "no plan state machine, persistence, events, API, or Plan UI",
+      "id": "ch05-todo-planning",
+      "status": "missing"
+    },
+    {
+      "evidence": "timestamps/history and web compaction exist; full budget/provenance compaction absent",
+      "id": "ch06-07-context",
+      "status": "partial"
+    },
+    {
+      "evidence": "provider routing exists; bounded retry/idempotency/circuit breaker absent",
+      "id": "ch08-provider-recovery",
+      "status": "partial"
+    },
+    {
+      "evidence": "no runtime catalog, precedence, progressive loading, API, or UI",
+      "id": "ch09-skills-runtime",
+      "status": "missing"
+    },
+    {
+      "evidence": "no durable typed memory service, deletion guarantee, benchmark, API, or UI",
+      "id": "ch10-memory",
+      "status": "missing"
+    },
+    {
+      "evidence": "explicit user-approved omission",
+      "id": "ch11-formal-rag",
+      "status": "deferred_by_scope"
+    },
+    {
+      "evidence": "contracts/evaluator exist; final-answer/API/UI integration incomplete",
+      "id": "ch12-13-evidence-runtime",
+      "status": "partial"
+    },
+    {
+      "evidence": "PreToolUse placement is not a scoped permission engine",
+      "id": "permission-engine",
+      "status": "missing"
+    },
+    {
+      "evidence": "no leases/checkpoints/dependencies/restart recovery/API/UI",
+      "id": "ch14-durable-tasks",
+      "status": "missing"
+    },
+    {
+      "evidence": "no durable schedules, DST/misfire/overlap, API, or UI",
+      "id": "ch15-scheduler",
+      "status": "missing"
+    },
+    {
+      "evidence": "no MCP lifecycle, transport, permission routing, API, or UI",
+      "id": "ch17-mcp",
+      "status": "missing"
+    },
+    {
+      "evidence": "no delegation runtime, team state, worktree lifecycle, API, or UI",
+      "id": "ch16-teams-worktrees",
+      "status": "missing"
+    },
+    {
+      "evidence": "local JSON store only; no migrations/queue/OIDC/RBAC/tenant proof",
+      "id": "ch18-production-runtime",
+      "status": "missing"
+    },
+    {
+      "evidence": "chat/thinking/debug exist; product control surfaces absent",
+      "id": "product-ui-polish",
+      "status": "partial"
+    },
+    {
+      "evidence": "algorithm fixture evaluator is not KlaraBehaviorCase/public agent benchmark harness",
+      "id": "agent-benchmarks",
+      "status": "missing"
+    },
+    {
+      "evidence": "training attention has no typed prefill/decode cache",
+      "id": "model-kv-cache",
+      "status": "missing"
+    },
+    {
+      "evidence": "fixture exporter exists; real authorized dataset freeze absent",
+      "id": "real-trajectory-data",
+      "status": "partial"
+    },
+    {
+      "evidence": "algorithm scripts exist; full product/model upload inventory and preflight absent",
+      "id": "hku-upload-package",
+      "status": "partial"
+    }
+  ],
+  "checks": {
+    "authoritative_parent_matches": true,
+    "branch_matrix_present": true,
+    "frontend_baseline_passed": true,
+    "local_pre_hku_boundary_recorded": true,
+    "production_build_passed": true,
+    "python_baseline_passed": true,
+    "secrets_untracked": true
+  },
+  "distinct_document_blobs": 77,
+  "environment": {
+    "cuda_available": "True",
+    "execution_policy": "bounded serial local tests; no HKU/VPN/SSH/Slurm; no heavy local training",
+    "git": "git version 2.42.0.windows.2",
+    "node": "v24.11.0",
+    "npm": "unavailable",
+    "os": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.5",
+    "torch": "2.5.1+cu121"
+  },
+  "generated_at": "2026-08-12T15:49:36.603309+00:00",
+  "mode": "local-pre-hku",
+  "passed": true,
+  "schema_version": "klara.agent-product-baseline.v1",
+  "secrets": {
+    "env_ignored": true,
+    "passed": true,
+    "tracked_secret_like_paths": []
+  },
+  "source": {
+    "authoritative_parent": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+    "branch": "codex/agent-product-baseline",
+    "head": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+    "source_bundle": ".tmp/agent-product-baseline.tar",
+    "source_bundle_sha256": "94bc0bc8df0237ad13e496d0e4a93b854c5f63b4cce80aa79f2c9dc0f9d11898"
+  },
+  "tests": {
+    "build": {
+      "command": "npm run build",
+      "passed": true
+    },
+    "frontend": {
+      "command": "npm test",
+      "passed": 42
+    },
+    "python": {
+      "command": "python -m pytest",
+      "passed": 228,
+      "skipped": 1
+    }
+  }
+}
