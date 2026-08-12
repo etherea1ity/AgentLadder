@@ -42,7 +42,7 @@ foreach ($root in $includeRoots) {
         if ($relative -match "(^|/)(__pycache__|\.pytest_cache|\.tmp|node_modules)(/|$)") {
             continue
         }
-        if ($relative -match "^docs/reports/algorithm/(?:lab-b-tiny-pretrain|lab-c-trajectory-distillation)(?:\.manifest)?\.(?:json|md)$") {
+        if ($relative -match "^docs/reports/algorithm/(?:lab-b-tiny-pretrain|lab-c-trajectory-distillation|lab-d-tiny-moe)(?:\.manifest)?\.(?:json|md)$") {
             # Generated evidence is committed, but it cannot be an input to
             # the source bundle whose hash that same evidence records.
             continue

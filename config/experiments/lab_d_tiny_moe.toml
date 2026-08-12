@@ -1,0 +1,50 @@
+[experiment]
+name = "lab-d-tiny-moe"
+
+[execution]
+require_slurm = true
+require_cuda_training = true
+remote_root = "/userhome/cs2/u3665453/AgentLadder"
+
+[model]
+vocab_size = 260
+hidden_size = 128
+num_layers = 4
+num_attention_heads = 4
+num_key_value_heads = 2
+intermediate_size = 384
+max_sequence_length = 128
+dropout = 0.0
+rms_norm_epsilon = 0.000001
+rope_theta = 10000.0
+pad_token_id = 0
+bos_token_id = 1
+eos_token_id = 2
+tie_word_embeddings = true
+
+[moe]
+num_experts = 4
+top_k = 2
+auxiliary_loss_weight = 0.01
+z_loss_weight = 0.001
+
+[train]
+seed = 20260813
+steps = 120
+batch_size = 4
+learning_rate = 0.002
+weight_decay = 0.01
+gradient_clip = 1.0
+precision = "fp32"
+device = "cuda"
+loader_workers = 0
+
+[generation]
+prompt = "Klara "
+
+[gate]
+minimum_loss_reduction_fraction = 0.30
+maximum_balanced_load_ratio = 2.0
+minimum_router_entropy = 0.10
+selected_weight_sum_atol = 0.000001
+maximum_gpu_peak_allocated_bytes = 3758096384
