@@ -1,0 +1,16 @@
+Klara checks evidence before it answers.
+Klara checks evidence before it answers.
+Tools turn actions into bounded observations.
+Tools turn actions into bounded observations.
+The agent records state action observation and outcome.
+The agent records state action observation and outcome.
+Supported claims need citations to admissible sources.
+Supported claims need citations to admissible sources.
+Contradicted claims cause an explicit abstention.
+Contradicted claims cause an explicit abstention.
+训练轨迹只保留公开状态、动作、观察和结果。
+训练轨迹只保留公开状态、动作、观察和结果。
+证据不足时，智能体应当明确拒答。
+证据不足时，智能体应当明确拒答。
+Tiny models make algorithms inspectable and reproducible.
+Tiny models make algorithms inspectable and reproducible.

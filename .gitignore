@@ -17,3 +17,5 @@ build/
 src/agent_ladder/
 .klara/
 data/
+artifacts/
+.remote_artifacts_stage/
