@@ -122,3 +122,18 @@ def test_tool_decision_scorer_is_bounded_and_deterministic() -> None:
 
     assert 0.0 <= first <= 1.0
     assert first == second
+
+
+def test_tool_decision_scorer_rejects_unknown_precision() -> None:
+    tokenizer = ByteTokenizer()
+    manifest = FrozenTeacherManifest.load(FIXTURE, expected_sha256=_fixture_hash())
+    model = TinyDecoderLM(_model_config())
+
+    with pytest.raises(ValueError, match="precision"):
+        tool_decision_accuracy(
+            model,
+            manifest.split("validation")[:1],
+            tokenizer,
+            device=torch.device("cpu"),
+            precision="fp8",
+        )

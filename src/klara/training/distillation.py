@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import nullcontext
 import json
 from pathlib import Path
 from time import perf_counter
@@ -292,6 +293,7 @@ def tool_decision_accuracy(
     tokenizer: ByteTokenizer,
     *,
     device: torch.device,
+    precision: str = "fp32",
 ) -> float:
     """Choose the candidate with highest conditional hard-label likelihood."""
 
@@ -306,6 +308,7 @@ def tool_decision_accuracy(
                     prompt=example.prompt,
                     completion=action,
                     device=device,
+                    precision=precision,
                 )
                 for action in ACTION_CANDIDATES
             }
@@ -423,6 +426,7 @@ def _completion_log_likelihood(
     prompt: str,
     completion: str,
     device: torch.device,
+    precision: str = "fp32",
 ) -> float:
     """Score one candidate completion using only its conditional token losses."""
 
@@ -430,8 +434,16 @@ def _completion_log_likelihood(
     completion_ids = tokenizer.encode(completion, add_bos=False, add_eos=True)
     tokens = prompt_ids + completion_ids
     input_ids = torch.tensor([tokens[:-1]], dtype=torch.long, device=device)
-    output = model(input_ids)
-    log_probabilities = F.log_softmax(output.logits, dim=-1)
+    if precision not in {"fp32", "fp16"}:
+        raise ValueError("decision scorer precision must be fp32 or fp16")
+    context = (
+        torch.autocast("cuda", dtype=torch.float16)
+        if precision == "fp16" and device.type == "cuda"
+        else nullcontext()
+    )
+    with context:
+        output = model(input_ids)
+        log_probabilities = F.log_softmax(output.logits, dim=-1)
     start = len(prompt_ids) - 1
     positions = torch.arange(start, len(tokens) - 1, device=device)
     targets = torch.tensor(completion_ids, dtype=torch.long, device=device)

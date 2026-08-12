@@ -1,0 +1,449 @@
+{
+  "artifacts": {
+    "fp16_checkpoint": {
+      "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/lab-e-fp16-fp4/job-133917/tiny_fp16_amp.pt",
+      "sha256": "9b034f4f8ee7fc69610bf392770a472e2d0150cd975f1cc04a297b2487cd2587"
+    },
+    "w4a16": {
+      "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/lab-e-fp16-fp4/job-133917/tiny_w4a16.pt",
+      "sha256": "ec657738769030127e29ae608b2f293907197746e137fa7c81fb36262a20d492"
+    }
+  },
+  "checks": {
+    "base_checkpoint_hash_verified": true,
+    "block_metadata_versioned": true,
+    "dequantized_compute_disclosed": true,
+    "e2m1_all_codes_round_trip": true,
+    "fp16_finite": true,
+    "fp16_fp32_within_tolerance": true,
+    "gpu_peak_under_limit": true,
+    "nibble_odd_even_round_trip": true,
+    "qat_on_quality_failure": true,
+    "real_cuda_fp16_amp": true,
+    "slurm_cuda_execution": true,
+    "storage_saving": true,
+    "w4a16_artifact_reload": true,
+    "w4a16_finite": true,
+    "w4a16_quality": true
+  },
+  "evaluated_at": "2026-08-12T07:55:37.540363+00:00",
+  "experiment": "lab-e-fp16-fp4",
+  "fp16": {
+    "autocast_dtype": "float16",
+    "declared_atol": 0.02,
+    "grad_scaler": true,
+    "logit_max_abs_diff": 0.0012966692447662354,
+    "training": {
+      "device": "cuda",
+      "duration_seconds": 0.7767259632237256,
+      "final_loss": 3.7966505807561304,
+      "generated_text": "Klara e e                 ee  ",
+      "generated_token_ids": [
+        1,
+        79,
+        112,
+        101,
+        118,
+        101,
+        36,
+        105,
+        36,
+        105,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        36,
+        105,
+        105,
+        36,
+        36
+      ],
+      "gradients_finite": true,
+      "initial_loss": 5.5532318614991025,
+      "loss_curve": [
+        5.586047649383545,
+        4.858293056488037,
+        4.53352689743042,
+        4.146150588989258,
+        3.7918829917907715
+      ],
+      "loss_reduction_fraction": 0.31631693481438405,
+      "model_state_sha256": "57f02b6a992625cca743f606843af37f4f657c81126172b6221af4b323e687cf",
+      "parameter_count": 821120,
+      "peak_allocated_bytes": 56844800,
+      "precision": "fp16"
+    }
+  },
+  "fp4": {
+    "activation_precision": "fp16",
+    "block_size": 64,
+    "compute_mode": "dequantized_fp4_weight_matmul",
+    "format_version": "klara.fp4-e2m1-block.v1",
+    "native_fp4_compute": false,
+    "storage": {
+      "format_version": "klara.fp4-e2m1-block.v1",
+      "fp16_baseline_bytes": 1179648,
+      "fp4_storage_bytes": 313344,
+      "saving_fraction": 0.734375,
+      "tensor_count": 12,
+      "tensors": {
+        "blocks.0.feed_forward.down": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            128,
+            384
+          ]
+        },
+        "blocks.0.feed_forward.gate": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        },
+        "blocks.0.feed_forward.up": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        },
+        "blocks.1.feed_forward.down": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            128,
+            384
+          ]
+        },
+        "blocks.1.feed_forward.gate": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        },
+        "blocks.1.feed_forward.up": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        },
+        "blocks.2.feed_forward.down": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            128,
+            384
+          ]
+        },
+        "blocks.2.feed_forward.gate": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        },
+        "blocks.2.feed_forward.up": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        },
+        "blocks.3.feed_forward.down": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            128,
+            384
+          ]
+        },
+        "blocks.3.feed_forward.gate": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        },
+        "blocks.3.feed_forward.up": {
+          "block_size": 64,
+          "code_dtype": "uint4_packed_low_nibble_first",
+          "codebook": [
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+            4.0,
+            6.0
+          ],
+          "format_version": "klara.fp4-e2m1-block.v1",
+          "fp16_baseline_bytes": 98304,
+          "fp4_storage_bytes": 26112,
+          "logical_length": 49152,
+          "packed_length": 24576,
+          "scale_count": 768,
+          "scale_dtype": "float16",
+          "shape": [
+            384,
+            128
+          ]
+        }
+      }
+    },
+    "w4a16_output_finite": true
+  },
+  "hardware": {
+    "cuda_available": true,
+    "cuda_runtime": "12.4",
+    "device": "NVIDIA GeForce RTX 4080 SUPER",
+    "device_capability": [
+      8,
+      9
+    ],
+    "platform": "Linux-5.15.0-186-generic-x86_64-with-glibc2.35",
+    "python": "3.11.15",
+    "torch": "2.5.1+cu124",
+    "vram_bytes": 16852844544
+  },
+  "hashes": {
+    "base_checkpoint_sha256": "90962b25e5a67bd6978a6ee8408f62563539765dc9f7ee28e51491f9d95d56be",
+    "config_sha256": "52599204d0928e5c466cabc38fa90395eff500ba923e48ca88e2ef7bd3b2a907",
+    "data_sha256": "5d4056431d15921a7011785a5044944e118e573a809aa3cba6bf75313556eb2b",
+    "scorer_sha256": "28a8662aecff13eb80158144e22a93461360970b40488cfa6b163fcff4c6d138",
+    "teacher_manifest_sha256": "dea57789e91a8c961dad398a0907035724e22a8d38d40a4c75e42951e54710cd"
+  },
+  "passed": true,
+  "quality": {
+    "accuracy_degradation": 0.0,
+    "fp32_test_accuracy": 1.0,
+    "qat": {
+      "final_loss": null,
+      "first_loss": null,
+      "steps": 0,
+      "triggered": false
+    },
+    "qat_triggered": false,
+    "w4a16_test_accuracy": 1.0
+  },
+  "schema_version": "klara.quantization-run.v1",
+  "source": {
+    "bundle_sha256": "d321f5e1aae49dd8a0b7d6f217148498cc34b84f7bcf5ee0e424d65e6b1f88bb",
+    "deployment": "/userhome/cs2/u3665453/AgentLadder/deployments/d321f5e1aae49dd8a0b7d6f217148498cc34b84f7bcf5ee0e424d65e6b1f88bb",
+    "parent_commit": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+    "slurm_job_id": "133917",
+    "slurm_node": "gpu-4080-409",
+    "slurm_partition": "batch"
+  }
+}
