@@ -1,0 +1,142 @@
+{
+  "checkpoint": {
+    "model_state_sha256": "fd335874d08318d8c2790d9149eec7d79a0f5c4b670f8a095fcc116fb6290e3d",
+    "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/lab-c-trajectory-distillation/job-133913/tiny_distilled.pt",
+    "restored_model_state_sha256": "fd335874d08318d8c2790d9149eec7d79a0f5c4b670f8a095fcc116fb6290e3d",
+    "sha256": "90962b25e5a67bd6978a6ee8408f62563539765dc9f7ee28e51491f9d95d56be",
+    "step": 120
+  },
+  "checks": {
+    "api_teacher_hard_labels_only": true,
+    "base_checkpoint_hash_verified": true,
+    "checkpoint_hash_verified": true,
+    "checkpoint_reload_exact": true,
+    "deduplication_complete": true,
+    "evidence_control_not_regressed": true,
+    "finite_gradients": true,
+    "gpu_peak_under_limit": true,
+    "heldout_accuracy_improved": true,
+    "post_sft_test_accuracy": true,
+    "public_schema_validated": true,
+    "qwen_and_deepseek_present": true,
+    "redaction_complete": true,
+    "single_frozen_manifest": true,
+    "slurm_cuda_execution": true,
+    "split_hashes_disjoint": true,
+    "validation_accuracy": true
+  },
+  "dataset": {
+    "deduplication_pass_rate": 1.0,
+    "manifest_id": "lab-c-offline-public-contract-fixture-v1",
+    "manifest_sha256": "dea57789e91a8c961dad398a0907035724e22a8d38d40a4c75e42951e54710cd",
+    "public_fields_only": true,
+    "redaction_pass_rate": 1.0,
+    "schema_validation_rate": 1.0,
+    "split_counts": {
+      "test": 8,
+      "train": 16,
+      "validation": 4
+    },
+    "split_hashes_disjoint": true,
+    "split_sha256": {
+      "test": "9d7631dc549f9fcec313abf79cf02c6f2bf74cae0d1bc7654e68070b5c882bdb",
+      "train": "4e9b7058ef7e090c77348624096f032c342c92562fbc27c5955d4f383b6a4683",
+      "validation": "def6e3198f6a4ecd90da606625fcd4caef31b8c91537419a7872f5d580a4b4c4"
+    },
+    "teacher_counts": {
+      "deepseek": 14,
+      "qwen": 14
+    },
+    "total_examples": 28
+  },
+  "evaluated_at": "2026-08-12T07:15:30.190285+00:00",
+  "evidence_control": {
+    "baseline_metrics": {
+      "abstention_accuracy": 1.0,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "claim_support_accuracy": 1.0,
+      "contradiction_recall": 1.0,
+      "evidence_selection_precision": 1.0,
+      "evidence_selection_recall": 1.0,
+      "tool_argument_exactness": 1.0,
+      "tool_decision_accuracy": 1.0
+    },
+    "baseline_sha256": "9f13b372ff7dffc1287f18eea4b0a810a6ab91873ef6f593e42957aa1fc66d6f",
+    "current_metrics": {
+      "abstention_accuracy": 1.0,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "claim_support_accuracy": 1.0,
+      "contradiction_recall": 1.0,
+      "evidence_selection_precision": 1.0,
+      "evidence_selection_recall": 1.0,
+      "tool_argument_exactness": 1.0,
+      "tool_decision_accuracy": 1.0
+    },
+    "current_passed": true,
+    "not_regressed": true
+  },
+  "experiment": "lab-c-trajectory-distillation",
+  "hardware": {
+    "cuda_available": true,
+    "cuda_runtime": "12.4",
+    "device": "NVIDIA GeForce RTX 4080 SUPER",
+    "device_capability": [
+      8,
+      9
+    ],
+    "platform": "Linux-5.15.0-186-generic-x86_64-with-glibc2.35",
+    "python": "3.11.15",
+    "torch": "2.5.1+cu124",
+    "vram_bytes": 16852844544
+  },
+  "hashes": {
+    "config_sha256": "0434444bf41212227e860d83764b186c546386438acccaf2182dd88f0d7de938",
+    "evidence_baseline_sha256": "9f13b372ff7dffc1287f18eea4b0a810a6ab91873ef6f593e42957aa1fc66d6f",
+    "manifest_sha256": "dea57789e91a8c961dad398a0907035724e22a8d38d40a4c75e42951e54710cd",
+    "scorer_sha256": "8daf67c733692070e1197cb2c5e21655b54dcf1b8de47515f33a5f009b4b52a7"
+  },
+  "passed": true,
+  "source": {
+    "bundle_sha256": "29eb3e06a33069b0fde2152e960aa7c199418a7b3cf21576fcfd1e7c8212f2a6",
+    "deployment": "/userhome/cs2/u3665453/AgentLadder/deployments/29eb3e06a33069b0fde2152e960aa7c199418a7b3cf21576fcfd1e7c8212f2a6",
+    "parent_commit": "cf16dbbf29366669019a0528935f6fba268e3bab",
+    "slurm_job_id": "133913",
+    "slurm_node": "gpu-4080-409",
+    "slurm_partition": "batch"
+  },
+  "student": {
+    "architecture": {
+      "bos_token_id": 1,
+      "dropout": 0.0,
+      "eos_token_id": 2,
+      "hidden_size": 128,
+      "intermediate_size": 384,
+      "max_sequence_length": 128,
+      "num_attention_heads": 4,
+      "num_key_value_heads": 2,
+      "num_layers": 4,
+      "pad_token_id": 0,
+      "rms_norm_epsilon": 1e-06,
+      "rope_theta": 10000.0,
+      "tie_word_embeddings": true,
+      "vocab_size": 260
+    },
+    "base_checkpoint": "/userhome/cs2/u3665453/AgentLadder/artifacts/lab-b-tiny-pretrain/job-133910/tiny_dense.pt",
+    "base_checkpoint_sha256": "ea885bc2e6cb5aebacb576b85c1c61876a711962842a9e1ac84a1f677895d9f3",
+    "base_checkpoint_step": 120
+  },
+  "training": {
+    "duration_seconds": 2.0842307170387357,
+    "gradients_finite": true,
+    "improved": true,
+    "model_state_sha256": "fd335874d08318d8c2790d9149eec7d79a0f5c4b670f8a095fcc116fb6290e3d",
+    "peak_allocated_bytes": 61149696,
+    "post_sft_accuracy": 1.0,
+    "pre_sft_accuracy": 0.125,
+    "train_loss_final": 0.004435798153281212,
+    "train_loss_first": 5.081443786621094,
+    "validation_accuracy": 1.0
+  }
+}

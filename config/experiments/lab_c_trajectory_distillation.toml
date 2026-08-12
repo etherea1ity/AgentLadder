@@ -1,0 +1,48 @@
+[experiment]
+name = "lab-c-trajectory-distillation"
+
+[execution]
+require_slurm = true
+require_cuda_training = true
+remote_root = "/userhome/cs2/u3665453/AgentLadder"
+
+[student]
+base_checkpoint = "/userhome/cs2/u3665453/AgentLadder/artifacts/lab-b-tiny-pretrain/job-133910/tiny_dense.pt"
+base_checkpoint_sha256 = "ea885bc2e6cb5aebacb576b85c1c61876a711962842a9e1ac84a1f677895d9f3"
+
+[manifest]
+path = "tests/fixtures/algorithm/lab_c_public_teacher_manifest.json"
+sha256 = "dea57789e91a8c961dad398a0907035724e22a8d38d40a4c75e42951e54710cd"
+
+[model]
+vocab_size = 260
+hidden_size = 128
+num_layers = 4
+num_attention_heads = 4
+num_key_value_heads = 2
+intermediate_size = 384
+max_sequence_length = 128
+dropout = 0.0
+rms_norm_epsilon = 0.000001
+rope_theta = 10000.0
+pad_token_id = 0
+bos_token_id = 1
+eos_token_id = 2
+tie_word_embeddings = true
+
+[train]
+seed = 20260812
+steps = 120
+batch_size = 4
+learning_rate = 0.0008
+weight_decay = 0.0
+gradient_clip = 1.0
+device = "cuda"
+
+[gate]
+minimum_accuracy_gain = 0.01
+minimum_validation_accuracy = 0.75
+minimum_post_sft_test_accuracy = 0.75
+maximum_gpu_peak_allocated_bytes = 3758096384
+evidence_baseline_report = "docs/reports/algorithm/lab-a-evidence-eval.json"
+evidence_baseline_sha256 = "9f13b372ff7dffc1287f18eea4b0a810a6ab91873ef6f593e42957aa1fc66d6f"

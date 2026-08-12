@@ -42,9 +42,9 @@ foreach ($root in $includeRoots) {
         if ($relative -match "(^|/)(__pycache__|\.pytest_cache|\.tmp|node_modules)(/|$)") {
             continue
         }
-        if ($relative -match "^docs/reports/algorithm/lab-b-tiny-pretrain(?:\.manifest)?\.(?:json|md)$") {
-            # Generated Gate 2 evidence is committed, but it cannot be an
-            # input to the source bundle whose hash that evidence records.
+        if ($relative -match "^docs/reports/algorithm/(?:lab-b-tiny-pretrain|lab-c-trajectory-distillation)(?:\.manifest)?\.(?:json|md)$") {
+            # Generated evidence is committed, but it cannot be an input to
+            # the source bundle whose hash that same evidence records.
             continue
         }
         if ($forbiddenNames -contains $file.Name -or $forbiddenExtensions -contains $file.Extension.ToLowerInvariant()) {
@@ -76,12 +76,32 @@ foreach ($relative in $relativePaths) {
 
 $parentCommit = (git -C $repositoryRoot rev-parse HEAD).Trim()
 $branch = (git -C $repositoryRoot branch --show-current).Trim()
-$statusLines = @(git -C $repositoryRoot status --short)
+$packagedPathSet = [System.Collections.Generic.HashSet[string]]::new(
+    [string[]]$relativePaths,
+    [System.StringComparer]::Ordinal
+)
+$dirtyPaths = @(
+    git -C $repositoryRoot status --short --untracked-files=all |
+        Where-Object {
+            $statusPath = $_.Substring(3).Replace("\", "/")
+            if ($statusPath.Contains(" -> ")) {
+                $statusPath = $statusPath.Split(" -> ")[-1]
+            }
+            $packagedPathSet.Contains($statusPath)
+        } |
+        ForEach-Object {
+            $statusPath = $_.Substring(3).Replace("\", "/")
+            if ($statusPath.Contains(" -> ")) {
+                $statusPath = $statusPath.Split(" -> ")[-1]
+            }
+            $statusPath
+        }
+)
 $sourceState = [ordered]@{
     schema_version = "klara.hku-source.v1"
     branch = $branch
     parent_commit = $parentCommit
-    dirty_paths = $statusLines
+    dirty_paths = $dirtyPaths
     packaged_paths = $relativePaths.Count
 }
 $statePath = Join-Path $outputRoot "source-state.json"

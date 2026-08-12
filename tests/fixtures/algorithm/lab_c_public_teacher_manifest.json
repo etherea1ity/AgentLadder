@@ -1,0 +1,57 @@
+{
+  "schema_version": "klara.public-teacher-manifest.v1",
+  "manifest_id": "lab-c-offline-public-contract-fixture-v1",
+  "collection": {
+    "mode": "offline_public_contract_fixture",
+    "synthetic_fixture": true,
+    "public_fields_only": true,
+    "redaction_policy": "drop prompts, reasoning, tool arguments, and raw tool results",
+    "scope_note": "This fixture proves the multi-teacher pipeline; it is not an online Qwen or DeepSeek quality benchmark."
+  },
+  "teachers": [
+    {
+      "provider": "qwen",
+      "model": "offline-public-contract-fixture",
+      "supervision": "hard_label_sft",
+      "kl_weight": "0.0"
+    },
+    {
+      "provider": "deepseek",
+      "model": "offline-public-contract-fixture",
+      "supervision": "hard_label_sft",
+      "kl_weight": "0.0"
+    }
+  ],
+  "examples": [
+    {"example_id":"q_train_search_01","teacher":"qwen","split":"train","state":"researching","observation":"no admissible sources found alpha","policy_decision":"allow","outcome":"needs_evidence","action":"web_search"},
+    {"example_id":"q_train_search_02","teacher":"qwen","split":"train","state":"researching","observation":"evidence ledger empty beta","policy_decision":"allow","outcome":"needs_evidence","action":"web_search"},
+    {"example_id":"q_train_fetch_01","teacher":"qwen","split":"train","state":"researching","observation":"public candidate URL queued alpha","policy_decision":"allow","outcome":"source_candidate","action":"web_fetch"},
+    {"example_id":"q_train_fetch_02","teacher":"qwen","split":"train","state":"researching","observation":"ranked source awaits retrieval beta","policy_decision":"allow","outcome":"source_candidate","action":"web_fetch"},
+    {"example_id":"q_train_answer_01","teacher":"qwen","split":"train","state":"verifying","observation":"all required claims supported alpha","policy_decision":"allow","outcome":"release","action":"answer"},
+    {"example_id":"q_train_answer_02","teacher":"qwen","split":"train","state":"verifying","observation":"citations cover every claim beta","policy_decision":"allow","outcome":"release","action":"answer"},
+    {"example_id":"q_train_abstain_01","teacher":"qwen","split":"train","state":"verifying","observation":"required claim contradicted alpha","policy_decision":"block","outcome":"abstain_required","action":"abstain"},
+    {"example_id":"q_train_abstain_02","teacher":"qwen","split":"train","state":"verifying","observation":"support remains insufficient beta","policy_decision":"block","outcome":"abstain_required","action":"abstain"},
+    {"example_id":"d_train_search_01","teacher":"deepseek","split":"train","state":"researching","observation":"no admissible sources found gamma","policy_decision":"allow","outcome":"needs_evidence","action":"web_search"},
+    {"example_id":"d_train_search_02","teacher":"deepseek","split":"train","state":"researching","observation":"evidence ledger empty delta","policy_decision":"allow","outcome":"needs_evidence","action":"web_search"},
+    {"example_id":"d_train_fetch_01","teacher":"deepseek","split":"train","state":"researching","observation":"public candidate URL queued gamma","policy_decision":"allow","outcome":"source_candidate","action":"web_fetch"},
+    {"example_id":"d_train_fetch_02","teacher":"deepseek","split":"train","state":"researching","observation":"ranked source awaits retrieval delta","policy_decision":"allow","outcome":"source_candidate","action":"web_fetch"},
+    {"example_id":"d_train_answer_01","teacher":"deepseek","split":"train","state":"verifying","observation":"all required claims supported gamma","policy_decision":"allow","outcome":"release","action":"answer"},
+    {"example_id":"d_train_answer_02","teacher":"deepseek","split":"train","state":"verifying","observation":"citations cover every claim delta","policy_decision":"allow","outcome":"release","action":"answer"},
+    {"example_id":"d_train_abstain_01","teacher":"deepseek","split":"train","state":"verifying","observation":"required claim contradicted gamma","policy_decision":"block","outcome":"abstain_required","action":"abstain"},
+    {"example_id":"d_train_abstain_02","teacher":"deepseek","split":"train","state":"verifying","observation":"support remains insufficient delta","policy_decision":"block","outcome":"abstain_required","action":"abstain"},
+
+    {"example_id":"q_val_search","teacher":"qwen","split":"validation","state":"researching","observation":"no admissible sources found validation","policy_decision":"allow","outcome":"needs_evidence","action":"web_search"},
+    {"example_id":"q_val_answer","teacher":"qwen","split":"validation","state":"verifying","observation":"all required claims supported validation","policy_decision":"allow","outcome":"release","action":"answer"},
+    {"example_id":"d_val_fetch","teacher":"deepseek","split":"validation","state":"researching","observation":"public candidate URL queued validation","policy_decision":"allow","outcome":"source_candidate","action":"web_fetch"},
+    {"example_id":"d_val_abstain","teacher":"deepseek","split":"validation","state":"verifying","observation":"required claim contradicted validation","policy_decision":"block","outcome":"abstain_required","action":"abstain"},
+
+    {"example_id":"q_test_search","teacher":"qwen","split":"test","state":"researching","observation":"no admissible sources found heldout","policy_decision":"allow","outcome":"needs_evidence","action":"web_search"},
+    {"example_id":"q_test_fetch","teacher":"qwen","split":"test","state":"researching","observation":"public candidate URL queued heldout","policy_decision":"allow","outcome":"source_candidate","action":"web_fetch"},
+    {"example_id":"q_test_answer","teacher":"qwen","split":"test","state":"verifying","observation":"all required claims supported heldout","policy_decision":"allow","outcome":"release","action":"answer"},
+    {"example_id":"q_test_abstain","teacher":"qwen","split":"test","state":"verifying","observation":"required claim contradicted heldout","policy_decision":"block","outcome":"abstain_required","action":"abstain"},
+    {"example_id":"d_test_search","teacher":"deepseek","split":"test","state":"researching","observation":"evidence ledger empty heldout","policy_decision":"allow","outcome":"needs_evidence","action":"web_search"},
+    {"example_id":"d_test_fetch","teacher":"deepseek","split":"test","state":"researching","observation":"ranked source awaits retrieval heldout","policy_decision":"allow","outcome":"source_candidate","action":"web_fetch"},
+    {"example_id":"d_test_answer","teacher":"deepseek","split":"test","state":"verifying","observation":"citations cover every claim heldout","policy_decision":"allow","outcome":"release","action":"answer"},
+    {"example_id":"d_test_abstain","teacher":"deepseek","split":"test","state":"verifying","observation":"support remains insufficient heldout","policy_decision":"block","outcome":"abstain_required","action":"abstain"}
+  ]
+}
