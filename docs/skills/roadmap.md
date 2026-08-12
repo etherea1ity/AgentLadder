@@ -1030,3 +1030,19 @@ Drop or archive:
 - product-specific ZENO services or naming
 - hidden memory behavior before the memory chapter
 - UI pages that encode one old chapter as a permanent runtime contract
+
+## Algorithm Overlay Completion Record
+
+The August 11–17 overlay completed early on August 12, 2026. The authoritative
+same-job rerun is HKU Slurm Job `133919`; all five stage reports, B→C→H
+checkpoint lineage, 229 Python tests, and the no-frontend dependency gate passed.
+
+- Bilingual lab: [Chinese](../labs/algorithm-suite.md) / [English](../labs/algorithm-suite.en.md)
+- Final machine report: [JSON](../reports/algorithm/algorithm-suite-freeze.json)
+- Freeze note: [Algorithm Suite Freeze](../freezes/algorithm-suite-freeze.md)
+- Implementation, experiment, limitations, and branch reports:
+  `docs/reports/algorithm/final-*.md`
+
+Canonical aliases preserve the planned lab names without rewriting implementation
+history: `codex/lab-e-tiny-sparse-moe` points to the verified MoE commit, and
+`codex/lab-h-fp16-fp4` points to the verified precision commit.

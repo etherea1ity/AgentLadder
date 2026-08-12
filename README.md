@@ -10,6 +10,10 @@
 
 完整章节：[docs/chapters/ch03-hooks-and-trace.md](./docs/chapters/ch03-hooks-and-trace.md)
 
+算法扩展：[证据控制、蒸馏、MoE 与 FP16/FP4 实验套件](./docs/labs/algorithm-suite.md)
+
+最终云端报告：[Algorithm Suite Freeze](./docs/reports/algorithm/algorithm-suite-freeze.md)
+
 ---
 
 ## 一句话看懂本章

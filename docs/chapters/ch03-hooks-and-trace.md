@@ -417,6 +417,22 @@ Chapter 3 不做：
 
 这些属于后续章节。Chapter 3 只把 hook、trace、Thinking、Activity、Developer Debug 的边界立住。
 
+## 算法扩展如何沿用本章边界
+
+Chapter 3 完成后，public trace 被后续算法路线作为数据源，而不是把证据验证或训练逻辑塞回 loop：
+
+- Chapters 12–13 / Lab A：claim-level evidence control、矛盾与证据不足拒答；
+- Chapter 18 / Lab A：脱敏轨迹导出、确定性数据集与回归评估；
+- Labs B/C/E/H：tiny Transformer、Qwen/DeepSeek public-trajectory distillation、
+  四专家 top-2 sparse MoE、CUDA FP16 和 packed FP4/W4A16；
+- Chapter 18 final bridge：同一 HKU Slurm Job 的 checkpoint lineage 与最终回归门。
+
+完整中英文实验文档见：[AgentLadder 算法实验套件](../labs/algorithm-suite.md)。最终机器报告见：
+[Algorithm Suite Freeze](../reports/algorithm/algorithm-suite-freeze.md)。
+
+这个 overlay 不改变本章的教学主张：trace 是公开、可回放、可脱敏的数据边界；
+provider hidden reasoning 既不展示，也不进入蒸馏数据。
+
 ## 下一章预告
 
 Chapter 4 会讲 Harness And Config：一次 Klara run 在进入 loop 前是怎么组装出来的，包括模型选择、provider、persona、工具列表、hook 列表、trace sink 和前后端 run 创建边界。

@@ -415,6 +415,22 @@ Chapter 3 does not implement:
 
 Those belong to later chapters. Chapter 3 only locks the boundary between hooks, trace, Thinking, Activity, and Developer Debug.
 
+## How The Algorithm Overlay Reuses This Boundary
+
+After Chapter 3, later algorithm work consumes public trace as data instead of
+putting evidence verification or training logic back into the loop:
+
+- Chapters 12–13 / Lab A: claim-level evidence control, contradiction, and abstention;
+- Chapter 18 / Lab A: redacted trajectory export, deterministic datasets, and regression evaluation;
+- Labs B/C/E/H: a tiny Transformer, Qwen/DeepSeek public-trajectory distillation,
+  four-expert top-2 sparse MoE, CUDA FP16, and packed FP4/W4A16;
+- Chapter 18 final bridge: same-job HKU Slurm checkpoint lineage and the final regression gate.
+
+See the bilingual [AgentLadder Algorithm Lab Suite](../labs/algorithm-suite.en.md)
+and its [machine-backed freeze report](../reports/algorithm/algorithm-suite-freeze.md).
+The Chapter 3 claim remains unchanged: trace is a public, replayable, redactable
+boundary, while provider-hidden reasoning is neither displayed nor distilled.
+
 ## Next Chapter
 
 Chapter 4 covers Harness And Config: how one Klara run is assembled before entering the loop, including model choice, provider, persona, visible tools, hooks, trace sinks, and frontend/backend run creation.

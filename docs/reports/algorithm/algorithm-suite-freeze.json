@@ -1,0 +1,105 @@
+{
+  "artifacts": {
+    "lab_a": {
+      "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/algorithm-suite-freeze/job-133919/lab-a/report.json",
+      "sha256": "9f13b372ff7dffc1287f18eea4b0a810a6ab91873ef6f593e42957aa1fc66d6f"
+    },
+    "lab_b": {
+      "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/algorithm-suite-freeze/job-133919/lab-b/report.json",
+      "sha256": "131268bbfa741131846e5c87891c6bd282dbdb82f264bdfcfdca85b84e03e3ca"
+    },
+    "lab_c": {
+      "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/algorithm-suite-freeze/job-133919/lab-c/report.json",
+      "sha256": "02f26580c8944fcf2225acaaa1e30512428a9e2800a34358c139c49dc513bac0"
+    },
+    "lab_e": {
+      "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/algorithm-suite-freeze/job-133919/lab-e/report.json",
+      "sha256": "dd3b69f6466b891ac77280283d337fbd1fd61084c018e3200809a82104acdf6c"
+    },
+    "lab_h": {
+      "path": "/userhome/cs2/u3665453/AgentLadder/artifacts/algorithm-suite-freeze/job-133919/lab-h/report.json",
+      "sha256": "c5a6c2e560bb98fdf64ea36fbeb12b29045372b449d43fa776658477ac65fea5"
+    }
+  },
+  "checks": {
+    "all_stage_reports_pass": true,
+    "dense_to_distillation_checkpoint_lineage": true,
+    "distillation_to_fp4_checkpoint_lineage": true,
+    "full_python_suite_passed": true,
+    "moe_comparison_uses_dense_data": true,
+    "no_frontend_dependency_added": true,
+    "precision_run_uses_dense_data": true,
+    "single_deployment": true,
+    "single_parent_commit": true,
+    "single_slurm_job": true,
+    "single_source_bundle": true,
+    "source_state_matches_reports": true,
+    "teacher_manifest_lineage": true
+  },
+  "evaluated_at": "2026-08-12T08:15:29.825072+00:00",
+  "metrics": {
+    "dense": {
+      "final_loss": 0.16301502132786116,
+      "initial_loss": 5.60128574047111,
+      "loss_reduction_fraction": 0.9708968567430823,
+      "parameters": 821120
+    },
+    "distillation": {
+      "examples": 28,
+      "post_sft_accuracy": 1.0,
+      "pre_sft_accuracy": 0.125,
+      "teachers": [
+        "deepseek",
+        "qwen"
+      ],
+      "validation_accuracy": 1.0
+    },
+    "evidence": {
+      "abstention_accuracy": 1.0,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "id_linkage_rate": 1.0,
+      "leakage_findings": 0,
+      "schema_validation_rate": 1.0
+    },
+    "moe": {
+      "balanced_load_ratio": 1.0,
+      "experts": 4,
+      "loss_reduction_fraction": 0.9802879570526964,
+      "parameters": 2592640,
+      "top_k": 2,
+      "training_load_ratio": 1.081180811808118
+    },
+    "precision": {
+      "fp16_fp32_logit_max_abs_diff": 0.0012966692447662354,
+      "fp32_test_accuracy": 1.0,
+      "fp4_storage_saving_fraction": 0.734375,
+      "native_fp4_compute": false,
+      "qat_triggered": false,
+      "w4a16_test_accuracy": 1.0
+    }
+  },
+  "passed": true,
+  "schema_version": "klara.algorithm-suite-freeze.v1",
+  "source": {
+    "branch": "codex/algorithm-suite-freeze",
+    "bundle_sha256": "3789e4d5395f44ac121045f73214ac9909096963a4e0b2981f166d112956d106",
+    "deployment": "/userhome/cs2/u3665453/AgentLadder/deployments/3789e4d5395f44ac121045f73214ac9909096963a4e0b2981f166d112956d106",
+    "parent_commit": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+    "slurm_job_id": "133919"
+  },
+  "stage_checks": {
+    "lab_a": true,
+    "lab_b": true,
+    "lab_c": true,
+    "lab_e": true,
+    "lab_h": true
+  },
+  "tests": {
+    "errors": 0,
+    "failures": 0,
+    "passed": 229,
+    "skipped": 0,
+    "tests": 229
+  }
+}

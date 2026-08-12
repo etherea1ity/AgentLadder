@@ -10,6 +10,10 @@ Roadmap: [Klara Roadmap](./docs/skills/roadmap.md)
 
 Full chapter: [docs/chapters/ch03-hooks-and-trace.en.md](./docs/chapters/ch03-hooks-and-trace.en.md)
 
+Algorithm overlay: [Evidence, distillation, MoE, and FP16/FP4 lab suite](./docs/labs/algorithm-suite.en.md)
+
+Final cloud report: [Algorithm Suite Freeze](./docs/reports/algorithm/algorithm-suite-freeze.md)
+
 ---
 
 ## The Chapter In One Sentence

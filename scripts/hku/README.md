@@ -69,3 +69,21 @@ powershell -ExecutionPolicy Bypass -File scripts/hku/fetch_lab_b_reports.ps1
 The fetch command leaves `tiny_dense.pt` in the hash-verified remote artifact
 directory. It stages only reports, manifests, logs, and checksums locally; the
 formal checkpoint and all metric computation remain on HKU infrastructure.
+
+## Final Algorithm Suite Gate
+
+The final gate reruns evidence evaluation, dense pretraining, public-trajectory
+distillation, dense/MoE comparison, FP16/FP4, and the complete Python suite in
+one Slurm job. It dynamically chains the freshly generated Lab B checkpoint
+into Lab C and the Lab C checkpoint into Lab H.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/hku/package_agentladder.ps1
+powershell -ExecutionPolicy Bypass -File scripts/hku/submit_algorithm_suite.ps1
+powershell -ExecutionPolicy Bypass -File scripts/hku/monitor_algorithm_suite.ps1
+powershell -ExecutionPolicy Bypass -File scripts/hku/fetch_algorithm_suite_reports.ps1
+```
+
+The final fetch verifies every remote checkpoint through `checksums.sha256` but
+downloads only textual reports, logs, and checksum evidence. All `.pt` files
+remain in the job-specific cloud artifact directory.

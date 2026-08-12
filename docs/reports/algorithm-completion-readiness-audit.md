@@ -2,7 +2,13 @@
 
 Date: 2026-08-11
 
-Status: planning gate passed
+Historical status: planning gate passed on 2026-08-11
+
+Completion status: superseded by the verified final freeze on 2026-08-12.
+See [Algorithm Suite Freeze](./algorithm/algorithm-suite-freeze.md),
+[final experiment report](./algorithm/final-experiment-report.md), and
+[branch report](./algorithm/final-branch-report.md). The planning evidence below
+is preserved as the pre-implementation decision record.
 
 ## Decision
 
