@@ -27,6 +27,8 @@ class EventKind(StrEnum):
     POST_TOOL_USE_COMPLETED = "post_tool_use.completed"
     PREPARE_NEXT_TURN_STARTED = "prepare_next_turn.started"
     PREPARE_NEXT_TURN_COMPLETED = "prepare_next_turn.completed"
+    PRE_COMPACT_STARTED = "pre_compact.started"
+    PRE_COMPACT_COMPLETED = "pre_compact.completed"
     TURN_COMPLETED = "turn.completed"
     TOOL_POLICY_STOPPED = "tool_policy.stopped"
     STOP_STARTED = "stop.started"

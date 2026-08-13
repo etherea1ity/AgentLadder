@@ -15,7 +15,7 @@
     "todo_write_model_visible": true,
     "trace_contains_plan_observation": true
   },
-  "evaluated_at": "2026-08-13T04:10:41.863696+00:00",
+  "evaluated_at": "2026-08-13T05:00:52.212801+00:00",
   "gate_kind": "deterministic_product_gate",
   "interpretation": "Passing proves the local current-session Todo Planning state machine, persistence, product wiring, trace/SSE projection, and frontend contract. It does not claim general planning quality or ChatGPT equivalence.",
   "metrics": {
@@ -46,8 +46,8 @@
       }
     ],
     "schema_version": "klara.todo-plan.v1",
-    "session_id": "sess_3b2b4f2da4414fc7a5eea22bbb8dc73c",
-    "updated_at": "2026-08-13T04:10:41.758176+00:00",
+    "session_id": "sess_6851f0c9fe914a92b33428d41b51b02c",
+    "updated_at": "2026-08-13T05:00:52.121823+00:00",
     "version": 1
   },
   "schema_version": "klara.chapter-gate.v1",

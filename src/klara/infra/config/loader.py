@@ -12,6 +12,7 @@ from klara.infra.config.images import ImageModel, ImageProviderConfig, ImagesCon
 from klara.infra.config.models import ModelProfile, ModelsConfig, ProviderConfig, ProviderModel
 from klara.infra.config.runtime import CapabilityProfile, RuntimeConfig
 from klara.core.policies import LoopPolicy
+from klara.context.policy import ContextPolicy
 
 
 def load_models_config(config_dir: str | Path = "config") -> ModelsConfig:
@@ -107,6 +108,66 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
         ),
     )
     raw_runtime = data.get("runtime", {})
+    raw_context = raw_runtime.get("context", {})
+    default_context = ContextPolicy()
+    context_policy = ContextPolicy(
+        max_input_tokens=_int_config(
+            raw_context,
+            "max_input_tokens",
+            env=env,
+            env_name="KLARA_CONTEXT_MAX_INPUT_TOKENS",
+            default=default_context.max_input_tokens,
+        ),
+        reserved_system_tokens=_int_config(
+            raw_context,
+            "reserved_system_tokens",
+            env=env,
+            env_name="KLARA_CONTEXT_RESERVED_SYSTEM_TOKENS",
+            default=default_context.reserved_system_tokens,
+        ),
+        reserved_output_tokens=_int_config(
+            raw_context,
+            "reserved_output_tokens",
+            env=env,
+            env_name="KLARA_CONTEXT_RESERVED_OUTPUT_TOKENS",
+            default=default_context.reserved_output_tokens,
+        ),
+        recent_messages=_int_config(
+            raw_context,
+            "recent_messages",
+            env=env,
+            env_name="KLARA_CONTEXT_RECENT_MESSAGES",
+            default=default_context.recent_messages,
+        ),
+        minimum_recent_messages=_int_config(
+            raw_context,
+            "minimum_recent_messages",
+            env=env,
+            env_name="KLARA_CONTEXT_MINIMUM_RECENT_MESSAGES",
+            default=default_context.minimum_recent_messages,
+        ),
+        summary_max_chars=_int_config(
+            raw_context,
+            "summary_max_chars",
+            env=env,
+            env_name="KLARA_CONTEXT_SUMMARY_MAX_CHARS",
+            default=default_context.summary_max_chars,
+        ),
+        tool_result_max_chars=_int_config(
+            raw_context,
+            "tool_result_max_chars",
+            env=env,
+            env_name="KLARA_CONTEXT_TOOL_RESULT_MAX_CHARS",
+            default=default_context.tool_result_max_chars,
+        ),
+        chars_per_token=_int_config(
+            raw_context,
+            "chars_per_token",
+            env=env,
+            env_name="KLARA_CONTEXT_CHARS_PER_TOKEN",
+            default=default_context.chars_per_token,
+        ),
+    )
     raw_harness = raw_runtime.get("harness", {})
     raw_profiles = raw_runtime.get("capability_profiles", {})
     profiles = tuple(
@@ -126,6 +187,7 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
     default_profile = str(raw_harness.get("capability_profile", "agent"))
     runtime = RuntimeConfig(
         loop_policy=policy,
+        context_policy=context_policy,
         default_capability_profile=default_profile,
         capability_profiles=profiles or (CapabilityProfile(id="agent"),),
     )

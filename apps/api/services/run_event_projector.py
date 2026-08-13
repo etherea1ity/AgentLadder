@@ -10,7 +10,7 @@ from apps.api.schemas import RunEventRecord, RunEventType
 from klara.core.events import KlaraEvent
 
 
-WEB_RESEARCH_EVENT_MESSAGES = {
+PUBLIC_RUNTIME_EVENT_MESSAGES = {
     "web_research.started": "Web research state started.",
     "web_research.state_updated": "Web research state updated.",
     "web_research.no_viable_action": "Web research has no viable next action.",
@@ -27,6 +27,8 @@ WEB_RESEARCH_EVENT_MESSAGES = {
     "final_answer.allowed": "Final answer allowed by runtime policy.",
     "final_answer.no_progress_stopped": "Final answer blocking stopped for no progress.",
     "context.compacted": "Model-visible context compacted.",
+    "context.assembled": "Runtime context contract assembled.",
+    "context.budget_evaluated": "Model-visible context budget evaluated.",
 }
 
 
@@ -151,7 +153,7 @@ class RunEventProjector:
                     started,
                     ProjectedRunEvent(
                         event_type=cast(RunEventType, f"{name}.started"),
-                        message=WEB_RESEARCH_EVENT_MESSAGES[f"{name}.started"],
+                        message=PUBLIC_RUNTIME_EVENT_MESSAGES[f"{name}.started"],
                         payload={
                             "turn_index": event.payload.get("turn_index"),
                             "tool_call_id": tool_call.get("id"),
@@ -204,11 +206,11 @@ class RunEventProjector:
                 ),
             )
 
-        if str(event.type) in WEB_RESEARCH_EVENT_MESSAGES:
+        if str(event.type) in PUBLIC_RUNTIME_EVENT_MESSAGES:
             return (
                 ProjectedRunEvent(
                     event_type=cast(RunEventType, str(event.type)),
-                    message=WEB_RESEARCH_EVENT_MESSAGES[str(event.type)],
+                    message=PUBLIC_RUNTIME_EVENT_MESSAGES[str(event.type)],
                     payload=dict(event.payload),
                 ),
             )
@@ -521,6 +523,7 @@ def _hook_projection(event: KlaraEvent) -> ProjectedRunEvent | None:
         "user_prompt_submit": "UserPromptSubmit",
         "pre_tool_use": "PreToolUse",
         "post_tool_use": "PostToolUse",
+        "pre_compact": "PreCompact",
         "stop": "Stop",
     }
     prefix, _, suffix = event.type.partition(".")

@@ -11,6 +11,18 @@ max_repeated_tool_calls = 3
 # Repeated identical final-answer blocks usually mean no new progress.
 max_repeated_final_blocks = 2
 
+[runtime.context]
+# Approximate model input envelope. The product reserves space for the system
+# prompt and answer before admitting transcript history.
+max_input_tokens = 16000
+reserved_system_tokens = 2500
+reserved_output_tokens = 3500
+recent_messages = 10
+minimum_recent_messages = 4
+summary_max_chars = 2400
+tool_result_max_chars = 1200
+chars_per_token = 4
+
 [runtime.harness]
 # Product entrypoints select one named capability profile before loop assembly.
 capability_profile = "agent"

@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from klara.app.user_context import UserContext
+from klara.context.controller import ContextController
+from klara.context.policy import ContextPolicy
 from klara.core.hooks import (
     HookDecision,
     HookManager,
     PostToolUseContext,
+    PreCompactContext,
     PreToolUseContext,
 )
 from klara.core.loop import FinalAnswerDecision, KlaraLoop, LoopControllerEvent
@@ -219,6 +223,19 @@ class PostToolRecordingHook:
         self.contexts.append(context)
 
 
+class PreCompactRecordingHook(EventRecorder):
+    """Record the public placement and its position in the event stream."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.contexts: list[PreCompactContext] = []
+
+    def on_pre_compact(self, context: PreCompactContext) -> None:
+        """Capture the bounded placement context, never private message text."""
+
+        self.contexts.append(context)
+
+
 class BrokenPreToolHook:
     """Hook whose pre-tool placement fails."""
 
@@ -296,6 +313,59 @@ def test_no_tool_run_returns_final_answer() -> None:
     assert result.final_answer == "Hello from Klara."
     assert result.stop_reason == StopReason.FINAL
     assert [message.role for message in result.messages] == ["user", "assistant"]
+
+
+def test_initial_history_compacts_after_precompact_hook_before_first_llm(tmp_path) -> None:
+    hook = PreCompactRecordingHook()
+    llm = ScriptedLlm([ModelResponse(content="done")])
+    context = ContextController(
+        policy=ContextPolicy(
+            max_input_tokens=512,
+            reserved_system_tokens=128,
+            reserved_output_tokens=128,
+            recent_messages=3,
+            minimum_recent_messages=2,
+            summary_max_chars=128,
+            tool_result_max_chars=64,
+        ),
+        user_context=UserContext.local_default(),
+        capabilities=(),
+        workspace_root=tmp_path,
+    )
+    private_marker = "private-history-marker"
+    prior = tuple(
+        KlaraMessage(
+            role="user" if index % 2 == 0 else "assistant",
+            content=f"{private_marker}-{index} " + ("x" * 360),
+        )
+        for index in range(10)
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([hook]),
+        controllers=(context,),
+    )
+
+    result = loop.run("keep this current request", prior_messages=prior)
+
+    assert result.final_answer == "done"
+    assert hook.contexts[0].message_count == 11
+    assert hook.event_types.index("pre_compact.started") < hook.event_types.index(
+        "llm.started"
+    )
+    assert "pre_compact.completed" in hook.event_types
+    assert "context.compacted" in hook.event_types
+    assert len(llm.calls[0][0]) < len(prior) + 1
+    assert llm.calls[0][0][-1].content == "keep this current request"
+    assert "<session_context summary_status=\"available\">" in llm.system_prompts[0]
+    assert private_marker in llm.system_prompts[0]
+    public_context_events = [
+        event
+        for event in hook.events
+        if str(getattr(event, "type")).startswith("context.")
+    ]
+    assert private_marker not in repr(public_context_events)
 
 
 def test_loop_forwards_run_thinking_switch_to_model() -> None:

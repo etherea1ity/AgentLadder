@@ -40,3 +40,13 @@ def test_prepare_conversation_history_sanitizes_and_bounds_messages() -> None:
     assert [message.role for message in history] == ["assistant", "user"]
     assert history[0].content == GENERATED_IMAGE_PLACEHOLDER
     assert history[1].content == "search recent public news"
+
+
+def test_prepare_history_keeps_all_sanitized_messages_without_legacy_bound() -> None:
+    messages = tuple(
+        KlaraMessage(role="user", content=f"message {index}") for index in range(20)
+    )
+
+    history = prepare_conversation_history(messages)
+
+    assert len(history) == 20

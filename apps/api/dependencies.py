@@ -98,6 +98,7 @@ _run_service = RunService(
     default_thinking={item.model: item.default_thinking for item in _model_options},
     default_model=_default_model_ref,
     loop_policy=_runtime.loop_policy,
+    context_policy=_runtime.context_policy,
     user_context=_local_user_context(),
     models_config=_models,
     capability_profile=_runtime.profile(),

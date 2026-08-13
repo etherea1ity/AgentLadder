@@ -48,6 +48,15 @@ class PostToolUseContext:
 
 
 @dataclass(frozen=True)
+class PreCompactContext:
+    """Public placement context immediately before transcript compaction."""
+
+    run_id: str
+    turn_index: int
+    message_count: int
+
+
+@dataclass(frozen=True)
 class StopContext:
     """Context exposed just before the run emits completion."""
 
@@ -143,6 +152,11 @@ class HookManager:
         """Run optional post-tool placement hooks without affecting the loop."""
 
         self._notify_placement("post_tool_use", "on_post_tool_use", context)
+
+    def pre_compact(self, context: PreCompactContext) -> None:
+        """Notify hooks before private transcript material is compacted."""
+
+        self._notify_placement("pre_compact", "on_pre_compact", context)
 
     def stop(self, context: StopContext) -> None:
         """Run optional stop placement hooks without affecting completion."""

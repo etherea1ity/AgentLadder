@@ -1,0 +1,49 @@
+{
+  "checks": {
+    "chapter06_bilingual_tutorial_exists": true,
+    "chapter07_bilingual_tutorial_exists": true,
+    "compaction_respects_budget": true,
+    "context_policy_frozen_in_run_profile": true,
+    "current_request_is_preserved": true,
+    "frontend_shows_safe_context_budget_status": true,
+    "history_compacts_before_first_llm": true,
+    "history_is_budgeted_not_fixed_count_truncated": true,
+    "named_context_sections_reach_model": true,
+    "precompact_hook_is_projected": true,
+    "private_summary_absent_from_public_trace": true,
+    "private_summary_reaches_model": true,
+    "public_events_expose_metrics_not_summary": true,
+    "stage_manifest_exists": true,
+    "tool_micro_compaction_preserves_join_id": true
+  },
+  "evaluated_at": "2026-08-13T05:00:52.849890+00:00",
+  "gate_kind": "deterministic_product_gate",
+  "interpretation": "Passing proves deterministic local context assembly, pre-call budget enforcement, recent-message preservation, tool micro-compaction, private-summary boundaries, public trace/SSE projection, and the safe UI indicator. It does not claim semantic LLM summarization, durable memory, RAG retrieval, or learned context selection.",
+  "metrics": {
+    "checks_passed": 15,
+    "checks_total": 15,
+    "history_messages_before_current": 10,
+    "messages_summarized": 8,
+    "model_messages_after_compaction": 4,
+    "precompact_projected_events": 2,
+    "tool_results_micro_compacted": 1
+  },
+  "passed": true,
+  "public_compaction_evidence": {
+    "after_estimated_tokens": 265,
+    "before_estimated_tokens": 1100,
+    "budget_tokens": 384,
+    "messages_after": 3,
+    "messages_before": 11,
+    "messages_hard_trimmed": 0,
+    "messages_summarized": 8,
+    "strategy": "tool_micro_compaction_then_extractive_session_summary",
+    "summary_content_exposed": false,
+    "summary_present": true,
+    "summary_sha256": "b9a02789cd51d5f3048f5b00f8b188689e090a12ac1dd2572fdd28d16a962106",
+    "tool_results_micro_compacted": 0
+  },
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter06-07-context.v1",
+  "stage": "ch06-07-context"
+}

@@ -29,6 +29,7 @@ from apps.api.services.run_event_projector import (
 from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
+from klara.context.policy import ContextPolicy
 from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.context.timestamps import parse_prompt_datetime, stamp_user_message_content
 from klara.core.events import KlaraEvent
@@ -40,9 +41,6 @@ from klara.infra.config.runtime import CapabilityProfile
 from klara.planning.todo import TodoPlan
 from klara.planning.tool import TodoWriteTool
 from klara.tools.registry import ToolRegistry
-
-MAX_HISTORY_MESSAGES = 12
-
 
 class RunService:
     """Project Klara loop runs into the local chat API and SSE event stream."""
@@ -63,6 +61,7 @@ class RunService:
         answer_chunk_delay_ms: int = 15,
         models_config: ModelsConfig | None = None,
         capability_profile: CapabilityProfile | None = None,
+        context_policy: ContextPolicy | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -98,6 +97,7 @@ class RunService:
             hooks=("run_projection", "jsonl_trace"),
             trace_sink="jsonl",
         )
+        self.context_policy = context_policy or ContextPolicy()
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -252,7 +252,9 @@ class RunService:
                     capability_profile=self.capability_profile,
                     trace_path=Path(self.trace_path) if self.trace_path else None,
                     loop_policy=self.loop_policy,
+                    context_policy=self.context_policy,
                     user_context=run_user_context,
+                    workspace_root=Path.cwd(),
                 ),
                 models=self.models_config,
                 hooks=(RunProjectionHook(self, run_id, projector),),
@@ -524,7 +526,7 @@ class RunService:
                     content=self._model_visible_content(message),
                 )
             )
-        return prepare_conversation_history(history, max_messages=MAX_HISTORY_MESSAGES)
+        return prepare_conversation_history(history)
 
     def _model_visible_content(self, message: MessageRecord) -> str:
         """Return stored message text translated for the model boundary."""

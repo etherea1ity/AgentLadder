@@ -3467,6 +3467,65 @@ body,
   box-shadow: none;
 }
 
+.context-budget-status {
+  width: var(--chat-rail-width);
+  margin: 0 auto 16px;
+  padding: 9px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(95, 123, 98, 0.14);
+  border-radius: 13px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-panel) 90%, transparent);
+  font-size: 12px;
+}
+
+.context-budget-status strong {
+  color: var(--text-primary);
+  font-weight: 640;
+}
+
+.context-budget-status small {
+  font: inherit;
+  white-space: nowrap;
+}
+
+.context-budget-signal {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-running);
+  box-shadow: 0 0 0 4px rgba(95, 123, 98, 0.09);
+}
+
+.context-budget-status.is-compacted .context-budget-signal {
+  background: #b97835;
+  box-shadow: 0 0 0 4px rgba(185, 120, 53, 0.1);
+}
+
+.context-budget-meter {
+  grid-column: 2 / -1;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(95, 123, 98, 0.1);
+}
+
+.context-budget-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.58;
+}
+
+.theme-dark .context-budget-status {
+  border-color: rgba(137, 209, 133, 0.12);
+  background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+}
+
 @media (max-width: 520px) {
   .todo-plan-panel {
     padding: 13px 14px;
@@ -3476,5 +3535,14 @@ body,
   }
   .todo-plan-panel li small {
     display: none;
+  }
+  .context-budget-status {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .context-budget-status small {
+    display: none;
+  }
+  .context-budget-meter {
+    grid-column: 2;
   }
 }

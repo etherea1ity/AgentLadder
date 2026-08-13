@@ -61,6 +61,12 @@ def test_load_runtime_config_reads_loop_policy() -> None:
     assert runtime.loop_policy.max_tool_calls == 48
     assert runtime.loop_policy.max_repeated_tool_calls == 3
     assert runtime.loop_policy.max_repeated_final_blocks == 2
+    assert runtime.context_policy.max_input_tokens == 16000
+    assert runtime.context_policy.transcript_budget_tokens == 10000
+    assert runtime.context_policy.recent_messages == 10
+    assert runtime.context_policy.minimum_recent_messages == 4
+    assert runtime.context_policy.summary_max_chars == 2400
+    assert runtime.context_policy.tool_result_max_chars == 1200
     profile = runtime.profile()
     assert profile.id == "agent"
     assert profile.required_model_capabilities == ("tools",)

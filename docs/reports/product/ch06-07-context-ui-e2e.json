@@ -1,0 +1,44 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "evaluated_at": "2026-08-13T13:00:00+08:00",
+  "target": "http://127.0.0.1:5123/",
+  "surface": "Context budget status",
+  "browser": "Codex in-app browser",
+  "results": [
+    {
+      "viewport": {"width": 1280, "height": 720},
+      "status": "passed",
+      "state": "Context compacted",
+      "messages_summarized": 8,
+      "meter_label": "60% of context budget",
+      "panel_width": 900,
+      "panel_left": 324.8,
+      "panel_right": 1224.8,
+      "horizontal_overflow": false,
+      "composer_visible": true
+    },
+    {
+      "viewport": {"width": 390, "height": 844},
+      "status": "passed",
+      "state": "Context compacted",
+      "messages_summarized": 8,
+      "meter_label": "60% of context budget",
+      "panel_width": 358.4,
+      "panel_left": 16,
+      "panel_right": 374.4,
+      "horizontal_overflow": false,
+      "compact_token_label_hidden": true,
+      "composer_visible": true
+    }
+  ],
+  "privacy": {
+    "summary_content_visible": false,
+    "internal_summary_hash_visible": false
+  },
+  "accessibility": {
+    "context_landmark": "Context budget",
+    "meter_label": "60% of context budget"
+  },
+  "console_error_count": 0,
+  "interpretation": "The API-backed compaction event restored after page load, exposed only safe metrics, remained usable at desktop and narrow mobile widths, and did not create horizontal overflow."
+}

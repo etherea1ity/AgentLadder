@@ -23,13 +23,14 @@ GENERATED_IMAGE_PLACEHOLDER = "[generated image omitted from prior context]"
 def prepare_conversation_history(
     messages: Iterable[KlaraMessage],
     *,
-    max_messages: int,
+    max_messages: int | None = None,
 ) -> tuple[KlaraMessage, ...]:
     """Sanitize and bound prior conversation turns before a new run.
 
     Args:
         messages: Completed user/assistant turns from the app store.
-        max_messages: Maximum messages to expose to the next model call.
+        max_messages: Optional legacy count bound. Product budgeting is handled
+            by ContextController instead of silently dropping older messages.
 
     Returns:
         A tuple of sanitized messages, preserving role order and recent turns.
@@ -47,6 +48,8 @@ def prepare_conversation_history(
                 tool_calls=message.tool_calls,
             )
         )
+    if max_messages is None:
+        return tuple(prepared)
     return tuple(prepared[-max_messages:])
 
 

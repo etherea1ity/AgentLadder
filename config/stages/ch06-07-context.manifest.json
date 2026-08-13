@@ -1,0 +1,43 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch06-07-context",
+  "branch": "codex/ch06-07-context",
+  "parent_commit": "8efe6489425cffe888beca138619d36f1d9dfdb4",
+  "mode": "local-pre-hku",
+  "datasets": ["tests/fixtures/behavior/agent_behavior_cases.json"],
+  "prompts": ["src/klara/prompts/persona.md", "src/klara/context/assembly.py"],
+  "model_ids": ["qwen/qwen-flash"],
+  "seeds": [17],
+  "budgets": {"paid_api_usd": 0, "max_input_tokens": 16000, "reserved_output_tokens": 3500},
+  "evaluator_versions": ["klara.chapter06-07-context.v1", "klara.behavior-scorer.v1", "klara.documentation-validator.v1", "klara.ui-e2e.v1"],
+  "expected_artifacts": [
+    "docs/chapters/ch06-system-prompt-and-context-assembly.md",
+    "docs/chapters/ch06-system-prompt-and-context-assembly.en.md",
+    "docs/chapters/ch07-context-compression.md",
+    "docs/chapters/ch07-context-compression.en.md",
+    "docs/reports/product/ch06-07-context.json",
+    "docs/reports/product/ch06-07-context.md",
+    "docs/reports/product/ch06-07-context.en.md",
+    "docs/reports/product/ch06-07-context-ui-e2e.json"
+  ],
+  "acceptance": {
+    "named_prompt_sections": true,
+    "context_policy_is_frozen": true,
+    "first_llm_call_is_budgeted": true,
+    "recent_messages_are_preserved": true,
+    "old_tool_results_are_micro_compacted": true,
+    "precompact_hook_is_ordered": true,
+    "summary_material_stays_private": true,
+    "context_metrics_are_trace_and_sse_visible": true,
+    "responsive_context_status_ui": true,
+    "critical_behavior_regressions": 0
+  },
+  "exclusions": [
+    "long-term memory",
+    "RAG retrieval",
+    "learned context policy",
+    "semantic provider summarization",
+    "HKU/VPN/SSH/Slurm",
+    "paid provider calls"
+  ]
+}

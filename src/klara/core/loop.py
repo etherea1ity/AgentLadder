@@ -15,6 +15,7 @@ from klara.core.events import EventKind, EventSequencer, KlaraEvent
 from klara.core.hooks import (
     HookManager,
     PostToolUseContext,
+    PreCompactContext,
     PreToolUseContext,
     StopContext,
     UserPromptSubmitContext,
@@ -295,8 +296,18 @@ class KlaraLoop:
             EventKind.USER_PROMPT_SUBMIT_COMPLETED,
             _decision_payload(user_prompt_decision),
         )
-
         try:
+            # Budget imported history before the first model call. Keeping this
+            # inside the run boundary also traces controller or hook failures.
+            messages = self._prepare_messages(
+                sequencer,
+                active_run_id,
+                messages,
+                turn_index=1,
+                phase="initial_context",
+            )
+            self._emit_controller_events(sequencer, active_run_id)
+
             # Iterate through bounded turns so a model cannot request tools forever.
             for turn_index in range(1, self.policy.max_turns + 1):
                 self._emit(sequencer, active_run_id, EventKind.TURN_STARTED, {"turn_index": turn_index})
@@ -436,6 +447,26 @@ class KlaraLoop:
                             EventKind.TURN_COMPLETED,
                             {"turn_index": turn_index, "final_blocked": True},
                         )
+                        self._emit(
+                            sequencer,
+                            active_run_id,
+                            EventKind.PREPARE_NEXT_TURN_STARTED,
+                            {"turn_index": turn_index},
+                        )
+                        messages = self._prepare_messages(
+                            sequencer,
+                            active_run_id,
+                            messages,
+                            turn_index=turn_index + 1,
+                            phase="after_final_block",
+                        )
+                        self._emit_controller_events(sequencer, active_run_id)
+                        self._emit(
+                            sequencer,
+                            active_run_id,
+                            EventKind.PREPARE_NEXT_TURN_COMPLETED,
+                            {"turn_index": turn_index, "message_count": len(messages)},
+                        )
                         continue
                     if self.controllers:
                         self._emit(
@@ -522,7 +553,13 @@ class KlaraLoop:
                     EventKind.PREPARE_NEXT_TURN_STARTED,
                     {"turn_index": turn_index},
                 )
-                messages = self.prepare_next_turn(messages)
+                messages = self._prepare_messages(
+                    sequencer,
+                    active_run_id,
+                    messages,
+                    turn_index=turn_index + 1,
+                    phase="after_tools",
+                )
                 self._emit_controller_events(sequencer, active_run_id)
                 self._emit(
                     sequencer,
@@ -565,6 +602,50 @@ class KlaraLoop:
             prepared = controller.prepare_next_turn(prepared)
         return prepared
 
+    def _prepare_messages(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        messages: list[KlaraMessage],
+        *,
+        turn_index: int,
+        phase: str,
+    ) -> list[KlaraMessage]:
+        """Run PreCompact placement when a controller reports budget pressure."""
+
+        needs_compaction = any(
+            bool(check(messages))
+            for controller in self.controllers
+            if callable(check := getattr(controller, "should_compact", None))
+        )
+        if needs_compaction:
+            context = PreCompactContext(
+                run_id=run_id,
+                turn_index=turn_index,
+                message_count=len(messages),
+            )
+            self._emit(
+                sequencer,
+                run_id,
+                EventKind.PRE_COMPACT_STARTED,
+                {"turn_index": turn_index, "message_count": len(messages), "phase": phase},
+            )
+            self.hooks.pre_compact(context)
+        prepared = self.prepare_next_turn(messages)
+        if needs_compaction:
+            self._emit(
+                sequencer,
+                run_id,
+                EventKind.PRE_COMPACT_COMPLETED,
+                {
+                    "turn_index": turn_index,
+                    "messages_before": len(messages),
+                    "messages_after": len(prepared),
+                    "phase": phase,
+                },
+            )
+        return prepared
+
     def _finalize_after_max_turns(
         self,
         sequencer: EventSequencer,
@@ -602,6 +683,17 @@ class KlaraLoop:
     ) -> KlaraRunResult:
         """Ask the model for a final no-tool answer after a policy stop."""
 
+        messages = self._prepare_messages(
+            sequencer,
+            run_id,
+            messages,
+            turn_index=len(
+                [message for message in messages if message.role == "assistant"]
+            )
+            + 1,
+            phase="before_finalization",
+        )
+        self._emit_controller_events(sequencer, run_id)
         assistant_count = len(
             [message for message in messages if message.role == "assistant"]
         )

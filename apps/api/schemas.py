@@ -50,6 +50,8 @@ RunEventType = Literal[
     "final_answer.allowed",
     "final_answer.no_progress_stopped",
     "context.compacted",
+    "context.assembled",
+    "context.budget_evaluated",
     "run_completed",
     "run_failed",
     "run_cancelled",

@@ -5,7 +5,7 @@ Language: [Chinese](./ch04-harness-config.md) | English
 Status: **PASS**
 
 - Scorer: `klara.chapter04-harness-config.v1`
-- Profile hash: `6bf6f90021dfb5d1005916f431e258f6f37d9a43bf7e474eba056b669d54ec60`
+- Profile hash: `05466ded8d81b72cb95432e0aa7229071bb00d596573b73c6f7a8e2540fb0bfa`
 - Model: `qwen/qwen-flash`
 
 ## Acceptance Checks
@@ -29,6 +29,17 @@ Status: **PASS**
 ```json
 {
   "capability_profile": "agent",
+  "context_policy": {
+    "chars_per_token": 4,
+    "max_input_tokens": 16000,
+    "minimum_recent_messages": 4,
+    "recent_messages": 10,
+    "reserved_output_tokens": 3500,
+    "reserved_system_tokens": 2500,
+    "summary_max_chars": 2400,
+    "tool_result_max_chars": 1200,
+    "transcript_budget_tokens": 10000
+  },
   "hooks": [
     "run_projection",
     "jsonl_trace"
@@ -42,7 +53,7 @@ Status: **PASS**
   },
   "model": "qwen/qwen-flash",
   "persona_sha256": "9f346d86d01228e1f764350b2915250431121bf43d5cc300046ee79c30eb7680",
-  "profile_sha256": "6bf6f90021dfb5d1005916f431e258f6f37d9a43bf7e474eba056b669d54ec60",
+  "profile_sha256": "05466ded8d81b72cb95432e0aa7229071bb00d596573b73c6f7a8e2540fb0bfa",
   "required_model_capabilities": [
     "tools"
   ],

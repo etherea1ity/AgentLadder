@@ -63,6 +63,8 @@ export type RunEventType =
   | 'final_answer.allowed'
   | 'final_answer.no_progress_stopped'
   | 'context.compacted'
+  | 'context.assembled'
+  | 'context.budget_evaluated'
   | 'llm_call_started'
   | 'answer_streaming_started'
   | 'answer_delta'

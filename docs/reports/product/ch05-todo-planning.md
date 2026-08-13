@@ -49,8 +49,8 @@ Status: **PASS**
     }
   ],
   "schema_version": "klara.todo-plan.v1",
-  "session_id": "sess_3b2b4f2da4414fc7a5eea22bbb8dc73c",
-  "updated_at": "2026-08-13T04:10:41.758176+00:00",
+  "session_id": "sess_6851f0c9fe914a92b33428d41b51b02c",
+  "updated_at": "2026-08-13T05:00:52.121823+00:00",
   "version": 1
 }
 ```

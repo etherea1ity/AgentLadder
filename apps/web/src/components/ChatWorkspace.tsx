@@ -274,6 +274,9 @@ function MessageList({
   const shouldFollowRef = useRef(true);
   const previousCountRef = useRef(0);
   const turns = buildConversationTurns(messages, runs);
+  const latestRun = [...turns]
+    .reverse()
+    .find((turn) => turn.run)?.run;
   const streamSignature =
     messages
       .map(
@@ -315,6 +318,7 @@ function MessageList({
       onScroll={rememberScrollIntent}
     >
       <PlanPanel plan={todoPlan} />
+      <ContextBudgetStatus run={latestRun} />
       {turns.map((turn) => (
         <article className="conversation-turn" key={turn.key}>
           {turn.user ? <UserMessage message={turn.user} /> : null}
@@ -377,6 +381,60 @@ export function PlanPanel({ plan }: { plan: TodoPlan | null }) {
       </ol>
     </aside>
   );
+}
+
+export function ContextBudgetStatus({ run }: { run?: Run }) {
+  const budget = [...(run?.events ?? [])]
+    .reverse()
+    .find((event) => event.event_type === "context.budget_evaluated");
+  const compacted = [...(run?.events ?? [])]
+    .reverse()
+    .find((event) => event.event_type === "context.compacted");
+  if (!budget && !compacted) return null;
+
+  const payload = compacted?.payload ?? budget?.payload ?? {};
+  const used = numericPayload(
+    payload,
+    compacted ? "after_estimated_tokens" : "estimated_transcript_tokens",
+  );
+  const limit = numericPayload(
+    payload,
+    compacted ? "budget_tokens" : "transcript_budget_tokens",
+  );
+  const summarized = numericPayload(payload, "messages_summarized");
+  const progress =
+    used !== null && limit && limit > 0
+      ? Math.min(100, Math.round((used / limit) * 100))
+      : null;
+
+  return (
+    <aside
+      className={`context-budget-status ${compacted ? "is-compacted" : ""}`}
+      aria-label="Context budget"
+    >
+      <span className="context-budget-signal" aria-hidden="true" />
+      <span>
+        <strong>{compacted ? "Context compacted" : "Context ready"}</strong>
+        {summarized ? ` · ${summarized} older messages summarized` : ""}
+      </span>
+      {used !== null && limit !== null ? (
+        <small>{used.toLocaleString()} / {limit.toLocaleString()} est. tokens</small>
+      ) : null}
+      {progress !== null ? (
+        <span className="context-budget-meter" aria-label={`${progress}% of context budget`}>
+          <span style={{ width: `${progress}%` }} />
+        </span>
+      ) : null}
+    </aside>
+  );
+}
+
+function numericPayload(
+  payload: Record<string, unknown>,
+  key: string,
+): number | null {
+  const value = payload[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function buildConversationTurns(

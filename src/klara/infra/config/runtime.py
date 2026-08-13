@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from klara.core.policies import LoopPolicy
+from klara.context.policy import ContextPolicy
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class RuntimeConfig:
 
     # Loop policy controls model/tool iteration bounds.
     loop_policy: LoopPolicy = field(default_factory=LoopPolicy)
+    context_policy: ContextPolicy = field(default_factory=ContextPolicy)
     default_capability_profile: str = "agent"
     capability_profiles: tuple[CapabilityProfile, ...] = (
         CapabilityProfile(id="agent"),

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">Klara Chapter 7 context compression</title>
+  <desc id="desc">A context budget keeps recent messages, micro-compacts older tool observations, summarizes older dialogue, and publishes safe evidence.</desc>
+  <defs><linearGradient id="bg7" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef3ea"/><stop offset="1" stop-color="#f3e8da"/></linearGradient><filter id="s7"><feDropShadow dx="0" dy="9" stdDeviation="13" flood-color="#26332c" flood-opacity=".12"/></filter></defs>
+  <rect width="1280" height="640" rx="36" fill="url(#bg7)"/>
+  <text x="72" y="84" fill="#26372e" font-family="Segoe UI, sans-serif" font-size="34" font-weight="700">Carry decisions forward, not unlimited transcripts</text>
+  <text x="72" y="122" fill="#68776e" font-family="Segoe UI, sans-serif" font-size="18">Budget pressure triggers PreCompact before the next model call.</text>
+  <g font-family="Segoe UI, sans-serif" filter="url(#s7)">
+    <g transform="translate(72 190)">
+      <rect width="286" height="332" rx="26" fill="#fff"/>
+      <text x="24" y="42" fill="#657269" font-size="14" letter-spacing="1.5">GROWING TRANSCRIPT</text>
+      <rect x="24" y="70" width="238" height="44" rx="11" fill="#e8ede8"/><text x="42" y="98" fill="#607067" font-size="15">old user message</text>
+      <rect x="24" y="124" width="238" height="70" rx="11" fill="#f0e7dc"/><text x="42" y="151" fill="#7b654e" font-size="15">large tool result</text><text x="42" y="176" fill="#967c60" font-size="13">4,800 chars</text>
+      <rect x="24" y="204" width="238" height="44" rx="11" fill="#e8ede8"/><text x="42" y="232" fill="#607067" font-size="15">recent assistant</text>
+      <rect x="24" y="258" width="238" height="50" rx="11" fill="#dcebdc"/><text x="42" y="289" fill="#36533d" font-size="15" font-weight="600">current request</text>
+    </g>
+    <path d="M382 356H475" stroke="#8a8f6f" stroke-width="4" stroke-linecap="round"/><path d="m465 345 14 11-14 11" fill="none" stroke="#8a8f6f" stroke-width="4" stroke-linecap="round"/>
+    <g transform="translate(501 220)">
+      <rect width="250" height="272" rx="28" fill="#2e4036"/>
+      <text x="24" y="45" fill="#dce9dc" font-size="14" letter-spacing="1.5">PRECOMPACT</text>
+      <text x="24" y="91" fill="#fff" font-size="18" font-weight="600">1. Estimate budget</text>
+      <text x="24" y="129" fill="#fff" font-size="18" font-weight="600">2. Compact old tools</text>
+      <text x="24" y="167" fill="#fff" font-size="18" font-weight="600">3. Summarize prefix</text>
+      <text x="24" y="205" fill="#fff" font-size="18" font-weight="600">4. Keep newest turns</text>
+      <rect x="24" y="226" width="202" height="22" rx="11" fill="#52695b"/><rect x="24" y="226" width="126" height="22" rx="11" fill="#b6c998"/>
+    </g>
+    <path d="M777 356H870" stroke="#8a8f6f" stroke-width="4" stroke-linecap="round"/><path d="m860 345 14 11-14 11" fill="none" stroke="#8a8f6f" stroke-width="4" stroke-linecap="round"/>
+    <g transform="translate(896 190)">
+      <rect width="312" height="332" rx="26" fill="#fff"/>
+      <text x="24" y="42" fill="#657269" font-size="14" letter-spacing="1.5">BOUNDED NEXT TURN</text>
+      <rect x="24" y="70" width="264" height="70" rx="12" fill="#eee4d8"/><text x="42" y="99" fill="#785f48" font-size="15" font-weight="600">private session summary</text><text x="42" y="122" fill="#92795f" font-size="13">content stays out of trace</text>
+      <rect x="24" y="152" width="264" height="50" rx="12" fill="#e6ece6"/><text x="42" y="183" fill="#5d6d63" font-size="15">recent assistant</text>
+      <rect x="24" y="214" width="264" height="50" rx="12" fill="#dcebdc"/><text x="42" y="245" fill="#36533d" font-size="15" font-weight="600">current request preserved</text>
+      <text x="24" y="299" fill="#66806d" font-size="14">✓ within budget · trace has hash</text>
+    </g>
+  </g>
+</svg>

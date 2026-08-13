@@ -82,6 +82,12 @@ describe("Klara app flow", () => {
         },
       ],
       events: [
+        evt("context.budget_evaluated", "Context budget evaluated.", {
+          estimated_transcript_tokens: 740,
+          transcript_budget_tokens: 10000,
+          message_count: 6,
+          over_budget: false,
+        }),
         evt("tool_call_started", "Klara is using current_time.", {
           tool_call: { id: "call_1", name: "current_time" },
         }),
@@ -179,10 +185,13 @@ describe("Klara app flow", () => {
     expect(
       await screen.findByText("Klara completed the runtime loop."),
     ).toBeInTheDocument();
-    expect(await screen.findByText(/Developer debug.*3 events.*1 tool/)).toBeInTheDocument();
+    expect(await screen.findByText(/Developer debug.*4 events.*1 tool/)).toBeInTheDocument();
     expect(screen.getByText("Trace saved")).toBeInTheDocument();
     expect(screen.getByLabelText("Current plan")).toBeInTheDocument();
     expect(screen.getByText("1 of 2 done")).toBeInTheDocument();
+    expect(screen.getByLabelText("Context budget")).toHaveTextContent(
+      "Context ready",
+    );
   });
 
   it("streams a runtime loop answer without a right-side trace panel", async () => {
@@ -264,6 +273,19 @@ describe("Klara app flow", () => {
     expect(container.querySelector(".chat-workspace.is-thinking-open")).toBeFalsy();
     expect(container.querySelector(".klara-answer-cursor .klara-presence")).toBeTruthy();
     source.emit("llm_call_started", evt("llm_call_started", "Klara is calling the model."));
+    source.emit(
+      "context.compacted",
+      evt("context.compacted", "Context compacted.", {
+        after_estimated_tokens: 600,
+        budget_tokens: 1000,
+        messages_summarized: 8,
+        summary_content_exposed: false,
+      }),
+    );
+    expect(await screen.findByLabelText("Context budget")).toHaveTextContent(
+      "Context compacted · 8 older messages summarized",
+    );
+    expect(screen.queryByText("private summary body")).not.toBeInTheDocument();
     source.emit(
       "tool_call_started",
       evt("tool_call_started", "Klara is using current_time.", {

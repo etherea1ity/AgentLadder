@@ -11,6 +11,8 @@ from typing import Any, Iterable
 
 from klara.app.user_context import UserContext
 from klara.context.runtime import build_system_prompt
+from klara.context.controller import ContextController
+from klara.context.policy import ContextPolicy
 from klara.core.hooks import HookManager, JsonlTraceHook, KlaraHook
 from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient, LoopController
 from klara.core.messages import KlaraMessage
@@ -42,6 +44,8 @@ class KlaraHarnessConfig:
     loop_policy: LoopPolicy = field(default_factory=LoopPolicy)
     user_context: UserContext = field(default_factory=UserContext.local_default)
     persona_path: Path = DEFAULT_PERSONA_PATH
+    context_policy: ContextPolicy = field(default_factory=ContextPolicy)
+    workspace_root: Path = field(default_factory=Path.cwd)
 
     # Legacy property access stays stable for the Chapter 1 tutorial while the
     # canonical policy is now one immutable object.
@@ -79,6 +83,7 @@ class KlaraRunProfile:
     locale: str
     timezone: str
     persona_sha256: str
+    context_policy: ContextPolicy
     profile_sha256: str
 
     def to_public_dict(self) -> dict[str, Any]:
@@ -103,6 +108,7 @@ class KlaraRunProfile:
             "locale": self.locale,
             "timezone": self.timezone,
             "persona_sha256": self.persona_sha256,
+            "context_policy": self.context_policy.to_public_dict(),
             "profile_sha256": self.profile_sha256,
         }
 
@@ -144,6 +150,12 @@ class KlaraHarness:
         controllers = self.controllers
         if controllers is None:
             controllers = (
+                ContextController(
+                    policy=self.config.context_policy,
+                    user_context=self.config.user_context,
+                    capabilities=self._visible_tool_names(),
+                    workspace_root=self.config.workspace_root,
+                ),
                 WebResearchController(user_timezone=self.config.user_context.timezone),
             )
         return KlaraLoop(
@@ -244,6 +256,7 @@ class KlaraHarness:
             "locale": self.config.user_context.locale,
             "timezone": self.config.user_context.timezone,
             "persona_sha256": persona_hash,
+            "context_policy": self.config.context_policy.to_public_dict(),
         }
         profile_hash = hashlib.sha256(
             json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -262,6 +275,7 @@ class KlaraHarness:
             locale=self.config.user_context.locale,
             timezone=self.config.user_context.timezone,
             persona_sha256=persona_hash,
+            context_policy=self.config.context_policy,
             profile_sha256=profile_hash,
         )
 

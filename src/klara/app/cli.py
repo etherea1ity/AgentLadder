@@ -65,7 +65,9 @@ def build_harness(
             capability_profile=runtime.profile(),
             trace_path=trace_path,
             loop_policy=runtime.loop_policy,
+            context_policy=runtime.context_policy,
             user_context=user_context,
+            workspace_root=Path.cwd(),
         ),
     )
 
