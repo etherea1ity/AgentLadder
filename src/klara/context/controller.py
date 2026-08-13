@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from klara.app.user_context import UserContext
@@ -109,6 +110,57 @@ class ContextController:
                     "summary_content_exposed": False,
                 },
             )
+        )
+        return prepared
+
+    def recover_prompt_too_long(
+        self,
+        messages: list[KlaraMessage],
+        *,
+        attempt: int,
+    ) -> list[KlaraMessage]:
+        """Force a tighter deterministic budget after provider rejection."""
+
+        tightened_budget = max(128, int(self.policy.transcript_budget_tokens * 0.7))
+        tightened = replace(
+            self.policy,
+            max_input_tokens=(
+                self.policy.reserved_system_tokens
+                + self.policy.reserved_output_tokens
+                + tightened_budget
+            ),
+            recent_messages=max(
+                self.policy.minimum_recent_messages,
+                self.policy.recent_messages - attempt,
+            ),
+        )
+        prepared, summary, metrics = compact_transcript(
+            messages,
+            policy=tightened,
+            previous_summary=self.session_summary,
+        )
+        self.session_summary = summary
+        self._events.extend(
+            [
+                LoopControllerEvent(
+                    type="context.prompt_recovery_applied",
+                    payload={
+                        "attempt": attempt,
+                        "original_budget_tokens": self.policy.transcript_budget_tokens,
+                        "recovery_budget_tokens": tightened.transcript_budget_tokens,
+                        "summary_content_exposed": False,
+                    },
+                ),
+                LoopControllerEvent(
+                    type="context.compacted",
+                    payload={
+                        **metrics,
+                        "strategy": "provider_rejection_forced_compaction",
+                        "summary_content_exposed": False,
+                        "prompt_recovery_attempt": attempt,
+                    },
+                ),
+            ]
         )
         return prepared
 

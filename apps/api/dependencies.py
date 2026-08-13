@@ -13,6 +13,7 @@ from klara.infra.config.env import get_env_secret
 from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.config.models import ModelsConfig, ProviderModel
 from klara.infra.llm.routed_client import RoutedLlmClient
+from klara.infra.llm.openai_compatible import OpenAICompatibleSettings
 
 
 def _load_model_options(
@@ -87,7 +88,13 @@ _models = load_models_config(Path("config"))
 _runtime = load_runtime_config(Path("config"))
 _model_options = _load_model_options(_models)
 _default_model_ref = _default_model(_models, _model_options)
-_llm = RoutedLlmClient(models=_models, dotenv_path=".env")
+_llm = RoutedLlmClient(
+    models=_models,
+    dotenv_path=".env",
+    settings=OpenAICompatibleSettings(
+        **_runtime.provider_recovery_policy.to_public_dict()
+    ),
+)
 _run_service = RunService(
     store=_store,
     bus=_bus,
@@ -99,6 +106,7 @@ _run_service = RunService(
     default_model=_default_model_ref,
     loop_policy=_runtime.loop_policy,
     context_policy=_runtime.context_policy,
+    provider_recovery_policy=_runtime.provider_recovery_policy,
     user_context=_local_user_context(),
     models_config=_models,
     capability_profile=_runtime.profile(),

@@ -18,7 +18,7 @@ from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient, LoopController
 from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig
-from klara.infra.config.runtime import CapabilityProfile
+from klara.infra.config.runtime import CapabilityProfile, ProviderRecoveryPolicy
 from klara.services.web import WebResearchController
 from klara.tools.executor import ToolExecutor
 from klara.tools.registry import ToolRegistry
@@ -45,6 +45,9 @@ class KlaraHarnessConfig:
     user_context: UserContext = field(default_factory=UserContext.local_default)
     persona_path: Path = DEFAULT_PERSONA_PATH
     context_policy: ContextPolicy = field(default_factory=ContextPolicy)
+    provider_recovery_policy: ProviderRecoveryPolicy = field(
+        default_factory=ProviderRecoveryPolicy
+    )
     workspace_root: Path = field(default_factory=Path.cwd)
 
     # Legacy property access stays stable for the Chapter 1 tutorial while the
@@ -84,6 +87,7 @@ class KlaraRunProfile:
     timezone: str
     persona_sha256: str
     context_policy: ContextPolicy
+    provider_recovery_policy: ProviderRecoveryPolicy
     profile_sha256: str
 
     def to_public_dict(self) -> dict[str, Any]:
@@ -103,12 +107,14 @@ class KlaraRunProfile:
                 "max_tool_calls": self.loop_policy.max_tool_calls,
                 "max_repeated_tool_calls": self.loop_policy.max_repeated_tool_calls,
                 "max_repeated_final_blocks": self.loop_policy.max_repeated_final_blocks,
+                "max_prompt_recovery_attempts": self.loop_policy.max_prompt_recovery_attempts,
             },
             "user_partition": self.user_partition,
             "locale": self.locale,
             "timezone": self.timezone,
             "persona_sha256": self.persona_sha256,
             "context_policy": self.context_policy.to_public_dict(),
+            "provider_recovery_policy": self.provider_recovery_policy.to_public_dict(),
             "profile_sha256": self.profile_sha256,
         }
 
@@ -251,12 +257,14 @@ class KlaraHarness:
                 "max_tool_calls": self.config.loop_policy.max_tool_calls,
                 "max_repeated_tool_calls": self.config.loop_policy.max_repeated_tool_calls,
                 "max_repeated_final_blocks": self.config.loop_policy.max_repeated_final_blocks,
+                "max_prompt_recovery_attempts": self.config.loop_policy.max_prompt_recovery_attempts,
             },
             "user_partition": self.config.user_context.storage_key,
             "locale": self.config.user_context.locale,
             "timezone": self.config.user_context.timezone,
             "persona_sha256": persona_hash,
             "context_policy": self.config.context_policy.to_public_dict(),
+            "provider_recovery_policy": self.config.provider_recovery_policy.to_public_dict(),
         }
         profile_hash = hashlib.sha256(
             json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -276,6 +284,7 @@ class KlaraHarness:
             timezone=self.config.user_context.timezone,
             persona_sha256=persona_hash,
             context_policy=self.config.context_policy,
+            provider_recovery_policy=self.config.provider_recovery_policy,
             profile_sha256=profile_hash,
         )
 

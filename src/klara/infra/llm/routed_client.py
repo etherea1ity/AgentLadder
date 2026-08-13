@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from klara.core.messages import KlaraMessage, ModelResponse
+from klara.core.messages import KlaraMessage, LlmRuntimeEvent, ModelResponse
 from klara.core.tools import ToolSpec
 from klara.infra.config.models import ModelsConfig
 from klara.infra.llm.model_ref import ModelRef
@@ -48,11 +48,23 @@ class RoutedLlmClient:
             Normalized model response.
         """
 
-        errors: list[str] = []
+        events: list[LlmRuntimeEvent] = []
         # Try the requested model and any profile fallbacks in stable order.
-        for candidate in self._candidate_models(model):
+        candidates = self._candidate_models(model)
+        for index, candidate in enumerate(candidates):
+            events.append(
+                LlmRuntimeEvent(
+                    type="model_route.candidate_started",
+                    payload={
+                        "requested_model": model,
+                        "candidate_model": candidate,
+                        "candidate_index": index,
+                        "candidate_count": len(candidates),
+                    },
+                )
+            )
             try:
-                return self._client_for_model(candidate).complete(
+                response = self._client_for_model(candidate).complete(
                     system_prompt=system_prompt,
                     messages=messages,
                     tools=tools,
@@ -60,9 +72,60 @@ class RoutedLlmClient:
                     thinking_enabled=thinking_enabled,
                 )
             except LlmProviderError as exc:
-                errors.append(f"{candidate}: {exc}")
+                events.extend(exc.runtime_events)
+                events.append(
+                    LlmRuntimeEvent(
+                        type="model_route.candidate_failed",
+                        payload={
+                            "requested_model": model,
+                            "candidate_model": candidate,
+                            "candidate_index": index,
+                            "error_code": exc.code,
+                            "retryable": exc.retryable,
+                            "status_code": exc.status_code,
+                        },
+                    )
+                )
+                if exc.code in {"context_length_exceeded", "model_configuration_error"}:
+                    exc.runtime_events = tuple(events)
+                    raise
+                if index + 1 < len(candidates):
+                    events.append(
+                        LlmRuntimeEvent(
+                            type="model_route.fallback_started",
+                            payload={
+                                "requested_model": model,
+                                "failed_model": candidate,
+                                "fallback_model": candidates[index + 1],
+                                "reason": exc.code,
+                            },
+                        )
+                    )
                 continue
-        raise LlmProviderError("all model candidates failed: " + " | ".join(errors))
+            events.extend(response.runtime_events)
+            events.append(
+                LlmRuntimeEvent(
+                    type="model_route.candidate_completed",
+                    payload={
+                        "requested_model": model,
+                        "model_used": candidate,
+                        "fallback_used": candidate != model,
+                        "candidate_index": index,
+                    },
+                )
+            )
+            return ModelResponse(
+                **{
+                    **response.__dict__,
+                    "model_used": candidate,
+                    "runtime_events": tuple(events),
+                }
+            )
+        raise LlmProviderError(
+            "all configured model candidates failed",
+            code="all_model_candidates_failed",
+            runtime_events=tuple(events),
+        )
 
     def _candidate_models(self, model: str) -> tuple[str, ...]:
         """Return requested model plus fallbacks when it is a profile primary."""
@@ -81,9 +144,15 @@ class RoutedLlmClient:
         model_ref = ModelRef.parse(model)
         provider = self.models.providers.get(model_ref.provider)
         if provider is None:
-            raise LlmProviderError(f"unknown provider: {model_ref.provider}")
+            raise LlmProviderError(
+                f"unknown provider: {model_ref.provider}",
+                code="model_configuration_error",
+            )
         if provider.api != "openai-completions":
-            raise LlmProviderError(f"unsupported provider api: {provider.api}")
+            raise LlmProviderError(
+                f"unsupported provider api: {provider.api}",
+                code="model_configuration_error",
+            )
         return OpenAICompatibleLlmClient(
             provider_id=model_ref.provider,
             provider=provider,

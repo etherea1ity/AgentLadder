@@ -9,6 +9,34 @@ from klara.context.policy import ContextPolicy
 
 
 @dataclass(frozen=True)
+class ProviderRecoveryPolicy:
+    """Secret-free provider retry and timeout policy frozen per product run."""
+
+    timeout_seconds: int | None = None
+    retry_attempts: int = 3
+    retry_base_delay_seconds: float = 0.5
+    retry_max_delay_seconds: float = 8.0
+
+    def __post_init__(self) -> None:
+        if self.timeout_seconds is not None and self.timeout_seconds < 1:
+            raise ValueError("provider timeout must be positive when provided")
+        if self.retry_attempts < 1:
+            raise ValueError("provider retry attempts must be at least 1")
+        if self.retry_base_delay_seconds < 0 or self.retry_max_delay_seconds < 0:
+            raise ValueError("provider retry delays must be non-negative")
+        if self.retry_max_delay_seconds < self.retry_base_delay_seconds:
+            raise ValueError("provider retry max delay must cover the base delay")
+
+    def to_public_dict(self) -> dict[str, int | float | None]:
+        return {
+            "timeout_seconds": self.timeout_seconds,
+            "retry_attempts": self.retry_attempts,
+            "retry_base_delay_seconds": self.retry_base_delay_seconds,
+            "retry_max_delay_seconds": self.retry_max_delay_seconds,
+        }
+
+
+@dataclass(frozen=True)
 class CapabilityProfile:
     """Frozen product capability selection used before a run is assembled."""
 
@@ -36,6 +64,9 @@ class RuntimeConfig:
     # Loop policy controls model/tool iteration bounds.
     loop_policy: LoopPolicy = field(default_factory=LoopPolicy)
     context_policy: ContextPolicy = field(default_factory=ContextPolicy)
+    provider_recovery_policy: ProviderRecoveryPolicy = field(
+        default_factory=ProviderRecoveryPolicy
+    )
     default_capability_profile: str = "agent"
     capability_profiles: tuple[CapabilityProfile, ...] = (
         CapabilityProfile(id="agent"),

@@ -11,6 +11,9 @@ max_repeated_tool_calls = 3
 # Repeated identical final-answer blocks usually mean no new progress.
 max_repeated_final_blocks = 2
 
+# A context-length rejection can force compaction and retry one model turn.
+max_prompt_recovery_attempts = 1
+
 [runtime.context]
 # Approximate model input envelope. The product reserves space for the system
 # prompt and answer before admitting transcript history.
@@ -22,6 +25,13 @@ minimum_recent_messages = 4
 summary_max_chars = 2400
 tool_result_max_chars = 1200
 chars_per_token = 4
+
+[runtime.provider_recovery]
+# Omit timeout_seconds to allow long provider thinking calls. Operators can set
+# KLARA_PROVIDER_TIMEOUT_SECONDS when a bounded network deadline is required.
+retry_attempts = 3
+retry_base_delay_seconds = 0.5
+retry_max_delay_seconds = 8.0
 
 [runtime.harness]
 # Product entrypoints select one named capability profile before loop assembly.

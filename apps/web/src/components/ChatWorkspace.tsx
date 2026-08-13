@@ -319,6 +319,7 @@ function MessageList({
     >
       <PlanPanel plan={todoPlan} />
       <ContextBudgetStatus run={latestRun} />
+      <ProviderRecoveryStatus run={latestRun} />
       {turns.map((turn) => (
         <article className="conversation-turn" key={turn.key}>
           {turn.user ? <UserMessage message={turn.user} /> : null}
@@ -427,6 +428,44 @@ export function ContextBudgetStatus({ run }: { run?: Run }) {
       ) : null}
     </aside>
   );
+}
+
+export function ProviderRecoveryStatus({ run }: { run?: Run }) {
+  const events = run?.events ?? [];
+  const fallback = [...events]
+    .reverse()
+    .find((event) => event.event_type === "model_route.fallback_started");
+  const recovery = [...events]
+    .reverse()
+    .find((event) => event.event_type === "prompt_recovery.completed");
+  const retryCount = events.filter(
+    (event) => event.event_type === "provider.retry_scheduled",
+  ).length;
+  if (!fallback && !recovery && retryCount === 0) return null;
+
+  const fallbackPayload = fallback?.payload ?? {};
+  const from = String(fallbackPayload.failed_model ?? "primary");
+  const to = String(fallbackPayload.fallback_model ?? "fallback");
+  const label = fallback
+    ? `Fallback active · ${shortModel(from)} → ${shortModel(to)}`
+    : recovery
+      ? "Prompt recovered · context compacted"
+      : `Provider recovered · ${retryCount} ${retryCount === 1 ? "retry" : "retries"}`;
+
+  return (
+    <aside className="provider-recovery-status" aria-label="Provider recovery">
+      <span className="provider-recovery-signal" aria-hidden="true" />
+      <span>
+        <strong>{label}</strong>
+        <small>Recovery details are preserved in the run trace.</small>
+      </span>
+    </aside>
+  );
+}
+
+function shortModel(model: string): string {
+  const parts = model.split("/");
+  return parts.length > 1 ? parts[parts.length - 1] : model;
 }
 
 function numericPayload(

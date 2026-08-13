@@ -18,6 +18,33 @@ ModelStreamEventType = Literal[
 
 
 @dataclass(frozen=True)
+class LlmRuntimeEvent:
+    """One trace-safe provider/router event attached to a model call."""
+
+    type: str
+    payload: dict[str, object] = field(default_factory=dict)
+
+
+class ModelCallError(RuntimeError):
+    """Typed model-call failure that core can recover without importing infra."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "model_call_failed",
+        retryable: bool = False,
+        status_code: int | None = None,
+        runtime_events: tuple[LlmRuntimeEvent, ...] = (),
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.retryable = retryable
+        self.status_code = status_code
+        self.runtime_events = runtime_events
+
+
+@dataclass(frozen=True)
 class KlaraMessage:
     """One model-visible message in the loop transcript.
 
@@ -85,6 +112,10 @@ class ModelResponse:
     activity_commentary: str | None = None
     # Provider/model field that produced the public activity commentary.
     activity_source: str | None = None
+    # Actual routed model, which may differ from the requested fallback primary.
+    model_used: str | None = None
+    # Public provider/router attempts emitted by infrastructure for this call.
+    runtime_events: tuple[LlmRuntimeEvent, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)

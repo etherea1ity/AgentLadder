@@ -67,6 +67,10 @@ def test_load_runtime_config_reads_loop_policy() -> None:
     assert runtime.context_policy.minimum_recent_messages == 4
     assert runtime.context_policy.summary_max_chars == 2400
     assert runtime.context_policy.tool_result_max_chars == 1200
+    assert runtime.provider_recovery_policy.timeout_seconds is None
+    assert runtime.provider_recovery_policy.retry_attempts == 3
+    assert runtime.provider_recovery_policy.retry_base_delay_seconds == 0.5
+    assert runtime.provider_recovery_policy.retry_max_delay_seconds == 8.0
     profile = runtime.profile()
     assert profile.id == "agent"
     assert profile.required_model_capabilities == ("tools",)
@@ -107,6 +111,11 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
                 "max_tool_calls = 22",
                 "max_repeated_tool_calls = 2",
                 "max_repeated_final_blocks = 3",
+                "[runtime.provider_recovery]",
+                "timeout_seconds = 12",
+                "retry_attempts = 2",
+                "retry_base_delay_seconds = 0.25",
+                "retry_max_delay_seconds = 3.0",
             ]
         ),
         encoding="utf-8",
@@ -119,6 +128,10 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
             "KLARA_LOOP_MAX_TOOL_CALLS": "62",
             "KLARA_LOOP_MAX_REPEATED_TOOL_CALLS": "4",
             "KLARA_LOOP_MAX_REPEATED_FINAL_BLOCKS": "5",
+            "KLARA_PROVIDER_TIMEOUT_SECONDS": "19",
+            "KLARA_PROVIDER_RETRY_ATTEMPTS": "4",
+            "KLARA_PROVIDER_RETRY_BASE_DELAY_SECONDS": "0.75",
+            "KLARA_PROVIDER_RETRY_MAX_DELAY_SECONDS": "6.0",
         },
     )
 
@@ -126,6 +139,10 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
     assert runtime.loop_policy.max_tool_calls == 62
     assert runtime.loop_policy.max_repeated_tool_calls == 4
     assert runtime.loop_policy.max_repeated_final_blocks == 5
+    assert runtime.provider_recovery_policy.timeout_seconds == 19
+    assert runtime.provider_recovery_policy.retry_attempts == 4
+    assert runtime.provider_recovery_policy.retry_base_delay_seconds == 0.75
+    assert runtime.provider_recovery_policy.retry_max_delay_seconds == 6.0
 
 
 def test_get_env_secret_can_read_one_key_from_dotenv_without_exporting_all(tmp_path, monkeypatch) -> None:

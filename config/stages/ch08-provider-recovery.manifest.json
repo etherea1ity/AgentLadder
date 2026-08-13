@@ -1,0 +1,49 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch08-provider-recovery",
+  "branch": "codex/ch08-provider-recovery",
+  "parent_commit": "bf972514b9d93b2e846f46d9db45060cd93c5521",
+  "mode": "local-pre-hku",
+  "datasets": ["tests/fixtures/behavior/agent_behavior_cases.json"],
+  "prompts": ["src/klara/prompts/persona.md", "src/klara/context/assembly.py"],
+  "model_ids": ["deepseek/deepseek-v4-flash", "qwen/qwen3.7-plus"],
+  "seeds": [17],
+  "budgets": {
+    "paid_api_usd": 0,
+    "provider_retry_attempts": 3,
+    "provider_retry_max_delay_seconds": 8.0,
+    "prompt_recovery_attempts": 1
+  },
+  "evaluator_versions": [
+    "klara.chapter08-provider-recovery.v1",
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "expected_artifacts": [
+    "docs/chapters/ch08-error-recovery-and-fallback.md",
+    "docs/chapters/ch08-error-recovery-and-fallback.en.md",
+    "docs/reports/product/ch08-provider-recovery.json",
+    "docs/reports/product/ch08-provider-recovery.md",
+    "docs/reports/product/ch08-provider-recovery.en.md",
+    "docs/reports/product/ch08-provider-recovery-ui-e2e.json"
+  ],
+  "acceptance": {
+    "retry_taxonomy_is_typed": true,
+    "transient_retries_are_bounded": true,
+    "provider_timeout_is_configurable": true,
+    "prompt_too_long_compacts_and_retries_once": true,
+    "fallback_route_is_trace_visible": true,
+    "actual_model_is_trace_visible": true,
+    "tool_failures_are_model_observations": true,
+    "provider_bodies_are_not_public": true,
+    "responsive_recovery_status_ui": true,
+    "critical_behavior_regressions": 0
+  },
+  "exclusions": [
+    "production incident response",
+    "learned fallback policy",
+    "paid provider calls",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

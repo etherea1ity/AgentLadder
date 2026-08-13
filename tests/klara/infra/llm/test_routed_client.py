@@ -48,7 +48,62 @@ def test_routed_client_tries_profile_fallback(monkeypatch) -> None:
     )
 
     assert response.content == "ok from qwen/qwen3.7-plus"
+    assert response.model_used == "qwen/qwen3.7-plus"
     assert calls == ["deepseek/deepseek-v4-flash", "qwen/qwen3.7-plus"]
+    assert [event.type for event in response.runtime_events] == [
+        "model_route.candidate_started",
+        "model_route.candidate_failed",
+        "model_route.fallback_started",
+        "model_route.candidate_started",
+        "model_route.candidate_completed",
+    ]
+
+
+def test_routed_client_returns_prompt_too_long_to_loop_without_fallback(monkeypatch) -> None:
+    """The loop must compact before the router considers another model."""
+
+    calls: list[str] = []
+
+    def fake_complete(self, *, system_prompt, messages, tools, model, thinking_enabled=None):
+        calls.append(model)
+        raise LlmProviderError(
+            "prompt rejected",
+            code="context_length_exceeded",
+            status_code=400,
+        )
+
+    monkeypatch.setattr(
+        "klara.infra.llm.openai_compatible.OpenAICompatibleLlmClient.complete",
+        fake_complete,
+    )
+    client = RoutedLlmClient(
+        models=ModelsConfig(
+            providers={
+                "deepseek": ProviderConfig(api="openai-completions", allow_unlisted_models=True),
+                "qwen": ProviderConfig(api="openai-completions", allow_unlisted_models=True),
+            },
+            profiles={
+                "agent": ModelProfile(
+                    primary="deepseek/deepseek-v4-flash",
+                    fallbacks=("qwen/qwen3.7-plus",),
+                )
+            },
+        )
+    )
+
+    with pytest.raises(LlmProviderError) as caught:
+        client.complete(
+            system_prompt="system",
+            messages=(KlaraMessage(role="user", content="hello"),),
+            tools=(),
+            model="deepseek/deepseek-v4-flash",
+        )
+
+    assert caught.value.code == "context_length_exceeded"
+    assert calls == ["deepseek/deepseek-v4-flash"]
+    assert "model_route.fallback_started" not in {
+        event.type for event in caught.value.runtime_events
+    }
 
 
 def test_routed_client_rejects_unknown_provider() -> None:

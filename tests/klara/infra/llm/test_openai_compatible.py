@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import io
 import json
+import urllib.error
 import urllib.request
 
 import pytest
@@ -500,3 +502,117 @@ def test_openai_compatible_client_rejects_missing_key(monkeypatch) -> None:
             tools=(),
             model="deepseek/deepseek-v4-flash",
         )
+
+
+def test_transient_provider_failure_retries_with_safe_public_events(monkeypatch) -> None:
+    """A transient 503 should retry without publishing the provider body."""
+
+    calls = 0
+    sleeps: list[float] = []
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {"choices": [{"message": {"content": "recovered"}}]}
+            ).encode("utf-8")
+
+    def fake_urlopen(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise urllib.error.HTTPError(
+                "https://provider.invalid",
+                503,
+                "unavailable",
+                {},
+                io.BytesIO(b"secret upstream incident body"),
+            )
+        return FakeResponse()
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr("klara.infra.llm.openai_compatible.time.sleep", sleeps.append)
+    client = OpenAICompatibleLlmClient(
+        provider_id="deepseek",
+        provider=ProviderConfig(
+            api="openai-completions",
+            base_url="https://provider.invalid",
+            api_key_env="DEEPSEEK_API_KEY",
+            models=(),
+            allow_unlisted_models=True,
+        ),
+        settings=OpenAICompatibleSettings(
+            retry_attempts=2,
+            retry_base_delay_seconds=0.01,
+        ),
+    )
+
+    response = client.complete(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="deepseek/deepseek-v4-flash",
+    )
+
+    assert response.content == "recovered"
+    assert calls == 2
+    assert sleeps == [0.01]
+    assert [event.type for event in response.runtime_events] == [
+        "provider.attempt_started",
+        "provider.attempt_failed",
+        "provider.retry_scheduled",
+        "provider.attempt_started",
+        "provider.attempt_completed",
+    ]
+    assert "secret upstream" not in repr(response.runtime_events)
+
+
+def test_prompt_too_long_is_typed_and_not_retried_by_provider(monkeypatch) -> None:
+    """Context rejection belongs to the loop compactor, not HTTP retries."""
+
+    calls = 0
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+
+    def fake_urlopen(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        raise urllib.error.HTTPError(
+            "https://provider.invalid",
+            400,
+            "bad request",
+            {},
+            io.BytesIO(b"maximum context length exceeded: private body"),
+        )
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    client = OpenAICompatibleLlmClient(
+        provider_id="deepseek",
+        provider=ProviderConfig(
+            api="openai-completions",
+            base_url="https://provider.invalid",
+            api_key_env="DEEPSEEK_API_KEY",
+            models=(),
+            allow_unlisted_models=True,
+        ),
+        settings=OpenAICompatibleSettings(retry_attempts=3),
+    )
+
+    with pytest.raises(LlmProviderError) as caught:
+        client.complete(
+            system_prompt="system",
+            messages=(KlaraMessage(role="user", content="hello"),),
+            tools=(),
+            model="deepseek/deepseek-v4-flash",
+        )
+
+    assert calls == 1
+    assert caught.value.code == "context_length_exceeded"
+    assert caught.value.retryable is False
+    assert "private body" not in str(caught.value)
+    assert "private body" not in repr(caught.value.runtime_events)

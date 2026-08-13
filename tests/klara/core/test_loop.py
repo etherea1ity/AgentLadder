@@ -13,7 +13,13 @@ from klara.core.hooks import (
     PreToolUseContext,
 )
 from klara.core.loop import FinalAnswerDecision, KlaraLoop, LoopControllerEvent
-from klara.core.messages import KlaraMessage, ModelResponse, ModelStreamEvent
+from klara.core.messages import (
+    KlaraMessage,
+    LlmRuntimeEvent,
+    ModelCallError,
+    ModelResponse,
+    ModelStreamEvent,
+)
 from klara.core.policies import LoopPolicy, StopReason
 from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
 from klara.tools.base import BaseTool
@@ -105,6 +111,39 @@ class FakeStreamingLlm(ScriptedLlm):
             delta="provider-visible reasoning summary",
         )
         yield ModelStreamEvent(type="completed", response=response)
+
+
+class PromptRecoveryLlm(ScriptedLlm):
+    """Reject the first prompt, then capture the recovered second request."""
+
+    def __init__(self) -> None:
+        super().__init__([ModelResponse(content="Recovered final answer.")])
+        self.rejected = False
+
+    def complete(self, **kwargs) -> ModelResponse:
+        if not self.rejected:
+            self.rejected = True
+            self.system_prompts.append(str(kwargs["system_prompt"]))
+            self.calls.append((kwargs["messages"], kwargs["tools"]))
+            raise ModelCallError(
+                "private provider body must not be traced",
+                code="context_length_exceeded",
+                status_code=400,
+                runtime_events=(
+                    LlmRuntimeEvent(
+                        type="provider.attempt_failed",
+                        payload={
+                            "provider": "fixture",
+                            "model": "fixture/model",
+                            "attempt": 1,
+                            "error_code": "context_length_exceeded",
+                            "retryable": False,
+                            "status_code": 400,
+                        },
+                    ),
+                ),
+            )
+        return super().complete(**kwargs)
 
 
 class EventRecorder:
@@ -1460,3 +1499,114 @@ def test_tool_result_public_payload_includes_preview_and_length() -> None:
     assert public["content_length"] == 650
     assert public["content_preview"] == "x" * 500
     assert public["content"] == "x" * 650
+
+
+def test_prompt_too_long_compacts_once_and_retries_with_public_trace(tmp_path) -> None:
+    """Provider context rejection should trigger bounded deterministic recovery."""
+
+    recorder = EventRecorder()
+    llm = PromptRecoveryLlm()
+    controller = ContextController(
+        policy=ContextPolicy(
+            max_input_tokens=2_000,
+            reserved_system_tokens=300,
+            reserved_output_tokens=300,
+            recent_messages=4,
+            minimum_recent_messages=2,
+            summary_max_chars=256,
+            tool_result_max_chars=128,
+        ),
+        user_context=UserContext.local_default(),
+        capabilities=(),
+        workspace_root=tmp_path,
+    )
+    prior = tuple(
+        KlaraMessage(
+            role="user" if index % 2 == 0 else "assistant",
+            content=f"history-{index} " + ("x" * 500),
+        )
+        for index in range(8)
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+        controllers=(controller,),
+        policy=LoopPolicy(max_prompt_recovery_attempts=1),
+        model="fixture/model",
+        system_prompt="system",
+    )
+
+    result = loop.run(
+        "current request",
+        run_id="run-prompt-recovery",
+        prior_messages=prior,
+    )
+
+    assert result.final_answer == "Recovered final answer."
+    assert len(llm.calls) == 2
+    assert len(llm.calls[1][0]) < len(llm.calls[0][0])
+    assert '<session_context summary_status="available">' in llm.system_prompts[1]
+    event_types = recorder.event_types
+    assert event_types.index("model_call.failed") < event_types.index(
+        "prompt_recovery.started"
+    )
+    assert event_types.index("prompt_recovery.started") < event_types.index(
+        "pre_compact.started"
+    )
+    assert event_types.index("context.prompt_recovery_applied") < event_types.index(
+        "prompt_recovery.completed"
+    )
+    assert event_types.count("llm.started") == 2
+    assert "private provider body" not in repr(recorder.events)
+
+
+def test_model_runtime_events_show_fallback_before_completion() -> None:
+    """Router telemetry should be public and ordered before LLM completion."""
+
+    recorder = EventRecorder()
+    llm = ScriptedLlm(
+        [
+            ModelResponse(
+                content="Fallback answer.",
+                model_used="fallback/model",
+                runtime_events=(
+                    LlmRuntimeEvent(
+                        type="model_route.fallback_started",
+                        payload={
+                            "requested_model": "primary/model",
+                            "failed_model": "primary/model",
+                            "fallback_model": "fallback/model",
+                            "reason": "provider_unavailable",
+                        },
+                    ),
+                    LlmRuntimeEvent(
+                        type="model_route.candidate_completed",
+                        payload={
+                            "requested_model": "primary/model",
+                            "model_used": "fallback/model",
+                            "fallback_used": True,
+                            "candidate_index": 1,
+                        },
+                    ),
+                ),
+            )
+        ]
+    )
+    loop = KlaraLoop(
+        llm=llm,
+        tool_executor=ToolExecutor(),
+        hooks=HookManager([recorder]),
+        model="primary/model",
+    )
+
+    loop.run("answer", run_id="run-fallback-trace")
+
+    assert recorder.event_types.index("model_route.fallback_started") < recorder.event_types.index(
+        "llm.completed"
+    )
+    completed = next(
+        event for event in recorder.events if str(getattr(event, "type")) == "llm.completed"
+    )
+    assert completed.payload["requested_model"] == "primary/model"
+    assert completed.payload["model"] == "fallback/model"

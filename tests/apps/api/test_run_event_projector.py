@@ -31,6 +31,54 @@ def test_llm_started_projection_includes_model_and_finalization() -> None:
     }
 
 
+def test_provider_fallback_and_prompt_recovery_events_are_projected() -> None:
+    """Public recovery events should survive the API/SSE projection unchanged."""
+
+    projector = RunEventProjector(selected_model="primary/model")
+    fallback = projector.project(
+        KlaraEvent(
+            type="model_route.fallback_started",
+            run_id="run-recovery",
+            payload={
+                "failed_model": "primary/model",
+                "fallback_model": "fallback/model",
+                "reason": "provider_unavailable",
+            },
+        )
+    )
+    recovered = projector.project(
+        KlaraEvent(
+            type="prompt_recovery.completed",
+            run_id="run-recovery",
+            payload={"attempt": 1, "messages_before": 12, "messages_after": 5},
+        )
+    )
+
+    assert fallback[0].event_type == "model_route.fallback_started"
+    assert fallback[0].payload["fallback_model"] == "fallback/model"
+    assert recovered[0].event_type == "prompt_recovery.completed"
+    assert recovered[0].payload["messages_after"] == 5
+
+
+def test_llm_completion_projects_requested_and_actual_model() -> None:
+    projector = RunEventProjector(selected_model="primary/model")
+    projected = projector.project(
+        KlaraEvent(
+            type="llm.completed",
+            run_id="run-route",
+            payload={
+                "requested_model": "primary/model",
+                "model": "fallback/model",
+                "usage": {},
+                "metrics": {},
+            },
+        )
+    )
+
+    assert projected[0].payload["requested_model"] == "primary/model"
+    assert projected[0].payload["model"] == "fallback/model"
+
+
 def test_llm_started_projection_preserves_input_profile() -> None:
     projector = RunEventProjector()
     input_profile = {

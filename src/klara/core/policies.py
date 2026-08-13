@@ -33,6 +33,8 @@ class LoopPolicy:
     max_repeated_tool_calls: int = 3
     # Max identical final-answer blocks before forcing a no-tool finalization.
     max_repeated_final_blocks: int = 2
+    # Prompt-too-long may compact and retry the same model request this many times.
+    max_prompt_recovery_attempts: int = 1
 
     def __post_init__(self) -> None:
         """Validate policy values as soon as the immutable policy is created."""
@@ -45,3 +47,5 @@ class LoopPolicy:
             raise ValueError("max_repeated_tool_calls must be at least 1")
         if self.max_repeated_final_blocks < 1:
             raise ValueError("max_repeated_final_blocks must be at least 1")
+        if self.max_prompt_recovery_attempts < 0:
+            raise ValueError("max_prompt_recovery_attempts must be non-negative")

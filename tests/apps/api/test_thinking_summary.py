@@ -3,7 +3,7 @@ from __future__ import annotations
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_service import RunService
 from apps.api.services.sse_bus import SSEBus
-from klara.core.messages import KlaraMessage, ModelResponse
+from klara.core.messages import KlaraMessage, ModelCallError, ModelResponse
 from klara.core.tools import ToolCall
 
 
@@ -91,6 +91,18 @@ class ToolThenFailureLlm:
                 ),
             )
         raise RuntimeError("provider request failed: The read operation timed out")
+
+
+class TypedProviderFailureLlm:
+    """Provider failure fixture whose private text must stay server-side."""
+
+    def complete(self, **_: object) -> ModelResponse:
+        raise ModelCallError(
+            "upstream body contains private-account-id-123",
+            code="provider_unavailable",
+            retryable=True,
+            status_code=503,
+        )
 
 
 def test_thinking_summary_started_and_completed_wrap_answer(tmp_path) -> None:
@@ -307,6 +319,34 @@ def test_failed_run_keeps_prior_activity_events_and_exposes_latency(tmp_path) ->
     assert run.latency_ms == failed.payload["latency_ms"]
     assert assistant is not None
     assert assistant.status == "failed"
+
+
+def test_typed_provider_failure_uses_safe_app_error_contract(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=TypedProviderFailureLlm(),
+        default_model="main-model",
+        trace_path=str(tmp_path / "trace.jsonl"),
+        answer_chunk_delay_ms=0,
+    )
+
+    created = service.create_run(session.session_id, "trigger typed failure")
+    service._threads[created.run_id].join(timeout=5)
+
+    run = store.get_run(created.run_id)
+    failed = next(
+        event
+        for event in store.list_events(created.run_id)
+        if event.event_type == "run_failed"
+    )
+    assert run is not None and run.error is not None
+    assert run.error.code == "provider_unavailable"
+    assert run.error.message == "The model provider is temporarily unavailable."
+    assert "private-account-id" not in run.model_dump_json()
+    assert "private-account-id" not in failed.model_dump_json()
 
 
 def test_long_answer_emits_multiple_display_chunks(tmp_path) -> None:

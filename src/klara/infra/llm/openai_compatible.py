@@ -11,15 +11,20 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-from klara.core.messages import KlaraMessage, ModelResponse
+from klara.core.messages import (
+    KlaraMessage,
+    LlmRuntimeEvent,
+    ModelCallError,
+    ModelResponse,
+)
 from klara.core.tools import ToolCall, ToolSpec
 from klara.infra.config.env import get_env_secret
 from klara.infra.config.models import ProviderConfig
 from klara.infra.llm.model_ref import ModelRef
 
 
-class LlmProviderError(RuntimeError):
-    """Raised when a provider request cannot complete or normalize."""
+class LlmProviderError(ModelCallError):
+    """Typed provider failure with a trace-safe public taxonomy."""
 
 
 @dataclass(frozen=True)
@@ -37,6 +42,20 @@ class OpenAICompatibleSettings:
     retry_attempts: int = 3
     # Initial exponential-backoff delay between retryable failures.
     retry_base_delay_seconds: float = 0.5
+    # Maximum delay bounds exponential backoff.
+    retry_max_delay_seconds: float = 8.0
+
+    def __post_init__(self) -> None:
+        if self.max_tokens is not None and self.max_tokens < 1:
+            raise ValueError("max_tokens must be positive when provided")
+        if self.timeout_seconds is not None and self.timeout_seconds < 1:
+            raise ValueError("timeout_seconds must be positive when provided")
+        if self.retry_attempts < 1:
+            raise ValueError("retry_attempts must be at least 1")
+        if self.retry_base_delay_seconds < 0:
+            raise ValueError("retry_base_delay_seconds must be non-negative")
+        if self.retry_max_delay_seconds < self.retry_base_delay_seconds:
+            raise ValueError("retry_max_delay_seconds must cover the base delay")
 
 
 class OpenAICompatibleLlmClient:
@@ -99,10 +118,14 @@ class OpenAICompatibleLlmClient:
         model_ref = ModelRef.parse(model)
         if model_ref.provider != self.provider_id:
             raise LlmProviderError(
-                f"wrong provider client: {self.provider_id} cannot serve {model_ref.provider}"
+                f"wrong provider client: {self.provider_id} cannot serve {model_ref.provider}",
+                code="model_configuration_error",
             )
         if not self.provider.has_model(model_ref.model):
-            raise LlmProviderError(f"unlisted model for provider {self.provider_id}: {model_ref.model}")
+            raise LlmProviderError(
+                f"unlisted model for provider {self.provider_id}: {model_ref.model}",
+                code="model_configuration_error",
+            )
 
         payload = build_chat_completion_payload(
             system_prompt=system_prompt,
@@ -117,18 +140,40 @@ class OpenAICompatibleLlmClient:
             ),
         )
         request = self._build_http_request(payload)
-        raw = _urlopen_with_retries(
+        raw, runtime_events = _urlopen_with_retries(
             request,
+            provider_id=self.provider_id,
+            model=model,
             timeout_seconds=self.settings.timeout_seconds,
             attempts=self.settings.retry_attempts,
             retry_base_delay_seconds=self.settings.retry_base_delay_seconds,
+            retry_max_delay_seconds=self.settings.retry_max_delay_seconds,
         )
 
         try:
             data = json.loads(raw)
         except json.JSONDecodeError as exc:
-            raise LlmProviderError(f"unexpected provider response: {raw[:500]}") from exc
-        return response_from_completion_data(data, model_ref=model_ref, raw_preview=raw[:500])
+            raise LlmProviderError(
+                "provider returned invalid JSON",
+                code="provider_response_invalid",
+                runtime_events=runtime_events,
+            ) from exc
+        try:
+            response = response_from_completion_data(
+                data,
+                model_ref=model_ref,
+                raw_preview=raw[:500],
+            )
+        except LlmProviderError as exc:
+            exc.runtime_events = runtime_events
+            raise
+        return ModelResponse(
+            **{
+                **response.__dict__,
+                "model_used": model,
+                "runtime_events": runtime_events,
+            }
+        )
 
     def _enable_thinking(
         self,
@@ -141,7 +186,10 @@ class OpenAICompatibleLlmClient:
         model = self.provider.model_entry(model_id)
         if model is None or not model.supports_thinking:
             if requested:
-                raise LlmProviderError(f"thinking not supported by model: {model_id}")
+                raise LlmProviderError(
+                    f"thinking not supported by model: {model_id}",
+                    code="model_configuration_error",
+                )
             return None
         if requested is None:
             return model.default_thinking
@@ -152,7 +200,10 @@ class OpenAICompatibleLlmClient:
 
         api_key = get_env_secret(self.provider.api_key_env, dotenv_path=self.dotenv_path)
         if not api_key:
-            raise LlmProviderError(f"missing API key env var: {self.provider.api_key_env}")
+            raise LlmProviderError(
+                f"missing API key env var: {self.provider.api_key_env}",
+                code="provider_credentials_missing",
+            )
 
         endpoint = f"{self.provider.base_url.rstrip('/')}/chat/completions"
         return urllib.request.Request(
@@ -357,12 +408,21 @@ def response_from_completion_data(
             if isinstance(tool_call, dict)
         )
     except (KeyError, IndexError, TypeError) as exc:
-        raise LlmProviderError(f"unexpected provider response: {raw_preview}") from exc
+        raise LlmProviderError(
+            "provider returned an invalid response shape",
+            code="provider_response_invalid",
+        ) from exc
 
     if not isinstance(raw_content, str):
-        raise LlmProviderError(f"unexpected provider response: {raw_preview}")
+        raise LlmProviderError(
+            "provider returned an invalid response shape",
+            code="provider_response_invalid",
+        )
     if not raw_content.strip() and not tool_calls:
-        raise LlmProviderError(f"empty provider response: {raw_preview}")
+        raise LlmProviderError(
+            "provider returned an empty response",
+            code="provider_response_empty",
+        )
 
     usage = data.get("usage") if isinstance(data.get("usage"), dict) else None
     reasoning_source, reasoning_summary = _extract_provider_reasoning(
@@ -522,15 +582,34 @@ def _parse_tool_call(raw: dict[str, Any], index: int) -> ToolCall:
 def _urlopen_with_retries(
     request: urllib.request.Request,
     *,
+    provider_id: str,
+    model: str,
     timeout_seconds: int | None,
     attempts: int,
     retry_base_delay_seconds: float,
-) -> str:
+    retry_max_delay_seconds: float,
+) -> tuple[str, tuple[LlmRuntimeEvent, ...]]:
     """POST to an OpenAI-compatible provider with short transient retries."""
 
+    if attempts < 1:
+        raise ValueError("attempts must be at least 1")
     last_error: LlmProviderError | None = None
+    events: list[LlmRuntimeEvent] = []
     # Retry only around transport/provider overload failures.
     for attempt in range(attempts):
+        attempt_number = attempt + 1
+        events.append(
+            LlmRuntimeEvent(
+                type="provider.attempt_started",
+                payload={
+                    "provider": provider_id,
+                    "model": model,
+                    "attempt": attempt_number,
+                    "max_attempts": attempts,
+                    "timeout_seconds": timeout_seconds,
+                },
+            )
+        )
         try:
             if timeout_seconds is None:
                 response_context = urllib.request.urlopen(request)
@@ -540,11 +619,37 @@ def _urlopen_with_retries(
                     timeout=timeout_seconds,
                 )
             with response_context as response:
-                return response.read().decode("utf-8")
+                raw = response.read().decode("utf-8")
+                events.append(
+                    LlmRuntimeEvent(
+                        type="provider.attempt_completed",
+                        payload={
+                            "provider": provider_id,
+                            "model": model,
+                            "attempt": attempt_number,
+                        },
+                    )
+                )
+                return raw, tuple(events)
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
-            error = LlmProviderError(f"provider HTTP {exc.code}: {body[:500]}")
-            if exc.code not in {408, 429, 500, 502, 503, 504}:
+            code, retryable = _classify_http_error(exc.code, body)
+            error = LlmProviderError(
+                f"provider HTTP {exc.code} ({code})",
+                code=code,
+                retryable=retryable,
+                status_code=exc.code,
+            )
+            events.append(
+                _provider_attempt_failed_event(
+                    provider=provider_id,
+                    model=model,
+                    attempt=attempt_number,
+                    error=error,
+                )
+            )
+            if not retryable:
+                error.runtime_events = tuple(events)
                 raise error from exc
             last_error = error
         except (
@@ -554,8 +659,97 @@ def _urlopen_with_retries(
             TimeoutError,
             ConnectionError,
         ) as exc:
-            last_error = LlmProviderError(f"provider request failed: {exc}")
+            code = "provider_timeout" if _is_timeout_error(exc) else "provider_transport_error"
+            last_error = LlmProviderError(
+                f"provider request failed ({code})",
+                code=code,
+                retryable=True,
+            )
+            events.append(
+                _provider_attempt_failed_event(
+                    provider=provider_id,
+                    model=model,
+                    attempt=attempt_number,
+                    error=last_error,
+                )
+            )
         if attempt + 1 < attempts:
-            time.sleep(min(8.0, retry_base_delay_seconds * (2**attempt)))
+            delay_seconds = min(
+                retry_max_delay_seconds,
+                retry_base_delay_seconds * (2**attempt),
+            )
+            events.append(
+                LlmRuntimeEvent(
+                    type="provider.retry_scheduled",
+                    payload={
+                        "provider": provider_id,
+                        "model": model,
+                        "attempt": attempt_number,
+                        "next_attempt": attempt_number + 1,
+                        "delay_ms": int(delay_seconds * 1000),
+                        "reason": last_error.code if last_error else "provider_error",
+                    },
+                )
+            )
+            time.sleep(delay_seconds)
     assert last_error is not None
+    last_error.runtime_events = tuple(events)
     raise last_error
+
+
+def _classify_http_error(status_code: int, body: str) -> tuple[str, bool]:
+    """Return a stable public error code and whether the same model may retry."""
+
+    lowered = body.lower()
+    if status_code in {400, 413, 422} and any(
+        marker in lowered
+        for marker in (
+            "context length",
+            "context_length",
+            "maximum context",
+            "max context",
+            "too many tokens",
+            "prompt is too long",
+        )
+    ):
+        return "context_length_exceeded", False
+    if status_code in {401, 403}:
+        return "provider_authentication_failed", False
+    if status_code == 408:
+        return "provider_timeout", True
+    if status_code == 429:
+        return "provider_rate_limited", True
+    if status_code in {500, 502, 503, 504}:
+        return "provider_unavailable", True
+    return "provider_request_rejected", False
+
+
+def _is_timeout_error(exc: BaseException) -> bool:
+    """Return whether a transport exception represents a timeout."""
+
+    if isinstance(exc, TimeoutError):
+        return True
+    reason = getattr(exc, "reason", None)
+    return isinstance(reason, TimeoutError) or "timed out" in str(exc).lower()
+
+
+def _provider_attempt_failed_event(
+    *,
+    provider: str,
+    model: str,
+    attempt: int,
+    error: LlmProviderError,
+) -> LlmRuntimeEvent:
+    """Build a safe failed-attempt event without provider response bodies."""
+
+    return LlmRuntimeEvent(
+        type="provider.attempt_failed",
+        payload={
+            "provider": provider,
+            "model": model,
+            "attempt": attempt,
+            "error_code": error.code,
+            "retryable": error.retryable,
+            "status_code": error.status_code,
+        },
+    )

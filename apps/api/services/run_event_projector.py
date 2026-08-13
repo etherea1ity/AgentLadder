@@ -29,6 +29,18 @@ PUBLIC_RUNTIME_EVENT_MESSAGES = {
     "context.compacted": "Model-visible context compacted.",
     "context.assembled": "Runtime context contract assembled.",
     "context.budget_evaluated": "Model-visible context budget evaluated.",
+    "context.prompt_recovery_applied": "Context budget tightened after provider rejection.",
+    "provider.attempt_started": "Provider attempt started.",
+    "provider.attempt_completed": "Provider attempt completed.",
+    "provider.attempt_failed": "Provider attempt failed.",
+    "provider.retry_scheduled": "Provider retry scheduled.",
+    "model_route.candidate_started": "Model route candidate started.",
+    "model_route.candidate_failed": "Model route candidate failed.",
+    "model_route.fallback_started": "Fallback model route started.",
+    "model_route.candidate_completed": "Model route candidate completed.",
+    "model_call.failed": "Model call failed.",
+    "prompt_recovery.started": "Prompt recovery started.",
+    "prompt_recovery.completed": "Prompt recovery completed.",
 }
 
 
@@ -114,6 +126,9 @@ class RunEventProjector:
                     message="Model call completed.",
                     payload={
                         "turn_index": event.payload.get("turn_index"),
+                        "requested_model": event.payload.get("requested_model")
+                        or self.selected_model,
+                        "model": event.payload.get("model") or self.selected_model,
                         "tool_call_count": event.payload.get("tool_call_count"),
                         "usage": usage,
                         "finalization": bool(event.payload.get("finalization", False)),

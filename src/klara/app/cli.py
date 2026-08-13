@@ -13,6 +13,7 @@ from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.app.user_context import UserContext
 from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.llm.routed_client import RoutedLlmClient
+from klara.infra.llm.openai_compatible import OpenAICompatibleSettings
 from klara.planning.tool import TodoWriteTool
 from klara.planning.todo import TodoItem, TodoOperation, TodoPlan, apply_todo_update
 from klara.tools.registry import ToolRegistry
@@ -56,7 +57,13 @@ def build_harness(
     registry = ToolRegistry.with_default_tools()
     registry.register_tool(TodoWriteTool(session_id="cli-session", store=_CliTodoStore()))
     return KlaraHarness(
-        llm=RoutedLlmClient(models=models, dotenv_path=".env"),
+        llm=RoutedLlmClient(
+            models=models,
+            dotenv_path=".env",
+            settings=OpenAICompatibleSettings(
+                **runtime.provider_recovery_policy.to_public_dict()
+            ),
+        ),
         registry=registry,
         models=models,
         config=KlaraHarnessConfig(
@@ -66,6 +73,7 @@ def build_harness(
             trace_path=trace_path,
             loop_policy=runtime.loop_policy,
             context_policy=runtime.context_policy,
+            provider_recovery_policy=runtime.provider_recovery_policy,
             user_context=user_context,
             workspace_root=Path.cwd(),
         ),

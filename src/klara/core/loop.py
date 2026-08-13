@@ -8,7 +8,7 @@ import hashlib
 import json
 import re
 from time import perf_counter
-from typing import Any, Iterator, Protocol
+from typing import Any, Callable, Iterator, Protocol
 from uuid import uuid4
 
 from klara.core.events import EventKind, EventSequencer, KlaraEvent
@@ -20,12 +20,30 @@ from klara.core.hooks import (
     StopContext,
     UserPromptSubmitContext,
 )
-from klara.core.messages import KlaraMessage, ModelResponse, ModelStreamEvent
+from klara.core.messages import (
+    KlaraMessage,
+    LlmRuntimeEvent,
+    ModelCallError,
+    ModelResponse,
+    ModelStreamEvent,
+)
 from klara.core.policies import LoopPolicy, StopReason
 from klara.core.tools import ToolCall, ToolResult, ToolRunner, ToolSpec
 
 
 _TOKEN_KEYS = ("prompt_tokens", "completion_tokens", "total_tokens")
+_PUBLIC_LLM_RUNTIME_EVENTS = frozenset(
+    {
+        "provider.attempt_started",
+        "provider.attempt_completed",
+        "provider.attempt_failed",
+        "provider.retry_scheduled",
+        "model_route.candidate_started",
+        "model_route.candidate_failed",
+        "model_route.fallback_started",
+        "model_route.candidate_completed",
+    }
+)
 _ACTIVITY_TOOL_NAME = "update_activity"
 _ACTIVITY_TOOL_SPEC = ToolSpec(
     name=_ACTIVITY_TOOL_NAME,
@@ -311,35 +329,22 @@ class KlaraLoop:
             # Iterate through bounded turns so a model cannot request tools forever.
             for turn_index in range(1, self.policy.max_turns + 1):
                 self._emit(sequencer, active_run_id, EventKind.TURN_STARTED, {"turn_index": turn_index})
-                model_messages = tuple(messages)
-                system_prompt = self._system_prompt_for_turn(public_activity_updates)
                 model_tools = _model_visible_tool_specs(self.tool_executor.specs)
-                self._emit(
-                    sequencer,
-                    active_run_id,
-                    EventKind.LLM_STARTED,
-                    {
-                        "turn_index": turn_index,
-                        "model": self.model,
-                        "thinking_enabled": self.thinking_enabled,
-                        "input_profile": _llm_input_profile(
-                            system_prompt=system_prompt,
-                            messages=model_messages,
-                            tools=model_tools,
-                            public_activity_updates=public_activity_updates,
-                            controller_count=len(self.controllers),
-                        ),
-                    },
-                )
                 # Ask the injected model using only the prompt, transcript, and specs.
-                llm_started = perf_counter()
-                response = self.llm.complete(
-                    system_prompt=system_prompt,
-                    messages=model_messages,
-                    tools=model_tools,
-                    model=self.model,
-                    thinking_enabled=self.thinking_enabled,
+                response, messages, system_prompt, llm_duration_ms = (
+                    self._complete_model_call(
+                        sequencer,
+                        active_run_id,
+                        messages,
+                        tools=model_tools,
+                        turn_index=turn_index,
+                        prompt_builder=lambda: self._system_prompt_for_turn(
+                            public_activity_updates
+                        ),
+                        public_activity_updates=public_activity_updates,
+                    )
                 )
+                model_messages = tuple(messages)
                 prepared_calls = _prepare_tool_calls(response.tool_calls)
                 activity_payload = _activity_payload(
                     response,
@@ -351,7 +356,6 @@ class KlaraLoop:
                     tool_calls=prepared_calls.external_calls,
                     activity_tool_text=prepared_calls.activity_text,
                 )
-                llm_duration_ms = _duration_ms(llm_started)
                 usage = _normalize_usage(response.usage)
                 llm_metrics = _llm_metrics(llm_duration_ms, usage)
                 run_metrics.add_llm_metrics(llm_metrics)
@@ -361,6 +365,8 @@ class KlaraLoop:
                     EventKind.LLM_COMPLETED,
                     {
                         "turn_index": turn_index,
+                        "requested_model": self.model,
+                        "model": response.model_used or self.model,
                         "tool_call_count": len(prepared_calls.external_calls),
                         "internal_activity_call_count": prepared_calls.internal_activity_count,
                         "usage": usage,
@@ -579,13 +585,218 @@ class KlaraLoop:
             )
         except Exception as exc:
             # Unexpected failures are traced, then re-raised for caller visibility.
+            if isinstance(exc, ModelCallError):
+                failure_payload: dict[str, object] = {
+                    "error": "The model call failed.",
+                    "error_code": exc.code,
+                    "retryable": exc.retryable,
+                    "status_code": exc.status_code,
+                }
+            else:
+                failure_payload = {"error": f"{type(exc).__name__}: {exc}"}
             self._emit(
                 sequencer,
                 active_run_id,
                 EventKind.RUN_FAILED,
-                {"error": f"{type(exc).__name__}: {exc}"},
+                failure_payload,
             )
             raise
+
+    def _complete_model_call(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        messages: list[KlaraMessage],
+        *,
+        tools: tuple[ToolSpec, ...],
+        turn_index: int,
+        prompt_builder: Callable[[], str],
+        public_activity_updates: list[str] | tuple[str, ...] = (),
+        finalization: bool = False,
+        started_metadata: dict[str, object] | None = None,
+    ) -> tuple[ModelResponse, list[KlaraMessage], str, int]:
+        """Call the model with public retries and one bounded prompt recovery."""
+
+        prepared = messages
+        recovery_attempt = 0
+        call_started = perf_counter()
+        while True:
+            system_prompt = prompt_builder()
+            model_messages = tuple(prepared)
+            self._emit(
+                sequencer,
+                run_id,
+                EventKind.LLM_STARTED,
+                {
+                    "turn_index": turn_index,
+                    "attempt": recovery_attempt + 1,
+                    "prompt_recovery_attempt": recovery_attempt,
+                    "finalization": finalization,
+                    "model": self.model,
+                    "thinking_enabled": self.thinking_enabled,
+                    **(started_metadata or {}),
+                    "input_profile": _llm_input_profile(
+                        system_prompt=system_prompt,
+                        messages=model_messages,
+                        tools=tools,
+                        public_activity_updates=public_activity_updates,
+                        controller_count=len(self.controllers),
+                        finalization=finalization,
+                    ),
+                },
+            )
+            attempt_started = perf_counter()
+            try:
+                response = self.llm.complete(
+                    system_prompt=system_prompt,
+                    messages=model_messages,
+                    tools=tools,
+                    model=self.model,
+                    thinking_enabled=self.thinking_enabled,
+                )
+            except ModelCallError as exc:
+                self._emit_llm_runtime_events(
+                    sequencer,
+                    run_id,
+                    exc.runtime_events,
+                    turn_index=turn_index,
+                )
+                self._emit(
+                    sequencer,
+                    run_id,
+                    EventKind.MODEL_CALL_FAILED,
+                    {
+                        "turn_index": turn_index,
+                        "attempt": recovery_attempt + 1,
+                        "model": self.model,
+                        "error_code": exc.code,
+                        "retryable": exc.retryable,
+                        "status_code": exc.status_code,
+                        "duration_ms": _duration_ms(attempt_started),
+                        "finalization": finalization,
+                    },
+                )
+                if (
+                    exc.code != "context_length_exceeded"
+                    or recovery_attempt >= self.policy.max_prompt_recovery_attempts
+                ):
+                    raise
+                next_attempt = recovery_attempt + 1
+                recovered, handled = self._recover_prompt_too_long(
+                    sequencer,
+                    run_id,
+                    prepared,
+                    turn_index=turn_index,
+                    attempt=next_attempt,
+                )
+                if not handled:
+                    raise
+                prepared = recovered
+                recovery_attempt = next_attempt
+                continue
+
+            self._emit_llm_runtime_events(
+                sequencer,
+                run_id,
+                response.runtime_events,
+                turn_index=turn_index,
+            )
+            return response, prepared, system_prompt, _duration_ms(call_started)
+
+    def _recover_prompt_too_long(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        messages: list[KlaraMessage],
+        *,
+        turn_index: int,
+        attempt: int,
+    ) -> tuple[list[KlaraMessage], bool]:
+        """Run PreCompact and controller-owned forced prompt compaction."""
+
+        recoverers = [
+            recover
+            for controller in self.controllers
+            if callable(recover := getattr(controller, "recover_prompt_too_long", None))
+        ]
+        if not recoverers:
+            return messages, False
+        self._emit(
+            sequencer,
+            run_id,
+            EventKind.PROMPT_RECOVERY_STARTED,
+            {
+                "turn_index": turn_index,
+                "attempt": attempt,
+                "messages_before": len(messages),
+                "reason": "context_length_exceeded",
+            },
+        )
+        compact_context = PreCompactContext(
+            run_id=run_id,
+            turn_index=turn_index,
+            message_count=len(messages),
+        )
+        self._emit(
+            sequencer,
+            run_id,
+            EventKind.PRE_COMPACT_STARTED,
+            {
+                "turn_index": turn_index,
+                "message_count": len(messages),
+                "phase": "provider_prompt_recovery",
+                "attempt": attempt,
+            },
+        )
+        self.hooks.pre_compact(compact_context)
+        prepared = messages
+        for recover in recoverers:
+            prepared = recover(prepared, attempt=attempt)
+        self._emit_controller_events(sequencer, run_id)
+        self._emit(
+            sequencer,
+            run_id,
+            EventKind.PRE_COMPACT_COMPLETED,
+            {
+                "turn_index": turn_index,
+                "messages_before": len(messages),
+                "messages_after": len(prepared),
+                "phase": "provider_prompt_recovery",
+                "attempt": attempt,
+            },
+        )
+        self._emit(
+            sequencer,
+            run_id,
+            EventKind.PROMPT_RECOVERY_COMPLETED,
+            {
+                "turn_index": turn_index,
+                "attempt": attempt,
+                "messages_before": len(messages),
+                "messages_after": len(prepared),
+            },
+        )
+        return prepared, True
+
+    def _emit_llm_runtime_events(
+        self,
+        sequencer: EventSequencer,
+        run_id: str,
+        events: tuple[LlmRuntimeEvent, ...],
+        *,
+        turn_index: int,
+    ) -> None:
+        """Project only the public provider/router event contract into the trace."""
+
+        for event in events:
+            if event.type not in _PUBLIC_LLM_RUNTIME_EVENTS:
+                continue
+            self._emit(
+                sequencer,
+                run_id,
+                event.type,
+                {"turn_index": turn_index, **event.payload},
+            )
 
     def prepare_next_turn(self, messages: list[KlaraMessage]) -> list[KlaraMessage]:
         """Prepare the transcript before the next model turn.
@@ -701,48 +912,32 @@ class KlaraLoop:
         reason = str(
             policy_context.get("reason") or "A runtime policy limit was reached."
         )
-        finalization_prompt = "\n\n".join(
-            [
-                self._system_prompt_for_turn(),
-                (
-                    "<finalization_context>\n"
-                    f"{reason} Do not request more tools. "
-                    "Write the best final answer now from the observations already "
-                    "in the transcript. If the observations are incomplete, say what "
-                    "is uncertain.\n"
-                    "</finalization_context>"
-                ),
-            ]
-        ).strip()
+        finalization_context = (
+            "<finalization_context>\n"
+            f"{reason} Do not request more tools. "
+            "Write the best final answer now from the observations already "
+            "in the transcript. If the observations are incomplete, say what "
+            "is uncertain.\n"
+            "</finalization_context>"
+        )
+
+        def build_finalization_prompt() -> str:
+            return "\n\n".join(
+                [self._system_prompt_for_turn(), finalization_context]
+            ).strip()
+
+        response, messages, finalization_prompt, llm_duration_ms = (
+            self._complete_model_call(
+                sequencer,
+                run_id,
+                messages,
+                tools=(),
+                turn_index=final_turn_index,
+                prompt_builder=build_finalization_prompt,
+                finalization=True,
+            )
+        )
         model_messages = tuple(messages)
-        self._emit(
-            sequencer,
-            run_id,
-            EventKind.LLM_STARTED,
-            {
-                "turn_index": final_turn_index,
-                "finalization": True,
-                "model": self.model,
-                "thinking_enabled": self.thinking_enabled,
-                "input_profile": _llm_input_profile(
-                    system_prompt=finalization_prompt,
-                    messages=model_messages,
-                    tools=(),
-                    public_activity_updates=(),
-                    controller_count=len(self.controllers),
-                    finalization=True,
-                ),
-            },
-        )
-        llm_started = perf_counter()
-        response = self.llm.complete(
-            system_prompt=finalization_prompt,
-            messages=model_messages,
-            tools=(),
-            model=self.model,
-            thinking_enabled=self.thinking_enabled,
-        )
-        llm_duration_ms = _duration_ms(llm_started)
         usage = _normalize_usage(response.usage)
         llm_metrics = _llm_metrics(llm_duration_ms, usage)
         run_metrics.add_llm_metrics(llm_metrics)
@@ -757,24 +952,26 @@ class KlaraLoop:
             sequencer,
             run_id,
             EventKind.LLM_COMPLETED,
-                {
-                    "turn_index": final_turn_index,
-                    "tool_call_count": 0,
-                    "ignored_tool_call_count": ignored_tool_call_count,
-                    "stop_reason": stop_reason.value,
-                    "policy_context": policy_context,
-                    "usage": usage,
-                    "metrics": llm_metrics,
-                    "finalization": True,
-                    "response_profile": _llm_response_profile(
-                        response=response,
-                        prepared_calls=prepared_calls,
-                        activity_payload=activity_payload,
-                    ),
-                    **_reasoning_payload(response),
-                    **activity_payload,
-                },
-            )
+            {
+                "turn_index": final_turn_index,
+                "requested_model": self.model,
+                "model": response.model_used or self.model,
+                "tool_call_count": 0,
+                "ignored_tool_call_count": ignored_tool_call_count,
+                "stop_reason": stop_reason.value,
+                "policy_context": policy_context,
+                "usage": usage,
+                "metrics": llm_metrics,
+                "finalization": True,
+                "response_profile": _llm_response_profile(
+                    response=response,
+                    prepared_calls=prepared_calls,
+                    activity_payload=activity_payload,
+                ),
+                **_reasoning_payload(response),
+                **activity_payload,
+            },
+        )
         if not response.content.strip() and ignored_tool_call_count:
             retry_prompt = KlaraMessage(
                 role="user",
@@ -791,35 +988,18 @@ class KlaraLoop:
             messages.append(retry_prompt)
             retry_turn_index = final_turn_index + 1
             retry_messages = tuple(messages)
-            self._emit(
-                sequencer,
-                run_id,
-                EventKind.LLM_STARTED,
-                {
-                    "turn_index": retry_turn_index,
-                    "finalization": True,
-                    "model": self.model,
-                    "thinking_enabled": self.thinking_enabled,
-                    "retry_after_ignored_tools": True,
-                    "input_profile": _llm_input_profile(
-                        system_prompt=finalization_prompt,
-                        messages=retry_messages,
-                        tools=(),
-                        public_activity_updates=(),
-                        controller_count=len(self.controllers),
-                        finalization=True,
-                    ),
-                },
+            response, messages, finalization_prompt, llm_duration_ms = (
+                self._complete_model_call(
+                    sequencer,
+                    run_id,
+                    list(retry_messages),
+                    tools=(),
+                    turn_index=retry_turn_index,
+                    prompt_builder=build_finalization_prompt,
+                    finalization=True,
+                    started_metadata={"retry_after_ignored_tools": True},
+                )
             )
-            llm_started = perf_counter()
-            response = self.llm.complete(
-                system_prompt=finalization_prompt,
-                messages=retry_messages,
-                tools=(),
-                model=self.model,
-                thinking_enabled=self.thinking_enabled,
-            )
-            llm_duration_ms = _duration_ms(llm_started)
             usage = _normalize_usage(response.usage)
             llm_metrics = _llm_metrics(llm_duration_ms, usage)
             run_metrics.add_llm_metrics(llm_metrics)
@@ -836,6 +1016,8 @@ class KlaraLoop:
                 EventKind.LLM_COMPLETED,
                 {
                     "turn_index": retry_turn_index,
+                    "requested_model": self.model,
+                    "model": response.model_used or self.model,
                     "tool_call_count": 0,
                     "ignored_tool_call_count": ignored_tool_call_count,
                     "stop_reason": stop_reason.value,

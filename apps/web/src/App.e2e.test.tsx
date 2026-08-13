@@ -477,7 +477,9 @@ describe("Klara app flow", () => {
         ),
       ).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getByRole("button", { name: /toggle thinking details/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /toggle thinking details/i }),
+    );
     expect(
       within(screen.getByRole("dialog", { name: /thinking/i })).getByText(
         "I will search current sources before writing the answer.",

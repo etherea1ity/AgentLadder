@@ -10,7 +10,11 @@ from typing import Any
 
 from klara.infra.config.images import ImageModel, ImageProviderConfig, ImagesConfig
 from klara.infra.config.models import ModelProfile, ModelsConfig, ProviderConfig, ProviderModel
-from klara.infra.config.runtime import CapabilityProfile, RuntimeConfig
+from klara.infra.config.runtime import (
+    CapabilityProfile,
+    ProviderRecoveryPolicy,
+    RuntimeConfig,
+)
 from klara.core.policies import LoopPolicy
 from klara.context.policy import ContextPolicy
 
@@ -106,6 +110,13 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
             env_name="KLARA_LOOP_MAX_REPEATED_FINAL_BLOCKS",
             default=default_policy.max_repeated_final_blocks,
         ),
+        max_prompt_recovery_attempts=_int_config(
+            raw_loop,
+            "max_prompt_recovery_attempts",
+            env=env,
+            env_name="KLARA_LOOP_MAX_PROMPT_RECOVERY_ATTEMPTS",
+            default=default_policy.max_prompt_recovery_attempts,
+        ),
     )
     raw_runtime = data.get("runtime", {})
     raw_context = raw_runtime.get("context", {})
@@ -168,6 +179,38 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
             default=default_context.chars_per_token,
         ),
     )
+    raw_provider = raw_runtime.get("provider_recovery", {})
+    default_provider = ProviderRecoveryPolicy()
+    provider_recovery_policy = ProviderRecoveryPolicy(
+        timeout_seconds=_optional_int_config(
+            raw_provider,
+            "timeout_seconds",
+            env=env,
+            env_name="KLARA_PROVIDER_TIMEOUT_SECONDS",
+            default=default_provider.timeout_seconds,
+        ),
+        retry_attempts=_int_config(
+            raw_provider,
+            "retry_attempts",
+            env=env,
+            env_name="KLARA_PROVIDER_RETRY_ATTEMPTS",
+            default=default_provider.retry_attempts,
+        ),
+        retry_base_delay_seconds=_float_config(
+            raw_provider,
+            "retry_base_delay_seconds",
+            env=env,
+            env_name="KLARA_PROVIDER_RETRY_BASE_DELAY_SECONDS",
+            default=default_provider.retry_base_delay_seconds,
+        ),
+        retry_max_delay_seconds=_float_config(
+            raw_provider,
+            "retry_max_delay_seconds",
+            env=env,
+            env_name="KLARA_PROVIDER_RETRY_MAX_DELAY_SECONDS",
+            default=default_provider.retry_max_delay_seconds,
+        ),
+    )
     raw_harness = raw_runtime.get("harness", {})
     raw_profiles = raw_runtime.get("capability_profiles", {})
     profiles = tuple(
@@ -188,6 +231,7 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
     runtime = RuntimeConfig(
         loop_policy=policy,
         context_policy=context_policy,
+        provider_recovery_policy=provider_recovery_policy,
         default_capability_profile=default_profile,
         capability_profiles=profiles or (CapabilityProfile(id="agent"),),
     )
@@ -231,6 +275,42 @@ def _int_config(
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"{key} must be an integer")
     return value
+
+
+def _optional_int_config(
+    data: dict[str, Any],
+    key: str,
+    *,
+    env: Mapping[str, str],
+    env_name: str,
+    default: int | None,
+) -> int | None:
+    env_value = env.get(env_name, "").strip()
+    if env_value:
+        return int(env_value)
+    value = data.get(key, default)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{key} must be an integer or omitted")
+    return value
+
+
+def _float_config(
+    data: dict[str, Any],
+    key: str,
+    *,
+    env: Mapping[str, str],
+    env_name: str,
+    default: float,
+) -> float:
+    env_value = env.get(env_name, "").strip()
+    if env_value:
+        return float(env_value)
+    value = data.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{key} must be a number")
+    return float(value)
 
 
 def _models(data: dict[str, Any]) -> ModelsConfig:

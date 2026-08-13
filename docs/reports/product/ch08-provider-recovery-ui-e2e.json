@@ -1,0 +1,40 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "evaluated_at": "2026-08-13T14:05:00+08:00",
+  "target": "http://127.0.0.1:5123/",
+  "surface": "Provider recovery status",
+  "browser": "Codex in-app browser",
+  "results": [
+    {
+      "viewport": {"width": 1280, "height": 720},
+      "status": "passed",
+      "state": "Fallback active",
+      "failed_model": "deepseek-v4-flash",
+      "fallback_model": "qwen3.7-plus",
+      "horizontal_overflow": false,
+      "composer_visible": true
+    },
+    {
+      "viewport": {"width": 390, "height": 844},
+      "status": "passed",
+      "state": "Fallback active",
+      "panel_width": 358.4,
+      "panel_left": 16,
+      "panel_right": 374.4,
+      "horizontal_overflow": false,
+      "composer_top": 726.2,
+      "composer_bottom": 766.2,
+      "composer_visible": true
+    }
+  ],
+  "privacy": {
+    "provider_response_body_visible": false,
+    "credential_material_visible": false
+  },
+  "accessibility": {
+    "recovery_landmark": "Provider recovery",
+    "route_text_visible": true
+  },
+  "console_error_count": 0,
+  "interpretation": "An API-backed fallback event restored after page load, showed the explicit primary-to-fallback route, remained usable at desktop and narrow widths, created no horizontal overflow, and exposed no private provider response material."
+}

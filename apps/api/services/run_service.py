@@ -34,10 +34,10 @@ from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.context.timestamps import parse_prompt_datetime, stamp_user_message_content
 from klara.core.events import KlaraEvent
 from klara.core.loop import LlmClient
-from klara.core.messages import KlaraMessage
+from klara.core.messages import KlaraMessage, ModelCallError
 from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig
-from klara.infra.config.runtime import CapabilityProfile
+from klara.infra.config.runtime import CapabilityProfile, ProviderRecoveryPolicy
 from klara.planning.todo import TodoPlan
 from klara.planning.tool import TodoWriteTool
 from klara.tools.registry import ToolRegistry
@@ -62,6 +62,7 @@ class RunService:
         models_config: ModelsConfig | None = None,
         capability_profile: CapabilityProfile | None = None,
         context_policy: ContextPolicy | None = None,
+        provider_recovery_policy: ProviderRecoveryPolicy | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -98,6 +99,9 @@ class RunService:
             trace_sink="jsonl",
         )
         self.context_policy = context_policy or ContextPolicy()
+        self.provider_recovery_policy = (
+            provider_recovery_policy or ProviderRecoveryPolicy()
+        )
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -253,6 +257,7 @@ class RunService:
                     trace_path=Path(self.trace_path) if self.trace_path else None,
                     loop_policy=self.loop_policy,
                     context_policy=self.context_policy,
+                    provider_recovery_policy=self.provider_recovery_policy,
                     user_context=run_user_context,
                     workspace_root=Path.cwd(),
                 ),
@@ -339,7 +344,11 @@ class RunService:
             )
         except Exception as exc:
             latency_ms = int((perf_counter() - started) * 1000)
-            error = RunError(code=_error_code(exc), message=str(exc), stage="runtime_loop")
+            error = RunError(
+                code=_error_code(exc),
+                message=_public_error_message(exc),
+                stage="runtime_loop",
+            )
             failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
             self.store.save_run(failed)
             self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
@@ -771,9 +780,29 @@ def _title_from_question(question: str) -> str:
 
 
 def _error_code(exc: Exception) -> str:
+    if isinstance(exc, ModelCallError):
+        return exc.code
     text = str(exc).lower()
     if "api_key" in text or "api key" in text or "missing api key" in text:
         return "missing_api_key"
     if "provider http" in text or "provider request" in text:
         return "provider_error"
     return "run_failed"
+
+
+def _public_error_message(exc: Exception) -> str:
+    """Return a useful app error without exposing provider response bodies."""
+
+    if not isinstance(exc, ModelCallError):
+        return str(exc)
+    messages = {
+        "provider_credentials_missing": "The selected model provider is not configured.",
+        "provider_authentication_failed": "The model provider rejected authentication.",
+        "provider_timeout": "The model provider timed out.",
+        "provider_rate_limited": "The model provider is temporarily rate limited.",
+        "provider_unavailable": "The model provider is temporarily unavailable.",
+        "context_length_exceeded": "The request remained too large after context recovery.",
+        "all_model_candidates_failed": "All configured model routes failed.",
+        "model_configuration_error": "The selected model route is not configured correctly.",
+    }
+    return messages.get(exc.code, "The model call failed.")
