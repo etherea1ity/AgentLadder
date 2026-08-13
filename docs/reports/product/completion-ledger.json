@@ -1,6 +1,6 @@
 {
   "authoritative_parent": "b440df32c71df56c892b4657c392e37f9ea53e9a",
-  "current_stage": "ch04-harness-config",
+  "current_stage": "ch05-todo-planning",
   "mode": "local-pre-hku",
   "objectives": [
     {
@@ -90,17 +90,63 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch04-harness-and-config.md",
+        "docs/chapters/ch04-harness-and-config.en.md",
+        "docs/reports/product/ch04-harness-config.json",
+        "docs/reports/product/ch04-harness-config.md",
+        "docs/reports/product/ch04-harness-config.en.md",
+        "docs/reports/product/ch04-harness-config-ui-e2e.json"
+      ],
       "branch": "codex/ch04-harness-config",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter04_cli ...",
+        "python -m pytest -q",
+        "npm test (apps/web)",
+        "npm run build (apps/web)"
+      ],
+      "commit": "3168b61",
+      "datasets": [
+        "tests/fixtures/behavior/agent_behavior_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.chapter04-harness-config.v1",
+        "klara.behavior-scorer.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {
+          "passed": 11,
+          "total": 11
+        },
+        "python_tests": {
+          "collected": 255,
+          "passed": 254,
+          "skipped": 1
+        },
+        "frontend_tests": {
+          "passed": 45
+        },
+        "frontend_build": "passed",
+        "behavior_contract": "passed",
+        "bilingual_document_pairs": {
+          "checked": 10,
+          "passed": 10
+        },
+        "ui_viewports": [
+          "1280x720",
+          "390x844"
+        ]
+      },
       "id": "ch04-harness-config",
-      "metrics": {},
+      "metrics": {
+        "configured_models": 6,
+        "visible_tools": 5,
+        "run_profile_hash": "de55caea7d51be41d9ea32db5896086ea20e4f3c0b12fa69872d1aed2fe49401"
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -364,5 +410,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-13T03:14:00+00:00"
+  "updated_at": "2026-08-13T03:39:00+00:00"
 }

@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | phase-0a-baseline | `codex/agent-product-baseline` | passed |
 | phase-0b-agent-eval-contract | `codex/agent-eval-contract` | passed |
-| ch04-harness-config | `codex/ch04-harness-config` | pending |
+| ch04-harness-config | `codex/ch04-harness-config` | passed |
 | ch05-todo-planning | `codex/ch05-todo-planning` | pending |
 | ch06-07-context | `codex/ch06-07-context` | pending |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | pending |
@@ -38,5 +38,6 @@
 - Phase 0B：提交 `10a9bf0afc0c9ea24267cb4a2b5b31e8fa791a0b`，通过 [行为评测契约](./agent-eval-contract.md)；Python `244 passed, 1 skipped`，前端 `45 passed`，生产构建通过。
 - 视觉验收：`1280x720` 与 `390x844` 无水平溢出，聚合 API/UI 不暴露隐藏用例和盲评身份；详见 [UI E2E JSON](./agent-eval-contract-ui-e2e.json)。
 - 解释边界：Phase 0B 的 `contract_control_probe` 只证明评测合同与管线有效，不代表当前 Agent 已完成或达到 GPT 能力。
+- Chapter 4：提交 `3168b61`，机器门禁 `11/11`，Python `254 passed, 1 skipped`，前端 `45 passed`，生产构建和桌面/窄屏模型能力选择器通过；详见 [Chapter 4 报告](./ch04-harness-config.md)。
 
-当前顺序门禁已经进入 `ch04-harness-config`。
+当前顺序门禁已经进入 `ch05-todo-planning`。

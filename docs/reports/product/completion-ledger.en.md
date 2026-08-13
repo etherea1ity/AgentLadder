@@ -8,7 +8,7 @@ Mode: `local-pre-hku`
 | --- | --- | --- |
 | phase-0a-baseline | `codex/agent-product-baseline` | passed |
 | phase-0b-agent-eval-contract | `codex/agent-eval-contract` | passed |
-| ch04-harness-config | `codex/ch04-harness-config` | pending |
+| ch04-harness-config | `codex/ch04-harness-config` | passed |
 | ch05-todo-planning | `codex/ch05-todo-planning` | pending |
 | ch06-07-context | `codex/ch06-07-context` | pending |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | pending |
@@ -38,5 +38,6 @@ Mode: `local-pre-hku`
 - Phase 0B: commit `10a9bf0afc0c9ea24267cb4a2b5b31e8fa791a0b` passes the [behavior evaluation contract](./agent-eval-contract.en.md); Python reports `244 passed, 1 skipped`, frontend reports `45 passed`, and the production build passes.
 - Visual acceptance: `1280x720` and `390x844` have no horizontal overflow, while the aggregate API/UI exposes neither hidden cases nor blind-review identities; see [UI E2E JSON](./agent-eval-contract-ui-e2e.json).
 - Interpretation boundary: the Phase 0B `contract_control_probe` proves only that the evaluation contract and plumbing work. It does not mean the current Agent is complete or GPT-equivalent.
+- Chapter 4: commit `3168b61` passes `11/11` machine checks, Python `254 passed, 1 skipped`, frontend `45 passed`, the production build, and desktop/narrow model-capability picker acceptance; see the [Chapter 4 report](./ch04-harness-config.en.md).
 
-The sequential gate is now at `ch04-harness-config`.
+The sequential gate is now at `ch05-todo-planning`.
