@@ -10,3 +10,19 @@ max_repeated_tool_calls = 3
 
 # Repeated identical final-answer blocks usually mean no new progress.
 max_repeated_final_blocks = 2
+
+[runtime.harness]
+# Product entrypoints select one named capability profile before loop assembly.
+capability_profile = "agent"
+
+[runtime.capability_profiles.agent]
+required_model_capabilities = ["tools"]
+visible_tools = [
+  "current_time",
+  "image_generate",
+  "web_fetch",
+  "web_search",
+  "update_activity",
+]
+hooks = ["run_projection", "jsonl_trace"]
+trace_sink = "jsonl"

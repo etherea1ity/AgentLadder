@@ -21,6 +21,6 @@
       "title_visible": true
     }
   ],
-  "console_errors": 0,
+  "console_log_check": "not_collected",
   "interpretation": "The aggregate evaluation surface rendered and remained usable at desktop and narrow mobile widths. This UI check does not score Agent behavior."
 }

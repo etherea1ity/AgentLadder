@@ -29,15 +29,14 @@ from apps.api.services.run_event_projector import (
 from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.context.history import prepare_conversation_history
-from klara.context.runtime import build_system_prompt
+from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.context.timestamps import parse_prompt_datetime, stamp_user_message_content
 from klara.core.events import KlaraEvent
-from klara.core.hooks import HookManager, JsonlTraceHook
-from klara.core.loop import KlaraLoop, LlmClient
+from klara.core.loop import LlmClient
 from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
-from klara.services.web import WebResearchController
-from klara.tools.executor import ToolExecutor
+from klara.infra.config.models import ModelsConfig
+from klara.infra.config.runtime import CapabilityProfile
 from klara.tools.registry import ToolRegistry
 
 MAX_HISTORY_MESSAGES = 12
@@ -60,6 +59,8 @@ class RunService:
         user_context: UserContext | None = None,
         answer_chunking_enabled: bool = True,
         answer_chunk_delay_ms: int = 15,
+        models_config: ModelsConfig | None = None,
+        capability_profile: CapabilityProfile | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -89,6 +90,12 @@ class RunService:
         self.user_context = user_context or UserContext.local_default()
         self.answer_chunking_enabled = answer_chunking_enabled
         self.answer_chunk_delay_ms = max(0, answer_chunk_delay_ms)
+        self.models_config = models_config
+        self.capability_profile = capability_profile or CapabilityProfile(
+            id="agent",
+            hooks=("run_projection", "jsonl_trace"),
+            trace_sink="jsonl",
+        )
         self.trace_path = trace_path
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
@@ -232,32 +239,37 @@ class RunService:
             },
         )
         projector = RunEventProjector(selected_model=selected_model)
-        hooks = HookManager(
-            [RunProjectionHook(self, run_id, projector), JsonlTraceHook(Path(self.trace_path))]
-        )
 
         try:
-            registry = ToolRegistry.with_default_tools()
-            loop = KlaraLoop(
+            harness = KlaraHarness(
                 llm=self.llm_client,
-                tool_executor=ToolExecutor(list(registry.visible_tools())),
-                hooks=hooks,
-                policy=self.loop_policy,
-                controllers=(
-                    WebResearchController(user_timezone=run_user_context.timezone),
+                registry=ToolRegistry.with_default_tools(),
+                config=KlaraHarnessConfig(
+                    model=selected_model,
+                    thinking_enabled=thinking_enabled,
+                    capability_profile=self.capability_profile,
+                    trace_path=Path(self.trace_path) if self.trace_path else None,
+                    loop_policy=self.loop_policy,
+                    user_context=run_user_context,
                 ),
-                model=selected_model,
-                thinking_enabled=thinking_enabled,
-                system_prompt=_system_prompt(run_user_context, now=run_now),
+                models=self.models_config,
+                hooks=(RunProjectionHook(self, run_id, projector),),
+            )
+            self._emit(
+                run_id,
+                "run_profile_frozen",
+                "Run configuration frozen.",
+                harness.run_profile.to_public_dict(),
             )
             model_visible_user_input = self._model_visible_content(user_message)
-            result = loop.run(
+            result = harness.run(
                 model_visible_user_input,
                 run_id=run_id,
                 prior_messages=self._conversation_history(
                     run.session_id,
                     before_message_id=user_message.message_id,
                 ),
+                now=run_now,
             )
             if run_id in self._cancel_requested:
                 return
@@ -588,13 +600,6 @@ def _offset_timezone_name(offset_minutes: int) -> str:
     absolute = abs(offset_minutes)
     hours, minutes = divmod(absolute, 60)
     return f"UTC{sign}{hours:02d}:{minutes:02d}"
-
-
-def _system_prompt(user_context: UserContext, *, now: datetime | None = None) -> str:
-    """Build the app prompt while keeping persona outside core."""
-
-    persona = (Path("src") / "klara" / "prompts" / "persona.md").read_text(encoding="utf-8")
-    return build_system_prompt(persona=persona, timezone_name=user_context.timezone, now=now)
 
 
 def _answer_chunks(

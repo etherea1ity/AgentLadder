@@ -61,6 +61,32 @@ def test_load_runtime_config_reads_loop_policy() -> None:
     assert runtime.loop_policy.max_tool_calls == 48
     assert runtime.loop_policy.max_repeated_tool_calls == 3
     assert runtime.loop_policy.max_repeated_final_blocks == 2
+    profile = runtime.profile()
+    assert profile.id == "agent"
+    assert profile.required_model_capabilities == ("tools",)
+    assert profile.visible_tools == (
+        "current_time",
+        "image_generate",
+        "web_fetch",
+        "web_search",
+        "update_activity",
+    )
+    assert profile.hooks == ("run_projection", "jsonl_trace")
+    assert profile.trace_sink == "jsonl"
+
+
+def test_runtime_config_rejects_missing_default_capability_profile(tmp_path) -> None:
+    (tmp_path / "runtime.toml").write_text(
+        "[runtime.harness]\ncapability_profile = 'missing'\n",
+        encoding="utf-8",
+    )
+
+    try:
+        load_runtime_config(tmp_path, env={})
+    except KeyError as exc:
+        assert exc.args == ("missing",)
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("missing profile should fail during config load")
 
 
 def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:

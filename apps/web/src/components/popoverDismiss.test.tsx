@@ -13,6 +13,7 @@ const modelOptions: ModelOption[] = [
     model: "qwen/qwen-flash",
     label: "Qwen 3.7 Flash",
     use_when: "qwen provider",
+    capabilities: ["Tools", "JSON", "Thinking"],
     supports_thinking: true,
     default_thinking: false,
   },
@@ -21,6 +22,7 @@ const modelOptions: ModelOption[] = [
     model: "qwen/qwen3.7-max",
     label: "Qwen 3.7 Max",
     use_when: "qwen provider",
+    capabilities: ["Tools", "JSON", "Vision", "Thinking"],
     supports_thinking: true,
     default_thinking: false,
   },
@@ -66,6 +68,9 @@ describe("popover dismissal", () => {
 
     await user.click(pickerSummary);
     expect(picker).toHaveAttribute("open");
+    expect(screen.getAllByText("Tools")).toHaveLength(2);
+    expect(screen.getAllByText("JSON")).toHaveLength(2);
+    expect(screen.getByText("Vision")).toBeInTheDocument();
 
     await user.click(document.body);
     await waitFor(() => expect(picker).not.toHaveAttribute("open"));

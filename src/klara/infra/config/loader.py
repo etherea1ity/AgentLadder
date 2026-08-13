@@ -10,7 +10,7 @@ from typing import Any
 
 from klara.infra.config.images import ImageModel, ImageProviderConfig, ImagesConfig
 from klara.infra.config.models import ModelProfile, ModelsConfig, ProviderConfig, ProviderModel
-from klara.infra.config.runtime import RuntimeConfig
+from klara.infra.config.runtime import CapabilityProfile, RuntimeConfig
 from klara.core.policies import LoopPolicy
 
 
@@ -106,7 +106,50 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
             default=default_policy.max_repeated_final_blocks,
         ),
     )
-    return RuntimeConfig(loop_policy=policy)
+    raw_runtime = data.get("runtime", {})
+    raw_harness = raw_runtime.get("harness", {})
+    raw_profiles = raw_runtime.get("capability_profiles", {})
+    profiles = tuple(
+        CapabilityProfile(
+            id=str(profile_id),
+            required_model_capabilities=_string_tuple(
+                profile_data,
+                "required_model_capabilities",
+                default=("tools",),
+            ),
+            visible_tools=_string_tuple(profile_data, "visible_tools"),
+            hooks=_string_tuple(profile_data, "hooks", default=("jsonl_trace",)),
+            trace_sink=str(profile_data.get("trace_sink", "jsonl")),
+        )
+        for profile_id, profile_data in raw_profiles.items()
+    )
+    default_profile = str(raw_harness.get("capability_profile", "agent"))
+    runtime = RuntimeConfig(
+        loop_policy=policy,
+        default_capability_profile=default_profile,
+        capability_profiles=profiles or (CapabilityProfile(id="agent"),),
+    )
+    runtime.profile()
+    return runtime
+
+
+def _string_tuple(
+    data: dict[str, Any],
+    key: str,
+    *,
+    default: tuple[str, ...] = (),
+) -> tuple[str, ...]:
+    """Parse one ordered list of unique non-empty strings."""
+
+    value = data.get(key, list(default))
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item.strip() for item in value
+    ):
+        raise ValueError(f"{key} must be a list of non-empty strings")
+    normalized = tuple(item.strip() for item in value)
+    if len(set(normalized)) != len(normalized):
+        raise ValueError(f"{key} must not contain duplicates")
+    return normalized
 
 
 def _int_config(

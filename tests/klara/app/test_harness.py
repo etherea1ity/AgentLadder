@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from dataclasses import FrozenInstanceError
 
 from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.core.messages import KlaraMessage, ModelResponse
+from klara.core.policies import LoopPolicy
+from klara.infra.config.models import ModelsConfig, ProviderConfig, ProviderModel
+from klara.infra.config.runtime import CapabilityProfile
 from klara.core.tools import JsonObject, ToolCall, ToolMetadata, ToolResult, ToolSpec
 from klara.tools.base import BaseTool
 from klara.tools.registry import ToolRegistry
@@ -132,3 +136,85 @@ def test_harness_defaults_to_default_registry() -> None:
         "web_search",
     }
     assert "Visible tool guidance" not in llm.system_prompt
+
+
+def test_run_profile_is_stable_immutable_and_secret_free(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "should-never-appear")
+    trace_path = tmp_path / "run.jsonl"
+    config = KlaraHarnessConfig(
+        model="qwen/qwen-flash",
+        trace_path=trace_path,
+        loop_policy=LoopPolicy(max_turns=7, max_tool_calls=9),
+        capability_profile=CapabilityProfile(
+            id="test",
+            required_model_capabilities=("tools", "json"),
+            visible_tools=("test_echo",),
+            hooks=("jsonl_trace",),
+            trace_sink="jsonl",
+        ),
+    )
+    models = ModelsConfig(
+        providers={
+            "qwen": ProviderConfig(
+                api="openai-completions",
+                models=(ProviderModel(id="qwen-flash", supports_tools=True, supports_json=True),),
+            )
+        }
+    )
+
+    first = KlaraHarness(llm=HarnessLlm(), registry=ToolRegistry([EchoFixtureTool()]), config=config, models=models)
+    second = KlaraHarness(llm=HarnessLlm(), registry=ToolRegistry([EchoFixtureTool()]), config=config, models=models)
+
+    assert first.run_profile.profile_sha256 == second.run_profile.profile_sha256
+    public = json.dumps(first.run_profile.to_public_dict(), sort_keys=True)
+    assert "should-never-appear" not in public
+    assert not any(key.lower() in public.lower() for key in ("api_key", "password", "secret"))
+    assert first.run_profile.visible_tools == ("test_echo",)
+    try:
+        first.run_profile.model = "changed"  # type: ignore[misc]
+    except FrozenInstanceError:
+        pass
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("run profile must stay immutable")
+
+
+def test_model_capability_mismatch_fails_before_llm_call() -> None:
+    llm = HarnessLlm()
+    models = ModelsConfig(
+        providers={
+            "plain": ProviderConfig(
+                api="openai-completions",
+                models=(ProviderModel(id="no-tools", supports_tools=False),),
+            )
+        }
+    )
+    config = KlaraHarnessConfig(
+        model="plain/no-tools",
+        capability_profile=CapabilityProfile(id="agent", required_model_capabilities=("tools",), hooks=(), trace_sink="none"),
+    )
+
+    try:
+        KlaraHarness(llm=llm, registry=ToolRegistry([EchoFixtureTool()]), config=config, models=models)
+    except ValueError as exc:
+        assert str(exc) == "model_capability_mismatch:tools"
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("unsupported tool capability must fail before execution")
+    assert llm.call_count == 0
+
+
+def test_capability_profile_rejects_missing_tool_before_run() -> None:
+    config = KlaraHarnessConfig(
+        capability_profile=CapabilityProfile(
+            id="agent",
+            visible_tools=("missing_tool",),
+            hooks=(),
+            trace_sink="none",
+        )
+    )
+
+    try:
+        KlaraHarness(llm=HarnessLlm(), registry=ToolRegistry([EchoFixtureTool()]), config=config)
+    except ValueError as exc:
+        assert str(exc) == "capability_profile_missing_tools:missing_tool"
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("missing configured tool must fail before execution")

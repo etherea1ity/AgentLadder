@@ -1,0 +1,62 @@
+{
+  "checks": {
+    "api_uses_harness": true,
+    "cli_uses_harness": true,
+    "hooks_and_trace_declared": true,
+    "model_supports_profile": true,
+    "persona_hash_valid": true,
+    "profile_hash_valid": true,
+    "profile_schema_frozen": true,
+    "provider_connection_details_absent": true,
+    "required_tools_visible": true,
+    "secret_values_absent": true,
+    "stage_manifest_exists": true
+  },
+  "evaluated_at": "2026-08-13T03:38:37.348047+00:00",
+  "gate_kind": "deterministic_product_gate",
+  "interpretation": "Passing proves that local product entrypoints share one frozen, capability-checked, secret-free harness assembly. It does not test paid provider quality or later Agent chapters.",
+  "metrics": {
+    "checks_passed": 11,
+    "checks_total": 11,
+    "configured_models": 6,
+    "loop_max_tool_calls": 48,
+    "loop_max_turns": 24,
+    "visible_tools": 5
+  },
+  "passed": true,
+  "run_profile": {
+    "capability_profile": "agent",
+    "hooks": [
+      "run_projection",
+      "jsonl_trace"
+    ],
+    "locale": "en-US",
+    "loop_policy": {
+      "max_repeated_final_blocks": 2,
+      "max_repeated_tool_calls": 3,
+      "max_tool_calls": 48,
+      "max_turns": 24
+    },
+    "model": "qwen/qwen-flash",
+    "persona_sha256": "25ba67f787134c5376aad70693303223d0c6a8e375382d687f3c267b4086e7f1",
+    "profile_sha256": "de55caea7d51be41d9ea32db5896086ea20e4f3c0b12fa69872d1aed2fe49401",
+    "required_model_capabilities": [
+      "tools"
+    ],
+    "schema_version": "klara.run-profile.v1",
+    "thinking_enabled": null,
+    "timezone": "local",
+    "trace_sink": "jsonl",
+    "user_partition": "local-user",
+    "visible_tools": [
+      "current_time",
+      "image_generate",
+      "web_fetch",
+      "web_search",
+      "update_activity"
+    ]
+  },
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter04-harness-config.v1",
+  "stage": "ch04-harness-config"
+}

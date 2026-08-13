@@ -64,6 +64,8 @@ function mapBackendEvent(run: Run, event: RunEvent, seq: number, answerStarted: 
   switch (event.event_type) {
     case 'run_created':
       return { ...base, kind: 'run.started', status: 'started', publicLabel: 'Received question', publicDetail: 'The run was created for this question.', concept: 'Run' };
+    case 'run_profile_frozen':
+      return { ...base, kind: 'run.profile.frozen', status: 'completed', publicLabel: 'Run profile frozen', publicDetail: `${String(event.payload?.capability_profile ?? 'agent')} · ${String(event.payload?.model ?? run.model ?? 'model')}`, concept: 'KlaraHarness', capabilities: ['policy', 'trace'] };
     case 'thinking_started':
       return { ...base, kind: 'ask.created', status: 'completed', publicLabel: 'Created AskState', publicDetail: 'Klara structured the user question as AskState.', concept: 'AskState', capabilities: ['model'] };
     case 'thinking_summary_started':

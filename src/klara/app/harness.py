@@ -1,48 +1,114 @@
-"""Application-layer harness that assembles one Klara run."""
+"""Application-layer harness that freezes and assembles one Klara run."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
+import hashlib
+import json
 from pathlib import Path
+from typing import Any, Iterable
 
 from klara.app.user_context import UserContext
 from klara.context.runtime import build_system_prompt
-from klara.core.hooks import HookManager, JsonlTraceHook
-from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient
+from klara.core.hooks import HookManager, JsonlTraceHook, KlaraHook
+from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient, LoopController
+from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
+from klara.infra.config.models import ModelsConfig
+from klara.infra.config.runtime import CapabilityProfile
 from klara.services.web import WebResearchController
 from klara.tools.executor import ToolExecutor
 from klara.tools.registry import ToolRegistry
 
 
 DEFAULT_LOOP_POLICY = LoopPolicy()
+DEFAULT_PERSONA_PATH = Path(__file__).parents[1] / "prompts" / "persona.md"
+INTERNAL_TOOL_NAMES = ("update_activity",)
 
 
 @dataclass(frozen=True)
 class KlaraHarnessConfig:
-    """Configuration needed to assemble one loop run."""
+    """Immutable inputs needed to assemble one loop run."""
 
-    # Model id is passed through to the injected LLM client.
     model: str = "fake-model"
-    # Trace path is optional so tests can choose when to write JSONL.
+    thinking_enabled: bool | None = None
+    capability_profile: CapabilityProfile = field(
+        default_factory=lambda: CapabilityProfile(
+            id="agent", hooks=(), trace_sink="none"
+        )
+    )
     trace_path: Path | None = None
-    # Loop policy knobs keep runtime limits configurable outside core.
-    max_turns: int = DEFAULT_LOOP_POLICY.max_turns
-    max_tool_calls: int = DEFAULT_LOOP_POLICY.max_tool_calls
-    max_repeated_tool_calls: int = DEFAULT_LOOP_POLICY.max_repeated_tool_calls
-    max_repeated_final_blocks: int = DEFAULT_LOOP_POLICY.max_repeated_final_blocks
-    # User context is local-only and kept for future partitioning.
+    loop_policy: LoopPolicy = field(default_factory=LoopPolicy)
     user_context: UserContext = field(default_factory=UserContext.local_default)
-    # Persona prompt stays in app so core does not own product identity.
-    persona_path: Path = Path(__file__).parents[1] / "prompts" / "persona.md"
+    persona_path: Path = DEFAULT_PERSONA_PATH
+
+    # Legacy property access stays stable for the Chapter 1 tutorial while the
+    # canonical policy is now one immutable object.
+    @property
+    def max_turns(self) -> int:
+        return self.loop_policy.max_turns
+
+    @property
+    def max_tool_calls(self) -> int:
+        return self.loop_policy.max_tool_calls
+
+    @property
+    def max_repeated_tool_calls(self) -> int:
+        return self.loop_policy.max_repeated_tool_calls
+
+    @property
+    def max_repeated_final_blocks(self) -> int:
+        return self.loop_policy.max_repeated_final_blocks
+
+
+@dataclass(frozen=True)
+class KlaraRunProfile:
+    """Secret-free immutable record of the exact runtime assembly."""
+
+    schema_version: str
+    model: str
+    thinking_enabled: bool | None
+    capability_profile: str
+    required_model_capabilities: tuple[str, ...]
+    visible_tools: tuple[str, ...]
+    hooks: tuple[str, ...]
+    trace_sink: str
+    loop_policy: LoopPolicy
+    user_partition: str
+    locale: str
+    timezone: str
+    persona_sha256: str
+    profile_sha256: str
+
+    def to_public_dict(self) -> dict[str, Any]:
+        """Return a stable JSON-compatible projection with no credential values."""
+
+        return {
+            "schema_version": self.schema_version,
+            "model": self.model,
+            "thinking_enabled": self.thinking_enabled,
+            "capability_profile": self.capability_profile,
+            "required_model_capabilities": list(self.required_model_capabilities),
+            "visible_tools": list(self.visible_tools),
+            "hooks": list(self.hooks),
+            "trace_sink": self.trace_sink,
+            "loop_policy": {
+                "max_turns": self.loop_policy.max_turns,
+                "max_tool_calls": self.loop_policy.max_tool_calls,
+                "max_repeated_tool_calls": self.loop_policy.max_repeated_tool_calls,
+                "max_repeated_final_blocks": self.loop_policy.max_repeated_final_blocks,
+            },
+            "user_partition": self.user_partition,
+            "locale": self.locale,
+            "timezone": self.timezone,
+            "persona_sha256": self.persona_sha256,
+            "profile_sha256": self.profile_sha256,
+        }
 
 
 class KlaraHarness:
-    """Assemble persona, tools, trace, policy, and loop.
-
-    The harness owns run setup. It does not implement loop execution, concrete
-    tool behavior, memory, RAG, backend streaming, or production auth.
-    """
+    """Single product assembly boundary for CLI, API, and direct local runs."""
 
     def __init__(
         self,
@@ -50,61 +116,173 @@ class KlaraHarness:
         llm: LlmClient,
         registry: ToolRegistry | None = None,
         config: KlaraHarnessConfig | None = None,
+        models: ModelsConfig | None = None,
+        hooks: Iterable[KlaraHook] = (),
+        controllers: tuple[LoopController, ...] | None = None,
     ) -> None:
-        """Create a harness around an injected LLM client.
-
-        Args:
-            llm: Model client used by the loop.
-            registry: Optional tool registry for visible tools.
-            config: Optional run-assembly configuration.
-        """
-
-        # LLM stays injected so tests can run with deterministic fake models.
         self.llm = llm
-        # Registry defaults to discovered local tools.
         self.registry = registry or ToolRegistry.with_default_tools()
-        # Config owns local model id, prompt path, trace path, and future partition context.
         self.config = config or KlaraHarnessConfig()
+        self.models = models
+        self.extra_hooks = tuple(hooks)
+        self.controllers = controllers
+        self._selected_tools = self._select_tools()
+        self._validate_model_capabilities()
+        if (
+            self.config.capability_profile.trace_sink == "jsonl"
+            and self.config.trace_path is None
+        ):
+            raise ValueError("jsonl_trace_path_required")
+        self.run_profile = self._build_run_profile()
 
-    def run(self, user_input: str, *, run_id: str | None = None) -> KlaraRunResult:
-        """Assemble and execute one Klara loop run.
+    def build_loop(self, *, now: datetime | None = None) -> KlaraLoop:
+        """Build, but do not execute, the exact loop described by `run_profile`."""
 
-        Args:
-            user_input: User message that starts the run.
-            run_id: Optional stable id for deterministic trace tests.
-
-        Returns:
-            Final loop result produced by `KlaraLoop`.
-        """
-
-        # Hooks are built per run so trace sinks do not leak across executions.
-        hooks = HookManager()
+        hooks = HookManager(list(self.extra_hooks))
         if self.config.trace_path is not None:
             hooks.register(JsonlTraceHook(self.config.trace_path))
-
-        # The harness converts visible tools into the executor boundary.
-        loop = KlaraLoop(
-            llm=self.llm,
-            tool_executor=ToolExecutor(list(self.registry.visible_tools())),
-            hooks=hooks,
-            policy=LoopPolicy(
-                max_turns=self.config.max_turns,
-                max_tool_calls=self.config.max_tool_calls,
-                max_repeated_tool_calls=self.config.max_repeated_tool_calls,
-                max_repeated_final_blocks=self.config.max_repeated_final_blocks,
-            ),
-            controllers=(
+        controllers = self.controllers
+        if controllers is None:
+            controllers = (
                 WebResearchController(user_timezone=self.config.user_context.timezone),
-            ),
+            )
+        return KlaraLoop(
+            llm=self.llm,
+            tool_executor=ToolExecutor(list(self._selected_tools)),
+            hooks=hooks,
+            policy=self.config.loop_policy,
+            controllers=controllers,
             model=self.config.model,
-            system_prompt=self._system_prompt(),
+            thinking_enabled=self.config.thinking_enabled,
+            system_prompt=self.system_prompt(now=now),
         )
-        return loop.run(user_input, run_id=run_id)
 
-    def _system_prompt(self) -> str:
-        """Build the persona prompt plus date-only runtime context."""
+    def run(
+        self,
+        user_input: str,
+        *,
+        run_id: str | None = None,
+        prior_messages: tuple[KlaraMessage, ...] = (),
+        now: datetime | None = None,
+    ) -> KlaraRunResult:
+        """Execute one run through the frozen assembly profile."""
+
+        return self.build_loop(now=now).run(
+            user_input,
+            run_id=run_id,
+            prior_messages=prior_messages,
+        )
+
+    def system_prompt(self, *, now: datetime | None = None) -> str:
+        """Build persona plus runtime context outside core."""
 
         return build_system_prompt(
             persona=self.config.persona_path.read_text(encoding="utf-8"),
             timezone_name=self.config.user_context.timezone,
+            now=now,
         )
+
+    def _select_tools(self) -> tuple[Any, ...]:
+        available = {tool.spec.name: tool for tool in self.registry.visible_tools()}
+        requested = self.config.capability_profile.visible_tools
+        if not requested:
+            return tuple(available.values())
+        missing = [
+            name
+            for name in requested
+            if name not in available and name not in INTERNAL_TOOL_NAMES
+        ]
+        if missing:
+            raise ValueError(f"capability_profile_missing_tools:{','.join(missing)}")
+        return tuple(available[name] for name in requested if name in available)
+
+    def _validate_model_capabilities(self) -> None:
+        if self.models is None or self.config.model == "fake-model":
+            return
+        provider_id, separator, model_id = self.config.model.partition("/")
+        if not separator or provider_id not in self.models.providers:
+            raise ValueError("model_not_configured")
+        model = self.models.providers[provider_id].model_entry(model_id)
+        if model is None:
+            raise ValueError("model_not_configured")
+        supported = {
+            "tools": model.supports_tools,
+            "json": model.supports_json,
+            "vision": model.supports_vision,
+            "thinking": model.supports_thinking,
+        }
+        missing = [
+            capability
+            for capability in self.config.capability_profile.required_model_capabilities
+            if not supported[capability]
+        ]
+        if missing:
+            raise ValueError(f"model_capability_mismatch:{','.join(missing)}")
+        if self.config.thinking_enabled and not model.supports_thinking:
+            raise ValueError("thinking_not_supported")
+
+    def _build_run_profile(self) -> KlaraRunProfile:
+        persona_hash = hashlib.sha256(self.config.persona_path.read_bytes()).hexdigest()
+        payload = {
+            "schema_version": "klara.run-profile.v1",
+            "model": self.config.model,
+            "thinking_enabled": self.config.thinking_enabled,
+            "capability_profile": self.config.capability_profile.id,
+            "required_model_capabilities": list(
+                self.config.capability_profile.required_model_capabilities
+            ),
+            "visible_tools": list(self._visible_tool_names()),
+            "hooks": list(self._hook_names()),
+            "trace_sink": self._trace_sink(),
+            "loop_policy": {
+                "max_turns": self.config.loop_policy.max_turns,
+                "max_tool_calls": self.config.loop_policy.max_tool_calls,
+                "max_repeated_tool_calls": self.config.loop_policy.max_repeated_tool_calls,
+                "max_repeated_final_blocks": self.config.loop_policy.max_repeated_final_blocks,
+            },
+            "user_partition": self.config.user_context.storage_key,
+            "locale": self.config.user_context.locale,
+            "timezone": self.config.user_context.timezone,
+            "persona_sha256": persona_hash,
+        }
+        profile_hash = hashlib.sha256(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        return KlaraRunProfile(
+            schema_version=str(payload["schema_version"]),
+            model=self.config.model,
+            thinking_enabled=self.config.thinking_enabled,
+            capability_profile=self.config.capability_profile.id,
+            required_model_capabilities=self.config.capability_profile.required_model_capabilities,
+            visible_tools=tuple(payload["visible_tools"]),
+            hooks=self._hook_names(),
+            trace_sink=self._trace_sink(),
+            loop_policy=self.config.loop_policy,
+            user_partition=self.config.user_context.storage_key,
+            locale=self.config.user_context.locale,
+            timezone=self.config.user_context.timezone,
+            persona_sha256=persona_hash,
+            profile_sha256=profile_hash,
+        )
+
+    def _trace_sink(self) -> str:
+        if self.config.capability_profile.trace_sink == "jsonl" and self.config.trace_path is None:
+            return "unavailable"
+        return "jsonl" if self.config.trace_path is not None else "none"
+
+    def _hook_names(self) -> tuple[str, ...]:
+        names = list(self.config.capability_profile.hooks)
+        if self.config.trace_path is not None and "jsonl_trace" not in names:
+            names.append("jsonl_trace")
+        return tuple(names)
+
+    def _visible_tool_names(self) -> tuple[str, ...]:
+        selected = tuple(tool.spec.name for tool in self._selected_tools)
+        requested_internal = tuple(
+            name
+            for name in self.config.capability_profile.visible_tools
+            if name in INTERNAL_TOOL_NAMES
+        )
+        if not self.config.capability_profile.visible_tools:
+            requested_internal = INTERNAL_TOOL_NAMES
+        return (*selected, *requested_internal)

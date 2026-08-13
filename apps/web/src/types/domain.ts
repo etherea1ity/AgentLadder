@@ -27,6 +27,7 @@ export type Message = {
 
 export type RunEventType =
   | 'run_created'
+  | 'run_profile_frozen'
   | 'thinking_started'
   | 'thinking_summary_started'
   | 'thinking_summary_completed'
@@ -171,6 +172,7 @@ export type ModelOption = {
   model: string;
   label: string;
   use_when?: string | null;
+  capabilities?: string[];
   supports_thinking?: boolean;
   default_thinking?: boolean;
 };
@@ -236,6 +238,7 @@ export type RunEventStatus = 'started' | 'progress' | 'completed' | 'failed';
 
 export type KlaraRunEventKind =
   | 'run.started'
+  | 'run.profile.frozen'
   | 'ask.created'
   | 'route.decided'
   | 'loop.started'

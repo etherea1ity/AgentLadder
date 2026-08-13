@@ -1,0 +1,49 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch04-harness-config",
+  "branch": "codex/ch04-harness-config",
+  "parent_commit": "7c075ad79ad2e9b4e5abed2c1e52ce0163ab9eb4",
+  "mode": "local-pre-hku",
+  "datasets": [
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "prompts": [
+    "src/klara/prompts/persona.md"
+  ],
+  "model_ids": [
+    "qwen/qwen-flash",
+    "deepseek/deepseek-v4-flash"
+  ],
+  "seeds": [17],
+  "budgets": {
+    "paid_api_usd": 0,
+    "maximum_local_test_minutes": 10
+  },
+  "evaluator_versions": [
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "expected_artifacts": [
+    "docs/chapters/ch04-harness-and-config.md",
+    "docs/chapters/ch04-harness-and-config.en.md",
+    "docs/reports/product/ch04-harness-config.json",
+    "docs/reports/product/ch04-harness-config.md",
+    "docs/reports/product/ch04-harness-config.en.md",
+    "docs/reports/product/ch04-harness-config-ui-e2e.json"
+  ],
+  "acceptance": {
+    "all_product_entrypoints_use_harness": true,
+    "run_profile_is_immutable_and_hashed": true,
+    "unsupported_model_capabilities_fail_before_run": true,
+    "public_profile_contains_no_secret_values": true,
+    "critical_behavior_regressions": 0
+  },
+  "exclusions": [
+    "paid provider calls",
+    "HKU/VPN/SSH/Slurm",
+    "provider retry and fallback policy owned by Chapter 8",
+    "durable auth or multi-user isolation",
+    "claim that later Agent chapters are complete"
+  ]
+}

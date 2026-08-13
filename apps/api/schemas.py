@@ -12,6 +12,7 @@ MessageStatus = Literal["idle", "running", "completed", "failed", "cancelled"]
 TokenSource = Literal["reported", "estimated", "unknown"]
 RunEventType = Literal[
     "run_created",
+    "run_profile_frozen",
     "thinking_started",
     "llm_call_started",
     "answer_streaming_started",
@@ -246,6 +247,7 @@ class ModelOption(BaseModel):
     model: str
     label: str
     use_when: str | None = None
+    capabilities: list[str] = Field(default_factory=list)
     supports_thinking: bool = False
     default_thinking: bool = False
 

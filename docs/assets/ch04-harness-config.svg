@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Klara harness freezes run assembly before the loop</title>
+  <desc id="desc">Configuration, model capability, persona, tools, hooks, context, and budgets combine into one hashed run profile that builds the core loop.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7f0e5"/><stop offset="1" stop-color="#e8dfd0"/></linearGradient>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#202725" flood-opacity=".1"/></filter>
+    <marker id="a" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0 0 12 6 0 12Z" fill="#68726c"/></marker>
+  </defs>
+  <rect width="1200" height="620" rx="32" fill="url(#bg)"/>
+  <circle cx="1100" cy="40" r="180" fill="#5f7b62" opacity=".08"/><circle cx="50" cy="590" r="190" fill="#a5653f" opacity=".07"/>
+  <text x="70" y="77" fill="#202725" font-family="Segoe UI, sans-serif" font-size="34" font-weight="700">One frozen assembly before execution</text>
+  <text x="70" y="112" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="18">Every product entrypoint reaches the same harness boundary.</text>
+
+  <g filter="url(#s)"><rect x="66" y="165" width="310" height="330" rx="24" fill="#fffdf8" stroke="#ddd1bd"/><rect x="445" y="165" width="310" height="330" rx="24" fill="#314640"/><rect x="824" y="165" width="310" height="330" rx="24" fill="#fffdf8" stroke="#ddd1bd"/></g>
+  <path d="M376 330h47" stroke="#68726c" stroke-width="3" marker-end="url(#a)"/><path d="M755 330h47" stroke="#68726c" stroke-width="3" marker-end="url(#a)"/>
+
+  <text x="103" y="218" fill="#a5653f" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" letter-spacing="2">INPUTS</text>
+  <text x="103" y="265" fill="#202725" font-family="Segoe UI, sans-serif" font-size="22" font-weight="700">Config + context</text>
+  <text x="103" y="310" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="17">model capabilities</text><text x="103" y="345" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="17">persona hash</text><text x="103" y="380" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="17">tools · hooks · trace</text><text x="103" y="415" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="17">user partition · budgets</text>
+
+  <text x="482" y="218" fill="#d7c5ac" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" letter-spacing="2">KLARAHARNESS</text>
+  <circle cx="600" cy="310" r="62" fill="#fffdf8" opacity=".12"/><path d="m572 310 18 18 38-44" fill="none" stroke="#fffdf8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="487" y="408" fill="#fffdf8" font-family="Segoe UI, sans-serif" font-size="22" font-weight="700">validate → freeze → hash</text>
+  <text x="504" y="445" fill="#d6ddd9" font-family="Segoe UI, sans-serif" font-size="15">fail before provider call</text>
+
+  <text x="861" y="218" fill="#5f7b62" font-family="Segoe UI, sans-serif" font-size="13" font-weight="700" letter-spacing="2">RUN PROFILE</text>
+  <text x="861" y="265" fill="#202725" font-family="Segoe UI, sans-serif" font-size="22" font-weight="700">Immutable evidence</text>
+  <rect x="861" y="300" width="228" height="54" rx="13" fill="#f1eadf"/><text x="882" y="334" fill="#314640" font-family="Consolas, monospace" font-size="15">profile_sha256</text>
+  <text x="861" y="398" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="17">build KlaraLoop</text><text x="861" y="433" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="17">emit public trace event</text>
+  <rect x="66" y="535" width="1068" height="48" rx="14" fill="#fffdf8" opacity=".75"/><text x="92" y="566" fill="#314640" font-family="Segoe UI, sans-serif" font-size="16" font-weight="600">CLI and API differ in transport; they do not differ in runtime assembly.</text>
+</svg>

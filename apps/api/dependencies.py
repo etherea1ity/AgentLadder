@@ -11,7 +11,7 @@ from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.infra.config.env import get_env_secret
 from klara.infra.config.loader import load_models_config, load_runtime_config
-from klara.infra.config.models import ModelsConfig
+from klara.infra.config.models import ModelsConfig, ProviderModel
 from klara.infra.llm.routed_client import RoutedLlmClient
 
 
@@ -34,6 +34,7 @@ def _load_model_options(
                     model=model_ref,
                     label=item.label or model_ref,
                     use_when=_model_use_when(provider_id, item.supports_vision),
+                    capabilities=_model_capabilities(item),
                     supports_thinking=item.supports_thinking,
                     default_thinking=item.default_thinking,
                 )
@@ -61,6 +62,18 @@ def _model_use_when(provider_id: str, supports_vision: bool) -> str:
     return f"{provider_id} provider"
 
 
+def _model_capabilities(item: ProviderModel) -> list[str]:
+    """Return stable public capability badges for one configured model."""
+
+    flags = {
+        "Tools": item.supports_tools,
+        "JSON": item.supports_json,
+        "Vision": item.supports_vision,
+        "Thinking": item.supports_thinking,
+    }
+    return [name for name, supported in flags.items() if supported]
+
+
 def _local_user_context() -> UserContext:
     """Build the local app user context, including prompt timezone."""
 
@@ -86,6 +99,8 @@ _run_service = RunService(
     default_model=_default_model_ref,
     loop_policy=_runtime.loop_policy,
     user_context=_local_user_context(),
+    models_config=_models,
+    capability_profile=_runtime.profile(),
 )
 
 

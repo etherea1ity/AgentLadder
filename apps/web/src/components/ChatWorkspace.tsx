@@ -815,6 +815,11 @@ function ModelPicker({
               {option.supports_thinking ? (
                 <span className="model-capability">Thinking</span>
               ) : null}
+              {(option.capabilities ?? [])
+                .filter((capability) => capability !== "Thinking")
+                .map((capability) => (
+                  <span className="model-capability" key={capability}>{capability}</span>
+                ))}
             </small>
             {option.model === selectedModel ? <Check size={15} /> : null}
           </button>

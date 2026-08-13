@@ -28,6 +28,33 @@ def test_load_model_options_hides_provider_without_api_key(tmp_path, monkeypatch
     options = _load_model_options(models, dotenv_path=dotenv_path)
 
     assert [option.model for option in options] == ["qwen/qwen-flash"]
+    assert options[0].capabilities == []
+
+
+def test_model_options_publish_capabilities_without_provider_secrets(tmp_path) -> None:
+    models = ModelsConfig(
+        providers={
+            "qwen": ProviderConfig(
+                api="openai-completions",
+                api_key_env="",
+                base_url="https://provider.invalid/v1",
+                models=(
+                    ProviderModel(
+                        id="capable",
+                        supports_tools=True,
+                        supports_json=True,
+                        supports_vision=True,
+                        supports_thinking=True,
+                    ),
+                ),
+            )
+        }
+    )
+
+    option = _load_model_options(models, dotenv_path=tmp_path / ".env")[0]
+
+    assert option.capabilities == ["Tools", "JSON", "Vision", "Thinking"]
+    assert "provider.invalid" not in option.model_dump_json()
 
 
 def test_default_model_falls_back_to_visible_option_when_primary_hidden() -> None:

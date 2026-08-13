@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from apps.api.schemas import ClientContext, MessageRecord
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_service import RunService
@@ -242,12 +244,23 @@ def test_run_service_projects_model_and_trace_saved(tmp_path) -> None:
     llm_started = next(
         event for event in events if event.event_type == "llm_call_started"
     )
+    frozen = next(
+        event for event in events if event.event_type == "run_profile_frozen"
+    )
     completed = next(event for event in events if event.event_type == "run_completed")
 
     assert run is not None
     assert run.status == "completed"
     assert run.trace_saved is True
     assert llm_started.payload["model"] == "test-model"
+    assert frozen.payload["schema_version"] == "klara.run-profile.v1"
+    assert frozen.payload["model"] == "test-model"
+    assert frozen.payload["trace_sink"] == "jsonl"
+    assert frozen.payload["profile_sha256"]
+    assert not any(
+        marker in json.dumps(frozen.payload).lower()
+        for marker in ("api_key", "password", "secret")
+    )
     assert completed.payload["trace_saved"] is True
     assert store.latest_trace_for_run(created.run_id, trace_path) is not None
 
