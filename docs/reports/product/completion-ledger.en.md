@@ -18,8 +18,8 @@ Mode: `full-end-to-end`
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | passed |
 | permission-engine | `codex/permission-engine` | passed |
 | ch14-durable-tasks | `codex/ch14-durable-tasks` | passed |
-| ch15-background-scheduler | `codex/ch15-background-scheduler` | pending |
-| ch17-mcp | `codex/ch17-mcp` | pending |
+| ch15-background-scheduler | `codex/ch15-background-scheduler` | passed |
+| ch17-mcp | `codex/ch17-mcp` | passed |
 | ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | pending |
 | ch18-production-runtime | `codex/ch18-production-runtime` | pending |
 | agent-product-polish | `codex/agent-product-polish` | pending |
@@ -55,4 +55,8 @@ Mode: `full-end-to-end`
 
 - Chapter 14: commit `38b46d94982b1847f50e553e0ff58bf87d4e6dc4` passes `21/21` deterministic checks with a `1.0` critical recovery/isolation/idempotency rate and `0` public secret leaks. Python reports `341 passed, 1 skipped`, frontend reports `62 passed`, while the production build and 24 behavior-control observations pass. A real browser journey completed ready → detail → cancelled with no desktop horizontal overflow; narrow layout is backed by component and responsive-CSS gates. See the [Chapter 14 report](./ch14-durable-tasks.en.md).
 
-The sequential gate is now at `ch15-background-scheduler`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.
+- Chapter 15: commit `77e6eb81f906588dacc646bb12835be70804f5d6` passes `19/19` deterministic checks with a `1.0` critical scheduler rate and `0` public secret leaks. Python reports `355 passed, 1 skipped`, frontend reports `64 passed`, while the production build and 24 behavior-control observations pass. A real browser journey verifies the scheduling timeline, permission path, and desktop/mobile layouts. See the [Chapter 15 report](./ch15-background-scheduler.en.md).
+
+- Chapter 17: commit `080b35b0952992cefc804e5b7ba027456da922dd` passes `19/19` deterministic checks with a `1.0` critical MCP rate and `0` public secret leaks. Python reports `371 passed, 1 skipped`, frontend reports `66 passed`, while the production build and 24 behavior-control observations pass. A real browser journey completed configure → permission block → allow once → stdio negotiation, with no horizontal overflow or console errors/warnings at desktop and `390x844`. See the [Chapter 17 report](./ch17-mcp.en.md).
+
+The sequential gate is now at `ch16-subagents-team-worktree`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.

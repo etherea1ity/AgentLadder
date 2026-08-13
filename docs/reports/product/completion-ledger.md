@@ -18,8 +18,8 @@
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | passed |
 | permission-engine | `codex/permission-engine` | passed |
 | ch14-durable-tasks | `codex/ch14-durable-tasks` | passed |
-| ch15-background-scheduler | `codex/ch15-background-scheduler` | pending |
-| ch17-mcp | `codex/ch17-mcp` | pending |
+| ch15-background-scheduler | `codex/ch15-background-scheduler` | passed |
+| ch17-mcp | `codex/ch17-mcp` | passed |
 | ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | pending |
 | ch18-production-runtime | `codex/ch18-production-runtime` | pending |
 | agent-product-polish | `codex/agent-product-polish` | pending |
@@ -55,4 +55,8 @@
 
 - Chapter 14：提交 `38b46d94982b1847f50e553e0ff58bf87d4e6dc4`，确定性门禁 `21/21`，关键恢复/隔离/幂等通过率 `1.0`，公共秘密泄漏 `0`；Python `341 passed, 1 skipped`，前端 `62 passed`，生产构建和 24 条行为控制观察通过。真实浏览器完成 ready → detail → cancelled，桌面无水平溢出；窄屏由组件与响应式 CSS 门禁验证。详见 [Chapter 14 报告](./ch14-durable-tasks.md)。
 
-当前顺序门禁已经进入 `ch15-background-scheduler`；Chapter 11 按既定范围延期，不计为通过。
+- Chapter 15：提交 `77e6eb81f906588dacc646bb12835be70804f5d6`，确定性门禁 `19/19`，关键调度率 `1.0`，公共秘密泄漏 `0`；Python `355 passed, 1 skipped`，前端 `64 passed`，生产构建与 24 条行为控制观察通过。真实浏览器验证调度时间线、权限路径和桌面/移动布局；详见 [Chapter 15 报告](./ch15-background-scheduler.md)。
+
+- Chapter 17：提交 `080b35b0952992cefc804e5b7ba027456da922dd`，确定性门禁 `19/19`，关键 MCP 率 `1.0`，公共秘密泄漏 `0`；Python `371 passed, 1 skipped`，前端 `66 passed`，生产构建与 24 条行为控制观察通过。真实浏览器完成配置 → 权限阻断 → allow once → stdio 协议协商，桌面与 `390x844` 均无水平溢出且控制台无错误或警告；详见 [Chapter 17 报告](./ch17-mcp.md)。
+
+当前顺序门禁已经进入 `ch16-subagents-team-worktree`；Chapter 11 按既定范围延期，不计为通过。
