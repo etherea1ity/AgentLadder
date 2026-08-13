@@ -463,6 +463,58 @@ export type SchedulerState = {
   notifications: ScheduleNotification[];
 };
 
+export type McpTransportKind = 'stdio' | 'streamable_http';
+export type McpServerStatus = 'disconnected' | 'connecting' | 'connected' | 'degraded' | 'error';
+export type McpServerConfig = {
+  server_id: string;
+  scope: PermissionScope;
+  name: string;
+  transport: McpTransportKind;
+  command?: string | null;
+  args: string[];
+  endpoint?: string | null;
+  credential_ref?: string | null;
+  env_ref_names: string[];
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+export type McpCatalogItem = { name?: string; uri?: string; description?: string; inputSchema?: Record<string, unknown>; [key: string]: unknown };
+export type McpCapabilityCatalog = {
+  protocol_version: string;
+  server_name: string;
+  server_version: string;
+  capabilities: Record<string, unknown>;
+  tools: McpCatalogItem[];
+  resources: McpCatalogItem[];
+  prompts: McpCatalogItem[];
+};
+export type McpConnection = {
+  server_id: string;
+  status: McpServerStatus;
+  connected_at?: string | null;
+  last_checked_at?: string | null;
+  last_error?: string | null;
+  reconnect_count: number;
+  catalog?: McpCapabilityCatalog | null;
+};
+export type McpServerState = { config: McpServerConfig; connection: McpConnection };
+export type McpAuditEvent = {
+  event_id: string;
+  server_id: string;
+  operation: string;
+  outcome: string;
+  occurred_at: string;
+  target?: string | null;
+  duration_ms?: number | null;
+  details: Record<string, unknown>;
+};
+export type McpState = {
+  schema_version: 'klara.mcp-state.v1';
+  servers: McpServerState[];
+  audit: McpAuditEvent[];
+};
+
 // Klara Presence public event model. This is intentionally separate from the
 // current backend RunEvent DTO above so the UI can grow without coupling presentation motion to transport events.
 export type KlaraVisualPhase =

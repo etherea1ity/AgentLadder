@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="360" viewBox="0 0 1120 360" role="img" aria-labelledby="title desc">
+  <title id="title">Klara MCP trust boundary</title>
+  <desc id="desc">External MCP servers negotiate capabilities, every action crosses the permission engine, bounded untrusted observations enter the agent runtime, and content-free audit records enter persistence.</desc>
+  <rect width="1120" height="360" rx="24" fill="#fbf8f1"/>
+  <g font-family="Segoe UI,Microsoft YaHei,sans-serif">
+    <rect x="42" y="89" width="205" height="182" rx="18" fill="#eee5d6" stroke="#d8cbb7"/>
+    <text x="145" y="124" text-anchor="middle" font-size="12" fill="#746d63">UNTRUSTED</text>
+    <text x="145" y="158" text-anchor="middle" font-size="21" font-weight="600" fill="#202725">MCP Server</text>
+    <text x="145" y="188" text-anchor="middle" font-size="13" fill="#746d63">stdio / Streamable HTTP</text>
+    <text x="145" y="224" text-anchor="middle" font-size="12" fill="#357d78">tools · resources · prompts</text>
+    <rect x="305" y="89" width="220" height="182" rx="18" fill="#f7f0e5" stroke="#357d78"/>
+    <text x="415" y="124" text-anchor="middle" font-size="12" fill="#357d78">BOUNDARY</text>
+    <text x="415" y="158" text-anchor="middle" font-size="20" font-weight="600" fill="#202725">MCP Client</text>
+    <text x="415" y="188" text-anchor="middle" font-size="12" fill="#746d63">version · session · timeout</text>
+    <text x="415" y="214" text-anchor="middle" font-size="12" fill="#746d63">size bound · cancellation</text>
+    <text x="415" y="240" text-anchor="middle" font-size="12" fill="#746d63">credential references only</text>
+    <rect x="583" y="53" width="228" height="112" rx="18" fill="#f7f0e5" stroke="#a5653f"/>
+    <text x="697" y="89" text-anchor="middle" font-size="12" fill="#a5653f">BEFORE EACH ACTION</text>
+    <text x="697" y="122" text-anchor="middle" font-size="20" font-weight="600" fill="#202725">Permission Engine</text>
+    <text x="697" y="147" text-anchor="middle" font-size="12" fill="#746d63">allow · deny · ask</text>
+    <rect x="583" y="197" width="228" height="112" rx="18" fill="#f7f0e5" stroke="#357d78"/>
+    <text x="697" y="233" text-anchor="middle" font-size="12" fill="#357d78">AFTER RESPONSE</text>
+    <text x="697" y="266" text-anchor="middle" font-size="20" font-weight="600" fill="#202725">Observation Guard</text>
+    <text x="697" y="291" text-anchor="middle" font-size="12" fill="#746d63">bounded · labeled untrusted</text>
+    <rect x="868" y="89" width="210" height="182" rx="18" fill="#314640"/>
+    <text x="973" y="126" text-anchor="middle" font-size="12" fill="#d8e4df">KLARA RUNTIME</text>
+    <text x="973" y="162" text-anchor="middle" font-size="21" font-weight="600" fill="#fffdf8">Dynamic Tool Pool</text>
+    <text x="973" y="194" text-anchor="middle" font-size="12" fill="#d8e4df">mcp__server__tool</text>
+    <text x="973" y="229" text-anchor="middle" font-size="12" fill="#d8e4df">content-free audit hash</text>
+    <path d="M247 180h58M525 180h42M811 180h57" stroke="#357d78" stroke-width="2" fill="none"/>
+    <path d="M557 180l-10-6v12zM858 180l-10-6v12z" fill="#357d78"/>
+    <path d="M567 180c30 0 16-71 16-71" stroke="#a5653f" stroke-width="2" fill="none"/>
+    <path d="M583 109l-6 10h12z" fill="#a5653f"/>
+    <path d="M567 180c30 0 16 73 16 73" stroke="#357d78" stroke-width="2" fill="none"/>
+    <path d="M583 253l-6-10h12z" fill="#357d78"/>
+  </g>
+</svg>

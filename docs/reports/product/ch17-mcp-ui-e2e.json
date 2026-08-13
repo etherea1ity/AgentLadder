@@ -1,0 +1,58 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "ch17-mcp",
+  "source_branch": "codex/ch17-mcp",
+  "evaluated_at": "2026-08-13T14:39:00+00:00",
+  "browser_surface": "in_app_browser",
+  "backend": "real_local_api_with_real_stdio_mcp_child",
+  "journey": [
+    "restart API and web after implementation",
+    "open Integrations from the real application sidebar",
+    "configure the deterministic local stdio MCP fixture through the UI",
+    "attempt connect and verify a fail-closed permission request with no child execution claim",
+    "open Permissions and verify the exact critical MCP connect resource",
+    "grant allow-once authority and connect again",
+    "observe negotiated protocol, server identity, two tools, one resource, and one prompt",
+    "measure desktop and mobile overflow and inspect browser console"
+  ],
+  "desktop": {
+    "viewport": "1280x720",
+    "document_scroll_width": 1280,
+    "body_scroll_width": 1280,
+    "main_client_width": 985,
+    "main_scroll_width": 985,
+    "horizontal_overflow": false,
+    "permission_block_visible": true,
+    "permission_resource_exact": true,
+    "connected_state_visible": true,
+    "catalog_visible": true
+  },
+  "mobile": {
+    "viewport": "390x844",
+    "document_scroll_width": 390,
+    "body_scroll_width": 390,
+    "main_client_width": 375,
+    "main_scroll_width": 375,
+    "horizontal_overflow": false,
+    "connected_catalog_visible": true
+  },
+  "console": {
+    "error_or_warning_count": 0,
+    "unhandled_rejection_count": 0
+  },
+  "real_state": {
+    "server_name": "Chapter 17 browser fixture",
+    "transport": "stdio",
+    "protocol_version": "2025-11-25",
+    "final_status": "connected",
+    "tools": ["echo", "slow"],
+    "resources": ["Guide"],
+    "prompts": ["brief"],
+    "grant_effect": "allow_once"
+  },
+  "limitations": [
+    "The live UI journey used the repository deterministic stdio fixture; Streamable HTTP protocol/session behavior is covered by an isolated real HTTP integration test.",
+    "Tool invocation itself is covered by service/runtime integration tests so the browser journey did not create an additional critical tool-call approval merely for display verification."
+  ],
+  "passed": true
+}

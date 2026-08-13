@@ -19,6 +19,7 @@ from klara.permissions import PermissionScope, PermissionService, SQLitePermissi
 from klara.skills import SkillCatalog
 from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope
 from klara.scheduler import SchedulerService, SQLiteScheduleRepository
+from klara.mcp import McpService, SQLiteMcpRepository
 from apps.api.services.scheduler_runner import SchedulerRunner
 
 
@@ -115,6 +116,8 @@ _permission_scope = PermissionScope(
     actor_id="local-user",
     agent_id="klara",
 )
+_mcp_repository = SQLiteMcpRepository(_store.root / "mcp.sqlite3")
+_mcp_service = McpService(_mcp_repository, _permission_service)
 _task_repository = SQLiteTaskRepository(_store.root / "tasks.sqlite3")
 _task_service = DurableTaskService(_task_repository)
 _task_scope = TaskScope(
@@ -146,6 +149,7 @@ _run_service = RunService(
     capability_profile=_runtime.profile(),
     task_service=_task_service,
     task_scope=_task_scope,
+    mcp_service=_mcp_service,
 )
 _schedule_repository = SQLiteScheduleRepository(_store.root / "schedules.sqlite3")
 _scheduler_service = SchedulerService(_schedule_repository, _task_service)
@@ -204,6 +208,12 @@ def get_permission_scope() -> PermissionScope:
     """Return the authenticated local owner partition for permission records."""
 
     return _permission_scope
+
+
+def get_mcp_service() -> McpService:
+    """Return the tenant-scoped MCP lifecycle service."""
+
+    return _mcp_service
 
 
 def get_task_service() -> DurableTaskService:

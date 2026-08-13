@@ -284,7 +284,13 @@ class KlaraHarness:
         ]
         if missing:
             raise ValueError(f"capability_profile_missing_tools:{','.join(missing)}")
-        return tuple(available[name] for name in requested if name in available)
+        selected = [available[name] for name in requested if name in available]
+        selected.extend(
+            tool
+            for name, tool in available.items()
+            if name.startswith("mcp__") and name not in requested
+        )
+        return tuple(selected)
 
     def _build_skill_catalog(self) -> SkillCatalog:
         """Discover the three Skill scopes under frozen run authority."""

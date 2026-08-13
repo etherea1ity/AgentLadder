@@ -184,6 +184,7 @@ class ToolExecutor:
             content=result.content,
             ok=result.ok,
             error=result.error,
+            public_content=result.public_content,
         )
 
     def _limit_result(self, result: ToolResult, *, max_chars: int) -> ToolResult:
@@ -202,6 +203,7 @@ class ToolExecutor:
             content=f"{content}\n[tool output truncated after {max_chars} characters]",
             ok=result.ok,
             error=error,
+            public_content=result.public_content,
         )
 
 

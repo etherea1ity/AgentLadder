@@ -15,7 +15,8 @@ from apps.api.routes.sessions import router as sessions_router
 from apps.api.routes.skills import router as skills_router
 from apps.api.routes.tasks import router as tasks_router
 from apps.api.routes.scheduler import router as scheduler_router
-from apps.api.dependencies import get_scheduler_runner
+from apps.api.routes.mcp import router as mcp_router
+from apps.api.dependencies import get_mcp_service, get_scheduler_runner
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ async def lifespan(_app: FastAPI):
         yield
     finally:
         runner.stop()
+        get_mcp_service().shutdown()
 
 
 app = FastAPI(title="Klara API", lifespan=lifespan)
@@ -48,6 +50,7 @@ app.include_router(memory_router)
 app.include_router(permissions_router)
 app.include_router(tasks_router)
 app.include_router(scheduler_router)
+app.include_router(mcp_router)
 
 
 @app.get("/api/health")

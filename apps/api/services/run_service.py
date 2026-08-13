@@ -51,6 +51,8 @@ from klara.tasks import (
     TaskTransitionError,
     TaskWriteConflict,
 )
+from klara.mcp import McpService
+from klara.permissions import PermissionScope
 
 class RunService:
     """Project Klara loop runs into the local chat API and SSE event stream."""
@@ -75,6 +77,7 @@ class RunService:
         provider_recovery_policy: ProviderRecoveryPolicy | None = None,
         task_service: DurableTaskService | None = None,
         task_scope: TaskScope | None = None,
+        mcp_service: McpService | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -117,6 +120,7 @@ class RunService:
         self.trace_path = trace_path
         self.task_service = task_service
         self.task_scope = task_scope
+        self.mcp_service = mcp_service
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
         self._task_leases: dict[str, str] = {}
@@ -796,6 +800,15 @@ class RunService:
 
         registry = ToolRegistry.with_default_tools()
         registry.register_tool(TodoWriteTool(session_id=session_id, store=self.store))
+        if self.mcp_service is not None:
+            scope = PermissionScope(
+                tenant_id=self.user_context.tenant_id,
+                actor_id=self.user_context.user_id,
+                agent_id="klara",
+                task_id=session_id,
+            )
+            for tool in self.mcp_service.visible_tools(scope=scope):
+                registry.register_tool(tool)
         return registry
 
 

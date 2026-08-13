@@ -1,0 +1,62 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch17-mcp",
+  "branch": "codex/ch17-mcp",
+  "parent_commit": "ac0e79de8997d5b2755838210e660aa4c89cd0d7",
+  "mode": "full-end-to-end",
+  "protocol": {
+    "version": "2025-11-25",
+    "sources": [
+      "https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle",
+      "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports",
+      "https://modelcontextprotocol.io/specification/2025-11-25"
+    ]
+  },
+  "datasets": [
+    "tests/klara/mcp/test_mcp_client.py",
+    "tests/klara/mcp/test_mcp_service.py",
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "model_ids": ["none-deterministic-jsonrpc-gate"],
+  "seeds": [17],
+  "budgets": {
+    "paid_api_usd": 0,
+    "request_timeout_seconds": 10,
+    "maximum_observation_chars": 12000,
+    "maximum_message_bytes": 1048576,
+    "maximum_automatic_reconnect_attempts": 0
+  },
+  "evaluator_versions": [
+    "klara.chapter17-mcp.v1",
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "acceptance": {
+    "stdio_and_streamable_http": true,
+    "initialize_and_capability_negotiation": true,
+    "tools_resources_and_prompts": true,
+    "timeout_cancellation_and_reconnect": true,
+    "bounded_untrusted_observations": true,
+    "credential_references_only": true,
+    "permission_engine_for_every_external_action": true,
+    "dynamic_tools_join_runtime_registry": true,
+    "real_integrations_ui": true
+  },
+  "expected_artifacts": [
+    "docs/chapters/ch17-mcp-and-external-tools.md",
+    "docs/chapters/ch17-mcp-and-external-tools.en.md",
+    "docs/reports/product/ch17-mcp.json",
+    "docs/reports/product/ch17-mcp.md",
+    "docs/reports/product/ch17-mcp.en.md",
+    "docs/reports/product/ch17-mcp-ui-e2e.json",
+    "docs/reports/product/ch17-mcp-behavior-control.json"
+  ],
+  "exclusions": [
+    "OAuth authorization server implementation",
+    "resource subscriptions and complete roots/sampling/elicitation client features",
+    "public plugin marketplace",
+    "MCP experimental tasks",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

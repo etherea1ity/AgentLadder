@@ -1,4 +1,4 @@
-import type { ClientContext, DurableTaskDetail, DurableTaskList, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, ScheduleKind, ScheduleOccurrence, ScheduleRecord, SchedulerState, Session, SkillsCatalog, TodoPlan } from '../types/domain';
+import type { ClientContext, DurableTaskDetail, DurableTaskList, EvaluationSummary, McpConnection, McpServerConfig, McpState, McpTransportKind, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, ScheduleKind, ScheduleOccurrence, ScheduleRecord, SchedulerState, Session, SkillsCatalog, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -75,6 +75,10 @@ export const api = {
   runScheduleNow: (scheduleId: string, signal?: AbortSignal) => request<{ occurrence: ScheduleOccurrence }>(`/api/scheduler/${scheduleId}/run-now`, { method: 'POST', body: '{}', signal }),
   retryScheduleOccurrence: (occurrenceId: string, signal?: AbortSignal) => request<{ occurrence: ScheduleOccurrence }>(`/api/scheduler/occurrences/${occurrenceId}/retry`, { method: 'POST', body: '{}', signal }),
   readScheduleNotification: (notificationId: string, signal?: AbortSignal) => request(`/api/scheduler/notifications/${notificationId}/read`, { method: 'POST', body: '{}', signal }),
+  getMcpState: (signal?: AbortSignal) => request<McpState>('/api/mcp', { signal }),
+  createMcpServer: (value: { name: string; transport: McpTransportKind; command?: string; args?: string[]; endpoint?: string; credential_ref?: string; env_refs?: Record<string, string> }, signal?: AbortSignal) => request<{ schema_version: string; config: McpServerConfig }>('/api/mcp', { method: 'POST', body: JSON.stringify(value), signal }),
+  transitionMcpServer: (serverId: string, action: 'connect' | 'reconnect' | 'disconnect' | 'ping', signal?: AbortSignal) => request<McpConnection>(`/api/mcp/${serverId}/${action}`, { method: 'POST', body: '{}', signal }),
+  deleteMcpServer: (serverId: string, signal?: AbortSignal) => request<{ deleted: boolean }>(`/api/mcp/${serverId}/delete`, { method: 'POST', body: '{}', signal }),
   createRun: (
     session_id: string,
     question: string,
