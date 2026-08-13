@@ -1,6 +1,6 @@
 {
   "authoritative_parent": "b440df32c71df56c892b4657c392e37f9ea53e9a",
-  "current_stage": "ch05-todo-planning",
+  "current_stage": "ch06-07-context",
   "mode": "local-pre-hku",
   "objectives": [
     {
@@ -149,17 +149,50 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch05-todo-planning.md",
+        "docs/chapters/ch05-todo-planning.en.md",
+        "docs/reports/product/ch05-todo-planning.json",
+        "docs/reports/product/ch05-todo-planning.md",
+        "docs/reports/product/ch05-todo-planning.en.md",
+        "docs/reports/product/ch05-todo-planning-ui-e2e.json"
+      ],
       "branch": "codex/ch05-todo-planning",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter05_cli ...",
+        "python -m pytest -q",
+        "npm test (apps/web)",
+        "npm run build (apps/web)"
+      ],
+      "commit": "5b200f22fd22a5fea2f26bc5d89543004c9f6020",
+      "datasets": [
+        "tests/fixtures/behavior/agent_behavior_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.chapter05-todo-planning.v1",
+        "klara.behavior-scorer.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {"passed": 14, "total": 14},
+        "python_tests": {"passed": 267, "skipped": 1},
+        "frontend_tests": {"passed": 47},
+        "frontend_build": "passed",
+        "behavior_contract": "passed",
+        "bilingual_document_pairs": {"checked": 12, "passed": 12},
+        "ui_viewports": ["1280x720", "390x844"],
+        "horizontal_overflow": false,
+        "console_error_count": 0
+      },
       "id": "ch05-todo-planning",
-      "metrics": {},
+      "metrics": {
+        "chapter_gate_checks": "14/14",
+        "plan_trace_events": 1,
+        "plan_sse_events": 1
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -410,5 +443,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-13T03:39:00+00:00"
+  "updated_at": "2026-08-13T04:08:00+00:00"
 }

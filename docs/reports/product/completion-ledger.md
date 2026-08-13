@@ -9,7 +9,7 @@
 | phase-0a-baseline | `codex/agent-product-baseline` | passed |
 | phase-0b-agent-eval-contract | `codex/agent-eval-contract` | passed |
 | ch04-harness-config | `codex/ch04-harness-config` | passed |
-| ch05-todo-planning | `codex/ch05-todo-planning` | pending |
+| ch05-todo-planning | `codex/ch05-todo-planning` | passed |
 | ch06-07-context | `codex/ch06-07-context` | pending |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | pending |
 | ch09-skills-runtime | `codex/ch09-skills-runtime` | pending |
@@ -39,5 +39,6 @@
 - 视觉验收：`1280x720` 与 `390x844` 无水平溢出，聚合 API/UI 不暴露隐藏用例和盲评身份；详见 [UI E2E JSON](./agent-eval-contract-ui-e2e.json)。
 - 解释边界：Phase 0B 的 `contract_control_probe` 只证明评测合同与管线有效，不代表当前 Agent 已完成或达到 GPT 能力。
 - Chapter 4：提交 `3168b61`，机器门禁 `11/11`，Python `254 passed, 1 skipped`，前端 `45 passed`，生产构建和桌面/窄屏模型能力选择器通过；详见 [Chapter 4 报告](./ch04-harness-config.md)。
+- Chapter 5：提交 `5b200f22`，机器门禁 `14/14`，Python `267 passed, 1 skipped`，前端 `47 passed`，生产构建通过；真实产品探针证明 plan 进入 JSONL trace 与 SSE，桌面/窄屏均无水平溢出；详见 [Chapter 5 报告](./ch05-todo-planning.md)。
 
-当前顺序门禁已经进入 `ch05-todo-planning`。
+当前顺序门禁已经进入 `ch06-07-context`。

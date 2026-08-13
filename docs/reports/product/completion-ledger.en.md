@@ -9,7 +9,7 @@ Mode: `local-pre-hku`
 | phase-0a-baseline | `codex/agent-product-baseline` | passed |
 | phase-0b-agent-eval-contract | `codex/agent-eval-contract` | passed |
 | ch04-harness-config | `codex/ch04-harness-config` | passed |
-| ch05-todo-planning | `codex/ch05-todo-planning` | pending |
+| ch05-todo-planning | `codex/ch05-todo-planning` | passed |
 | ch06-07-context | `codex/ch06-07-context` | pending |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | pending |
 | ch09-skills-runtime | `codex/ch09-skills-runtime` | pending |
@@ -39,5 +39,6 @@ Mode: `local-pre-hku`
 - Visual acceptance: `1280x720` and `390x844` have no horizontal overflow, while the aggregate API/UI exposes neither hidden cases nor blind-review identities; see [UI E2E JSON](./agent-eval-contract-ui-e2e.json).
 - Interpretation boundary: the Phase 0B `contract_control_probe` proves only that the evaluation contract and plumbing work. It does not mean the current Agent is complete or GPT-equivalent.
 - Chapter 4: commit `3168b61` passes `11/11` machine checks, Python `254 passed, 1 skipped`, frontend `45 passed`, the production build, and desktop/narrow model-capability picker acceptance; see the [Chapter 4 report](./ch04-harness-config.en.md).
+- Chapter 5: commit `5b200f22` passes `14/14` machine checks, Python `267 passed, 1 skipped`, frontend `47 passed`, and the production build. A real product probe records the plan in JSONL trace and SSE, while desktop and narrow layouts have no horizontal overflow; see the [Chapter 5 report](./ch05-todo-planning.en.md).
 
-The sequential gate is now at `ch05-todo-planning`.
+The sequential gate is now at `ch06-07-context`.
