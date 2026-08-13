@@ -44,6 +44,7 @@ visible_tools = [
   "image_generate",
   "web_fetch",
   "web_search",
+  "evidence_submit",
   "todo_write",
   "skills_list",
   "skill_view",

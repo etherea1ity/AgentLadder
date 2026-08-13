@@ -48,6 +48,42 @@ def test_evidence_pack_is_writer_boundary_without_raw_chunks() -> None:
     assert "retrieval_chunks" not in field_names
 
 
+def test_evidence_pack_rejects_duplicate_url_and_content() -> None:
+    first = EvidenceRecord(
+        source_id="src-a",
+        title="A",
+        url="https://example.test/page",
+        content="same fetched body",
+        fetched_at="2026-08-13T00:00:00+00:00",
+    )
+    with pytest.raises(ValueError, match="duplicate source URL"):
+        EvidencePack(
+            (
+                first,
+                EvidenceRecord(
+                    source_id="src-b",
+                    title="B",
+                    url="https://example.test/page/",
+                    content="different body",
+                    fetched_at="2026-08-13T00:00:00+00:00",
+                ),
+            )
+        )
+    with pytest.raises(ValueError, match="duplicate source content hash"):
+        EvidencePack(
+            (
+                first,
+                EvidenceRecord(
+                    source_id="src-c",
+                    title="C",
+                    url="https://other.test/page",
+                    content="same fetched body",
+                    fetched_at="2026-08-13T00:00:00+00:00",
+                ),
+            )
+        )
+
+
 def test_answer_frame_rejects_duplicate_citation() -> None:
     citation = Citation(claim_id="claim-1", source_id="src-1")
 
@@ -64,4 +100,3 @@ def test_answer_frame_rejects_duplicate_citation() -> None:
             citations=(citation, citation),
             final_text="A claim",
         )
-

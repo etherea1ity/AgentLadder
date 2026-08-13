@@ -161,9 +161,17 @@ class EvidencePack:
     records: tuple[EvidenceRecord, ...]
 
     def __post_init__(self) -> None:
-        """Reject duplicate source identities."""
+        """Reject duplicate identities, URLs, or copied source content."""
 
         _require_unique((record.source_id for record in self.records), "source_id")
+        _require_unique(
+            (_canonical_url(record.url) for record in self.records),
+            "source URL",
+        )
+        _require_unique(
+            (record.content_hash for record in self.records),
+            "source content hash",
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the bounded evidence pack."""
@@ -262,3 +270,8 @@ def _require_unique(values: Any, label: str) -> None:
     if duplicates:
         raise ValueError(f"duplicate {label}: {sorted(duplicates)}")
 
+
+def _canonical_url(value: str) -> str:
+    """Normalize enough URL syntax to detect duplicate evidence records."""
+
+    return value.strip().rstrip("/").casefold()

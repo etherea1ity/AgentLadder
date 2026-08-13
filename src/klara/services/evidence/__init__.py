@@ -14,6 +14,7 @@ from klara.services.evidence.contracts import (
 )
 from klara.services.evidence.controller import EvidenceController
 from klara.services.evidence.verifier import EvidenceVerifier
+from klara.services.evidence.runtime import EvidenceRuntimeController
 
 __all__ = [
     "AnswerFrame",
@@ -24,6 +25,7 @@ __all__ = [
     "EvidenceJudgment",
     "EvidencePack",
     "EvidenceRecord",
+    "EvidenceRuntimeController",
     "EvidenceStatus",
     "EvidenceVerifier",
     "VerificationDecision",

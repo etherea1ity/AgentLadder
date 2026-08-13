@@ -11,7 +11,13 @@ def test_tool_registry_discovers_builtin_tools_from_canonical_package() -> None:
 
     names = {tool.spec.name for tool in registry.visible_tools()}
 
-    assert names == {"current_time", "image_generate", "web_fetch", "web_search"}
+    assert names == {
+        "current_time",
+        "evidence_submit",
+        "image_generate",
+        "web_fetch",
+        "web_search",
+    }
 
 
 def test_canonical_builtin_tools_use_base_template() -> None:

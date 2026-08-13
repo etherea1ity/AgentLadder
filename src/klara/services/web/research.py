@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+import hashlib
 import json
 import re
 from typing import Literal
@@ -89,10 +90,14 @@ class SourceRecord:
     final_url: str
     title: str
     fetched_at: str
+    content: str
+    content_hash: str
     text_preview: str
     relevant_snippets: list[str]
     extraction_quality: float
     no_relevant_terms_found: bool
+    evidence_status: str = "admissible"
+    limitations: tuple[str, ...] = ()
     trust: str = "untrusted_external_content"
 
 
@@ -178,6 +183,25 @@ class EvidenceLedger:
         if isinstance(quality_payload, dict):
             quality_score = _float(quality_payload.get("score"))
         text = _string(payload.get("text"))
+        content_hash = _stable_content_hash(text)
+        requested_status = _string(payload.get("evidence_status"))
+        evidence_status = (
+            requested_status
+            if requested_status in {"admissible", "stale", "irrelevant"}
+            else "admissible"
+        )
+        if bool(payload.get("no_relevant_terms_found", False)) or quality_score < 0.45:
+            evidence_status = "irrelevant"
+        raw_limitations = payload.get("limitations")
+        limitations = (
+            tuple(
+                _compact(str(item), max_chars=180)
+                for item in raw_limitations
+                if isinstance(item, str) and item.strip()
+            )
+            if isinstance(raw_limitations, list)
+            else ()
+        )
         snippets = _snippets_from_text(text)
         record = SourceRecord(
             source_id=source_id,
@@ -186,10 +210,14 @@ class EvidenceLedger:
             final_url=final_url,
             title=_compact(_string(payload.get("title")), max_chars=180),
             fetched_at=_string(payload.get("fetched_at")) or _now_iso(),
+            content=text,
+            content_hash=content_hash,
             text_preview=_compact(text, max_chars=700),
             relevant_snippets=snippets,
             extraction_quality=quality_score,
             no_relevant_terms_found=bool(payload.get("no_relevant_terms_found", False)),
+            evidence_status=evidence_status,
+            limitations=limitations,
             trust=_string(payload.get("trust")) or "untrusted_external_content",
         )
         self.sources[source_id] = record
@@ -913,11 +941,21 @@ def _source_summary(source: SourceRecord) -> dict[str, object]:
         "source_id": source.source_id,
         "candidate_id": source.candidate_id,
         "title": source.title,
+        "url": source.final_url or source.url,
         "domain": _domain(source.final_url or source.url),
+        "fetched_at": source.fetched_at,
+        "content_hash": source.content_hash,
+        "evidence_status": source.evidence_status,
+        "limitations": list(source.limitations),
         "quality": source.extraction_quality,
         "no_relevant_terms_found": source.no_relevant_terms_found,
         "text_preview": _compact(source.text_preview, max_chars=220),
     }
+
+
+def _stable_content_hash(content: str) -> str:
+    normalized = "\n".join(line.rstrip() for line in content.strip().splitlines())
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def _format_candidate_line(item: object) -> str:

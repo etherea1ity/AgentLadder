@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="250" viewBox="0 0 920 250" role="img" aria-labelledby="title desc">
+  <title id="title">Klara evidence controlled research flow</title>
+  <desc id="desc">Search candidates must be fetched, submitted as claim links, verified, then allowed or abstained.</desc>
+  <rect width="920" height="250" rx="24" fill="#fbf8f1"/>
+  <g font-family="Segoe UI, sans-serif" text-anchor="middle">
+    <g fill="#f1e8d9" stroke="#b7a58b"><rect x="35" y="82" width="140" height="72" rx="16"/><rect x="210" y="82" width="140" height="72" rx="16"/><rect x="385" y="82" width="150" height="72" rx="16"/><rect x="570" y="82" width="140" height="72" rx="16"/></g>
+    <rect x="745" y="38" width="140" height="72" rx="16" fill="#e1efe8" stroke="#5f7b62"/>
+    <rect x="745" y="142" width="140" height="72" rx="16" fill="#f3e5dc" stroke="#a5653f"/>
+    <g fill="#283431" font-size="15"><text x="105" y="112">Search</text><text x="105" y="134" font-size="12">candidate only</text><text x="280" y="112">Fetch</text><text x="280" y="134" font-size="12">content + hash</text><text x="460" y="112">evidence_submit</text><text x="460" y="134" font-size="12">claims + links</text><text x="640" y="112">Verifier</text><text x="640" y="134" font-size="12">join + witness</text><text x="815" y="68">Release</text><text x="815" y="90" font-size="12">verified answer</text><text x="815" y="172">Abstain</text><text x="815" y="194" font-size="12">insufficient/conflict</text></g>
+    <g stroke="#746d63" stroke-width="2" fill="none"><path d="M175 118h35"/><path d="M350 118h35"/><path d="M535 118h35"/><path d="M710 105l35-23"/><path d="M710 132l35 35"/></g>
+  </g>
+</svg>

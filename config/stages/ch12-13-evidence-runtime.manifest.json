@@ -1,0 +1,51 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch12-13-evidence-runtime",
+  "branch": "codex/ch12-13-evidence-runtime",
+  "parent_commit": "3c43fa6",
+  "mode": "full-end-to-end",
+  "datasets": [
+    "tests/fixtures/algorithm/gate1_gold.json",
+    "tests/fixtures/algorithm/gate1_trajectories.jsonl",
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "model_ids": ["none-deterministic-runtime-gate"],
+  "seeds": [12, 13],
+  "budgets": {
+    "paid_api_usd": 0,
+    "live_smoke_max_pages": 1,
+    "live_smoke_timeout_seconds": 12,
+    "max_search_calls_quick": 3,
+    "max_fetch_calls_quick": 5,
+    "max_search_calls_deep": 8,
+    "max_fetch_calls_deep": 16
+  },
+  "acceptance": {
+    "real_loop_final_answer_control": true,
+    "fetched_content_required_before_citation": true,
+    "search_snippets_never_count_as_evidence": true,
+    "unsupported_contradicted_stale_irrelevant_dangling_duplicate_detected": true,
+    "explicit_abstention_supported": true,
+    "critical_gold_metrics_equal_one": true,
+    "safe_api_projection": true,
+    "responsive_evidence_status_ui": true
+  },
+  "expected_artifacts": [
+    "docs/chapters/ch12-controlled-agentic-rag.md",
+    "docs/chapters/ch12-controlled-agentic-rag.en.md",
+    "docs/chapters/ch13-research-agent.md",
+    "docs/chapters/ch13-research-agent.en.md",
+    "docs/reports/product/ch12-13-evidence-runtime.json",
+    "docs/reports/product/ch12-13-evidence-runtime.md",
+    "docs/reports/product/ch12-13-evidence-runtime.en.md",
+    "docs/reports/product/ch12-13-evidence-runtime-ui-e2e.json"
+  ],
+  "exclusions": [
+    "general document RAG",
+    "unbounded crawling",
+    "domain-specific answer patches",
+    "hidden chain-of-thought",
+    "claiming open-domain perfection from deterministic fixtures",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

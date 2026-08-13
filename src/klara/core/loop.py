@@ -173,6 +173,7 @@ class FinalAnswerDecision:
     allowed: bool = True
     reason: str = ""
     feedback: str = ""
+    replacement_content: str | None = None
 
 
 @dataclass(frozen=True)
@@ -484,6 +485,16 @@ class KlaraLoop:
                                 "reason": final_decision.reason,
                             },
                         )
+                    final_content = (
+                        final_decision.replacement_content
+                        if final_decision.replacement_content is not None
+                        else response.content
+                    )
+                    if final_content != response.content:
+                        assistant_message = KlaraMessage(
+                            role="assistant",
+                            content=final_content,
+                        )
                     messages.append(assistant_message)
                     # No tool calls means the assistant content is the final answer.
                     self._emit(sequencer, active_run_id, EventKind.TURN_COMPLETED, {"turn_index": turn_index})
@@ -491,7 +502,7 @@ class KlaraLoop:
                         sequencer,
                         active_run_id,
                         messages,
-                        response.content,
+                        final_content,
                         StopReason.FINAL,
                         run_started=run_started,
                         run_metrics=run_metrics,
@@ -1314,11 +1325,23 @@ class KlaraLoop:
     def _before_final_answer(self, content: str) -> FinalAnswerDecision:
         """Aggregate controller decisions before finalization."""
 
+        candidate_content = content
+        replacement_content: str | None = None
+        reasons: list[str] = []
         for controller in self.controllers:
-            decision = controller.before_final_answer(content=content)
+            decision = controller.before_final_answer(content=candidate_content)
             if not decision.allowed:
                 return decision
-        return FinalAnswerDecision(allowed=True, reason="ready")
+            if decision.reason:
+                reasons.append(decision.reason)
+            if decision.replacement_content is not None:
+                candidate_content = decision.replacement_content
+                replacement_content = decision.replacement_content
+        return FinalAnswerDecision(
+            allowed=True,
+            reason=",".join(dict.fromkeys(reasons)) or "ready",
+            replacement_content=replacement_content,
+        )
 
     def _emit_controller_events(
         self,

@@ -23,6 +23,10 @@ PUBLIC_RUNTIME_EVENT_MESSAGES = {
     "evidence.candidate_recorded": "Search candidate recorded.",
     "evidence.source_recorded": "Fetched source recorded.",
     "evidence.readiness_evaluated": "Evidence readiness evaluated.",
+    "evidence.answer_submitted": "Claim-level answer submitted for verification.",
+    "evidence.submission_rejected": "Evidence submission was rejected.",
+    "evidence.verification_completed": "Claim-level evidence verification completed.",
+    "evidence.verification_failed": "Claim-level evidence verification failed.",
     "final_answer.blocked": "Final answer blocked by runtime policy.",
     "final_answer.allowed": "Final answer allowed by runtime policy.",
     "final_answer.no_progress_stopped": "Final answer blocking stopped for no progress.",
@@ -233,6 +237,13 @@ class RunEventProjector:
 
         if str(event.type) in PUBLIC_RUNTIME_EVENT_MESSAGES:
             payload = dict(event.payload)
+            if str(event.type).startswith("evidence."):
+                payload = {
+                    key: value
+                    for key, value in payload.items()
+                    if key not in {"content", "final_text", "support_note", "support_notes"}
+                }
+                payload["private_evidence_content_exposed"] = False
             if str(event.type).startswith("memory."):
                 payload = {
                     key: value

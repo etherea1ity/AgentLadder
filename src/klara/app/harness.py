@@ -27,6 +27,7 @@ from klara.memory import (
     memory_tools,
 )
 from klara.services.web import WebResearchController
+from klara.services.evidence import EvidenceRuntimeController
 from klara.skills import SkillCatalog, SkillListTool, SkillRuntimeController, SkillViewTool
 from klara.tools.executor import ToolExecutor
 from klara.tools.registry import ToolRegistry
@@ -186,6 +187,9 @@ class KlaraHarness:
             hooks.register(JsonlTraceHook(self.config.trace_path))
         controllers = self.controllers
         if controllers is None:
+            web_research = WebResearchController(
+                user_timezone=self.config.user_context.timezone
+            )
             controllers = (
                 ContextController(
                     policy=self.config.context_policy,
@@ -194,7 +198,8 @@ class KlaraHarness:
                     workspace_root=self.config.workspace_root,
                 ),
                 MemoryRuntimeController(),
-                WebResearchController(user_timezone=self.config.user_context.timezone),
+                web_research,
+                EvidenceRuntimeController(web_research),
                 SkillRuntimeController(self.skill_catalog),
             )
         return KlaraLoop(

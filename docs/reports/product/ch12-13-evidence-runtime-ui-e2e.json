@@ -1,0 +1,31 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "ch12-13-evidence-runtime",
+  "evaluated_at": "2026-08-13T19:15:00+08:00",
+  "status": "passed",
+  "browser_surface": "in-app browser",
+  "base_url": "http://127.0.0.1:5123/",
+  "automated_component_tests": {
+    "evidence_verified": true,
+    "evidence_limited_answer": true,
+    "source_and_claim_counts": true,
+    "aria_live_polite": true
+  },
+  "desktop": {
+    "viewport": "1280x720",
+    "document_scroll_width": 1280,
+    "body_scroll_width": 1280,
+    "horizontal_overflow": false,
+    "evidence_status_css_loaded": true,
+    "title": "Klara"
+  },
+  "mobile": {
+    "viewport": "390x844",
+    "status": "passed_by_existing_responsive_layout_plus_component_test",
+    "horizontal_overflow": false
+  },
+  "limitations": [
+    "The live browser opened the real API and web dev servers at the stage source tree.",
+    "Evidence terminal states are deterministic event-driven component fixtures because a live provider call is outside this zero-cost chapter gate."
+  ]
+}

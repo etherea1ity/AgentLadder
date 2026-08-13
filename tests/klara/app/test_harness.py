@@ -142,6 +142,7 @@ def test_harness_defaults_to_default_registry() -> None:
     assert result.final_answer == "harness final"
     assert {tool.name for tool in llm.tools} == {
         "current_time",
+        "evidence_submit",
         "image_generate",
         "memory_remember",
         "memory_search",

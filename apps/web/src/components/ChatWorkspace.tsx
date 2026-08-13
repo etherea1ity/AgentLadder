@@ -320,6 +320,7 @@ function MessageList({
       <PlanPanel plan={todoPlan} />
       <ContextBudgetStatus run={latestRun} />
       <ProviderRecoveryStatus run={latestRun} />
+      <EvidenceStatus run={latestRun} />
       {turns.map((turn) => (
         <article className="conversation-turn" key={turn.key}>
           {turn.user ? <UserMessage message={turn.user} /> : null}
@@ -458,6 +459,57 @@ export function ProviderRecoveryStatus({ run }: { run?: Run }) {
       <span>
         <strong>{label}</strong>
         <small>Recovery details are preserved in the run trace.</small>
+      </span>
+    </aside>
+  );
+}
+
+export function EvidenceStatus({ run }: { run?: Run }) {
+  const events = run?.events ?? [];
+  const verification = [...events]
+    .reverse()
+    .find((event) => event.event_type === "evidence.verification_completed");
+  const readiness = [...events]
+    .reverse()
+    .find((event) => event.event_type === "evidence.readiness_evaluated");
+  const sourceCount = events.filter(
+    (event) => event.event_type === "evidence.source_recorded",
+  ).length;
+  if (!verification && !readiness && sourceCount === 0) return null;
+
+  const payload = verification?.payload ?? readiness?.payload ?? {};
+  const claims = Array.isArray(payload.claims) ? payload.claims : [];
+  const supported = claims.filter(
+    (claim) =>
+      typeof claim === "object" &&
+      claim !== null &&
+      (claim as Record<string, unknown>).judgment === "supported",
+  ).length;
+  const abstained = payload.abstained === true;
+  const ready = verification ? payload.allowed === true : payload.ready === true;
+  const label = verification
+    ? abstained
+      ? "Evidence-limited answer"
+      : ready
+        ? "Evidence verified"
+        : "Evidence blocked"
+    : ready
+      ? "Sources ready"
+      : "Gathering evidence";
+
+  return (
+    <aside
+      className={`evidence-status ${ready ? "is-ready" : "is-pending"} ${abstained ? "is-abstained" : ""}`}
+      aria-label="Evidence control"
+      aria-live="polite"
+    >
+      <span className="evidence-status-signal" aria-hidden="true" />
+      <span>
+        <strong>{label}</strong>
+        <small>
+          {sourceCount} fetched {sourceCount === 1 ? "source" : "sources"}
+          {claims.length > 0 ? ` · ${supported}/${claims.length} claims supported` : ""}
+        </small>
       </span>
     </aside>
   );

@@ -79,6 +79,7 @@ def test_load_runtime_config_reads_loop_policy() -> None:
         "image_generate",
         "web_fetch",
         "web_search",
+        "evidence_submit",
         "todo_write",
         "skills_list",
         "skill_view",
