@@ -334,6 +334,44 @@ def test_policy_and_hook_events_project_to_visible_run_events() -> None:
     assert hook.payload["reason"] == "blocked for test"
 
 
+def test_projector_emits_sanitized_permission_event() -> None:
+    projector = RunEventProjector()
+    projected = projector.project(
+        KlaraEvent(
+            type="pre_tool_use.completed",
+            run_id="run-permission",
+            payload={
+                "allowed": False,
+                "metadata": {
+                    "permission": {
+                        "allowed": False,
+                        "reason": "permission_approval_required",
+                        "request_id": "preq_1",
+                        "action": {
+                            "tool_name": "web_fetch",
+                            "capability": "web.web_fetch",
+                            "side_effect": "network",
+                            "resource_type": "domain",
+                            "resource": "https://example.com/docs",
+                            "risk": "medium",
+                            "destructive": False,
+                            "externally_consequential": True,
+                            "arguments_sha256": "a" * 64,
+                        },
+                    }
+                },
+            },
+        )
+    )
+
+    assert [event.event_type for event in projected] == [
+        "hook_placement_completed",
+        "permission.requested",
+    ]
+    assert projected[1].payload["raw_arguments_exposed"] is False
+    assert "arguments_sha256" not in projected[1].payload["action"]
+
+
 def test_web_tool_started_projects_specific_web_event() -> None:
     projector = RunEventProjector()
 

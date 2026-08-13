@@ -6,6 +6,7 @@ import { EvaluationDashboard } from "./components/EvaluationDashboard";
 import { Sidebar } from "./components/Sidebar";
 import { SkillsCatalog } from "./components/SkillsCatalog";
 import { MemoryManager } from "./components/MemoryManager";
+import { PermissionCenter } from "./components/PermissionCenter";
 import type {
   Message,
   ModelOption,
@@ -51,7 +52,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState("");
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
-  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory">("chat");
+  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions">("chat");
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
   );
@@ -924,6 +925,7 @@ export default function App() {
     activeWorkspace === "evaluations" ? "has-evaluations" : "",
     activeWorkspace === "skills" ? "has-skills" : "",
     activeWorkspace === "memory" ? "has-memory" : "",
+    activeWorkspace === "permissions" ? "has-permissions" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -954,6 +956,8 @@ export default function App() {
         onOpenSkills={() => setActiveWorkspace("skills")}
         memoryActive={activeWorkspace === "memory"}
         onOpenMemory={() => setActiveWorkspace("memory")}
+        permissionsActive={activeWorkspace === "permissions"}
+        onOpenPermissions={() => setActiveWorkspace("permissions")}
       />
       {activeWorkspace === "evaluations" ? (
         <EvaluationDashboard onBackToChat={() => setActiveWorkspace("chat")} />
@@ -961,6 +965,8 @@ export default function App() {
         <SkillsCatalog onBackToChat={() => setActiveWorkspace("chat")} />
       ) : activeWorkspace === "memory" ? (
         <MemoryManager onBackToChat={() => setActiveWorkspace("chat")} />
+      ) : activeWorkspace === "permissions" ? (
+        <PermissionCenter onBackToChat={() => setActiveWorkspace("chat")} />
       ) : (
         <ChatWorkspace
           activeSessionId={activeSessionId}

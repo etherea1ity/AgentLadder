@@ -15,6 +15,7 @@ from klara.infra.config.models import ModelsConfig, ProviderModel
 from klara.infra.llm.routed_client import RoutedLlmClient
 from klara.infra.llm.openai_compatible import OpenAICompatibleSettings
 from klara.memory import MemoryScope, MemoryService, SQLiteMemoryRepository
+from klara.permissions import PermissionScope, PermissionService, SQLitePermissionRepository
 from klara.skills import SkillCatalog
 
 
@@ -104,6 +105,13 @@ _memory_scope = MemoryScope(
     user_id="local-user",
     agent_id="klara",
 )
+_permission_repository = SQLitePermissionRepository(_store.root / "permissions.sqlite3")
+_permission_service = PermissionService(_permission_repository)
+_permission_scope = PermissionScope(
+    tenant_id="local-tenant",
+    actor_id="local-user",
+    agent_id="klara",
+)
 _llm = RoutedLlmClient(
     models=_models,
     dotenv_path=".env",
@@ -165,3 +173,15 @@ def get_memory_scope() -> MemoryScope:
     """Return the authenticated local owner partition for API requests."""
 
     return _memory_scope
+
+
+def get_permission_service() -> PermissionService:
+    """Return the durable permission service shared by runs and approvals."""
+
+    return _permission_service
+
+
+def get_permission_scope() -> PermissionScope:
+    """Return the authenticated local owner partition for permission records."""
+
+    return _permission_scope

@@ -84,18 +84,22 @@ class ToolCall:
     # Arguments must stay JSON-compatible so traces and adapters can inspect them.
     arguments: JsonObject = field(default_factory=dict)
 
-    def to_public_dict(self) -> JsonObject:
-        """Serialize the tool request for trace and hook payloads.
+    def to_public_dict(self, *, include_arguments: bool = False) -> JsonObject:
+        """Serialize a trace-safe tool request.
 
         Returns:
             A JSON-compatible dictionary describing the requested call.
         """
 
-        return {
+        value: JsonObject = {
             "id": self.id,
             "name": self.name,
-            "arguments": self.arguments,
+            "argument_keys": sorted(str(key) for key in self.arguments),
+            "arguments_exposed": include_arguments,
         }
+        if include_arguments:
+            value["arguments"] = self.arguments
+        return value
 
 
 @dataclass(frozen=True)

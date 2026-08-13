@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Klara permission decision flow</title>
+  <desc id="desc">A requested tool action is canonicalized, evaluated against policy and grants, then allowed or blocked for explicit approval.</desc>
+  <rect width="1280" height="720" fill="#f7f5f0"/>
+  <g font-family="Inter,Segoe UI,sans-serif" fill="#28231f">
+    <text x="74" y="88" font-size="34" font-weight="700">Permission is a runtime decision, not model prose</text>
+    <text x="74" y="126" font-size="18" fill="#6d645c">action + identity + exact resource + risk → deterministic authority</text>
+    <g transform="translate(72 234)">
+      <rect width="210" height="116" rx="20" fill="#ffffff" stroke="#d8d1c7" stroke-width="2"/>
+      <text x="105" y="48" text-anchor="middle" font-size="20" font-weight="700">Tool request</text>
+      <text x="105" y="78" text-anchor="middle" font-size="15" fill="#6d645c">name + arguments</text>
+    </g>
+    <path d="M282 292H390" stroke="#8a8178" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(390 214)">
+      <rect width="244" height="156" rx="20" fill="#e8f0ee" stroke="#487c73" stroke-width="2"/>
+      <text x="122" y="42" text-anchor="middle" font-size="20" font-weight="700">Canonicalize</text>
+      <text x="122" y="73" text-anchor="middle" font-size="15">tool · capability</text>
+      <text x="122" y="99" text-anchor="middle" font-size="15">tenant · actor · task</text>
+      <text x="122" y="125" text-anchor="middle" font-size="15">path / domain · risk</text>
+    </g>
+    <path d="M634 292H738" stroke="#8a8178" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(738 204)">
+      <polygon points="142,0 284,88 142,176 0,88" fill="#efe8f7" stroke="#765a98" stroke-width="2"/>
+      <text x="142" y="78" text-anchor="middle" font-size="20" font-weight="700">Valid authority?</text>
+      <text x="142" y="108" text-anchor="middle" font-size="14" fill="#65556f">policy or exact grant</text>
+    </g>
+    <path d="M1022 292H1110" stroke="#438260" stroke-width="4" marker-end="url(#arrowGreen)"/>
+    <g transform="translate(1110 240)">
+      <rect width="112" height="104" rx="20" fill="#e8f3eb" stroke="#438260" stroke-width="2"/>
+      <text x="56" y="47" text-anchor="middle" font-size="19" font-weight="700">Allow</text>
+      <text x="56" y="73" text-anchor="middle" font-size="14">execute</text>
+    </g>
+    <path d="M880 380V476" stroke="#b34736" stroke-width="4" marker-end="url(#arrowRed)"/>
+    <g transform="translate(672 476)">
+      <rect width="416" height="152" rx="22" fill="#f8e9e5" stroke="#b34736" stroke-width="2"/>
+      <text x="208" y="43" text-anchor="middle" font-size="20" font-weight="700">Block and request approval</text>
+      <text x="208" y="75" text-anchor="middle" font-size="15">deny · allow once · allow for task · standing grant</text>
+      <text x="208" y="104" text-anchor="middle" font-size="15">expiry · revocation · audit</text>
+      <text x="208" y="131" text-anchor="middle" font-size="14" fill="#7b4c43">No side effect. Do not retry.</text>
+    </g>
+    <text x="894" y="421" font-size="14" fill="#b34736">NO / UNKNOWN</text>
+    <text x="1040" y="274" font-size="14" fill="#438260">YES</text>
+  </g>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3L0 6Z" fill="#8a8178"/></marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3L0 6Z" fill="#438260"/></marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3L0 6Z" fill="#b34736"/></marker>
+  </defs>
+</svg>

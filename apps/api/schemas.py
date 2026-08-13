@@ -78,6 +78,9 @@ RunEventType = Literal[
     "memory.updated",
     "memory.forgotten",
     "memory.deleted",
+    "permission.requested",
+    "permission.allowed",
+    "permission.denied",
     "run_completed",
     "run_failed",
     "run_cancelled",
@@ -379,3 +382,35 @@ class DeleteMemoryResponse(BaseModel):
     content_sha256: str
     raw_content_occurrences: int
     deletion_verified: bool
+
+
+PermissionEffectValue = Literal[
+    "deny", "allow_once", "allow_task", "allow_standing"
+]
+
+
+class PermissionDecisionRequest(BaseModel):
+    effect: PermissionEffectValue
+    expires_seconds: int = Field(default=900, ge=1, le=30 * 24 * 60 * 60)
+    parent_grant_id: str | None = None
+
+
+class PermissionStateResponse(BaseModel):
+    schema_version: Literal["klara.permissions-state.v1"]
+    requests: list[dict[str, Any]]
+    grants: list[dict[str, Any]]
+    audit: list[dict[str, Any]]
+
+
+class PermissionGrantResponse(BaseModel):
+    grant_id: str
+    request_id: str | None
+    effect: PermissionEffectValue
+    status: Literal["active", "consumed", "revoked", "expired"]
+    scope: dict[str, Any]
+    action: dict[str, Any]
+    created_at: str
+    expires_at: str
+    remaining_uses: int | None = None
+    parent_grant_id: str | None = None
+    revoked_at: str | None = None

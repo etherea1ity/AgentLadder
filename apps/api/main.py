@@ -7,6 +7,7 @@ from apps.api.routes.assets import router as assets_router
 from apps.api.routes.evaluations import router as evaluations_router
 from apps.api.routes.models import router as models_router
 from apps.api.routes.memory import router as memory_router
+from apps.api.routes.permissions import router as permissions_router
 from apps.api.routes.runs import router as runs_router
 from apps.api.routes.sessions import router as sessions_router
 from apps.api.routes.skills import router as skills_router
@@ -28,6 +29,7 @@ app.include_router(assets_router)
 app.include_router(evaluations_router)
 app.include_router(skills_router)
 app.include_router(memory_router)
+app.include_router(permissions_router)
 
 
 @app.get("/api/health")

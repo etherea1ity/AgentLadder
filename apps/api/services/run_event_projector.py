@@ -261,6 +261,9 @@ class RunEventProjector:
 
         hook_projection = _hook_projection(event)
         if hook_projection is not None:
+            permission_projection = _permission_projection(event)
+            if permission_projection is not None:
+                return (hook_projection, permission_projection)
             return (hook_projection,)
 
         return ()
@@ -591,6 +594,58 @@ def _hook_projection(event: KlaraEvent) -> ProjectedRunEvent | None:
         ),
         message=f"{placement} hook {suffix}.",
         payload=payload,
+    )
+
+
+def _permission_projection(event: KlaraEvent) -> ProjectedRunEvent | None:
+    """Project a sanitized permission decision carried by PreToolUse metadata."""
+
+    if event.type != "pre_tool_use.completed":
+        return None
+    metadata = _dict_payload(event.payload.get("metadata"))
+    permission = _dict_payload(metadata.get("permission"))
+    if not permission:
+        return None
+    action = _dict_payload(permission.get("action"))
+    safe_action = {
+        key: action.get(key)
+        for key in (
+            "tool_name",
+            "capability",
+            "side_effect",
+            "resource_type",
+            "resource",
+            "risk",
+            "destructive",
+            "externally_consequential",
+        )
+        if key in action
+    }
+    allowed = bool(permission.get("allowed", False))
+    reason = str(permission.get("reason") or "permission_denied")
+    requested = bool(permission.get("request_id")) and not allowed
+    if requested:
+        event_type: RunEventType = "permission.requested"
+        message = "Approval is required before this action can run."
+    elif allowed:
+        event_type = "permission.allowed"
+        message = "Permission policy allowed this action."
+    else:
+        event_type = "permission.denied"
+        message = "Permission policy denied this action."
+    return ProjectedRunEvent(
+        event_type=event_type,
+        message=message,
+        payload={
+            "schema_version": "klara.permission-event.v1",
+            "allowed": allowed,
+            "reason": reason,
+            "request_id": permission.get("request_id"),
+            "grant_id": permission.get("grant_id"),
+            "effect": permission.get("effect"),
+            "action": safe_action,
+            "raw_arguments_exposed": False,
+        },
     )
 
 

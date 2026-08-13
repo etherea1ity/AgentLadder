@@ -26,6 +26,13 @@ from klara.memory import (
     SQLiteMemoryRepository,
     memory_tools,
 )
+from klara.permissions import (
+    PermissionActionResolver,
+    PermissionEngineHook,
+    PermissionScope,
+    PermissionService,
+    SQLitePermissionRepository,
+)
 from klara.services.web import WebResearchController
 from klara.services.evidence import EvidenceRuntimeController
 from klara.skills import SkillCatalog, SkillListTool, SkillRuntimeController, SkillViewTool
@@ -62,6 +69,7 @@ class KlaraHarnessConfig:
     project_skills_root: Path | None = None
     allowed_skill_permissions: tuple[str, ...] = ()
     memory_path: Path = Path("data/memory/klara.sqlite3")
+    permission_path: Path = Path("data/permissions/klara.sqlite3")
     session_id: str | None = None
     agent_id: str = "klara"
 
@@ -171,6 +179,23 @@ class KlaraHarness:
         self.registry.register_tool(SkillListTool(self.skill_catalog))
         self.registry.register_tool(SkillViewTool(self.skill_catalog))
         self._selected_tools = self._select_tools()
+        self.permission_repository = SQLitePermissionRepository(
+            self.config.permission_path
+        )
+        self.permission_service = PermissionService(self.permission_repository)
+        self.permission_scope = PermissionScope(
+            tenant_id=self.config.user_context.tenant_id,
+            actor_id=self.config.user_context.user_id,
+            agent_id=self.config.agent_id,
+            task_id=self.config.session_id,
+        )
+        self.permission_resolver = PermissionActionResolver(
+            {
+                tool.spec.name: tool.metadata
+                for tool in self._selected_tools
+            },
+            self.config.workspace_root,
+        )
         self._validate_model_capabilities()
         if (
             self.config.capability_profile.trace_sink == "jsonl"
@@ -182,7 +207,16 @@ class KlaraHarness:
     def build_loop(self, *, now: datetime | None = None) -> KlaraLoop:
         """Build, but do not execute, the exact loop described by `run_profile`."""
 
-        hooks = HookManager(list(self.extra_hooks))
+        hooks = HookManager(
+            [
+                PermissionEngineHook(
+                    service=self.permission_service,
+                    resolver=self.permission_resolver,
+                    scope=self.permission_scope,
+                ),
+                *self.extra_hooks,
+            ]
+        )
         if self.config.trace_path is not None:
             hooks.register(JsonlTraceHook(self.config.trace_path))
         controllers = self.controllers
@@ -357,7 +391,7 @@ class KlaraHarness:
         return "jsonl" if self.config.trace_path is not None else "none"
 
     def _hook_names(self) -> tuple[str, ...]:
-        names = list(self.config.capability_profile.hooks)
+        names = ["permission_engine", *self.config.capability_profile.hooks]
         if self.config.trace_path is not None and "jsonl_trace" not in names:
             names.append("jsonl_trace")
         return tuple(names)

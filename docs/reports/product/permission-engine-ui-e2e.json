@@ -1,0 +1,67 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "permission-engine",
+  "evaluated_at": "2026-08-13T20:01:00+08:00",
+  "browser_surface": "Codex in-app browser",
+  "url": "http://127.0.0.1:5123/",
+  "backend": "real local FastAPI and SQLite permission state",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 720,
+      "document_scroll_width": 1280,
+      "body_scroll_width": 1280,
+      "main_client_width": 985,
+      "main_scroll_width": 985,
+      "horizontal_overflow": false,
+      "visually_inspected": true
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": "passed_by_component_and_responsive_css_tests",
+      "live_browser_resize_supported": false
+    }
+  },
+  "journey": [
+    "opened Permissions from the real sidebar",
+    "loaded empty state from GET /api/permissions",
+    "inserted one real pending web_fetch request through PermissionService",
+    "refreshed and inspected exact canonical resource https://example.com/docs",
+    "confirmed query token was absent from the UI",
+    "clicked Allow once and observed one active grant",
+    "clicked Revoke and observed revoked history with zero active grants"
+  ],
+  "accessibility": {
+    "semantic_main": true,
+    "approval_region": true,
+    "approval_dialog_named": true,
+    "buttons_named": true,
+    "error_alert_present": true,
+    "keyboard_component_contract": true,
+    "automated_axe_scan": "not_executed"
+  },
+  "console": {
+    "errors": 0,
+    "unhandled_rejections": 0,
+    "notes": [
+      "One Vite reconnect log was caused by the intentional dev-server restart before the final journey.",
+      "React DevTools development info was present and is not an application error."
+    ]
+  },
+  "checks": {
+    "real_backend_state": true,
+    "pending_scope_visible": true,
+    "raw_query_hidden": true,
+    "allow_once_immediate_feedback": true,
+    "revocation_immediate_feedback": true,
+    "desktop_no_horizontal_overflow": true,
+    "component_mobile_layout": true,
+    "console_error_free": true
+  },
+  "passed": true,
+  "limitations": [
+    "The in-app browser session did not expose viewport resizing, so 390x844 is backed by the responsive CSS and component suite rather than a second live screenshot.",
+    "A full automated accessibility scanner remains part of the later product-polish gate."
+  ]
+}

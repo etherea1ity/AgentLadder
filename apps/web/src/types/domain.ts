@@ -91,6 +91,9 @@ export type RunEventType =
   | 'memory.updated'
   | 'memory.forgotten'
   | 'memory.deleted'
+  | 'permission.requested'
+  | 'permission.allowed'
+  | 'permission.denied'
   | 'llm_call_started'
   | 'answer_streaming_started'
   | 'answer_delta'
@@ -282,6 +285,63 @@ export type MemoryList = {
   schema_version: 'klara.memory-list.v1';
   records: MemoryRecord[];
   counts_by_kind: Record<string, number>;
+};
+
+export type PermissionEffect = 'deny' | 'allow_once' | 'allow_task' | 'allow_standing';
+export type PermissionRequestStatus = 'pending' | 'approved' | 'denied' | 'expired';
+export type PermissionGrantStatus = 'active' | 'consumed' | 'revoked' | 'expired';
+export type PermissionScope = { tenant_id: string; actor_id: string; agent_id: string; task_id?: string | null };
+export type PermissionAction = {
+  tool_name: string;
+  capability: string;
+  side_effect: 'none' | 'read' | 'write' | 'network' | 'control';
+  resource_type: string;
+  resource: string;
+  risk: 'low' | 'medium' | 'high' | 'critical';
+  destructive: boolean;
+  externally_consequential: boolean;
+  arguments_sha256: string;
+};
+export type PermissionRequestRecord = {
+  request_id: string;
+  fingerprint: string;
+  scope: PermissionScope;
+  action: PermissionAction;
+  status: PermissionRequestStatus;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+  repeated_count: number;
+  decision_effect?: PermissionEffect | null;
+};
+export type PermissionGrantRecord = {
+  grant_id: string;
+  request_id?: string | null;
+  effect: PermissionEffect;
+  status: PermissionGrantStatus;
+  scope: PermissionScope;
+  action: PermissionAction;
+  created_at: string;
+  expires_at: string;
+  remaining_uses?: number | null;
+  parent_grant_id?: string | null;
+  revoked_at?: string | null;
+};
+export type PermissionAuditRecord = {
+  audit_id: string;
+  operation: string;
+  decision: string;
+  occurred_at: string;
+  request_id?: string | null;
+  grant_id?: string | null;
+  tool_name?: string | null;
+  resource?: string | null;
+};
+export type PermissionState = {
+  schema_version: 'klara.permissions-state.v1';
+  requests: PermissionRequestRecord[];
+  grants: PermissionGrantRecord[];
+  audit: PermissionAuditRecord[];
 };
 
 // Klara Presence public event model. This is intentionally separate from the

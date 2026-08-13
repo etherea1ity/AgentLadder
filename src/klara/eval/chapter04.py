@@ -40,7 +40,10 @@ def evaluate_chapter04(root: Path) -> dict[str, Any]:
         "profile_hash_valid": _profile_hash_valid(public),
         "persona_hash_valid": len(str(public["persona_sha256"])) == 64,
         "required_tools_visible": tuple(public["visible_tools"]) == profile.visible_tools,
-        "hooks_and_trace_declared": tuple(public["hooks"]) == profile.hooks and public["trace_sink"] == profile.trace_sink,
+        "hooks_and_trace_declared": (
+            tuple(public["hooks"]) == ("permission_engine", *profile.hooks)
+            and public["trace_sink"] == profile.trace_sink
+        ),
         "model_supports_profile": _model_supports_profile(models, public["model"], profile.required_model_capabilities),
         "secret_values_absent": not any(marker in public_text for marker in ("api_key", "password", "secret", "bearer ")),
         "provider_connection_details_absent": not any(marker in public_text for marker in ("base_url", "api_key_env", "provider.invalid")),

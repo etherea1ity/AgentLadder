@@ -1,0 +1,42 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "permission-engine",
+  "branch": "codex/permission-engine",
+  "parent_commit": "49baa785ed7b3f8336802dee2ad0c9f8f2c80073",
+  "mode": "full-end-to-end",
+  "datasets": [
+    "tests/fixtures/behavior/agent_behavior_cases.json",
+    "tests/klara/permissions/test_permission_engine.py"
+  ],
+  "model_ids": ["none-deterministic-security-gate"],
+  "seeds": [19],
+  "budgets": {
+    "paid_api_usd": 0,
+    "request_ttl_seconds": 86400,
+    "maximum_grant_seconds": 2592000
+  },
+  "acceptance": {
+    "critical_isolation_and_bypass_rate": 1.0,
+    "unknown_capability_fail_closed": true,
+    "explicit_authority_for_external_and_destructive_actions": true,
+    "allow_once_task_standing_deny_expiry_revoke_audit": true,
+    "parent_child_attenuation": true,
+    "raw_argument_leak_count": 0,
+    "responsive_approval_ui": true
+  },
+  "expected_artifacts": [
+    "docs/chapters/permission-engine.md",
+    "docs/chapters/permission-engine.en.md",
+    "docs/reports/product/permission-engine.json",
+    "docs/reports/product/permission-engine.md",
+    "docs/reports/product/permission-engine.en.md",
+    "docs/reports/product/permission-engine-ui-e2e.json"
+  ],
+  "exclusions": [
+    "automatic approval from model prose",
+    "raw credentials in grants or trace",
+    "universal shell grammar proof",
+    "durable paused-run continuation before Chapter 14",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

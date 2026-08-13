@@ -1,4 +1,4 @@
-import type { ClientContext, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
+import type { ClientContext, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -58,6 +58,9 @@ export const api = {
   updateMemory: (memoryId: string, content: string, signal?: AbortSignal) => request<MemoryRecord>(`/api/memory/${memoryId}`, { method: 'PATCH', body: JSON.stringify({ content }), signal }),
   forgetMemory: (memoryId: string, signal?: AbortSignal) => request<MemoryRecord>(`/api/memory/${memoryId}/forget`, { method: 'POST', body: '{}', signal }),
   deleteMemory: (memoryId: string, signal?: AbortSignal) => request<{ memory_id: string; deleted: boolean; deletion_verified: boolean }>(`/api/memory/${memoryId}`, { method: 'DELETE', signal }),
+  listPermissions: (signal?: AbortSignal) => request<PermissionState>('/api/permissions', { signal }),
+  decidePermission: (requestId: string, effect: PermissionEffect, expiresSeconds: number, signal?: AbortSignal) => request<PermissionGrantRecord>(`/api/permissions/requests/${requestId}/decision`, { method: 'POST', body: JSON.stringify({ effect, expires_seconds: expiresSeconds }), signal }),
+  revokePermission: (grantId: string, signal?: AbortSignal) => request<PermissionGrantRecord>(`/api/permissions/grants/${grantId}/revoke`, { method: 'POST', body: '{}', signal }),
   createRun: (
     session_id: string,
     question: string,
@@ -137,6 +140,9 @@ export const api = {
       'memory.updated',
       'memory.forgotten',
       'memory.deleted',
+      'permission.requested',
+      'permission.allowed',
+      'permission.denied',
       'llm_call_started',
       'answer_streaming_started',
       'answer_delta',

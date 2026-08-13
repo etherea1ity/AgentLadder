@@ -1808,12 +1808,21 @@ def _blocked_tool_result(call: ToolCall, reason: str) -> ToolResult:
     """Return a model-visible observation for a hook-blocked tool."""
 
     public_reason = reason.strip() or "blocked"
+    if public_reason == "permission_approval_required":
+        public_error = (
+            "Tool blocked: explicit user approval is required. Do not retry this "
+            "action unless the user grants its exact scope."
+        )
+    elif public_reason.startswith("permission_"):
+        public_error = f"Tool blocked by permission policy: {public_reason}"
+    else:
+        public_error = f"Tool blocked by hook: {public_reason}"
     return ToolResult(
         tool_call_id=call.id,
         name=call.name,
         content="",
         ok=False,
-        error=f"Tool blocked by hook: {public_reason}",
+        error=public_error,
     )
 
 

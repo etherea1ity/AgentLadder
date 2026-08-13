@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { BarChart3, BookOpen, Brain, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, Brain, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
 import type { Session } from '../types/domain';
 import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
@@ -20,9 +20,11 @@ type Props = {
   onOpenSkills?: () => void;
   memoryActive?: boolean;
   onOpenMemory?: () => void;
+  permissionsActive?: boolean;
+  onOpenPermissions?: () => void;
 };
 
-export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined }: Props) {
+export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined }: Props) {
   const today = sessions.filter((session) => isToday(session.updated_at));
   const earlier = sessions.filter((session) => !isToday(session.updated_at));
   return (
@@ -51,6 +53,11 @@ export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionI
         <Brain size={18} />
         <span className="sidebar-copy">Memory</span>
         <span className="sidebar-copy sidebar-evaluations-badge">Private</span>
+      </button>
+      <button className={`sidebar-evaluations ${permissionsActive ? 'active' : ''}`} onClick={onOpenPermissions} title="Permissions and approvals" aria-label="Permissions" aria-pressed={permissionsActive}>
+        <KeyRound size={18} />
+        <span className="sidebar-copy">Permissions</span>
+        <span className="sidebar-copy sidebar-evaluations-badge">Guarded</span>
       </button>
       <div className="sidebar-footer"><span className="avatar">K</span><Settings size={18} /></div>
     </aside>

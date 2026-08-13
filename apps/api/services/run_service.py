@@ -262,6 +262,7 @@ class RunService:
                     workspace_root=Path.cwd(),
                     session_id=run.session_id,
                     memory_path=self.store.root / "memory.sqlite3",
+                    permission_path=self.store.root / "permissions.sqlite3",
                 ),
                 models=self.models_config,
                 hooks=(RunProjectionHook(self, run_id, projector),),
