@@ -1,7 +1,7 @@
 {
   "authoritative_parent": "b440df32c71df56c892b4657c392e37f9ea53e9a",
-  "current_stage": "ch08-provider-recovery",
-  "mode": "local-pre-hku",
+  "current_stage": "ch09-skills-runtime",
+  "mode": "full-end-to-end",
   "objectives": [
     {
       "artifacts": [
@@ -260,17 +260,64 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch08-error-recovery-and-fallback.md",
+        "docs/chapters/ch08-error-recovery-and-fallback.en.md",
+        "docs/reports/product/ch08-provider-recovery.json",
+        "docs/reports/product/ch08-provider-recovery.md",
+        "docs/reports/product/ch08-provider-recovery.en.md",
+        "docs/reports/product/ch08-provider-recovery-ui-e2e.json"
+      ],
       "branch": "codex/ch08-provider-recovery",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter08_cli ...",
+        "python -m klara.eval.behavior_cli ...",
+        "python -m pytest -q",
+        "npm test (apps/web)",
+        "npm run build (apps/web)"
+      ],
+      "commit": "2f5af037c3ac55f7c6fa29a9a1c2439ccd5935d3",
+      "datasets": [
+        "tests/fixtures/behavior/agent_behavior_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.chapter08-provider-recovery.v1",
+        "klara.behavior-scorer.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {
+          "passed": 18,
+          "total": 18
+        },
+        "python_tests": {
+          "collected": 289,
+          "passed": 288,
+          "skipped": 1
+        },
+        "frontend_tests": {
+          "passed": 52
+        },
+        "frontend_build": "passed",
+        "behavior_contract": "passed",
+        "ui_viewports": [
+          "1280x720",
+          "390x844"
+        ],
+        "horizontal_overflow": false,
+        "console_error_count": 0,
+        "provider_response_body_visible": false
+      },
       "id": "ch08-provider-recovery",
-      "metrics": {},
+      "metrics": {
+        "chapter_gate_checks": "18/18",
+        "provider_attempts": 2,
+        "prompt_recovery_attempts": 1,
+        "fallback_candidate_count": 2
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -495,5 +542,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-13T05:04:00+00:00"
+  "updated_at": "2026-08-13T06:35:00+00:00"
 }

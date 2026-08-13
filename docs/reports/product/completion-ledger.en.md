@@ -2,7 +2,7 @@
 
 Language: [Chinese](./completion-ledger.md) | English
 
-Mode: `local-pre-hku`
+Mode: `full-end-to-end`
 
 | Objective | Branch | Status |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ Mode: `local-pre-hku`
 | ch04-harness-config | `codex/ch04-harness-config` | passed |
 | ch05-todo-planning | `codex/ch05-todo-planning` | passed |
 | ch06-07-context | `codex/ch06-07-context` | passed |
-| ch08-provider-recovery | `codex/ch08-provider-recovery` | pending |
+| ch08-provider-recovery | `codex/ch08-provider-recovery` | passed |
 | ch09-skills-runtime | `codex/ch09-skills-runtime` | pending |
 | ch10-memory | `codex/ch10-memory` | pending |
 | ch11-formal-rag | `none` | deferred_by_scope |
@@ -30,7 +30,7 @@ Mode: `local-pre-hku`
 | real-trajectory-dataset | `codex/real-trajectory-dataset` | pending |
 | hku-upload-ready | `codex/local-pre-hku-freeze` | pending |
 
-`deferred_by_scope` is not a pass. `pending` is not partial completion. The whole repository may only be called `local pre-HKU freeze passed` after every locally mandatory objective is green and synchronized to GitHub.
+`deferred_by_scope` is not a pass, and `pending` is not partial completion. No new HKU training may begin before Agent Product Freeze passes. The whole project may only be called complete after the Agent, model/data, and learned-policy integration freezes all pass.
 
 ## Current Evidence
 
@@ -43,4 +43,6 @@ Mode: `local-pre-hku`
 
 - Chapters 6–7: commit `ca8a2bd` passes `15/15` machine checks, Python `279 passed, 1 skipped`, frontend `49 passed`, and the production build. A real product probe compresses 10 long history messages into 4 model-visible messages and summarizes 8 old messages; summary content never enters public trace/SSE, and desktop plus 390px layouts have no horizontal overflow. See the [Chapters 6–7 report](./ch06-07-context.en.md).
 
-The sequential gate is now at `ch08-provider-recovery`.
+- Chapter 8: commit `2f5af037c3ac55f7c6fa29a9a1c2439ccd5935d3` passes `18/18` machine checks, Python `288 passed, 1 skipped`, frontend `52 passed`, the production build, and the behavior contract. Fault injection covers transient retry, context-length compaction retry, compatible fallback, tool-failure observations, and the safe recovery UI. Desktop and `390x844` layouts have no horizontal overflow, and the provider response body is not exposed. See the [Chapter 8 report](./ch08-provider-recovery.en.md).
+
+The sequential gate is now at `ch09-skills-runtime`.

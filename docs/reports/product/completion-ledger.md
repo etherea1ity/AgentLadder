@@ -2,7 +2,7 @@
 
 语言：中文 | [English](./completion-ledger.en.md)
 
-模式：`local-pre-hku`
+模式：`full-end-to-end`
 
 | 目标 | 分支 | 状态 |
 | --- | --- | --- |
@@ -11,7 +11,7 @@
 | ch04-harness-config | `codex/ch04-harness-config` | passed |
 | ch05-todo-planning | `codex/ch05-todo-planning` | passed |
 | ch06-07-context | `codex/ch06-07-context` | passed |
-| ch08-provider-recovery | `codex/ch08-provider-recovery` | pending |
+| ch08-provider-recovery | `codex/ch08-provider-recovery` | passed |
 | ch09-skills-runtime | `codex/ch09-skills-runtime` | pending |
 | ch10-memory | `codex/ch10-memory` | pending |
 | ch11-formal-rag | `none` | deferred_by_scope |
@@ -30,7 +30,7 @@
 | real-trajectory-dataset | `codex/real-trajectory-dataset` | pending |
 | hku-upload-ready | `codex/local-pre-hku-freeze` | pending |
 
-`deferred_by_scope` 不是通过，`pending` 也不是部分完成。只有所有本地强制目标通过并同步到 GitHub 后，整个仓库才可以标记为 `local pre-HKU freeze passed`。
+`deferred_by_scope` 不是通过，`pending` 也不是部分完成。Agent Product Freeze 通过之前不得开始新的 HKU 训练；整个项目只有在 Agent、模型/数据与学习策略接入三次冻结全部通过后才可以标记为完成。
 
 ## 当前证据
 
@@ -43,4 +43,6 @@
 
 - Chapter 6–7：提交 `ca8a2bd`，机器门禁 `15/15`，Python `279 passed, 1 skipped`，前端 `49 passed`，生产构建通过；真实产品探针把 10 条长历史压缩为 4 条模型可见消息、汇总 8 条旧消息，摘要正文未进入公开 trace/SSE，桌面与 390px 布局均无水平溢出；详见 [Chapter 6–7 报告](./ch06-07-context.md)。
 
-当前顺序门禁已经进入 `ch08-provider-recovery`。
+- Chapter 8：提交 `2f5af037c3ac55f7c6fa29a9a1c2439ccd5935d3`，机器门禁 `18/18`，Python `288 passed, 1 skipped`，前端 `52 passed`，生产构建与行为契约通过；故障注入覆盖瞬态重试、上下文超限压缩重试、兼容 fallback、工具失败观察与安全 UI。桌面和 `390x844` 均无水平溢出，未公开 provider response body；详见 [Chapter 8 报告](./ch08-provider-recovery.md)。
+
+当前顺序门禁已经进入 `ch09-skills-runtime`。
