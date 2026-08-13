@@ -1,6 +1,6 @@
 {
-  "authoritative_parent": "080b35b0952992cefc804e5b7ba027456da922dd",
-  "current_stage": "ch16-subagents-team-worktree",
+  "authoritative_parent": "9643d5fd37851a1fd21b725f30a387626381c67e",
+  "current_stage": "ch18-production-runtime",
   "mode": "full-end-to-end",
   "objectives": [
     {
@@ -723,17 +723,56 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch16-subagents-teams-worktrees.md",
+        "docs/chapters/ch16-subagents-teams-worktrees.en.md",
+        "docs/reports/product/ch16-subagents-team-worktree.json",
+        "docs/reports/product/ch16-subagents-team-worktree.md",
+        "docs/reports/product/ch16-subagents-team-worktree.en.md",
+        "docs/reports/product/ch16-subagents-team-worktree-ui-e2e.json",
+        "docs/reports/product/ch16-subagents-team-worktree-behavior-control.json"
+      ],
       "branch": "codex/ch16-subagents-team-worktree",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter16_cli ...",
+        "python -m klara.eval.behavior_cli ...",
+        "python -m pytest -q",
+        "npm test -- --run (apps/web)",
+        "npm run build (apps/web)",
+        "real in-app browser desktop/mobile journey"
+      ],
+      "commit": "9643d5fd37851a1fd21b725f30a387626381c67e",
+      "datasets": [
+        "tests/klara/teams/test_team_service.py",
+        "tests/fixtures/behavior/agent_behavior_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.chapter16-teams-worktrees.v1",
+        "klara.behavior-scorer.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {"passed": 19, "total": 19},
+        "python_tests": {"collected": 381, "passed": 380, "skipped": 1},
+        "frontend_tests": {"passed": 68},
+        "frontend_build": "passed",
+        "behavior_contract": {"observations": 24, "status": "passed", "gate_kind": "contract_control_probe"},
+        "bilingual_document_pairs": {"checked": 34, "passed": 34},
+        "desktop_browser": "passed",
+        "mobile_browser": "passed",
+        "horizontal_overflow": false,
+        "console_error_or_warning_count": 0
+      },
       "id": "ch16-subagents-team-worktree",
-      "metrics": {},
+      "metrics": {
+        "chapter_gate_checks": "19/19",
+        "critical_delegation_isolation_rate": 1.0,
+        "public_secret_leak_count": 0,
+        "delegated_agents_in_gate": 2
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],

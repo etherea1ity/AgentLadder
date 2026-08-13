@@ -20,7 +20,7 @@ Mode: `full-end-to-end`
 | ch14-durable-tasks | `codex/ch14-durable-tasks` | passed |
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | passed |
 | ch17-mcp | `codex/ch17-mcp` | passed |
-| ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | pending |
+| ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | passed |
 | ch18-production-runtime | `codex/ch18-production-runtime` | pending |
 | agent-product-polish | `codex/agent-product-polish` | pending |
 | agent-product-benchmarks | `codex/agent-product-benchmarks` | pending |
@@ -59,4 +59,6 @@ Mode: `full-end-to-end`
 
 - Chapter 17: commit `080b35b0952992cefc804e5b7ba027456da922dd` passes `19/19` deterministic checks with a `1.0` critical MCP rate and `0` public secret leaks. Python reports `371 passed, 1 skipped`, frontend reports `66 passed`, while the production build and 24 behavior-control observations pass. A real browser journey completed configure → permission block → allow once → stdio negotiation, with no horizontal overflow or console errors/warnings at desktop and `390x844`. See the [Chapter 17 report](./ch17-mcp.en.md).
 
-The sequential gate is now at `ch16-subagents-team-worktree`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.
+- Chapter 16: commit `9643d5fd37851a1fd21b725f30a387626381c67e` passes `19/19` deterministic checks with a `1.0` critical delegation/isolation rate and `0` public secret leaks. Python reports `380 passed, 1 skipped`, frontend reports `68 passed`, while the production build and 24 behavior-control observations pass. A real browser journey completed creation block → exact approval → allow once → teammate visible, with no horizontal overflow or console errors/warnings at desktop and `390x844`; real Git tests cover isolated worktree creation and safe removal. See the [Chapter 16 report](./ch16-subagents-team-worktree.en.md).
+
+The sequential gate is now at `ch18-production-runtime`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.

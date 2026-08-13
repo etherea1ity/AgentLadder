@@ -20,7 +20,7 @@
 | ch14-durable-tasks | `codex/ch14-durable-tasks` | passed |
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | passed |
 | ch17-mcp | `codex/ch17-mcp` | passed |
-| ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | pending |
+| ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | passed |
 | ch18-production-runtime | `codex/ch18-production-runtime` | pending |
 | agent-product-polish | `codex/agent-product-polish` | pending |
 | agent-product-benchmarks | `codex/agent-product-benchmarks` | pending |
@@ -59,4 +59,6 @@
 
 - Chapter 17：提交 `080b35b0952992cefc804e5b7ba027456da922dd`，确定性门禁 `19/19`，关键 MCP 率 `1.0`，公共秘密泄漏 `0`；Python `371 passed, 1 skipped`，前端 `66 passed`，生产构建与 24 条行为控制观察通过。真实浏览器完成配置 → 权限阻断 → allow once → stdio 协议协商，桌面与 `390x844` 均无水平溢出且控制台无错误或警告；详见 [Chapter 17 报告](./ch17-mcp.md)。
 
-当前顺序门禁已经进入 `ch16-subagents-team-worktree`；Chapter 11 按既定范围延期，不计为通过。
+- Chapter 16：提交 `9643d5fd37851a1fd21b725f30a387626381c67e`，确定性门禁 `19/19`，关键委派/隔离率 `1.0`，公共秘密泄漏 `0`；Python `380 passed, 1 skipped`，前端 `68 passed`，生产构建与 24 条行为控制观察通过。真实浏览器完成创建阻断 → 精确审批 → allow once → 队友出现，桌面与 `390x844` 无水平溢出且控制台无错误/警告；真实 Git 测试覆盖隔离 Worktree 创建和安全移除。详见 [Chapter 16 报告](./ch16-subagents-team-worktree.md)。
+
+当前顺序门禁已经进入 `ch18-production-runtime`；Chapter 11 按既定范围延期，不计为通过。
