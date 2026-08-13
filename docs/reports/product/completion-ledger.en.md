@@ -23,6 +23,7 @@ Mode: `full-end-to-end`
 | ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | passed |
 | ch18-production-runtime | `codex/ch18-production-runtime` | passed |
 | agent-product-polish | `codex/agent-product-polish` | passed |
+| agent-runtime-integration | `codex/agent-runtime-integration` | passed |
 | agent-product-benchmarks | `codex/agent-product-benchmarks` | pending |
 | agent-product-freeze | `codex/agent-product-freeze` | pending |
 | model-kv-cache | `codex/model-kv-cache` | pending |
@@ -64,5 +65,7 @@ Mode: `full-end-to-end`
 - Chapter 18 passes `25/25` deterministic checks with a `1.0` critical contract rate and `0` public-secret/P0-strange-response findings. Python reports `403 passed, 2 skipped` (the PostgreSQL test skips in the ordinary no-DSN regression and separately passes against real PostgreSQL 16), frontend reports `68 passed`, and the production build plus frozen regression control pass. Beyond signed bearer/RBAC, owner isolation, the lease queue/Outbox, redacted trajectories, and CLI, it adds SQLite backup/restore/integrity/retention, an OIDC RS256/JWKS/revocation adapter, generic Agent-state persistence, and a real disposable PostgreSQL 16 migration/isolation/JSONB/queue/lease/Outbox integration run. External OIDC provider smoke remains explicitly `not_executed`. See the [Chapter 18 report](./ch18-production-runtime.en.md).
 
 - Agent Product Polish passes `15/15` product checks, targeted Python `64 passed`, frontend `71 passed`, and the production build. Real-browser evidence covers Overview, Trace, evaluation history, and mobile navigation. Two P0 counterexamples—post-cancel tail/revival and a DeepSeek DSML answer leak—are repaired and locked into regressions; legacy raw provider reasoning and raw JSONL records no longer cross the public API boundary. See the [Product Polish report](./agent-product-polish.en.md).
+
+- Main Agent runtime integration now injects the same durable task, scheduler, team, and Worktree services used by the UI into the API's `KlaraHarness`, exposing `14` real model tools while exact permission gates retain mutation authority. The deterministic gate passes `14/14`; the frozen DeepSeek V4 Flash smoke passes `3/3` cases and `14/14` checks with `0` unauthorized mutations and `0` P0 strange responses. Full Python reports `424 passed, 2 skipped`, targeted Python `40 passed`, frontend `71 passed`, and the production build passes. Model observations and public trace use least disclosure; see the [runtime integration report](./agent-runtime-integration.en.md).
 
 The sequential gate is now at `agent-product-benchmarks`; Chapter 11 remains deferred by the agreed scope and is not counted as passed. Agent Product Freeze has not passed, so model training remains disabled.

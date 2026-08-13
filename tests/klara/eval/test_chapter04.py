@@ -16,6 +16,7 @@ def test_chapter04_gate_passes_every_frozen_assembly_check() -> None:
     assert report["passed"]
     assert all(report["checks"].values())
     assert report["metrics"]["checks_passed"] == report["metrics"]["checks_total"]
+    assert report["checks"]["unconfigured_service_tools_omitted"]
 
 
 def test_chapter04_reports_are_bilingual_structural_mirrors() -> None:

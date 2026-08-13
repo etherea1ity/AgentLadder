@@ -135,25 +135,6 @@ _llm = RoutedLlmClient(
         **_runtime.provider_recovery_policy.to_public_dict()
     ),
 )
-_run_service = RunService(
-    store=_store,
-    bus=_bus,
-    llm_client=_llm,
-    trace_path=os.getenv("KLARA_TRACE_PATH", "data/traces/runs.jsonl"),
-    allowed_models={item.model for item in _model_options},
-    thinking_support={item.model: item.supports_thinking for item in _model_options},
-    default_thinking={item.model: item.default_thinking for item in _model_options},
-    default_model=_default_model_ref,
-    loop_policy=_runtime.loop_policy,
-    context_policy=_runtime.context_policy,
-    provider_recovery_policy=_runtime.provider_recovery_policy,
-    user_context=_local_user_context(),
-    models_config=_models,
-    capability_profile=_runtime.profile(),
-    task_service=_task_service,
-    task_scope=_task_scope,
-    mcp_service=_mcp_service,
-)
 _team_scope = TeamScope(
     tenant_id="local-tenant",
     owner_id="local-user",
@@ -177,6 +158,29 @@ _team_service = TeamService(
 )
 _schedule_repository = SQLiteScheduleRepository(_store.root / "schedules.sqlite3")
 _scheduler_service = SchedulerService(_schedule_repository, _task_service)
+_run_service = RunService(
+    store=_store,
+    bus=_bus,
+    llm_client=_llm,
+    trace_path=os.getenv("KLARA_TRACE_PATH", "data/traces/runs.jsonl"),
+    allowed_models={item.model for item in _model_options},
+    thinking_support={item.model: item.supports_thinking for item in _model_options},
+    default_thinking={item.model: item.default_thinking for item in _model_options},
+    default_model=_default_model_ref,
+    loop_policy=_runtime.loop_policy,
+    context_policy=_runtime.context_policy,
+    provider_recovery_policy=_runtime.provider_recovery_policy,
+    user_context=_local_user_context(),
+    models_config=_models,
+    capability_profile=_runtime.profile(),
+    task_service=_task_service,
+    task_scope=_task_scope,
+    mcp_service=_mcp_service,
+    scheduler_service=_scheduler_service,
+    team_service=_team_service,
+    team_scope=_team_scope,
+    permission_scope=_permission_scope,
+)
 _scheduler_runner = SchedulerRunner(
     service=_scheduler_service,
     scope=_task_scope,

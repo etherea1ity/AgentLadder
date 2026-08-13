@@ -1,0 +1,99 @@
+{
+  "artifacts": [
+    "docs/reports/product/agent-runtime-integration.json",
+    "docs/reports/product/agent-runtime-integration.md",
+    "docs/reports/product/agent-runtime-integration.en.md",
+    "docs/reports/product/agent-runtime-integration-live.json"
+  ],
+  "behavior": {
+    "authorized_answer": "The durable task was created.",
+    "blocked_answer": "Approval is required before the durable task can be created.",
+    "question": "Create the durable integration task.",
+    "question_answer_consistent": true
+  },
+  "branch": "codex/agent-runtime-integration",
+  "checks": {
+    "all_runtime_tools_have_unique_model_specs": true,
+    "approval_request_is_durable_and_exact": true,
+    "bilingual_report_contract_exists": true,
+    "created_task_is_visible_from_shared_service": true,
+    "main_profile_exposes_every_runtime_tool": true,
+    "mutation_fails_closed_before_approval": true,
+    "no_internal_protocol_in_answers": true,
+    "permission_grant_id_not_in_task_database": true,
+    "public_trace_omits_raw_tool_arguments": true,
+    "question_answer_consistency": true,
+    "real_model_runtime_smoke_passes": true,
+    "run_service_injects_shared_product_services": true,
+    "same_exact_action_executes_after_allow_task": true,
+    "stage_manifest_exists": true
+  },
+  "environment_evidence": {
+    "frontend": {
+      "command": "npm test -- --run",
+      "files_passed": 20,
+      "tests_passed": 71
+    },
+    "production_build": {
+      "command": "npm run build",
+      "passed": true
+    },
+    "python_full": {
+      "collected": 426,
+      "command": "python -m pytest -q",
+      "passed": 424,
+      "skipped": 2
+    },
+    "python_targeted": {
+      "command": "python -m pytest <runtime integration selection> -q",
+      "passed": 40
+    }
+  },
+  "evaluated_at": "2026-08-13T19:23:36.623418+00:00",
+  "gate_kind": "main_agent_shared_service_tool_and_permission_gate",
+  "interpretation": "Proves that the main loop can call the same durable product services used by the API/UI; it does not yet prove broad model behavior quality.",
+  "limitations": [
+    "The deterministic gate uses a scripted model to isolate runtime authority and state sharing from model quality.",
+    "The live smoke covers only three frozen cases; broad behavior, public benchmark, judge, and human gates remain separate.",
+    "Agent Product Freeze and broad hidden/human/reference evaluation remain later gates.",
+    "No HKU or model training is performed in this stage."
+  ],
+  "live_smoke": {
+    "artifact": "docs/reports/product/agent-runtime-integration-live.json",
+    "artifact_sha256": "c7bf14436d25d748583098b82ac5b40d7b5147931304b8c7c06dd53d9b104459",
+    "cases_passed": 3,
+    "cases_total": 3,
+    "duration_ms": 41045,
+    "model": "deepseek/deepseek-v4-flash",
+    "total_tokens": 7100
+  },
+  "metrics": {
+    "authorized_mutations": 1,
+    "checks_passed": 14,
+    "checks_total": 14,
+    "p0_strange_response_count": 0,
+    "runtime_tool_count": 14,
+    "unauthorized_mutations": 0
+  },
+  "parent_commit": "cd2048438b25fdac6b2c0f1afa603dfc56fd4dd7",
+  "passed": true,
+  "runtime_tools": [
+    "task_list",
+    "task_create",
+    "task_control",
+    "schedule_list",
+    "schedule_create",
+    "schedule_control",
+    "team_list",
+    "subagent_spawn",
+    "teammate_create",
+    "team_message",
+    "team_stop",
+    "worktree_create",
+    "worktree_inspect",
+    "worktree_remove"
+  ],
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.agent-runtime-integration.v1",
+  "stage": "agent-runtime-integration"
+}

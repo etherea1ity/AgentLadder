@@ -87,9 +87,23 @@ def test_load_runtime_config_reads_loop_policy() -> None:
         "memory_search",
         "memory_update",
         "memory_forget",
-        "memory_delete",
-        "update_activity",
-    )
+            "memory_delete",
+            "update_activity",
+            "task_list",
+            "task_create",
+            "task_control",
+            "schedule_list",
+            "schedule_create",
+            "schedule_control",
+            "team_list",
+            "subagent_spawn",
+            "teammate_create",
+            "team_message",
+            "team_stop",
+            "worktree_create",
+            "worktree_inspect",
+            "worktree_remove",
+        )
     assert profile.hooks == ("run_projection", "jsonl_trace")
     assert profile.trace_sink == "jsonl"
 

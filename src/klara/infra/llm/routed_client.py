@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import hashlib
 
 from klara.core.messages import KlaraMessage, LlmRuntimeEvent, ModelResponse
 from klara.core.tools import ToolSpec
 from klara.infra.config.models import ModelsConfig
 from klara.infra.llm.model_ref import ModelRef
+from klara.infra.config.env import get_env_secret
 from klara.infra.llm.openai_compatible import (
     LlmProviderError,
     OpenAICompatibleLlmClient,
@@ -25,6 +27,9 @@ class RoutedLlmClient:
     settings: OpenAICompatibleSettings = field(default_factory=OpenAICompatibleSettings)
     # Optional dotenv path for local development credentials.
     dotenv_path: str | None = None
+    _authentication_failures: dict[str, str] = field(
+        default_factory=dict, init=False, repr=False
+    )
 
     def complete(
         self,
@@ -52,6 +57,32 @@ class RoutedLlmClient:
         # Try the requested model and any profile fallbacks in stable order.
         candidates = self._candidate_models(model)
         for index, candidate in enumerate(candidates):
+            provider_id = ModelRef.parse(candidate).provider
+            if self._provider_authentication_is_open(provider_id):
+                events.append(
+                    LlmRuntimeEvent(
+                        type="model_route.candidate_skipped",
+                        payload={
+                            "requested_model": model,
+                            "candidate_model": candidate,
+                            "candidate_index": index,
+                            "reason": "provider_authentication_circuit_open",
+                        },
+                    )
+                )
+                if index + 1 < len(candidates):
+                    events.append(
+                        LlmRuntimeEvent(
+                            type="model_route.fallback_started",
+                            payload={
+                                "requested_model": model,
+                                "failed_model": candidate,
+                                "fallback_model": candidates[index + 1],
+                                "reason": "provider_authentication_circuit_open",
+                            },
+                        )
+                    )
+                continue
             events.append(
                 LlmRuntimeEvent(
                     type="model_route.candidate_started",
@@ -72,6 +103,8 @@ class RoutedLlmClient:
                     thinking_enabled=thinking_enabled,
                 )
             except LlmProviderError as exc:
+                if exc.code == "provider_authentication_failed":
+                    self._open_provider_authentication_circuit(provider_id)
                 events.extend(exc.runtime_events)
                 events.append(
                     LlmRuntimeEvent(
@@ -126,6 +159,26 @@ class RoutedLlmClient:
             code="all_model_candidates_failed",
             runtime_events=tuple(events),
         )
+
+    def _credential_fingerprint(self, provider_id: str) -> str:
+        provider = self.models.providers.get(provider_id)
+        if provider is None or not provider.api_key_env:
+            return ""
+        value = get_env_secret(provider.api_key_env, dotenv_path=self.dotenv_path)
+        return hashlib.sha256(value.encode("utf-8")).hexdigest() if value else "missing"
+
+    def _provider_authentication_is_open(self, provider_id: str) -> bool:
+        failed_fingerprint = self._authentication_failures.get(provider_id)
+        if failed_fingerprint is None:
+            return False
+        current = self._credential_fingerprint(provider_id)
+        if current != failed_fingerprint:
+            self._authentication_failures.pop(provider_id, None)
+            return False
+        return True
+
+    def _open_provider_authentication_circuit(self, provider_id: str) -> None:
+        self._authentication_failures[provider_id] = self._credential_fingerprint(provider_id)
 
     def _candidate_models(self, model: str) -> tuple[str, ...]:
         """Return requested model plus fallbacks when it is a profile primary."""

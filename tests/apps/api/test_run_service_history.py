@@ -10,6 +10,8 @@ from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.context.history import GENERATED_IMAGE_PLACEHOLDER
 from klara.core.messages import ModelResponse
+from klara.core.tools import ToolCall
+from klara.infra.config.runtime import CapabilityProfile
 from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope, TaskState
 
 
@@ -65,6 +67,22 @@ class LeakingProtocolLlm:
         )
 
 
+class SharedTaskListLlm:
+    def __init__(self) -> None:
+        self.observation = ""
+
+    def complete(self, **kwargs: object) -> ModelResponse:
+        messages = kwargs.get("messages", ())
+        tool_messages = [message for message in messages if message.role == "tool"]
+        if not tool_messages:
+            return ModelResponse(
+                content="",
+                tool_calls=(ToolCall("shared-task-list", "task_list", {}),),
+            )
+        self.observation = tool_messages[-1].content
+        return ModelResponse(content="The shared durable tasks were observed.")
+
+
 def test_run_service_projects_chat_run_into_durable_task_and_cancellation_wins(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()
@@ -101,6 +119,44 @@ def test_run_service_projects_chat_run_into_durable_task_and_cancellation_wins(t
     assert "run_failed" not in event_types
     cancel_index = event_types.index("run_cancelled")
     assert event_types[cancel_index:] == ["run_cancelled"]
+
+
+def test_run_service_injects_shared_task_service_into_main_agent(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    task_scope = TaskScope("tenant-test", "owner-test", "klara")
+    task_service = DurableTaskService(
+        SQLiteTaskRepository(tmp_path / "app" / "tasks.sqlite3")
+    )
+    task_service.create(
+        scope=task_scope,
+        task_id="task_shared_fixture",
+        title="Shared runtime fixture",
+    )
+    llm = SharedTaskListLlm()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=llm,
+        task_service=task_service,
+        task_scope=task_scope,
+        capability_profile=CapabilityProfile(
+            id="shared-runtime-test",
+            visible_tools=("task_list",),
+            hooks=("run_projection", "jsonl_trace"),
+            trace_sink="jsonl",
+        ),
+        answer_chunk_delay_ms=0,
+    )
+
+    created = service.create_run(session.session_id, "List durable tasks")
+    service._threads[created.run_id].join(timeout=5)
+
+    assert "Shared runtime fixture" in llm.observation
+    assert store.get_run(created.run_id).status == "completed"
+    assert store.get_message(created.assistant_message_id).content == (
+        "The shared durable tasks were observed."
+    )
 
 
 def test_cancelled_scheduled_run_cannot_be_implicitly_restarted(tmp_path) -> None:

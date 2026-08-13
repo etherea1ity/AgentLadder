@@ -44,6 +44,24 @@ from klara.tools.registry import ToolRegistry
 DEFAULT_LOOP_POLICY = LoopPolicy()
 DEFAULT_PERSONA_PATH = Path(__file__).parents[1] / "prompts" / "persona.md"
 INTERNAL_TOOL_NAMES = ("update_activity",)
+OPTIONAL_RUNTIME_TOOL_NAMES = frozenset(
+    {
+        "task_list",
+        "task_create",
+        "task_control",
+        "schedule_list",
+        "schedule_create",
+        "schedule_control",
+        "team_list",
+        "subagent_spawn",
+        "teammate_create",
+        "team_message",
+        "team_stop",
+        "worktree_create",
+        "worktree_inspect",
+        "worktree_remove",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -73,6 +91,14 @@ class KlaraHarnessConfig:
     permission_path: Path = Path("data/permissions/klara.sqlite3")
     session_id: str | None = None
     agent_id: str = "klara"
+    task_service: Any | None = None
+    task_scope: Any | None = None
+    scheduler_service: Any | None = None
+    scheduler_scope: Any | None = None
+    team_service: Any | None = None
+    team_scope: Any | None = None
+    team_permission_scope: Any | None = None
+    allow_unconfigured_runtime_tools: bool = False
 
     # Legacy property access stays stable for the Chapter 1 tutorial while the
     # canonical policy is now one immutable object.
@@ -176,6 +202,7 @@ class KlaraHarness:
         )
         for tool in memory_tools(self.memory_service, self.memory_scope):
             self.registry.register_tool(tool)
+        self._register_runtime_tools()
         self.skill_catalog = self._build_skill_catalog()
         self.registry.register_tool(SkillListTool(self.skill_catalog))
         self.registry.register_tool(SkillViewTool(self.skill_catalog))
@@ -204,6 +231,23 @@ class KlaraHarness:
         ):
             raise ValueError("jsonl_trace_path_required")
         self.run_profile = self._build_run_profile()
+
+    def _register_runtime_tools(self) -> None:
+        """Attach product services without making core depend on their domains."""
+
+        from klara.app.runtime_tools import runtime_tools
+
+        for tool in runtime_tools(
+            task_service=self.config.task_service,
+            task_scope=self.config.task_scope,
+            scheduler_service=self.config.scheduler_service,
+            scheduler_scope=self.config.scheduler_scope,
+            scheduler_session_id=self.config.session_id,
+            team_service=self.config.team_service,
+            team_scope=self.config.team_scope,
+            team_permission_scope=self.config.team_permission_scope,
+        ):
+            self.registry.register_tool(tool)
 
     def build_loop(self, *, now: datetime | None = None) -> KlaraLoop:
         """Build, but do not execute, the exact loop described by `run_profile`."""
@@ -281,7 +325,12 @@ class KlaraHarness:
         missing = [
             name
             for name in requested
-            if name not in available and name not in INTERNAL_TOOL_NAMES
+            if name not in available
+            and name not in INTERNAL_TOOL_NAMES
+            and not (
+                self.config.allow_unconfigured_runtime_tools
+                and name in OPTIONAL_RUNTIME_TOOL_NAMES
+            )
         ]
         if missing:
             raise ValueError(f"capability_profile_missing_tools:{','.join(missing)}")

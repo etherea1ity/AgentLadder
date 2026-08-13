@@ -891,6 +891,64 @@
       "status": "passed"
     },
     {
+      "artifacts": [
+        "config/stages/agent-runtime-integration.manifest.json",
+        "docs/reports/product/agent-runtime-integration.json",
+        "docs/reports/product/agent-runtime-integration.md",
+        "docs/reports/product/agent-runtime-integration.en.md",
+        "docs/reports/product/agent-runtime-integration-live.json"
+      ],
+      "branch": "codex/agent-runtime-integration",
+      "commands": [
+        "python -m klara.eval.runtime_integration_live_cli ...",
+        "python -m klara.eval.runtime_integration_cli ...",
+        "python -m pytest -q",
+        "python -m pytest <runtime integration selection> -q",
+        "npm test -- --run (apps/web)",
+        "npm run build (apps/web)",
+        "git diff --check"
+      ],
+      "commit": null,
+      "datasets": [
+        "synthetic shared-task fixture; no training data"
+      ],
+      "evaluator_versions": [
+        "klara.agent-runtime-integration.v1",
+        "klara.agent-runtime-integration-live.v1"
+      ],
+      "evidence": {
+        "deterministic_gate": {"passed": 14, "total": 14},
+        "live_model_smoke": {
+          "model": "deepseek/deepseek-v4-flash",
+          "cases_passed": 3,
+          "cases_total": 3,
+          "checks_passed": 14,
+          "checks_total": 14,
+          "temperature": 0.0,
+          "total_tokens": 7100,
+          "duration_ms": 41045,
+          "provider_hidden_reasoning_collected": false
+        },
+        "python_tests": {"collected": 426, "passed": 424, "skipped": 2},
+        "focused_tests": {"passed": 40},
+        "frontend_tests": {"files_passed": 20, "passed": 71},
+        "frontend_build": "passed",
+        "unauthorized_mutations": 0,
+        "authorized_mutations": 1,
+        "raw_tool_arguments_public": false,
+        "internal_scope_in_final_answer": false,
+        "p0_strange_response_count": 0
+      },
+      "id": "agent-runtime-integration",
+      "metrics": {
+        "deterministic_checks": "14/14",
+        "live_model_cases": "3/3",
+        "p0_strange_response_count": 0
+      },
+      "remaining_failures": [],
+      "status": "passed"
+    },
+    {
       "artifacts": [],
       "branch": "codex/agent-product-benchmarks",
       "commands": [],
@@ -970,5 +1028,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-14T00:12:00+08:00"
+  "updated_at": "2026-08-14T03:23:00+08:00"
 }

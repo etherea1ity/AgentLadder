@@ -1,0 +1,31 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-runtime-integration",
+  "branch": "codex/agent-runtime-integration",
+  "parent_commit": "cd2048438b25fdac6b2c0f1afa603dfc56fd4dd7",
+  "mode": "full-end-to-end-product-gate",
+  "model_roles": {
+    "deterministic_contract_probe": "scripted model",
+    "live_smoke_candidate": "deepseek/deepseek-v4-flash"
+  },
+  "budgets": {
+    "live_smoke_cases": 3,
+    "maximum_steps_per_case": 3,
+    "temperature": 0.0,
+    "p0_strange_responses": 0
+  },
+  "expected_artifacts": [
+    "docs/reports/product/agent-runtime-integration.json",
+    "docs/reports/product/agent-runtime-integration.md",
+    "docs/reports/product/agent-runtime-integration.en.md",
+    "docs/reports/product/agent-runtime-integration-live.json"
+  ],
+  "datasets": [
+    "synthetic shared-task fixture; no training data"
+  ],
+  "exclusions": [
+    "No Agent Product Freeze or GPT parity claim",
+    "No HKU, Slurm, trajectory distillation, or model training",
+    "No human or independent-judge result in this integration stage"
+  ]
+}

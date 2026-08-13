@@ -53,6 +53,8 @@ from klara.tasks import (
 )
 from klara.mcp import McpService
 from klara.permissions import PermissionScope
+from klara.scheduler import SchedulerService
+from klara.teams import TeamScope, TeamService
 
 
 _TERMINAL_RUN_STATUSES = {"completed", "failed", "cancelled"}
@@ -83,6 +85,10 @@ class RunService:
         task_service: DurableTaskService | None = None,
         task_scope: TaskScope | None = None,
         mcp_service: McpService | None = None,
+        scheduler_service: SchedulerService | None = None,
+        team_service: TeamService | None = None,
+        team_scope: TeamScope | None = None,
+        permission_scope: PermissionScope | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -126,6 +132,10 @@ class RunService:
         self.task_service = task_service
         self.task_scope = task_scope
         self.mcp_service = mcp_service
+        self.scheduler_service = scheduler_service
+        self.team_service = team_service
+        self.team_scope = team_scope
+        self.permission_scope = permission_scope
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
         self._task_leases: dict[str, str] = {}
@@ -423,6 +433,13 @@ class RunService:
                     session_id=run.session_id,
                     memory_path=self.store.root / "memory.sqlite3",
                     permission_path=self.store.root / "permissions.sqlite3",
+                    task_service=self.task_service,
+                    task_scope=self.task_scope,
+                    scheduler_service=self.scheduler_service,
+                    scheduler_scope=self.task_scope,
+                    team_service=self.team_service,
+                    team_scope=self.team_scope,
+                    team_permission_scope=self.permission_scope,
                 ),
                 models=self.models_config,
                 hooks=(RunProjectionHook(self, run_id, projector),),

@@ -118,3 +118,76 @@ def test_routed_client_rejects_unknown_provider() -> None:
             tools=(),
             model="missing/model",
         )
+
+
+def test_routed_client_skips_sibling_models_after_provider_auth_failure(monkeypatch) -> None:
+    calls: list[str] = []
+
+    qwen_attempts = 0
+
+    def fake_complete(self, *, system_prompt, messages, tools, model, thinking_enabled=None):
+        nonlocal qwen_attempts
+        calls.append(model)
+        if model.startswith("qwen/"):
+            qwen_attempts += 1
+            if qwen_attempts == 1:
+                raise LlmProviderError(
+                    "invalid provider credential",
+                    code="provider_authentication_failed",
+                    status_code=401,
+                )
+            return ModelResponse(content="qwen credential recovered")
+        return ModelResponse(content="recovered")
+
+    monkeypatch.setenv("QWEN_TEST_KEY", "credential-one")
+    monkeypatch.setattr(
+        "klara.infra.llm.openai_compatible.OpenAICompatibleLlmClient.complete",
+        fake_complete,
+    )
+    client = RoutedLlmClient(
+        models=ModelsConfig(
+            providers={
+                "qwen": ProviderConfig(
+                    api="openai-completions",
+                    api_key_env="QWEN_TEST_KEY",
+                    allow_unlisted_models=True,
+                ),
+                "deepseek": ProviderConfig(
+                    api="openai-completions", allow_unlisted_models=True
+                ),
+            },
+            profiles={
+                "agent": ModelProfile(
+                    primary="qwen/primary",
+                    fallbacks=("qwen/sibling", "deepseek/recovery"),
+                )
+            },
+        )
+    )
+
+    response = client.complete(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen/primary",
+    )
+
+    assert response.content == "recovered"
+    assert calls == ["qwen/primary", "deepseek/recovery"]
+    skipped = [
+        event for event in response.runtime_events
+        if event.type == "model_route.candidate_skipped"
+    ]
+    assert len(skipped) == 1
+    assert skipped[0].payload["candidate_model"] == "qwen/sibling"
+    assert "credential-one" not in repr(response.runtime_events)
+
+    monkeypatch.setenv("QWEN_TEST_KEY", "credential-two")
+    recovered = client.complete(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="qwen/primary",
+    )
+    assert recovered.content == "qwen credential recovered"
+    assert calls[-1] == "qwen/primary"

@@ -76,6 +76,7 @@ def build_harness(
             provider_recovery_policy=runtime.provider_recovery_policy,
             user_context=user_context,
             workspace_root=Path.cwd(),
+            allow_unconfigured_runtime_tools=True,
         ),
     )
 

@@ -15,6 +15,8 @@ def test_persona_prompt_is_short_ascii_and_lightweight() -> None:
     assert not re.search(r"[\u4e00-\u9fff]", prompt)
     assert "Klara is clear, warm, curious, and practical." in prompt
     assert "Match the user's language." in prompt
+    assert "Status and list answers end immediately" in prompt
+    assert "without invitations or suggested next actions" in prompt
     assert "Be honest about uncertainty" in prompt
     assert "use `update_activity` for public thinking updates" in prompt
     assert "Write only new progress for the current step" in prompt

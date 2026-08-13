@@ -40,6 +40,7 @@ _PUBLIC_LLM_RUNTIME_EVENTS = frozenset(
         "provider.retry_scheduled",
         "model_route.candidate_started",
         "model_route.candidate_failed",
+        "model_route.candidate_skipped",
         "model_route.fallback_started",
         "model_route.candidate_completed",
     }

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from klara.app.cli import build_harness
+from klara.app.harness import OPTIONAL_RUNTIME_TOOL_NAMES
 from klara.infra.config.loader import load_models_config, load_runtime_config
 
 
@@ -39,7 +40,15 @@ def evaluate_chapter04(root: Path) -> dict[str, Any]:
         "profile_schema_frozen": public["schema_version"] == "klara.run-profile.v1",
         "profile_hash_valid": _profile_hash_valid(public),
         "persona_hash_valid": len(str(public["persona_sha256"])) == 64,
-        "required_tools_visible": tuple(public["visible_tools"]) == profile.visible_tools,
+        "required_tools_visible": tuple(public["visible_tools"])
+        == tuple(
+            name
+            for name in profile.visible_tools
+            if name not in OPTIONAL_RUNTIME_TOOL_NAMES
+        ),
+        "unconfigured_service_tools_omitted": not (
+            set(public["visible_tools"]) & OPTIONAL_RUNTIME_TOOL_NAMES
+        ) and harness.config.allow_unconfigured_runtime_tools,
         "hooks_and_trace_declared": (
             tuple(public["hooks"]) == ("permission_engine", *profile.hooks)
             and public["trace_sink"] == profile.trace_sink

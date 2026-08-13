@@ -77,6 +77,17 @@ class PermissionActionResolver:
             return "memory", f"memory:{memory_id or 'owner-scope'}"
         if call.name == "todo_write":
             return "task", "task:active-plan"
+        if call.name.startswith("task_"):
+            task_id = _optional_text(call.arguments, "task_id")
+            return "task", f"task:{task_id or 'owner-scope'}"
+        if call.name.startswith("schedule_"):
+            schedule_id = _optional_text(call.arguments, "schedule_id")
+            return "schedule", f"schedule:{schedule_id or 'owner-scope'}"
+        if call.name in {"team_message", "team_stop"}:
+            target = _optional_text(call.arguments, "recipient_id") or _optional_text(
+                call.arguments, "agent_id"
+            )
+            return "team", f"team:{target or 'owner-scope'}"
         if call.name in {"skills_list", "skill_view"}:
             name = _optional_text(call.arguments, "name")
             return "catalog", f"skills:{name or 'catalog'}"
