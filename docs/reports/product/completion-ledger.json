@@ -1,6 +1,6 @@
 {
   "authoritative_parent": "40389110a1d41328e83fe19a06a12ef86fe200bf",
-  "current_stage": "agent-product-polish",
+  "current_stage": "agent-product-benchmarks",
   "mode": "full-end-to-end",
   "objectives": [
     {
@@ -839,17 +839,56 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "config/stages/agent-product-polish.manifest.json",
+        "docs/reports/product/agent-product-polish.json",
+        "docs/reports/product/agent-product-polish.md",
+        "docs/reports/product/agent-product-polish.en.md",
+        "docs/reports/product/agent-product-polish-ui-e2e.json",
+        "docs/reports/product/agent-product-polish-desktop.png",
+        "docs/reports/product/agent-product-polish-mobile.png"
+      ],
       "branch": "codex/agent-product-polish",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.product_polish_cli ...",
+        "python -m pytest -q",
+        "npm test -- --run (apps/web)",
+        "npm run build (apps/web)",
+        "Codex in-app browser at 1280x720 and 390x844",
+        "git diff --check"
+      ],
+      "commit": "fa228b3",
+      "datasets": [
+        "tests/fixtures/behavior/agent_behavior_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.agent-product-polish.v1",
+        "klara.evaluation-catalog.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "product_gate": {"passed": 15, "total": 15},
+        "python_tests": {"collected": 418, "passed": 416, "skipped": 2},
+        "focused_tests": {"passed": 64},
+        "frontend_tests": {"files_passed": 20, "passed": 71},
+        "frontend_build": "passed",
+        "desktop_viewport": "1280x720",
+        "mobile_viewport": "390x844",
+        "horizontal_overflow_pixels": 0,
+        "browser_console_errors": 0,
+        "raw_provider_reasoning_public": false,
+        "raw_jsonl_trace_public": false,
+        "post_cancel_tail_events_public": false
+      },
       "id": "agent-product-polish",
-      "metrics": {},
+      "metrics": {
+        "product_gate_checks": "15/15",
+        "p0_strange_response_count_after_repair": 0,
+        "desktop_horizontal_overflow_pixels": 0,
+        "mobile_horizontal_overflow_pixels": 0
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
