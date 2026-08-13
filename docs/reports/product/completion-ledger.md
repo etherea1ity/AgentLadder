@@ -15,7 +15,7 @@
 | ch09-skills-runtime | `codex/ch09-skills-runtime` | passed |
 | ch10-memory | `codex/ch10-memory` | passed |
 | ch11-formal-rag | `none` | deferred_by_scope |
-| ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | pending |
+| ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | passed |
 | permission-engine | `codex/permission-engine` | pending |
 | ch14-durable-tasks | `codex/ch14-durable-tasks` | pending |
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | pending |
@@ -49,4 +49,6 @@
 
 - Chapter 10：提交 `ca5e20a4b19ce9036878b84205a10fa670972f33`，机器门禁 `16/16`，Python `305 passed, 1 skipped`，前端 `56 passed`，生产构建与 24 条行为控制观察通过。Memory 具备租户/用户/Agent/会话隔离、显式写入、候选审核、版本与时间有效性、遗忘和可验证硬删除；本地统一语料检索门中 hybrid 达到 `6/6` top-1、关键题 `3/3`。Mem0/MEM1 和公共 benchmark 尚未运行，报告明确标记为 `not_executed`；详见 [Chapter 10 报告](./ch10-memory.md)。
 
-当前顺序门禁已经进入 `ch12-13-evidence-runtime`；Chapter 11 按既定范围延期，不计为通过。
+- Chapters 12–13：提交 `8ebc035e3cf703e71c1360d03b4718d10aeb21e2`，机器门禁 `15/15`，Python `314 passed, 1 skipped`，前端 `58 passed`，生产构建与 24 条行为控制观察通过。真实 `KlaraLoop` 现要求 `web_fetch -> evidence_submit -> verifier`，拒绝 snippet 冒充来源、dangling/duplicate/stale/irrelevant/contradicted 证据和伪造 witness；关键确定性金标的 citation precision/recall、contradiction recall、abstention accuracy 均为 `1.0`。这不是开放域完美声明；详见 [Chapters 12–13 报告](./ch12-13-evidence-runtime.md)。
+
+当前顺序门禁已经进入 `permission-engine`；Chapter 11 按既定范围延期，不计为通过。
