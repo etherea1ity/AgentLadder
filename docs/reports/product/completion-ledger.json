@@ -1,13 +1,17 @@
 {
   "authoritative_parent": "b440df32c71df56c892b4657c392e37f9ea53e9a",
-  "current_stage": "phase-0a-baseline",
+  "current_stage": "ch04-harness-config",
   "mode": "local-pre-hku",
   "objectives": [
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/reports/product/agent-product-baseline.json",
+        "docs/reports/product/agent-product-baseline.md",
+        "docs/reports/product/agent-product-baseline.en.md"
+      ],
       "branch": "codex/agent-product-baseline",
       "commands": [],
-      "commit": null,
+      "commit": "3266fea1f7cd4f340ae34dceeb74f86c455af009",
       "datasets": [],
       "evaluator_versions": [],
       "evidence": {
@@ -28,17 +32,62 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/reports/product/agent-eval-contract.json",
+        "docs/reports/product/agent-eval-contract.md",
+        "docs/reports/product/agent-eval-contract.en.md",
+        "docs/reports/product/agent-eval-contract-ui-e2e.json",
+        "docs/chapters/ch18-production-runtime-and-eval-bridge.md",
+        "docs/chapters/ch18-production-runtime-and-eval-bridge.en.md"
+      ],
       "branch": "codex/agent-eval-contract",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m pytest -q",
+        "npm test (apps/web)",
+        "npm run build (apps/web)",
+        "python -m klara.eval.behavior_cli ..."
+      ],
+      "commit": "10a9bf0afc0c9ea24267cb4a2b5b31e8fa791a0b",
+      "datasets": [
+        "tests/fixtures/behavior/agent_behavior_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.behavior-scorer.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "contract_gate": "passed",
+        "gate_kind": "contract_control_probe",
+        "python_tests": {
+          "collected": 245,
+          "passed": 244,
+          "skipped": 1
+        },
+        "frontend_tests": {
+          "passed": 45
+        },
+        "frontend_build": "passed",
+        "bilingual_document_pairs": {
+          "checked": 8,
+          "passed": 8
+        },
+        "ui_viewports": [
+          "1280x720",
+          "390x844"
+        ],
+        "hidden_case_fields_exposed": false
+      },
       "id": "phase-0b-agent-eval-contract",
-      "metrics": {},
+      "metrics": {
+        "critical_deterministic_rate": 1.0,
+        "normal_task_success_rate": 1.0,
+        "reference_gap": 0.0,
+        "human_acceptability_rate": 1.0,
+        "p0_count": 0
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -315,5 +364,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-12T15:49:40.914297+00:00"
+  "updated_at": "2026-08-13T03:14:00+00:00"
 }
