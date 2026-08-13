@@ -1,0 +1,45 @@
+{
+  "baseline_scorer_version": "klara.behavior-scorer.v1",
+  "candidate_scorer_version": "klara.behavior-scorer.v1",
+  "checks": {
+    "candidate_gate_passed": true,
+    "cost_budget": true,
+    "critical_non_regression": true,
+    "human_non_regression": true,
+    "judge_non_regression": true,
+    "latency_budget": true,
+    "normal_non_regression": true,
+    "overall_non_regression": true,
+    "p0_zero": true,
+    "reference_gap_non_regression": true,
+    "severe_mismatch_non_regression": true,
+    "token_budget": true
+  },
+  "deltas": {
+    "critical_deterministic_rate": 0.0,
+    "human_acceptability_rate": 0.0,
+    "judge_equivalent_or_better_rate": 0.0,
+    "normal_task_success_rate": 0.0,
+    "overall_task_success_rate": 0.0,
+    "reference_gap": 0.0,
+    "severe_answer_mismatch_rate": 0.0,
+    "total_cost_usd": 0.0,
+    "total_latency_ms": 0.0,
+    "total_tokens": 0.0
+  },
+  "evaluated_at": "2026-08-13T16:00:38.404156+00:00",
+  "fixture_sha256": "c2521f22422d5775f424b51104e47585a760d0ba09b38bc7ce0b7bdb01ae3732",
+  "limits": {
+    "maximum_cost_ratio": 1.1,
+    "maximum_latency_ratio": 1.25,
+    "maximum_token_ratio": 1.1
+  },
+  "passed": true,
+  "ratios": {
+    "cost": 1.0,
+    "latency": 1.0,
+    "tokens": 1.0
+  },
+  "schema_version": "klara.production-regression-report.v1",
+  "scorer_version": "klara.production-regression.v1"
+}

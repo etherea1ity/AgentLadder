@@ -21,6 +21,7 @@ from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope
 from klara.scheduler import SchedulerService, SQLiteScheduleRepository
 from klara.mcp import McpService, SQLiteMcpRepository
 from klara.teams import KlaraOneShotExecutor, SQLiteTeamRepository, TeamScope, TeamService
+from klara.production import AuthConfig, AuthService, ProductionRepository, ProductionRuntimeService, SafeRuntimeMetrics, TrajectoryExportService
 from apps.api.services.scheduler_runner import SchedulerRunner
 
 
@@ -181,6 +182,20 @@ _scheduler_runner = SchedulerRunner(
     scope=_task_scope,
     run_service=_run_service,
 )
+_production_repository = ProductionRepository(
+    os.getenv("KLARA_PRODUCTION_DB", str(_store.root / "production.sqlite3"))
+)
+_production_auth = AuthService(AuthConfig.from_env())
+_production_metrics = SafeRuntimeMetrics()
+_trajectory_exporter = TrajectoryExportService(
+    _production_repository,
+    os.getenv("KLARA_TRAJECTORY_EXPORT_ROOT", "data/exports/trajectories"),
+    allowed_trace_roots=(Path(os.getenv("KLARA_TRACE_PATH", "data/traces/runs.jsonl")).parent,),
+)
+_production_runtime = ProductionRuntimeService(
+    _production_repository,
+    _trajectory_exporter,
+)
 
 
 def get_store() -> JsonlAppStore:
@@ -273,3 +288,21 @@ def get_scheduler_runner() -> SchedulerRunner:
     """Return the local background worker and its idempotent dispatch callbacks."""
 
     return _scheduler_runner
+
+
+def get_production_auth() -> AuthService:
+    """Return the signed bearer-token boundary."""
+
+    return _production_auth
+
+
+def get_production_runtime() -> ProductionRuntimeService:
+    """Return the authenticated persistence and queue coordinator."""
+
+    return _production_runtime
+
+
+def get_production_metrics() -> SafeRuntimeMetrics:
+    """Return payload-free production request metrics."""
+
+    return _production_metrics

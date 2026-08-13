@@ -1,0 +1,51 @@
+{
+  "behavior": {
+    "candidate_answer": "12",
+    "question": "What is 5 + 7?",
+    "question_answer_consistent": true,
+    "reference_answer": "12"
+  },
+  "checks": {
+    "bilingual_tutorial_exists": true,
+    "forged_job_lease_is_rejected": true,
+    "idempotency_reuses_exact_payload_only": true,
+    "job_api_never_projects_payload_or_result": true,
+    "production_api_exposes_auth_queue_stream_cancel_outbox_export_metrics": true,
+    "question_answer_consistency_and_no_strange_output": true,
+    "queue_executes_one_bounded_payload": true,
+    "raw_bearer_and_lease_are_not_persisted": true,
+    "regression_cli_contract_is_strict_and_passes_control": true,
+    "roles_separate_owner_and_worker_authority": true,
+    "session_and_job_rows_are_owner_isolated": true,
+    "signed_bearer_tampering_is_rejected": true,
+    "terminal_job_and_outbox_commit_together": true,
+    "trajectory_drops_prompts_arguments_results_and_reasoning": true,
+    "trajectory_export_requires_owner_visible_job": true,
+    "trajectory_is_versioned_hash_linked_and_loadable": true,
+    "trajectory_privacy_scanner_has_zero_findings": true,
+    "versioned_migrations_apply_and_verify": true,
+    "worker_has_cooperative_cancel_and_heartbeat": true,
+    "worker_heartbeat_and_public_events_exist": true
+  },
+  "evaluated_at": "2026-08-13T16:00:37.928361+00:00",
+  "gate_kind": "auth_tenant_migration_lease_queue_outbox_trajectory_and_regression_gate",
+  "limitations": [
+    "This gate proves a single-host SQLite production adapter; multi-region consensus and managed identity-provider deployment remain environment-specific operations.",
+    "The queue executor seam is ready for the frozen Agent runtime, but learned-policy takeover remains forbidden until Agent Product Freeze and hidden-set gates pass.",
+    "The trajectory bridge exports one deterministic public trace here; real licensed trajectory collection and contamination review are later frozen stages."
+  ],
+  "metrics": {
+    "checks_passed": 20,
+    "checks_total": 20,
+    "critical_contract_rate": 1.0,
+    "p0_strange_response_count": 0,
+    "public_secret_leak_count": 0,
+    "queue_attempts": 1,
+    "trajectory_events": 5,
+    "trajectory_records": 1
+  },
+  "passed": true,
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter18-production-runtime.v1",
+  "stage": "ch18-production-runtime"
+}

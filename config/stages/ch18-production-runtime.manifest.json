@@ -1,0 +1,63 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch18-production-runtime",
+  "branch": "codex/ch18-production-runtime",
+  "parent_commit": "40389110a1d41328e83fe19a06a12ef86fe200bf",
+  "mode": "local-pre-hku",
+  "datasets": [
+    "tests/klara/production",
+    "tests/fixtures/behavior/agent_behavior_cases.json",
+    "docs/reports/product/ch16-subagents-team-worktree-behavior-control.json"
+  ],
+  "model_ids": [
+    "none-deterministic-production-contract-gate"
+  ],
+  "seeds": [18],
+  "budgets": {
+    "paid_api_usd": 0,
+    "maximum_token_ttl_seconds": 86400,
+    "maximum_job_payload_bytes": 65536,
+    "maximum_job_result_bytes": 65536,
+    "maximum_worker_lease_seconds": 900,
+    "maximum_latency_ratio": 1.25,
+    "maximum_token_ratio": 1.10,
+    "maximum_cost_ratio": 1.10
+  },
+  "evaluator_versions": [
+    "klara.chapter18-production-runtime.v1",
+    "klara.production-regression.v1",
+    "klara.trajectory.v1",
+    "klara.behavior-scorer.v1"
+  ],
+  "acceptance": {
+    "signed_bearer_and_rbac": true,
+    "tenant_and_owner_isolation": true,
+    "versioned_checked_migrations": true,
+    "idempotent_lease_queue": true,
+    "cooperative_cancellation_and_sse": true,
+    "transactional_outbox": true,
+    "payload_free_metrics_and_audit": true,
+    "authorized_redacted_trajectory_export": true,
+    "strict_baseline_candidate_regression": true,
+    "question_answer_consistency": true,
+    "p0_strange_responses": 0
+  },
+  "expected_artifacts": [
+    "docs/chapters/ch18-production-runtime-and-eval-bridge.md",
+    "docs/chapters/ch18-production-runtime-and-eval-bridge.en.md",
+    "docs/reports/product/ch18-production-runtime.json",
+    "docs/reports/product/ch18-production-runtime.md",
+    "docs/reports/product/ch18-production-runtime.en.md",
+    "docs/reports/product/ch18-production-runtime-regression.json",
+    "docs/reports/product/ch18-production-runtime-regression.md",
+    "docs/reports/product/ch18-production-runtime-regression.en.md"
+  ],
+  "exclusions": [
+    "managed OIDC provider deployment",
+    "multi-region database consensus",
+    "external message broker operations",
+    "real trajectory corpus freeze",
+    "learned policy takeover",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

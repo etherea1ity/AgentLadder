@@ -1,8 +1,8 @@
-# Chapter 18: Production Runtime and Evaluation Bridge — Freeze the Agent Contract First
+# Chapter 18: Production Runtime and Evaluation Bridge
 
 Language: [Chinese](./ch18-production-runtime-and-eval-bridge.md) | English
 
-Previous: [Chapter 17: MCP and External Tools](../skills/roadmap.md#chapter-17---mcp-and-external-tools)
+Previous: [Chapter 17: MCP and External Tools](./ch17-mcp-and-external-tools.en.md)
 
 Next: [Lab A: Trace Dataset and Evaluation](../skills/roadmap.md#lab-a---trace-dataset-and-evaluation)
 
@@ -10,125 +10,142 @@ Roadmap: [Klara Roadmap](../skills/roadmap.md)
 
 ---
 
-## Understand This Chapter in One Sentence
+## Chapter in one sentence
 
-Klara freezes cases, permissions, budgets, and scoring rules before a candidate runs, then publishes machine-readable evidence where no critical safety failure can be hidden by an average.
+Klara now has a production-shaped path where a signed identity owns every session and job, workers act through expiring compare-and-swap leases, terminal state and notifications commit together, and only an authorized redacted trace can cross into evaluation or training.
 
 ![Klara Agent behavior evaluation contract](../assets/ch18-agent-eval-contract.svg)
 
-| What you see | What the gate does |
+| Boundary | Runtime guarantee |
 | --- | --- |
-| One critical case fails once | Fail directly; averages cannot offset it |
-| Ordinary task success is below `0.95` | Block stage promotion |
-| P0 is greater than `0` | Block release |
-| The contract control probe passes | Prove only that evaluation plumbing works, not that the Agent is complete |
+| credential → principal | signature, issuer, audience, lifetime, tenant, user, and role are verified |
+| principal → data | every owner read filters tenant and user; a foreign object is opaque |
+| queue → worker | only the holder of an unexpired hashed lease can heartbeat or finish |
+| job → notification | terminal transition and Outbox insert share one transaction |
+| public trace → dataset | ownership, path containment, schema, redaction, linkage, split, and hashes are checked |
+| baseline → candidate | identical fixture and split hashes are mandatory; P0 and resource regressions fail |
 
-## Quick Experience
+## Quick experience
 
-Run from the repository root:
+The existing `/api` path remains the local learning adapter for the Chapter UI. The new `/api/production` path is independently authenticated and is the path a deployment or worker should use.
+
+```powershell
+$env:KLARA_AUTH_MODE = "development"
+\.\scripts\dev.ps1 -Restart
+```
+
+On the same workstation, request a short-lived development token:
+
+```powershell
+$tokenResponse = Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:8000/api/production/auth/dev-token `
+  -ContentType application/json `
+  -Body '{"tenant_id":"demo-tenant","user_id":"demo-user","roles":["owner","operator"]}'
+$headers = @{ Authorization = "Bearer $($tokenResponse.access_token)" }
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/production/whoami -Headers $headers
+```
+
+`/auth/dev-token` is loopback-only and disappears when `KLARA_AUTH_MODE=production`. Production startup refuses to invent a signing key: deployment must supply `KLARA_AUTH_SIGNING_KEY` through its secret channel. Never put that value in Git, TOML, a job payload, or a trace.
+
+Run the deterministic chapter gate:
 
 ```powershell
 $env:PYTHONPATH = "src;."
-python -m klara.eval.behavior_cli `
-  --fixture tests/fixtures/behavior/agent_behavior_cases.json `
-  --config config/evaluation/agent_behavior.toml `
+python -m klara.eval.chapter18_cli `
   --repository-root . `
-  --json-out docs/reports/product/agent-eval-contract.json `
-  --markdown-out docs/reports/product/agent-eval-contract.md `
-  --markdown-en-out docs/reports/product/agent-eval-contract.en.md
+  --json-out docs/reports/product/ch18-production-runtime.json `
+  --markdown-out docs/reports/product/ch18-production-runtime.md `
+  --markdown-en-out docs/reports/product/ch18-production-runtime.en.md
 ```
 
-You should see `passed: true` and `gate_kind: contract_control_probe`. Then run `./scripts/dev.ps1` and open **Evaluations** in the sidebar. The page shows aggregate results and split hashes, never hidden case text or blind-review identities.
+## 1. Authentication is a runtime boundary
 
-## The Real Problem: Why Not Build First and Test Somehow Later
+`AuthService` uses a compact versioned HMAC-SHA256 bearer format for Klara's trusted deployment boundary. Verification checks the exact header, constant-time signature, token schema, issuer, audience, issued time, expiry, and maximum lifetime before creating a `Principal`. A principal contains a tenant, user, roles, token ID, and expiry; public projection omits the token ID and credential.
 
-If scoring rules move after candidate results arrive, failures can be reinterpreted. If every score is averaged, many easy successes can conceal a permission violation. If the UI exposes hidden cases, later implementation can optimize toward the test wording by accident.
+Roles are intentionally small: `owner` and `operator` create and inspect their own sessions/jobs, `worker` claims tenant jobs, `evaluator` exports an owned trajectory, and `admin` reads payload-free metrics. `admin` can satisfy a role check, but it does not change the repository's owner filter. A managed OIDC or workload-identity gateway may authenticate people and mint this internal credential; deploying that identity provider is outside the repository.
 
-This stage therefore completes the Phase 0B evaluation contract first. It is not a claim that Chapter 18 is finished: real trajectory export, candidate-Agent takeover, production authentication, and remote training remain later work.
+The development issuer is not a production login system. It only makes the boundary reproducible on one workstation, accepts no password, and is unavailable remotely or in production mode.
 
-## Mechanism One: Freeze Inputs, Not Conclusions
+## 2. Versioned persistence and opaque tenancy
 
-`agent_behavior_cases.json` stores source, license, split, risk, tools, permissions, expected states, forbidden actions, budgets, and the public reference answer for every behavior case. `KlaraBehaviorCase` rejects duplicate IDs, contradictory actions, and one scenario family crossing splits.
+`ProductionRepository` applies immutable SQLite migrations under `BEGIN IMMEDIATE` and records each migration checksum in `schema_migrations`. Restarting is idempotent; changed migration text fails startup instead of silently mutating an existing database.
 
-<details>
-<summary>Inspect the real schema and split isolation</summary>
+Sessions and jobs store `tenant_id` and `owner_id`. Owner APIs put both fields in every query, so another user in the same tenant and the same user name in another tenant receive the same not-found result. Workers use a separate tenant-scoped query only after the `worker` role check. Public job records expose lifecycle metadata and a payload hash, never the question, result, lease hash, or worker credential.
 
-```text
-src/klara/eval/behavior.py
-tests/fixtures/behavior/agent_behavior_cases.json
-config/evaluation/agent_behavior.toml
-```
+The current repository uses SQLite WAL for one-host reliability. The service/repository seam is deliberate: a deployment can add a PostgreSQL adapter with the same compare-and-swap and Outbox contracts. It must not weaken owner predicates or lease verification.
 
-`stable_hash` uses stable Unicode JSON serialization. The report stores the whole fixture SHA-256 and separate hashes for development, validation, hidden regression, and adversarial splits.
+## 3. Idempotent queue, leases, cancellation, and event streaming
 
-</details>
+Enqueue requires an `Idempotency-Key` unique per tenant and owner. The same key plus the exact canonical payload returns the original job; the same key with different content fails. Payloads and results are bounded to 64 KiB.
 
-## Mechanism Two: Score Deterministic Safety Separately from Answer Quality
+Claiming runs in an immediate transaction. It recovers expired jobs, selects one available row, moves it from `queued` to `running`, increments the attempt, stores only the SHA-256 of a random lease, and returns the raw lease once to the worker. Heartbeat, completion, and failure compare the hash and expiry. A forged or stale lease cannot finish a job.
 
-`score_observation` checks required calls, forbidden calls, states, artifacts, invariants, prohibited claims, and step/token/cost/latency budgets. Critical cases repeat five times and ordinary cases repeat three times. P0 must remain zero and critical deterministic success must be `1.0`.
+`ProductionQueueWorker` is the adapter seam for the frozen Agent runtime. Its executor sees the bounded payload, stable job/run IDs, attempt count, a cooperative `cancel_requested` probe, and a `heartbeat()` method. It never sees the raw lease. An exception stores only the exception class as a public error code; provider text does not enter the database.
 
-<details>
-<summary>Inspect scoring and report aggregation</summary>
+Cancellation is cooperative for a running job and immediate for a queued job. Public job events are monotonically sequenced and contain state, attempt, error code, or result hash—not prompt/result text. `/events/stream` replays existing events, polls for new events, emits SSE IDs, and closes at a terminal state or client disconnect.
 
-```text
-src/klara/eval/behavior.py
-src/klara/eval/behavior_report.py
-tests/klara/eval/test_behavior_contract.py
-```
+## 4. Transactional Outbox
 
-Independent-judge and human-acceptance rates remain separate fields. `reference_gap` measures the frozen candidate against the reference, but a pass applies only to these cases, tools, permissions, budgets, and graders.
+A terminal job transition and `prod_outbox` insert happen in the same database transaction. The event contains only job ID, run ID, and terminal state. Delivery has its own hashed, expiring lease and acknowledgement. A crashed delivery can be reclaimed without replaying the Agent job; a forged delivery token cannot acknowledge it.
 
-</details>
+This separates task effects from notification effects. It does not claim exactly-once delivery to an arbitrary external system. Consumers still use `event_id` as their idempotency key.
 
-## Mechanism Three: A Control Probe Validates Only the Pipeline
+## 5. Authorized trajectory export
 
-The current CLI runs a named `contract_control_probe`. It submits each frozen reference answer as a compliant observation to validate schemas, thresholds, repetition stability, documentation checks, and blind-review queue wiring.
+`TrajectoryExportService` first proves that the job belongs to the caller. The requested trace must resolve under a configured trace root. The exporter selects the job's run, orders events by sequence, and calls the Chapter 3 trajectory projection.
 
-```text
-control probe PASS -> evaluation substrate is wired correctly
-candidate Agent PASS -> not measured in this phase
-general GPT equivalence -> never implied
-```
+The dataset retains only:
 
-That boundary is written into JSON, both Markdown reports, and the frontend status card so “the evaluator works” cannot be misreported as “the product capability passed.”
+- lifecycle state and bounded outcome labels;
+- tool name and tool-call linkage, without arguments or returned content;
+- explicit source/claim IDs;
+- approved numeric latency, token, and cost fields.
 
-## Mechanism Four: The Frontend Reads Only a Safe Projection
+It drops the raw prompt, final answer text, tool arguments/results, provider reasoning, and private references. Validation enforces contiguous sequence numbers, one run ID, monotonic turns, complete tool start/terminal pairs, declared source/claim links, and secret-pattern scans. A deterministic group-level hash assigns train/validation/test so wording variants cannot be manually moved after inspection.
 
-`/api/evaluations/summary` projects status, counts, metrics, checks, and split hashes from the JSON report. It does not return `case_scores` or `human_review_queue`. The frontend has loading, no-report, failure, and pass states with responsive and dark-mode treatment.
+Each export receives an opaque ID and tenant-hashed directory. `manifest.json` links source trace hash, job payload hash, run lineage hash, schema version, split counts, dataset hash, and privacy assertions. The repository records the dataset and manifest hashes for audit without storing their contents again.
 
-<details>
-<summary>Inspect the API and visualization entry</summary>
+## 6. Frozen regression comparison
 
-```text
-src/klara/eval/catalog.py
-apps/api/routes/evaluations.py
-apps/web/src/components/EvaluationDashboard.tsx
-apps/web/src/styles/app.css
-```
+`klara.eval.regression_cli` compares a baseline and candidate behavior report without the frontend. It refuses different fixture hashes, split hashes, schemas, or observation counts. A candidate must keep critical, overall, normal, reference, independent-judge, human-acceptance, P0, and severe-mismatch metrics non-inferior.
 
-The evaluation page is an observation surface, not an evaluation calculator. The JSON report remains the single source of truth.
+It also caps aggregate candidate/baseline latency at `1.25`, tokens at `1.10`, and cost at `1.10` by default. Zero baselines remain strict: a candidate may stay zero but cannot introduce previously absent cost. The JSON report is the source of truth; Chinese and English Markdown are mirrors.
 
-</details>
+The generated Chapter 18 control comparison uses the same frozen report on both sides. It proves that comparison code and anti-drift checks work. It is not yet the final current-Agent-vs-GPT behavioral judgment; that occurs at Agent Product Freeze with real observations and independent grading.
 
-## Run and Verify
+## 7. Observability and privacy
+
+Production middleware creates or bounds a request ID, returns it to the caller, adds `nosniff` and `no-store`, and aggregates method, route template, status class, and duration. It never labels metrics with tenant, user, prompt, token, job ID, exception text, or URL query. Only `admin` can read the aggregate metrics endpoint.
+
+Audit rows store tenant, actor, action, target type, target-ID hash, request-ID hash, and time. They intentionally omit bearer values, request bodies, results, and hidden model reasoning.
+
+## Tests and reproduction
 
 ```powershell
+python -m pytest `
+  tests/klara/production `
+  tests/apps/api/test_production_route.py `
+  tests/klara/eval/test_regression.py `
+  tests/klara/eval/test_chapter18.py -q
 python -m pytest -q
-Push-Location apps/web
-npm test
-npm run build
-Pop-Location
+npm --prefix apps/web test -- --run
+npm --prefix apps/web run build
 git diff --check
 ```
 
-Focused evaluation tests also cover schema rejection, split leakage, critical failures that cannot average away, blind-review slot assignment, bilingual document structure, and hidden API fields.
+The focused suite covers signature tampering/expiry, missing production keys, role separation, same-tenant and cross-tenant opacity, migration checksums, idempotency collisions, queue recovery, forged leases, heartbeat, cancellation, worker retry, secret non-persistence, Outbox acknowledgement, export path containment, trace redaction/linkage/hashes, API projection, and regression failure injection.
 
-## Small Experiments
+## Exercises
 
-1. Add one item to `p0_failures` in a temporary copy of a critical control observation and confirm that the whole gate fails.
-2. Put one `scenario_family` in two splits and confirm that the fixture cannot load.
-3. Temporarily remove the report and confirm that Evaluations shows `not_run` instead of inventing a zero score.
+1. Advance a fake clock beyond one worker lease and verify a second worker recovers the job while the first lease can no longer complete it.
+2. Use the same idempotency key with a changed `maximum_steps` and verify the queue rejects it.
+3. Add `authorization` to a temporary trajectory object and verify the privacy validator identifies its exact path.
+4. Increase candidate token totals to `1.11×` baseline and confirm the regression report fails while all task-success rates remain equal.
+5. Implement a PostgreSQL repository adapter and run the unchanged service/evaluator contract against it.
 
-## Stage Boundary and Next Step
+## Limitations and next stage
 
-Phase 0B delivers a reusable evaluation contract and aggregate evidence surface. The next product branch returns to Chapter 4 for harness/config; every later chapter must connect the real Agent candidate to this frozen contract and pass before promotion. HKU, Slurm, and large-model training stay disabled until the local pre-HKU freeze.
+This chapter proves authenticated multi-user isolation and durable queue semantics on one host. It does not deploy an identity provider, multi-region consensus, encrypted-at-rest database service, or an external message broker. Those are deployment choices, not reasons to weaken the repository contract.
+
+The Agent runtime is still frozen from learned-policy takeover. Lab A next collects real, licensed, contamination-reviewed trajectories through this bridge and fixes the evaluation set. Only after the full Agent Product Freeze may HKU training start.
