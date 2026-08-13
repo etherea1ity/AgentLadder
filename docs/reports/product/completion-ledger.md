@@ -16,7 +16,7 @@
 | ch10-memory | `codex/ch10-memory` | passed |
 | ch11-formal-rag | `none` | deferred_by_scope |
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | passed |
-| permission-engine | `codex/permission-engine` | pending |
+| permission-engine | `codex/permission-engine` | passed |
 | ch14-durable-tasks | `codex/ch14-durable-tasks` | pending |
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | pending |
 | ch17-mcp | `codex/ch17-mcp` | pending |
@@ -49,6 +49,8 @@
 
 - Chapter 10：提交 `ca5e20a4b19ce9036878b84205a10fa670972f33`，机器门禁 `16/16`，Python `305 passed, 1 skipped`，前端 `56 passed`，生产构建与 24 条行为控制观察通过。Memory 具备租户/用户/Agent/会话隔离、显式写入、候选审核、版本与时间有效性、遗忘和可验证硬删除；本地统一语料检索门中 hybrid 达到 `6/6` top-1、关键题 `3/3`。Mem0/MEM1 和公共 benchmark 尚未运行，报告明确标记为 `not_executed`；详见 [Chapter 10 报告](./ch10-memory.md)。
 
-- Chapters 12–13：提交 `8ebc035e3cf703e71c1360d03b4718d10aeb21e2`，机器门禁 `15/15`，Python `314 passed, 1 skipped`，前端 `58 passed`，生产构建与 24 条行为控制观察通过。真实 `KlaraLoop` 现要求 `web_fetch -> evidence_submit -> verifier`，拒绝 snippet 冒充来源、dangling/duplicate/stale/irrelevant/contradicted 证据和伪造 witness；关键确定性金标的 citation precision/recall、contradiction recall、abstention accuracy 均为 `1.0`。这不是开放域完美声明；详见 [Chapters 12–13 报告](./ch12-13-evidence-runtime.md)。
+- Chapters 12–13：提交 `8ebc0351ae5d4890f5e985c2e24573fdcabe23b4`，机器门禁 `15/15`，Python `314 passed, 1 skipped`，前端 `58 passed`，生产构建与 24 条行为控制观察通过。真实 `KlaraLoop` 现要求 `web_fetch -> evidence_submit -> verifier`，拒绝 snippet 冒充来源、dangling/duplicate/stale/irrelevant/contradicted 证据和伪造 witness；关键确定性金标的 citation precision/recall、contradiction recall、abstention accuracy 均为 `1.0`。这不是开放域完美声明；详见 [Chapters 12–13 报告](./ch12-13-evidence-runtime.md)。
 
-当前顺序门禁已经进入 `permission-engine`；Chapter 11 按既定范围延期，不计为通过。
+- Permission Engine：分支 `codex/permission-engine`，确定性门禁 `25/25`，关键隔离与绕过通过率 `1.0`，原始工具参数泄漏 `0`；Python `325 passed, 1 skipped`，前端 `60 passed`，生产构建通过。真实浏览器完成 pending → allow once → revoke，桌面无水平溢出；窄屏由组件与响应式 CSS 门禁验证。详见 [Permission Engine 报告](./permission-engine.md)。
+
+当前顺序门禁已经进入 `ch14-durable-tasks`；Chapter 11 按既定范围延期，不计为通过。

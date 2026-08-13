@@ -16,7 +16,7 @@ Mode: `full-end-to-end`
 | ch10-memory | `codex/ch10-memory` | passed |
 | ch11-formal-rag | `none` | deferred_by_scope |
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | passed |
-| permission-engine | `codex/permission-engine` | pending |
+| permission-engine | `codex/permission-engine` | passed |
 | ch14-durable-tasks | `codex/ch14-durable-tasks` | pending |
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | pending |
 | ch17-mcp | `codex/ch17-mcp` | pending |
@@ -49,6 +49,8 @@ Mode: `full-end-to-end`
 
 - Chapter 10: commit `ca5e20a4b19ce9036878b84205a10fa670972f33` passes `16/16` machine checks, Python `305 passed, 1 skipped`, frontend `56 passed`, the production build, and 24 behavior-control observations. Memory now provides tenant/user/agent/session isolation, explicit writes, candidate review, versioned temporal validity, forgetting, and verified hard deletion. On the same local retrieval corpus, hybrid reaches `6/6` top-1 and `3/3` critical top-1. Mem0/MEM1 and public benchmarks remain explicitly `not_executed`; see the [Chapter 10 report](./ch10-memory.en.md).
 
-- Chapters 12–13: commit `8ebc035e3cf703e71c1360d03b4718d10aeb21e2` passes `15/15` machine checks, Python `314 passed, 1 skipped`, frontend `58 passed`, the production build, and 24 behavior-control observations. The real `KlaraLoop` now requires `web_fetch -> evidence_submit -> verifier`, rejecting snippets-as-sources, dangling/duplicate/stale/irrelevant/contradicted evidence, and forged witnesses. Critical deterministic gold citation precision/recall, contradiction recall, and abstention accuracy are all `1.0`. This is not an open-domain perfection claim; see the [Chapters 12–13 report](./ch12-13-evidence-runtime.en.md).
+- Chapters 12–13: commit `8ebc0351ae5d4890f5e985c2e24573fdcabe23b4` passes `15/15` machine checks, Python `314 passed, 1 skipped`, frontend `58 passed`, the production build, and 24 behavior-control observations. The real `KlaraLoop` now requires `web_fetch -> evidence_submit -> verifier`, rejecting snippets-as-sources, dangling/duplicate/stale/irrelevant/contradicted evidence, and forged witnesses. Critical deterministic gold citation precision/recall, contradiction recall, and abstention accuracy are all `1.0`. This is not an open-domain perfection claim; see the [Chapters 12–13 report](./ch12-13-evidence-runtime.en.md).
 
-The sequential gate is now at `permission-engine`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.
+- Permission Engine: branch `codex/permission-engine` passes `25/25` deterministic checks with a `1.0` critical isolation/bypass rate and `0` raw tool-argument leaks. Python reports `325 passed, 1 skipped`, frontend reports `60 passed`, and the production build passes. A real browser journey completed pending → allow once → revoke with no desktop horizontal overflow; narrow layout is backed by component and responsive-CSS gates. See the [Permission Engine report](./permission-engine.en.md).
+
+The sequential gate is now at `ch14-durable-tasks`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.

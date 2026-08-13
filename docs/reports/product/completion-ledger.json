@@ -1,6 +1,6 @@
 {
-  "authoritative_parent": "b440df32c71df56c892b4657c392e37f9ea53e9a",
-  "current_stage": "ch10-memory",
+  "authoritative_parent": "d82ae953b1febf6e95f1766aedb1b500459425f5",
+  "current_stage": "ch14-durable-tasks",
   "mode": "full-end-to-end",
   "objectives": [
     {
@@ -384,17 +384,51 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch10-memory-system.md",
+        "docs/chapters/ch10-memory-system.en.md",
+        "docs/reports/product/ch10-memory.json",
+        "docs/reports/product/ch10-memory.md",
+        "docs/reports/product/ch10-memory.en.md",
+        "docs/reports/product/ch10-memory-ui-e2e.json"
+      ],
       "branch": "codex/ch10-memory",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter10_cli ...",
+        "python -m pytest -q",
+        "npm test (apps/web)",
+        "npm run build (apps/web)"
+      ],
+      "commit": "ca5e20a4b19ce9036878b84205a10fa670972f33",
+      "datasets": [
+        "tests/fixtures/memory/ch10_retrieval_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.chapter10-memory.v1",
+        "klara.memory-benchmark.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {
+          "passed": 16,
+          "total": 16
+        },
+        "python_tests": {
+          "collected": 306,
+          "passed": 305,
+          "skipped": 1
+        },
+        "frontend_tests": {
+          "passed": 56
+        },
+        "frontend_build": "passed",
+        "public_benchmarks": "not_executed_and_not_claimed"
+      },
       "id": "ch10-memory",
       "metrics": {},
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -410,30 +444,109 @@
       "status": "deferred_by_scope"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch12-controlled-agentic-rag.md",
+        "docs/chapters/ch12-controlled-agentic-rag.en.md",
+        "docs/chapters/ch13-research-agent.md",
+        "docs/chapters/ch13-research-agent.en.md",
+        "docs/reports/product/ch12-13-evidence-runtime.json",
+        "docs/reports/product/ch12-13-evidence-runtime.md",
+        "docs/reports/product/ch12-13-evidence-runtime.en.md",
+        "docs/reports/product/ch12-13-evidence-runtime-ui-e2e.json"
+      ],
       "branch": "codex/ch12-13-evidence-runtime",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter12_13_cli ...",
+        "python -m pytest -q",
+        "npm test (apps/web)",
+        "npm run build (apps/web)"
+      ],
+      "commit": "8ebc0351ae5d4890f5e985c2e24573fdcabe23b4",
+      "datasets": [
+        "tests/fixtures/algorithm/gate1_gold.json",
+        "tests/fixtures/algorithm/gate1_trajectories.jsonl"
+      ],
+      "evaluator_versions": [
+        "klara.chapter12-13-evidence-runtime.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {
+          "passed": 15,
+          "total": 15
+        },
+        "python_tests": {
+          "collected": 315,
+          "passed": 314,
+          "skipped": 1
+        },
+        "frontend_tests": {
+          "passed": 58
+        },
+        "frontend_build": "passed",
+        "bounded_public_smoke": "passed"
+      },
       "id": "ch12-13-evidence-runtime",
       "metrics": {},
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/permission-engine.md",
+        "docs/chapters/permission-engine.en.md",
+        "docs/reports/product/permission-engine.json",
+        "docs/reports/product/permission-engine.md",
+        "docs/reports/product/permission-engine.en.md",
+        "docs/reports/product/permission-engine-ui-e2e.json"
+      ],
       "branch": "codex/permission-engine",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.permission_engine_cli ...",
+        "python -m klara.eval.behavior_cli ...",
+        "python -m pytest -q",
+        "npm test -- --run (apps/web)",
+        "npm run build (apps/web)"
+      ],
+      "commit": "d82ae953b1febf6e95f1766aedb1b500459425f5",
+      "datasets": [
+        "tests/fixtures/behavior/agent_behavior_cases.json",
+        "tests/klara/permissions/test_permission_engine.py"
+      ],
+      "evaluator_versions": [
+        "klara.permission-engine.v1",
+        "klara.behavior-scorer.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {
+          "passed": 25,
+          "total": 25
+        },
+        "python_tests": {
+          "collected": 326,
+          "passed": 325,
+          "skipped": 1
+        },
+        "frontend_tests": {
+          "passed": 60
+        },
+        "frontend_build": "passed",
+        "behavior_contract": {
+          "observations": 24,
+          "status": "passed"
+        },
+        "critical_isolation_and_bypass_rate": 1.0,
+        "raw_argument_leak_count": 0,
+        "desktop_browser": "passed",
+        "mobile": "passed_by_component_and_responsive_css_tests"
+      },
       "id": "permission-engine",
       "metrics": {},
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -593,5 +706,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-13T09:38:00+00:00"
+  "updated_at": "2026-08-13T12:11:33.2661627Z"
 }
