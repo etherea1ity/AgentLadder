@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from klara.app.user_context import UserContext
+from klara.app.output_contract import OutputContractLlmClient
 from klara.context.runtime import build_system_prompt
 from klara.context.controller import ContextController
 from klara.context.policy import ContextPolicy
@@ -237,7 +238,7 @@ class KlaraHarness:
                 SkillRuntimeController(self.skill_catalog),
             )
         return KlaraLoop(
-            llm=self.llm,
+            llm=OutputContractLlmClient(self.llm),
             tool_executor=ToolExecutor(list(self._selected_tools)),
             hooks=hooks,
             policy=self.config.loop_policy,

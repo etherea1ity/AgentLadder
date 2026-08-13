@@ -35,7 +35,7 @@ class ReasoningFinalLlm(RecordingFinalLlm):
         return ModelResponse(
             content="final answer",
             reasoning_summary="The provider returned a safe summary of model thinking.",
-            reasoning_source="message.reasoning_content",
+            reasoning_source="message.reasoning_summary",
         )
 
 

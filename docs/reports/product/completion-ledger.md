@@ -22,7 +22,7 @@
 | ch17-mcp | `codex/ch17-mcp` | passed |
 | ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | passed |
 | ch18-production-runtime | `codex/ch18-production-runtime` | passed |
-| agent-product-polish | `codex/agent-product-polish` | pending |
+| agent-product-polish | `codex/agent-product-polish` | passed |
 | agent-product-benchmarks | `codex/agent-product-benchmarks` | pending |
 | agent-product-freeze | `codex/agent-product-freeze` | pending |
 | model-kv-cache | `codex/model-kv-cache` | pending |
@@ -63,4 +63,6 @@
 
 - Chapter 18：确定性门禁 `25/25`，关键合同通过率 `1.0`，公共秘密泄漏与 P0 奇怪回答均为 `0`；Python `403 passed, 2 skipped`（其中 PostgreSQL 测试在常规无 DSN 回归中跳过，并已单独对真实 PostgreSQL 16 通过），前端 `68 passed`，生产构建与冻结回归 control 通过。除签名 bearer/RBAC、tenant+owner 隔离、幂等 lease queue/Outbox、脱敏 trajectory 与 CLI 外，还补齐 SQLite backup/restore/integrity/retention、OIDC RS256/JWKS/撤销 adapter、通用 Agent 状态持久化，并通过一次性 PostgreSQL 16 的真实 migration/isolation/JSONB/queue/lease/Outbox 集成测试；外部 OIDC provider smoke 明确为 `not_executed`。详见 [Chapter 18 报告](./ch18-production-runtime.md)。
 
-当前顺序门禁已经进入 `agent-product-polish`；Chapter 11 按既定范围延期，不计为通过。Agent Product Freeze 仍未通过，因此模型训练保持禁用。
+- Agent Product Polish：`15/15` 产品检查通过，定向 Python `64 passed`，前端 `71 passed`，生产构建通过；真实浏览器验证 Overview、Trace、评测历史与移动导航。两项 P0 反例——取消后尾事件/隐式复活和 DeepSeek DSML 答案泄漏——均已修复并加入回归；旧 raw provider reasoning 与底层 JSONL 不再跨越 API 公共边界。详见 [Product Polish 报告](./agent-product-polish.md)。
+
+当前顺序门禁已经进入 `agent-product-benchmarks`；Chapter 11 按既定范围延期，不计为通过。Agent Product Freeze 仍未通过，因此模型训练保持禁用。

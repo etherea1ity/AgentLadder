@@ -72,6 +72,11 @@ def remove_worktree(worktree_id: str, service: TeamService = Depends(get_team_se
     return _guarded(lambda: {"schema_version": "klara.team-worktree.v1", "worktree": service.remove_worktree(scope=scope, permission_scope=permission_scope, worktree_id=worktree_id).to_public_dict()})
 
 
+@router.get("/worktrees/{worktree_id}/inspection")
+def inspect_worktree(worktree_id: str, service: TeamService = Depends(get_team_service), scope: TeamScope = Depends(get_team_scope)):
+    return _plain(lambda: service.inspect_worktree(scope=scope, worktree_id=worktree_id))
+
+
 def _guarded(call):
     try:
         return call()

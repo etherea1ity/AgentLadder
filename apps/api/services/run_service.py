@@ -54,6 +54,11 @@ from klara.tasks import (
 from klara.mcp import McpService
 from klara.permissions import PermissionScope
 
+
+_TERMINAL_RUN_STATUSES = {"completed", "failed", "cancelled"}
+_TERMINAL_RUN_EVENTS = {"run_completed", "run_failed", "run_cancelled"}
+
+
 class RunService:
     """Project Klara loop runs into the local chat API and SSE event stream."""
 
@@ -225,11 +230,13 @@ class RunService:
         existing = self.store.get_run(task_id)
         if existing is not None:
             live_thread = self._threads.get(task_id)
-            if existing.status == "completed" or (
+            if existing.status in {"completed", "cancelled"} or (
                 live_thread is not None and live_thread.is_alive()
             ):
                 return self._run_response(existing)
-            if existing.status in {"failed", "cancelled"}:
+            if existing.status == "failed":
+                if not self._scheduled_retry_is_ready(task_id):
+                    return self._run_response(existing)
                 assistant = self.store.get_message(existing.assistant_message_id)
                 if assistant is not None:
                     self.store.update_message(
@@ -540,9 +547,17 @@ class RunService:
         event_type,
         message: str,
         payload: dict[str, Any],
-    ) -> RunEventRecord:
+    ) -> RunEventRecord | None:
         """Persist and publish one API-level run event."""
 
+        if event_type not in _TERMINAL_RUN_EVENTS:
+            run = self.store.get_run(run_id)
+            if (
+                run is None
+                or run.status in _TERMINAL_RUN_STATUSES
+                or run_id in self._cancel_requested
+            ):
+                return None
         event = RunEventRecord(run_id=run_id, event_type=event_type, message=message, payload=payload)
         self.store.append_event(event)
         self.bus.publish(event)
@@ -659,6 +674,17 @@ class RunService:
         self._cancel_requested.discard(run_id)
         self._threads.pop(run_id, None)
         self._task_leases.pop(run_id, None)
+
+    def _scheduled_retry_is_ready(self, run_id: str) -> bool:
+        """Allow a failed scheduler run to restart only after an explicit task retry."""
+
+        if self.task_service is None or self.task_scope is None:
+            return False
+        try:
+            task = self.task_service.get(scope=self.task_scope, task_id=run_id)
+        except TaskNotFoundError:
+            return False
+        return task.state is TaskState.READY
 
     def _claim_durable_task(self, run_id: str) -> bool:
         if self.task_service is None or self.task_scope is None:
@@ -1060,5 +1086,6 @@ def _public_error_message(exc: Exception) -> str:
         "context_length_exceeded": "The request remained too large after context recovery.",
         "all_model_candidates_failed": "All configured model routes failed.",
         "model_configuration_error": "The selected model route is not configured correctly.",
+        "provider_tool_protocol_invalid": "The model provider returned an invalid tool-call protocol. No protocol markup was shown.",
     }
     return messages.get(exc.code, "The model call failed.")

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Bot, Check, GitBranch, Inbox, MessageSquareText, Plus, RefreshCw, ShieldCheck, Square, Users } from 'lucide-react';
 import { api, ApiError } from '../api/client';
-import type { TeamAgent, TeamState } from '../types/domain';
+import type { TeamAgent, TeamState, TeamWorktreeInspection } from '../types/domain';
 
 const EMPTY: TeamState = { schema_version: 'klara.team-state.v1', team: { tenant_id: '', owner_id: '', team_id: '' }, agents: [], root_inbox: [], mailbox_counts: {}, worktrees: [] };
 
@@ -13,6 +13,8 @@ export function TeamWorkspace({ onBackToChat, onOpenPermissions }: { onBackToCha
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [permissionPending, setPermissionPending] = useState(false);
+  const [inspection, setInspection] = useState<TeamWorktreeInspection | null>(null);
+  const [inspecting, setInspecting] = useState('');
 
   useEffect(() => { const controller = new AbortController(); void refresh(controller.signal); return () => controller.abort(); }, []);
 
@@ -48,6 +50,13 @@ export function TeamWorkspace({ onBackToChat, onOpenPermissions }: { onBackToCha
     finally { setBusy(''); }
   }
 
+  async function inspectWorktree(worktreeId: string) {
+    setInspecting(worktreeId);
+    try { setInspection(await api.inspectTeamWorktree(worktreeId)); setError(''); }
+    catch { setInspection(null); setError('The worktree diff state could not be verified.'); }
+    finally { setInspecting(''); }
+  }
+
   return <main className="team-page" aria-label="Team workspace">
     <header className="task-header">
       <button className="memory-back" onClick={onBackToChat}><ArrowLeft size={17} />Back to chat</button>
@@ -75,6 +84,7 @@ export function TeamWorkspace({ onBackToChat, onOpenPermissions }: { onBackToCha
         <footer><button disabled={busy === agent.agent_id || agent.status === 'stopped'} onClick={() => void ping(agent)}><MessageSquareText size={14} />Message</button>{!['completed', 'failed', 'stopped'].includes(agent.status) ? <button className="danger" disabled={busy === agent.agent_id} onClick={() => void stop(agent)}><Square size={13} />Stop</button> : null}</footer>
       </article>) : <div className="memory-empty">No delegated agents yet. Authority is always requested before creation.</div>}
     </section>
-    <section className="team-lower-grid"><div><h2><Inbox size={17} />Parent inbox</h2>{state.root_inbox.length ? state.root_inbox.slice().reverse().map((message) => <p key={message.message_id}><strong>{message.kind.replace('_', ' ')}</strong><span>{message.body}</span></p>) : <small>No returned summaries or handoffs.</small>}</div><div><h2><GitBranch size={17} />Worktrees</h2>{state.worktrees.length ? state.worktrees.map((item) => <p key={item.worktree_id}><strong>{item.branch_name}</strong><span>{item.status} · {item.head_sha?.slice(0, 8) ?? 'no head'}</span></p>) : <small>No isolated code workspace has been created.</small>}</div></section>
+    <section className="team-lower-grid"><div><h2><Inbox size={17} />Parent inbox</h2>{state.root_inbox.length ? state.root_inbox.slice().reverse().map((message) => <p key={message.message_id}><strong>{message.kind.replace('_', ' ')}</strong><span>{message.body}</span></p>) : <small>No returned summaries or handoffs.</small>}</div><div><h2><GitBranch size={17} />Worktrees</h2>{state.worktrees.length ? state.worktrees.map((item) => <button className="worktree-row" key={item.worktree_id} onClick={() => void inspectWorktree(item.worktree_id)} disabled={inspecting === item.worktree_id}><strong>{item.branch_name}</strong><span>{inspecting === item.worktree_id ? 'Inspecting…' : `${item.status} · ${item.head_sha?.slice(0, 8) ?? 'no head'}`}</span></button>) : <small>No isolated code workspace has been created.</small>}</div></section>
+    {inspection ? <section className="worktree-inspection" aria-label="Worktree inspection"><header><div><span>Read-only diff state</span><h2>{inspection.changed_file_count} changed · {inspection.conflict_count} conflicts</h2></div><strong>{inspection.ahead} ahead / {inspection.behind} behind</strong></header>{inspection.files.length ? <div>{inspection.files.map((file) => <p key={`${file.code}:${file.path}`} className={file.status === 'conflict' ? 'is-conflict' : ''}><span>{file.code}</span><strong>{file.path}</strong><small>{file.status}</small></p>)}</div> : <small>Clean worktree. No file content was read or rendered.</small>}</section> : null}
   </main>;
 }

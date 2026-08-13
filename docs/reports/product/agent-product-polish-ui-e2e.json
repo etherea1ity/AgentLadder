@@ -1,0 +1,56 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "agent-product-polish",
+  "source_branch": "codex/agent-product-polish",
+  "evaluated_at": "2026-08-14T01:50:00+08:00",
+  "browser_surface": "Codex in-app browser",
+  "backend": "real local FastAPI API",
+  "target": "http://127.0.0.1:5123/",
+  "journeys": [
+    "load the aggregate overview from eight current API surfaces",
+    "open and navigate the grouped mobile sidebar; verify automatic dismissal",
+    "inspect evaluation history loaded from safe report catalog projections",
+    "replay persisted public run events in the separate developer surface",
+    "reload a historical provider-protocol leak and verify API-time withholding",
+    "verify historical raw provider reasoning is absent from chat and replay"
+  ],
+  "desktop": {
+    "viewport": "1280x720",
+    "body_scroll_width": 1280,
+    "horizontal_overflow": false,
+    "overview_heading_visible": true,
+    "surfaces_online": "8/8"
+  },
+  "mobile": {
+    "viewport": "390x844",
+    "body_scroll_width": 390,
+    "horizontal_overflow": false,
+    "sidebar_auto_dismissed_after_navigation": true,
+    "overview_heading_visible": true
+  },
+  "privacy_and_terminal_boundary": {
+    "dsml_visible": false,
+    "raw_provider_reasoning_visible": false,
+    "historical_protocol_replaced_with_withheld_notice": true,
+    "post_cancel_events_returned": false
+  },
+  "console": {
+    "error_count": 0,
+    "unhandled_rejection_count": 0
+  },
+  "screenshots": [
+    {
+      "path": "docs/reports/product/agent-product-polish-desktop.png",
+      "sha256": "605bddafa7ad5929c5935cbdaa44277fe64372408bfb4f1509bf4a0b7d443d37"
+    },
+    {
+      "path": "docs/reports/product/agent-product-polish-mobile.png",
+      "sha256": "e55c45c322bb5aa08e676202946755c2660530d55457a529ff609d7abaa12f8c"
+    }
+  ],
+  "limitations": [
+    "This stage verifies product navigation and public projection boundaries; public memory benchmarks and reference-model comparison belong to the next benchmark branch.",
+    "A full automated WCAG scanner and 200-percent-zoom matrix are still mandatory before Agent Product Freeze."
+  ],
+  "passed": true
+}

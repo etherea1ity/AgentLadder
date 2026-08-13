@@ -153,6 +153,13 @@ def test_real_git_worktree_stays_under_project_root_and_requires_exact_permissio
     lease = teams.create_worktree(scope=_scope(), permission_scope=_permission_scope(), agent_id=agent.agent_id, task_id="task-1", branch_name="codex/test-worktree")
     assert lease.status.value == "ready"
     assert (project / ".klara" / "worktrees") in __import__("pathlib").Path(lease.path).parents
+    worktree = __import__("pathlib").Path(lease.path)
+    (worktree / "changed.txt").write_text("uncommitted", encoding="utf-8")
+    inspection = teams.inspect_worktree(scope=_scope(), worktree_id=lease.worktree_id)
+    assert inspection["changed_file_count"] == 1
+    assert inspection["conflict_count"] == 0
+    assert inspection["files"] == [{"path": "changed.txt", "status": "untracked", "code": "??"}]
+    (worktree / "changed.txt").unlink()
     with pytest.raises(TeamValidationError, match="codex_prefix"):
         teams.create_worktree(scope=_scope(), permission_scope=_permission_scope(), agent_id=agent.agent_id, task_id="task-2", branch_name="unsafe")
     with pytest.raises(TeamPermissionRequired):

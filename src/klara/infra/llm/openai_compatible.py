@@ -402,7 +402,7 @@ def response_from_completion_data(
         message = choice["message"]
         raw_content = message.get("content") or ""
         raw_tool_calls = message.get("tool_calls") or []
-        tool_calls = tuple(
+        native_tool_calls = tuple(
             _parse_tool_call(tool_call, index)
             for index, tool_call in enumerate(raw_tool_calls)
             if isinstance(tool_call, dict)
@@ -418,6 +418,14 @@ def response_from_completion_data(
             "provider returned an invalid response shape",
             code="provider_response_invalid",
         )
+    dsml_tool_calls: tuple[ToolCall, ...] = ()
+    if _contains_dsml_marker(raw_content):
+        if native_tool_calls:
+            raw_content = ""
+        else:
+            dsml_tool_calls = _parse_dsml_tool_calls(raw_content)
+            raw_content = ""
+    tool_calls = native_tool_calls or dsml_tool_calls
     if not raw_content.strip() and not tool_calls:
         raise LlmProviderError(
             "provider returned an empty response",
@@ -455,11 +463,9 @@ def _extract_provider_reasoning(
     """Return one sanitized provider-visible reasoning summary if present."""
 
     candidates = (
-        ("message.reasoning_content", message.get("reasoning_content")),
-        ("message.reasoning", message.get("reasoning")),
-        ("message.thinking", message.get("thinking")),
-        ("choice.reasoning", choice.get("reasoning")),
-        ("data.reasoning", data.get("reasoning")),
+        ("message.reasoning_summary", message.get("reasoning_summary")),
+        ("choice.reasoning_summary", choice.get("reasoning_summary")),
+        ("data.reasoning_summary", data.get("reasoning_summary")),
     )
     for source, value in candidates:
         if not isinstance(value, str):
@@ -577,6 +583,100 @@ def _parse_tool_call(raw: dict[str, Any], index: int) -> ToolCall:
         name=str(function.get("name") or raw.get("name") or ""),
         arguments=arguments,
     )
+
+
+_DSML_TOKEN = r"(?:\|DSML\||｜DSML｜|｜｜DSML｜｜)"
+_DSML_MARKER = re.compile(rf"<\s*{_DSML_TOKEN}", re.IGNORECASE)
+_DSML_BLOCK = re.compile(
+    rf"<\s*{_DSML_TOKEN}(?:tool_calls|function_calls)\s*>"
+    rf"(?P<body>.*?)"
+    rf"</\s*{_DSML_TOKEN}(?:tool_calls|function_calls)\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+_DSML_INVOKE = re.compile(
+    rf"<\s*{_DSML_TOKEN}invoke\s+name=\"(?P<name>[^\"]+)\"\s*>"
+    rf"(?P<body>.*?)"
+    rf"</\s*{_DSML_TOKEN}invoke\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+_DSML_PARAMETER = re.compile(
+    rf"<\s*{_DSML_TOKEN}parameter\s+name=\"(?P<name>[^\"]+)\""
+    rf"\s+string=\"(?P<string>true|false)\"\s*>"
+    rf"(?P<value>.*?)"
+    rf"</\s*{_DSML_TOKEN}parameter\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _contains_dsml_marker(content: str) -> bool:
+    return bool(_DSML_MARKER.search(content))
+
+
+def _parse_dsml_tool_calls(content: str) -> tuple[ToolCall, ...]:
+    """Normalize DeepSeek V3.2/V4 DSML emitted in the content field."""
+
+    blocks = tuple(_DSML_BLOCK.finditer(content))
+    if not blocks or _without_matches(content, blocks).strip():
+        raise LlmProviderError(
+            "provider returned malformed DSML tool calls",
+            code="provider_tool_protocol_invalid",
+        )
+    calls: list[ToolCall] = []
+    for block in blocks:
+        body = block.group("body")
+        invokes = tuple(_DSML_INVOKE.finditer(body))
+        if not invokes or _without_matches(body, invokes).strip():
+            raise LlmProviderError(
+                "provider returned malformed DSML tool calls",
+                code="provider_tool_protocol_invalid",
+            )
+        for invoke in invokes:
+            name = invoke.group("name").strip()
+            parameters = tuple(_DSML_PARAMETER.finditer(invoke.group("body")))
+            if not name or _without_matches(invoke.group("body"), parameters).strip():
+                raise LlmProviderError(
+                    "provider returned malformed DSML tool calls",
+                    code="provider_tool_protocol_invalid",
+                )
+            arguments: dict[str, Any] = {}
+            for parameter in parameters:
+                key = parameter.group("name").strip()
+                if not key or key in arguments:
+                    raise LlmProviderError(
+                        "provider returned malformed DSML tool calls",
+                        code="provider_tool_protocol_invalid",
+                    )
+                raw_value = parameter.group("value").strip()
+                if parameter.group("string").lower() == "true":
+                    arguments[key] = raw_value
+                else:
+                    try:
+                        arguments[key] = json.loads(raw_value)
+                    except json.JSONDecodeError as exc:
+                        raise LlmProviderError(
+                            "provider returned malformed DSML tool arguments",
+                            code="provider_tool_protocol_invalid",
+                        ) from exc
+            calls.append(
+                ToolCall(
+                    id=f"dsml-tool-call-{len(calls)}",
+                    name=name,
+                    arguments=arguments,
+                )
+            )
+    return tuple(calls)
+
+
+def _without_matches(text: str, matches: tuple[re.Match[str], ...]) -> str:
+    """Return text outside a stable set of non-overlapping regex matches."""
+
+    pieces: list[str] = []
+    cursor = 0
+    for match in matches:
+        pieces.append(text[cursor : match.start()])
+        cursor = match.end()
+    pieces.append(text[cursor:])
+    return "".join(pieces)
 
 
 def _urlopen_with_retries(

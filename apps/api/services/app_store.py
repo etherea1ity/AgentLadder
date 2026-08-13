@@ -8,9 +8,16 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from apps.api.schemas import MessageRecord, RunEventRecord, RunRecord, SessionRecord, now_iso
+from klara.app.output_contract import public_answer_text
 from klara.planning.todo import TodoItem, TodoOperation, TodoPlan, apply_todo_update
 
 T = TypeVar("T", bound=BaseModel)
+_TERMINAL_EVENT_TYPES = {"run_completed", "run_failed", "run_cancelled"}
+_PUBLIC_REASONING_SOURCES = {
+    "message.reasoning_summary",
+    "choice.reasoning_summary",
+    "data.reasoning_summary",
+}
 
 
 class JsonlAppStore:
@@ -93,12 +100,22 @@ class JsonlAppStore:
             self.save_session(session.model_copy(update={"updated_at": now_iso()}))
 
     def list_messages(self, session_id: str) -> list[MessageRecord]:
-        messages = [m for m in self._load_latest(self.messages_path, MessageRecord, "message_id").values() if m.session_id == session_id]
+        messages = [self._public_message(m) for m in self._load_latest(self.messages_path, MessageRecord, "message_id").values() if m.session_id == session_id]
         messages.sort(key=lambda item: item.created_at)
         return messages
 
     def get_message(self, message_id: str) -> MessageRecord | None:
-        return self._load_latest(self.messages_path, MessageRecord, "message_id").get(message_id)
+        message = self._load_latest(self.messages_path, MessageRecord, "message_id").get(message_id)
+        return self._public_message(message) if message is not None else None
+
+    @staticmethod
+    def _public_message(message: MessageRecord) -> MessageRecord:
+        """Return the public/model-visible projection of one persisted message."""
+
+        if message.role != "assistant":
+            return message
+        content = public_answer_text(message.content)
+        return message if content == message.content else message.model_copy(update={"content": content})
 
     def save_run(self, run: RunRecord) -> None:
         self._append(self.runs_path, run)
@@ -121,7 +138,32 @@ class JsonlAppStore:
         self._append(self.events_path, event)
 
     def list_events(self, run_id: str) -> list[RunEventRecord]:
-        return [event for event in self._load_all(self.events_path, RunEventRecord) if event.run_id == run_id]
+        events: list[RunEventRecord] = []
+        for item in self._load_all(self.events_path, RunEventRecord):
+            if item.run_id != run_id:
+                continue
+            event = self._public_event(item)
+            if event is not None:
+                events.append(event)
+            if item.event_type in _TERMINAL_EVENT_TYPES:
+                break
+        return events
+
+    @staticmethod
+    def _public_event(event: RunEventRecord) -> RunEventRecord | None:
+        """Strip legacy raw-reasoning projections at the current API boundary."""
+
+        if event.event_type in {"provider_reasoning_delta", "provider_reasoning_completed"}:
+            if event.payload.get("source") not in _PUBLIC_REASONING_SOURCES:
+                return None
+        if event.event_type != "llm_call_completed":
+            return event
+        reasoning = event.payload.get("reasoning")
+        if not isinstance(reasoning, dict) or reasoning.get("source") in _PUBLIC_REASONING_SOURCES:
+            return event
+        payload = dict(event.payload)
+        payload.pop("reasoning", None)
+        return event.model_copy(update={"payload": payload})
 
     def latest_trace_for_run(self, run_id: str, trace_path: str | Path = "data/traces/runs.jsonl") -> dict | None:
         path = Path(trace_path)

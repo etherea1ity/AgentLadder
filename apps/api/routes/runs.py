@@ -44,7 +44,18 @@ def get_run(
     if run is None:
         raise HTTPException(status_code=404, detail="run_not_found")
     trace = store.latest_trace_for_run(run_id, run_service.trace_path)
-    return RunDetailResponse(run=run, events=store.list_events(run_id), trace=trace)
+    trace_reference = (
+        {
+            "schema_version": "klara.trace-reference.v1",
+            "run_id": run_id,
+            "available": True,
+            "latest_event_type": trace.get("type"),
+            "private_payload_exposed": False,
+        }
+        if trace is not None
+        else None
+    )
+    return RunDetailResponse(run=run, events=store.list_events(run_id), trace=trace_reference)
 
 
 @router.get("/{run_id}/events", response_model=RunEventsResponse)

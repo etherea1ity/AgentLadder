@@ -58,6 +58,13 @@ class BlockingLlm:
         return ModelResponse(content="This answer must not overwrite cancellation.")
 
 
+class LeakingProtocolLlm:
+    def complete(self, **_: object) -> ModelResponse:
+        return ModelResponse(
+            content='<｜DSML｜tool_calls><｜DSML｜invoke name="current_time">'
+        )
+
+
 def test_run_service_projects_chat_run_into_durable_task_and_cancellation_wins(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()
@@ -92,6 +99,77 @@ def test_run_service_projects_chat_run_into_durable_task_and_cancellation_wins(t
     assert assistant is not None and assistant.status == "cancelled"
     assert "run_completed" not in event_types
     assert "run_failed" not in event_types
+    cancel_index = event_types.index("run_cancelled")
+    assert event_types[cancel_index:] == ["run_cancelled"]
+
+
+def test_cancelled_scheduled_run_cannot_be_implicitly_restarted(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    llm = BlockingLlm()
+    task_scope = TaskScope("tenant-test", "owner-test", "klara")
+    task_service = DurableTaskService(
+        SQLiteTaskRepository(tmp_path / "app" / "tasks.sqlite3")
+    )
+    task_service.create(
+        scope=task_scope,
+        task_id="scheduled-task",
+        title="Scheduled work",
+        description="Do cancellable scheduled work",
+    )
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=llm,
+        task_service=task_service,
+        task_scope=task_scope,
+        answer_chunk_delay_ms=0,
+    )
+
+    created = service.create_scheduled_run(
+        session_id=session.session_id,
+        task_id="scheduled-task",
+        question="Do cancellable scheduled work",
+        schedule_title="Scheduled work",
+    )
+    assert llm.started.wait(timeout=5)
+    worker = service._threads[created.run_id]
+    service.cancel_run(created.run_id)
+    llm.release.set()
+    worker.join(timeout=5)
+
+    replayed = service.create_scheduled_run(
+        session_id=session.session_id,
+        task_id="scheduled-task",
+        question="Do cancellable scheduled work",
+        schedule_title="Scheduled work",
+    )
+    event_types = [item.event_type for item in store.list_events(created.run_id)]
+    assert replayed.status == "cancelled"
+    assert created.run_id not in service._threads
+    assert event_types[event_types.index("run_cancelled") :] == ["run_cancelled"]
+
+
+def test_run_service_never_streams_internal_provider_protocol(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=LeakingProtocolLlm(),
+        answer_chunk_delay_ms=0,
+    )
+
+    created = service.create_run(session.session_id, "Use a tool")
+    service._threads[created.run_id].join(timeout=5)
+
+    run = store.get_run(created.run_id)
+    assistant = store.get_message(created.assistant_message_id)
+    events = store.list_events(created.run_id)
+    assert run is not None and run.status == "failed"
+    assert run.error is not None and run.error.code == "provider_tool_protocol_invalid"
+    assert assistant is not None and "DSML" not in assistant.content
+    assert not any(event.event_type == "answer_delta" for event in events)
 
 
 def test_conversation_history_uses_completed_messages_before_current_turn(tmp_path) -> None:

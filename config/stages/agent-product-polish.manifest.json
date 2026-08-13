@@ -1,0 +1,35 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-product-polish",
+  "branch": "codex/agent-product-polish",
+  "parent_commit": "270e9ca2343fef3af24c64020d89163a4a417e15",
+  "mode": "local-pre-hku",
+  "frozen_at": "2026-08-14T00:00:00+08:00",
+  "runtime": {
+    "backend": "FastAPI local API",
+    "frontend": "React/Vite",
+    "event_contract": "public RunEventRecord only"
+  },
+  "datasets": [
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "budgets": {
+    "desktop_viewport": "1280x720",
+    "mobile_viewport": "390x844",
+    "horizontal_overflow_pixels": 0,
+    "p0_strange_responses": 0
+  },
+  "expected_artifacts": [
+    "docs/reports/product/agent-product-polish.json",
+    "docs/reports/product/agent-product-polish.md",
+    "docs/reports/product/agent-product-polish.en.md",
+    "docs/reports/product/agent-product-polish-ui-e2e.json",
+    "docs/reports/product/agent-product-polish-desktop.png",
+    "docs/reports/product/agent-product-polish-mobile.png"
+  ],
+  "exclusions": [
+    "No Agent Product Freeze claim",
+    "No public benchmark, independent judge, or blind-human parity claim",
+    "No HKU, VPN, SSH, Slurm, teacher collection, or model training"
+  ]
+}

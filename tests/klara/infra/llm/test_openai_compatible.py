@@ -231,6 +231,56 @@ def test_response_from_completion_data_normalizes_tool_calls_and_usage() -> None
     assert response.usage == {"total_tokens": 12}
 
 
+def test_response_from_completion_data_parses_deepseek_dsml_tool_calls() -> None:
+    response = response_from_completion_data(
+        {
+            "choices": [
+                {
+                    "message": {
+                        "content": (
+                            '<｜｜DSML｜｜tool_calls>\n'
+                            '<｜｜DSML｜｜invoke name="lookup">\n'
+                            '<｜｜DSML｜｜parameter name="text" string="true">weather</｜｜DSML｜｜parameter>\n'
+                            '<｜｜DSML｜｜parameter name="limit" string="false">3</｜｜DSML｜｜parameter>\n'
+                            '</｜｜DSML｜｜invoke>\n'
+                            '</｜｜DSML｜｜tool_calls>'
+                        )
+                    }
+                }
+            ]
+        },
+        model_ref=ModelRef(provider="deepseek", model="deepseek-v4-flash"),
+        raw_preview="{}",
+    )
+
+    assert response.content == ""
+    assert [(call.name, call.arguments) for call in response.tool_calls] == [
+        ("lookup", {"text": "weather", "limit": 3})
+    ]
+
+
+def test_response_from_completion_data_rejects_malformed_dsml() -> None:
+    with pytest.raises(LlmProviderError) as caught:
+        response_from_completion_data(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                '<｜DSML｜tool_calls>'
+                                '<｜DSML｜invoke name="lookup">missing close'
+                            )
+                        }
+                    }
+                ]
+            },
+            model_ref=ModelRef(provider="deepseek", model="deepseek-v4-flash"),
+            raw_preview="{}",
+        )
+
+    assert caught.value.code == "provider_tool_protocol_invalid"
+
+
 def test_response_from_completion_data_extracts_provider_reasoning_summary() -> None:
     """Provider reasoning fields should be UI metadata, not assistant content."""
 
@@ -240,7 +290,7 @@ def test_response_from_completion_data_extracts_provider_reasoning_summary() -> 
                 {
                     "message": {
                         "content": "final answer",
-                        "reasoning_content": "I checked the request shape before answering.",
+                        "reasoning_summary": "I checked the request shape before answering.",
                     }
                 }
             ],
@@ -251,11 +301,11 @@ def test_response_from_completion_data_extracts_provider_reasoning_summary() -> 
 
     assert response.content == "final answer"
     assert response.reasoning_summary == "I checked the request shape before answering."
-    assert response.reasoning_source == "message.reasoning_content"
+    assert response.reasoning_source == "message.reasoning_summary"
 
 
-def test_response_from_completion_data_extracts_message_thinking() -> None:
-    """Qwen-style thinking fields should become UI-only reasoning metadata."""
+def test_response_from_completion_data_does_not_promote_raw_thinking() -> None:
+    """Raw provider reasoning must not become public UI metadata."""
 
     response = response_from_completion_data(
         {
@@ -273,17 +323,17 @@ def test_response_from_completion_data_extracts_message_thinking() -> None:
     )
 
     assert response.content == "final answer"
-    assert response.reasoning_summary == "The provider returned a public thinking summary."
-    assert response.reasoning_source == "message.thinking"
+    assert response.reasoning_summary is None
+    assert response.reasoning_source is None
 
 
-def test_response_from_completion_data_extracts_data_reasoning() -> None:
-    """Top-level reasoning fields are accepted when message-level fields are absent."""
+def test_response_from_completion_data_extracts_explicit_data_reasoning_summary() -> None:
+    """Only an explicitly summarized provider field is accepted for public UI."""
 
     response = response_from_completion_data(
         {
             "choices": [{"message": {"content": "final answer"}}],
-            "reasoning": "The provider returned top-level reasoning metadata.",
+            "reasoning_summary": "The provider returned top-level reasoning metadata.",
         },
         model_ref=ModelRef(provider="qwen", model="qwen3.7-flash"),
         raw_preview="{}",
@@ -291,7 +341,7 @@ def test_response_from_completion_data_extracts_data_reasoning() -> None:
 
     assert response.content == "final answer"
     assert response.reasoning_summary == "The provider returned top-level reasoning metadata."
-    assert response.reasoning_source == "data.reasoning"
+    assert response.reasoning_source == "data.reasoning_summary"
 
 
 def test_response_from_completion_data_extracts_public_activity_commentary() -> None:
@@ -359,7 +409,7 @@ def test_response_from_completion_data_sanitizes_provider_reasoning() -> None:
                 {
                     "message": {
                         "content": "final answer",
-                        "reasoning_content": (
+                        "reasoning_summary": (
                             "I checked https://example.com/private and token=abc123 "
                             "with sk-abcdefghijklmnopqrstuvwxyz."
                         ),

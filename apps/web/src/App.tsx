@@ -11,6 +11,8 @@ import { TaskBoard } from "./components/TaskBoard";
 import { SchedulerTimeline } from "./components/SchedulerTimeline";
 import { McpIntegrations } from "./components/McpIntegrations";
 import { TeamWorkspace } from "./components/TeamWorkspace";
+import { OperationsOverview } from "./components/OperationsOverview";
+import { TraceReplay } from "./components/TraceReplay";
 import type {
   Message,
   ModelOption,
@@ -18,6 +20,7 @@ import type {
   RunEvent,
   Session,
   TodoPlan,
+  ProductWorkspace,
 } from "./types/domain";
 import "./styles/app.css";
 import "./styles/klara.css";
@@ -56,7 +59,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState("");
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
-  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions" | "tasks" | "scheduler" | "integrations" | "team">("chat");
+  const [activeWorkspace, setActiveWorkspace] = useState<ProductWorkspace>("chat");
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
   );
@@ -248,10 +251,15 @@ export default function App() {
   }
 
   function newChat() {
-    setActiveWorkspace("chat");
+    openWorkspace("chat");
     setHandoffTriggerRunId(null);
     setActiveSessionId(null);
     setInput("");
+  }
+
+  function openWorkspace(workspace: ProductWorkspace) {
+    setActiveWorkspace(workspace);
+    if (isMobileViewport()) setSidebarCollapsed(true);
   }
 
   async function send() {
@@ -934,6 +942,8 @@ export default function App() {
     activeWorkspace === "scheduler" ? "has-scheduler" : "",
     activeWorkspace === "integrations" ? "has-integrations" : "",
     activeWorkspace === "team" ? "has-team" : "",
+    activeWorkspace === "overview" ? "has-overview" : "",
+    activeWorkspace === "traces" ? "has-traces" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -959,38 +969,46 @@ export default function App() {
         onRename={renameSession}
         onDelete={deleteSession}
         evaluationsActive={activeWorkspace === "evaluations"}
-        onOpenEvaluations={() => setActiveWorkspace("evaluations")}
+        onOpenEvaluations={() => openWorkspace("evaluations")}
         skillsActive={activeWorkspace === "skills"}
-        onOpenSkills={() => setActiveWorkspace("skills")}
+        onOpenSkills={() => openWorkspace("skills")}
         memoryActive={activeWorkspace === "memory"}
-        onOpenMemory={() => setActiveWorkspace("memory")}
+        onOpenMemory={() => openWorkspace("memory")}
         permissionsActive={activeWorkspace === "permissions"}
-        onOpenPermissions={() => setActiveWorkspace("permissions")}
+        onOpenPermissions={() => openWorkspace("permissions")}
         tasksActive={activeWorkspace === "tasks"}
-        onOpenTasks={() => setActiveWorkspace("tasks")}
+        onOpenTasks={() => openWorkspace("tasks")}
         schedulerActive={activeWorkspace === "scheduler"}
-        onOpenScheduler={() => setActiveWorkspace("scheduler")}
+        onOpenScheduler={() => openWorkspace("scheduler")}
         integrationsActive={activeWorkspace === "integrations"}
-        onOpenIntegrations={() => setActiveWorkspace("integrations")}
+        onOpenIntegrations={() => openWorkspace("integrations")}
         teamActive={activeWorkspace === "team"}
-        onOpenTeam={() => setActiveWorkspace("team")}
+        onOpenTeam={() => openWorkspace("team")}
+        overviewActive={activeWorkspace === "overview"}
+        onOpenOverview={() => openWorkspace("overview")}
+        tracesActive={activeWorkspace === "traces"}
+        onOpenTraces={() => openWorkspace("traces")}
       />
-      {activeWorkspace === "evaluations" ? (
-        <EvaluationDashboard onBackToChat={() => setActiveWorkspace("chat")} />
+      {activeWorkspace === "overview" ? (
+        <OperationsOverview onNavigate={openWorkspace} />
+      ) : activeWorkspace === "traces" ? (
+        <TraceReplay runs={runs} onBackToChat={() => openWorkspace("chat")} />
+      ) : activeWorkspace === "evaluations" ? (
+        <EvaluationDashboard onBackToChat={() => openWorkspace("chat")} />
       ) : activeWorkspace === "skills" ? (
-        <SkillsCatalog onBackToChat={() => setActiveWorkspace("chat")} />
+        <SkillsCatalog onBackToChat={() => openWorkspace("chat")} />
       ) : activeWorkspace === "memory" ? (
-        <MemoryManager onBackToChat={() => setActiveWorkspace("chat")} />
+        <MemoryManager onBackToChat={() => openWorkspace("chat")} />
       ) : activeWorkspace === "permissions" ? (
-        <PermissionCenter onBackToChat={() => setActiveWorkspace("chat")} />
+        <PermissionCenter onBackToChat={() => openWorkspace("chat")} />
       ) : activeWorkspace === "tasks" ? (
-        <TaskBoard onBackToChat={() => setActiveWorkspace("chat")} />
+        <TaskBoard onBackToChat={() => openWorkspace("chat")} />
       ) : activeWorkspace === "scheduler" ? (
-        <SchedulerTimeline onBackToChat={() => setActiveWorkspace("chat")} />
+        <SchedulerTimeline onBackToChat={() => openWorkspace("chat")} />
       ) : activeWorkspace === "integrations" ? (
-        <McpIntegrations onBackToChat={() => setActiveWorkspace("chat")} onOpenPermissions={() => setActiveWorkspace("permissions")} />
+        <McpIntegrations onBackToChat={() => openWorkspace("chat")} onOpenPermissions={() => openWorkspace("permissions")} />
       ) : activeWorkspace === "team" ? (
-        <TeamWorkspace onBackToChat={() => setActiveWorkspace("chat")} onOpenPermissions={() => setActiveWorkspace("permissions")} />
+        <TeamWorkspace onBackToChat={() => openWorkspace("chat")} onOpenPermissions={() => openWorkspace("permissions")} />
       ) : (
         <ChatWorkspace
           activeSessionId={activeSessionId}

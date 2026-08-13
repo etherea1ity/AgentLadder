@@ -2,6 +2,19 @@ export type RunStatus = 'queued' | 'thinking' | 'streaming' | 'completed' | 'fai
 export type MessageStatus = 'idle' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type Role = 'user' | 'assistant';
 
+export type ProductWorkspace =
+  | 'overview'
+  | 'chat'
+  | 'tasks'
+  | 'scheduler'
+  | 'team'
+  | 'skills'
+  | 'memory'
+  | 'integrations'
+  | 'permissions'
+  | 'evaluations'
+  | 'traces';
+
 export type Session = {
   session_id: string;
   title: string;
@@ -236,6 +249,24 @@ export type EvaluationSummary = {
   metrics: Record<string, number>;
   checks: Record<string, boolean>;
   split_hashes: Record<string, string>;
+};
+
+export type EvaluationRunProjection = {
+  artifact_id: string;
+  status: 'passed' | 'failed';
+  gate_kind: string;
+  stage: string;
+  interpretation: string;
+  scorer_version?: string | null;
+  evaluated_at?: string | null;
+  counts: Record<string, number>;
+  metrics: Record<string, number>;
+  checks: Record<string, boolean>;
+};
+
+export type EvaluationCatalog = {
+  schema_version: 'klara.evaluation-catalog.v1';
+  runs: EvaluationRunProjection[];
 };
 
 export type SkillOption = {
@@ -566,6 +597,18 @@ export type TeamState = {
   root_inbox: TeamMessage[];
   mailbox_counts: Record<string, number>;
   worktrees: TeamWorktree[];
+};
+
+export type TeamWorktreeInspection = {
+  schema_version: 'klara.team-worktree-inspection.v1';
+  worktree_id: string;
+  status: TeamWorktree['status'];
+  head_sha?: string | null;
+  ahead: number;
+  behind: number;
+  conflict_count: number;
+  changed_file_count: number;
+  files: { path: string; status: 'untracked' | 'conflict' | 'deleted' | 'renamed' | 'added' | 'modified'; code: string }[];
 };
 
 // Klara Presence public event model. This is intentionally separate from the

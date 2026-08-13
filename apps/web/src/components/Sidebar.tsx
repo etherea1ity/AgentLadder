@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
-import { BarChart3, BookOpen, Brain, CalendarClock, ClipboardList, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, PlugZap, Plus, Settings, Users } from 'lucide-react';
+import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { BarChart3, BookOpen, Brain, CalendarClock, ClipboardList, Gauge, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, PlugZap, Plus, Settings, TerminalSquare, Users } from 'lucide-react';
 import type { Session } from '../types/domain';
 import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
@@ -30,9 +30,13 @@ type Props = {
   onOpenIntegrations?: () => void;
   teamActive?: boolean;
   onOpenTeam?: () => void;
+  overviewActive?: boolean;
+  onOpenOverview?: () => void;
+  tracesActive?: boolean;
+  onOpenTraces?: () => void;
 };
 
-export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined, tasksActive = false, onOpenTasks = () => undefined, schedulerActive = false, onOpenScheduler = () => undefined, integrationsActive = false, onOpenIntegrations = () => undefined, teamActive = false, onOpenTeam = () => undefined }: Props) {
+export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined, tasksActive = false, onOpenTasks = () => undefined, schedulerActive = false, onOpenScheduler = () => undefined, integrationsActive = false, onOpenIntegrations = () => undefined, teamActive = false, onOpenTeam = () => undefined, overviewActive = false, onOpenOverview = () => undefined, tracesActive = false, onOpenTraces = () => undefined }: Props) {
   const today = sessions.filter((session) => isToday(session.updated_at));
   const earlier = sessions.filter((session) => !isToday(session.updated_at));
   return (
@@ -44,55 +48,46 @@ export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionI
         <img className="navbar-brand-logo" src="/brand/klara/klara-lockup-light.png" alt="Klara" />
         <img className="navbar-brand-symbol" src="/brand/klara/klara-mark-light.png" alt="Klara" />
       </div>
-      <button className="new-chat" onClick={onNewChat} title="New Chat"><Plus size={18} /><span className="sidebar-copy">New Chat</span><kbd className="sidebar-copy">⌘N</kbd></button>
-      <ConversationGroup title="Today" sessions={today} activeSessionId={activeSessionId} deletingSessionIds={deletingSessionIds} renamingSessionIds={renamingSessionIds} onSelect={onSelect} onRename={onRename} onDelete={onDelete} />
-      <ConversationGroup title="Earlier" sessions={earlier} activeSessionId={activeSessionId} deletingSessionIds={deletingSessionIds} renamingSessionIds={renamingSessionIds} onSelect={onSelect} onRename={onRename} onDelete={onDelete} />
-      <button className={`sidebar-evaluations ${evaluationsActive ? 'active' : ''}`} onClick={onOpenEvaluations} title="Agent evaluations" aria-label="Evaluations" aria-pressed={evaluationsActive}>
-        <BarChart3 size={18} />
-        <span className="sidebar-copy">Evaluations</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">Lab</span>
-      </button>
-      <button className={`sidebar-evaluations ${skillsActive ? 'active' : ''}`} onClick={onOpenSkills} title="Procedural Skills" aria-label="Skills" aria-pressed={skillsActive}>
-        <BookOpen size={18} />
-        <span className="sidebar-copy">Skills</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">Runtime</span>
-      </button>
-      <button className={`sidebar-evaluations ${memoryActive ? 'active' : ''}`} onClick={onOpenMemory} title="Long-term Memory" aria-label="Memory" aria-pressed={memoryActive}>
-        <Brain size={18} />
-        <span className="sidebar-copy">Memory</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">Private</span>
-      </button>
-      <button className={`sidebar-evaluations ${permissionsActive ? 'active' : ''}`} onClick={onOpenPermissions} title="Permissions and approvals" aria-label="Permissions" aria-pressed={permissionsActive}>
-        <KeyRound size={18} />
-        <span className="sidebar-copy">Permissions</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">Guarded</span>
-      </button>
-      <button className={`sidebar-evaluations ${tasksActive ? 'active' : ''}`} onClick={onOpenTasks} title="Durable tasks" aria-label="Tasks" aria-pressed={tasksActive}>
-        <ClipboardList size={18} />
-        <span className="sidebar-copy">Tasks</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">Durable</span>
-      </button>
-      <button className={`sidebar-evaluations ${schedulerActive ? 'active' : ''}`} onClick={onOpenScheduler} title="Background scheduler" aria-label="Scheduler" aria-pressed={schedulerActive}>
-        <CalendarClock size={18} />
-        <span className="sidebar-copy">Scheduler</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">Timed</span>
-      </button>
-      <button className={`sidebar-evaluations ${integrationsActive ? 'active' : ''}`} onClick={onOpenIntegrations} title="MCP integrations" aria-label="Integrations" aria-pressed={integrationsActive}>
-        <PlugZap size={18} />
-        <span className="sidebar-copy">Integrations</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">MCP</span>
-      </button>
-      <button className={`sidebar-evaluations ${teamActive ? 'active' : ''}`} onClick={onOpenTeam} title="Subagents and teams" aria-label="Team" aria-pressed={teamActive}>
-        <Users size={18} />
-        <span className="sidebar-copy">Team</span>
-        <span className="sidebar-copy sidebar-evaluations-badge">Isolated</span>
-      </button>
+      <button className="new-chat" onClick={onNewChat} title="New Chat"><Plus size={18} /><span className="sidebar-copy">New Chat</span><kbd className="sidebar-copy">Ctrl N</kbd></button>
+      <NavItem icon={<Gauge size={18} />} label="Overview" badge="Live" active={overviewActive} onClick={onOpenOverview} dashboard />
+      <div className="sidebar-scroll-body">
+        <div className="sidebar-conversations">
+          <ConversationGroup title="Today" sessions={today} activeSessionId={activeSessionId} deletingSessionIds={deletingSessionIds} renamingSessionIds={renamingSessionIds} onSelect={onSelect} onRename={onRename} onDelete={onDelete} />
+          <ConversationGroup title="Earlier" sessions={earlier} activeSessionId={activeSessionId} deletingSessionIds={deletingSessionIds} renamingSessionIds={renamingSessionIds} onSelect={onSelect} onRename={onRename} onDelete={onDelete} />
+        </div>
+        <nav className="sidebar-product-nav" aria-label="Agent product">
+          <NavGroup label="Operate">
+            <NavItem icon={<ClipboardList size={17} />} label="Tasks" active={tasksActive} onClick={onOpenTasks} />
+            <NavItem icon={<CalendarClock size={17} />} label="Scheduler" active={schedulerActive} onClick={onOpenScheduler} />
+            <NavItem icon={<Users size={17} />} label="Team" active={teamActive} onClick={onOpenTeam} />
+          </NavGroup>
+          <NavGroup label="Knowledge">
+            <NavItem icon={<BookOpen size={17} />} label="Skills" active={skillsActive} onClick={onOpenSkills} />
+            <NavItem icon={<Brain size={17} />} label="Memory" active={memoryActive} onClick={onOpenMemory} />
+            <NavItem icon={<PlugZap size={17} />} label="Integrations" active={integrationsActive} onClick={onOpenIntegrations} />
+          </NavGroup>
+          <NavGroup label="Govern">
+            <NavItem icon={<KeyRound size={17} />} label="Permissions" active={permissionsActive} onClick={onOpenPermissions} />
+            <NavItem icon={<BarChart3 size={17} />} label="Evaluations" active={evaluationsActive} onClick={onOpenEvaluations} />
+            <NavItem icon={<TerminalSquare size={17} />} label="Traces" active={tracesActive} onClick={onOpenTraces} />
+          </NavGroup>
+        </nav>
+      </div>
       <div className="sidebar-footer"><span className="avatar">K</span><Settings size={18} /></div>
     </aside>
   );
 }
 
+function NavGroup({ label, children }: { label: string; children: ReactNode }) {
+  return <section className="sidebar-nav-group"><h2 className="sidebar-copy">{label}</h2>{children}</section>;
+}
+
+function NavItem({ icon, label, active, onClick, badge, dashboard = false }: { icon: ReactNode; label: string; active: boolean; onClick: () => void; badge?: string; dashboard?: boolean }) {
+  return <button className={`sidebar-nav-item ${dashboard ? 'sidebar-dashboard' : ''} ${active ? 'active' : ''}`} onClick={onClick} title={label} aria-label={label} aria-pressed={active}>{icon}<span className="sidebar-copy">{label}</span>{badge ? <span className="sidebar-copy sidebar-evaluations-badge">{badge}</span> : null}</button>;
+}
+
 function ConversationGroup(props: { title: string; sessions: Session[]; activeSessionId: string | null; deletingSessionIds: Record<string, boolean>; renamingSessionIds: Record<string, boolean>; onSelect: (id: string) => void; onRename: (id: string, title: string) => void; onDelete: (id: string) => void }) {
+  if (!props.sessions.length) return null;
   return (
     <section className="conversation-group">
       <h2 className="sidebar-copy">{props.title}</h2>
@@ -105,9 +100,7 @@ function ConversationItem({ session, active, deleting, renaming, onSelect, onRen
   const [mode, setMode] = useState<'menu' | 'rename' | 'delete'>('menu');
   const [draftTitle, setDraftTitle] = useState(session.title);
   const menuRef = useRef<HTMLDetailsElement | null>(null);
-  const resetMenu = useCallback(() => {
-    setMode('menu');
-  }, []);
+  const resetMenu = useCallback(() => setMode('menu'), []);
   useDismissibleDetails(menuRef, resetMenu);
 
   return (
@@ -120,34 +113,9 @@ function ConversationItem({ session, active, deleting, renaming, onSelect, onRen
       <details ref={menuRef} className="more-menu sidebar-copy" onToggle={(event) => { if (!(event.currentTarget as HTMLDetailsElement).open) setMode('menu'); }}>
         <summary aria-label="Conversation actions">{deleting || renaming ? <LoaderCircle className="spin" size={16} /> : <MoreHorizontal size={16} />}</summary>
         <div className="menu-popover">
-          {mode === 'menu' ? (
-            <>
-              <button disabled={deleting || renaming} onClick={() => { setDraftTitle(session.title); setMode('rename'); }}>Rename</button>
-              <button disabled={deleting || renaming} className="danger" onClick={() => setMode('delete')}>Delete</button>
-            </>
-          ) : null}
-          {mode === 'rename' ? (
-            <form
-              className="inline-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                const title = draftTitle.trim();
-                if (title) onRename(session.session_id, title);
-                setMode('menu');
-              }}
-            >
-              <label>Rename conversation</label>
-              <input value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} autoFocus />
-              <div className="popover-actions"><button type="button" onClick={() => setMode('menu')}>Cancel</button><button type="submit" disabled={renaming}>{renaming ? 'Saving...' : 'Save'}</button></div>
-            </form>
-          ) : null}
-          {mode === 'delete' ? (
-            <div className="delete-confirm">
-              <strong>Delete this conversation?</strong>
-              <p>This removes it from the sidebar and conversation view.</p>
-              <div className="popover-actions"><button onClick={() => setMode('menu')}>Cancel</button><button className="danger" disabled={deleting} onClick={() => onDelete(session.session_id)}>{deleting ? 'Deleting...' : 'Delete'}</button></div>
-            </div>
-          ) : null}
+          {mode === 'menu' ? <><button disabled={deleting || renaming} onClick={() => { setDraftTitle(session.title); setMode('rename'); }}>Rename</button><button disabled={deleting || renaming} className="danger" onClick={() => setMode('delete')}>Delete</button></> : null}
+          {mode === 'rename' ? <form className="inline-form" onSubmit={(event) => { event.preventDefault(); const title = draftTitle.trim(); if (title) onRename(session.session_id, title); setMode('menu'); }}><label>Rename conversation</label><input value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} autoFocus /><div className="popover-actions"><button type="button" onClick={() => setMode('menu')}>Cancel</button><button type="submit" disabled={renaming}>{renaming ? 'Saving...' : 'Save'}</button></div></form> : null}
+          {mode === 'delete' ? <div className="delete-confirm"><strong>Delete this conversation?</strong><p>This removes it from the sidebar and conversation view.</p><div className="popover-actions"><button onClick={() => setMode('menu')}>Cancel</button><button className="danger" disabled={deleting} onClick={() => onDelete(session.session_id)}>{deleting ? 'Deleting...' : 'Delete'}</button></div></div> : null}
         </div>
       </details>
     </div>

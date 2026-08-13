@@ -1,8 +1,8 @@
-import type { ClientContext, DurableTaskDetail, DurableTaskList, EvaluationSummary, McpConnection, McpServerConfig, McpState, McpTransportKind, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, ScheduleKind, ScheduleOccurrence, ScheduleRecord, SchedulerState, Session, SkillsCatalog, TeamAgent, TeamMessage, TeamState, TodoPlan } from '../types/domain';
+import type { ClientContext, DurableTaskDetail, DurableTaskList, EvaluationCatalog, EvaluationSummary, McpConnection, McpServerConfig, McpState, McpTransportKind, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, ScheduleKind, ScheduleOccurrence, ScheduleRecord, SchedulerState, Session, SkillsCatalog, TeamAgent, TeamMessage, TeamState, TeamWorktreeInspection, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
-type SessionDetail = { session: Session; messages: Message[]; runs: Omit<Run, 'events'>[]; events?: RunEvent[]; todo_plan?: TodoPlan | null };
+export type SessionDetail = { session: Session; messages: Message[]; runs: Omit<Run, 'events'>[]; events?: RunEvent[]; todo_plan?: TodoPlan | null };
 type CreateRunResponse = { run_id: string; session_id: string; user_message_id: string; assistant_message_id: string; status: Run['status']; events_url: string };
 type RunDetail = { run: Omit<Run, 'events'>; events: RunEvent[]; trace: Record<string, unknown> | null };
 export type RunEventSubscription = { runId: string; close: () => void };
@@ -23,9 +23,11 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (init?.body !== undefined && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const response = await fetch(resolveApiUrl(path), {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    ...init
+    ...init,
+    headers,
   });
   if (!response.ok) throw new ApiError(response.status, await response.text());
   return response.json() as Promise<T>;
@@ -51,6 +53,7 @@ export const api = {
   deleteSession: (id: string, signal?: AbortSignal) => request<{ session_id: string; deleted: boolean; deleted_at: string }>(`/api/sessions/${id}`, { method: 'DELETE', signal }),
   listModels: (signal?: AbortSignal) => request<{ default_model: string; models: ModelOption[] }>('/api/models', { signal }),
   getEvaluationSummary: (signal?: AbortSignal) => request<EvaluationSummary>('/api/evaluations/summary', { signal }),
+  getEvaluationRuns: (signal?: AbortSignal) => request<EvaluationCatalog>('/api/evaluations/runs', { signal }),
   listSkills: (signal?: AbortSignal) => request<SkillsCatalog>('/api/skills', { signal }),
   listMemories: (signal?: AbortSignal) => request<MemoryList>('/api/memory', { signal }),
   searchMemories: (query: string, signal?: AbortSignal) => request<{ results: MemoryRecord[] }>(`/api/memory/search?q=${encodeURIComponent(query)}`, { signal }),
@@ -84,6 +87,7 @@ export const api = {
   spawnSubagent: (value: { title: string; instructions: string; capability_names?: string[]; parent_task_id?: string; model?: string }, signal?: AbortSignal) => request<{ agent: TeamAgent }>('/api/teams/subagents', { method: 'POST', body: JSON.stringify(value), signal }),
   sendTeamMessage: (value: { sender_id?: string; recipient_id: string; kind: TeamMessage['kind']; body: string; task_id?: string }, signal?: AbortSignal) => request<{ message: TeamMessage }>('/api/teams/messages', { method: 'POST', body: JSON.stringify(value), signal }),
   stopTeamAgent: (agentId: string, signal?: AbortSignal) => request<{ agent: TeamAgent }>(`/api/teams/agents/${agentId}/stop`, { method: 'POST', body: '{}', signal }),
+  inspectTeamWorktree: (worktreeId: string, signal?: AbortSignal) => request<TeamWorktreeInspection>(`/api/teams/worktrees/${worktreeId}/inspection`, { signal }),
   createRun: (
     session_id: string,
     question: string,

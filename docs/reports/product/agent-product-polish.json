@@ -1,0 +1,88 @@
+{
+  "artifacts": [
+    "docs/reports/product/agent-product-polish.json",
+    "docs/reports/product/agent-product-polish.md",
+    "docs/reports/product/agent-product-polish.en.md",
+    "docs/reports/product/agent-product-polish-ui-e2e.json",
+    "docs/reports/product/agent-product-polish-desktop.png",
+    "docs/reports/product/agent-product-polish-mobile.png"
+  ],
+  "branch": "codex/agent-product-polish",
+  "checks": {
+    "browser_privacy_console_and_screenshots_pass": true,
+    "cancelled_run_is_not_restarted": true,
+    "deepseek_dsml_is_normalized": true,
+    "desktop_has_no_horizontal_overflow": true,
+    "developer_trace_is_separate_from_chat": true,
+    "evaluation_history_omits_hidden_cases": true,
+    "historical_protocol_markup_is_withheld": true,
+    "malformed_dsml_fails_closed": true,
+    "mobile_navigation_is_contained": true,
+    "overview_reads_current_backend_contracts": true,
+    "raw_jsonl_trace_is_not_returned_by_api": true,
+    "raw_provider_reasoning_is_not_public": true,
+    "run_cancelled_is_public_terminal_event": true,
+    "stage_manifest_exists": true,
+    "worktree_inspection_is_contained_and_read_only": true
+  },
+  "environment_evidence": {
+    "frontend": {
+      "command": "npm test -- --run",
+      "files_passed": 20,
+      "tests_passed": 71
+    },
+    "production_build": {
+      "command": "npm run build",
+      "passed": true
+    },
+    "python_targeted": {
+      "command": "python -m pytest <polish test selection> -q",
+      "passed": 64
+    },
+    "real_browser": {
+      "artifact": "docs\\reports\\product\\agent-product-polish-ui-e2e.json",
+      "sha256": "1518fd89d7d7f1183ea979d9612c47e16940353063f3d73839f047e77ebefb90"
+    }
+  },
+  "evaluated_at": "2026-08-14T01:50:00+08:00",
+  "gate_kind": "product_navigation_observability_and_public_output_boundary",
+  "incidents": [
+    {
+      "id": "provider-dsml-leak",
+      "observed": "A DeepSeek fallback returned DSML tool markup in assistant content.",
+      "regression": "tests/klara/infra/llm/test_openai_compatible.py; tests/klara/app/test_harness.py; tests/apps/api/test_sessions_route.py",
+      "repair": "Normalize valid DSML, reject malformed DSML, and withhold legacy protocol text at the public read boundary.",
+      "severity": "P0"
+    },
+    {
+      "id": "cancel-tail-events",
+      "observed": "A cancelled scheduled run retained public events after run_cancelled and could be implicitly revived.",
+      "regression": "tests/apps/api/test_run_service_history.py",
+      "repair": "Make cancellation terminal and require an explicit durable-task retry before restart.",
+      "severity": "P0"
+    }
+  ],
+  "interpretation": "This gate proves the local product surface and public output boundary; it does not claim Agent Product Freeze or strong-model parity.",
+  "limitations": [
+    "This is a product-polish stage, not Agent Product Freeze.",
+    "The frozen task set has not yet been run against the live Agent and pinned reference with an independent judge and blind human review.",
+    "Public memory benchmarks against Mem0 and Mem1 have not yet been executed.",
+    "A full accessibility scanner, keyboard-only matrix, 200-percent zoom matrix, long-list profile, and reconnect/offline matrix remain.",
+    "No HKU or model-training work was started."
+  ],
+  "metrics": {
+    "checks_passed": 15,
+    "checks_total": 15,
+    "desktop_horizontal_overflow_pixels": 0,
+    "frontend_test_files_passed": 20,
+    "frontend_tests_passed": 71,
+    "mobile_horizontal_overflow_pixels": 0,
+    "p0_strange_response_count_after_repair": 0,
+    "targeted_python_tests_passed": 64
+  },
+  "parent_commit": "270e9ca2343fef3af24c64020d89163a4a417e15",
+  "passed": true,
+  "schema_version": "klara.product-stage-report.v1",
+  "scorer_version": "klara.agent-product-polish.v1",
+  "stage": "agent-product-polish"
+}

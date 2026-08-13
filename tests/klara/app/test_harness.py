@@ -4,8 +4,10 @@ import json
 from dataclasses import dataclass
 from dataclasses import FrozenInstanceError
 
+import pytest
+
 from klara.app.harness import KlaraHarness, KlaraHarnessConfig
-from klara.core.messages import KlaraMessage, ModelResponse
+from klara.core.messages import KlaraMessage, ModelCallError, ModelResponse
 from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig, ProviderConfig, ProviderModel
 from klara.infra.config.runtime import CapabilityProfile
@@ -84,6 +86,17 @@ class HarnessLlm:
         return ModelResponse(content="harness final")
 
 
+class LeakingProtocolLlm:
+    def complete(self, **_: object) -> ModelResponse:
+        return ModelResponse(
+            content=(
+                '<｜DSML｜tool_calls><｜DSML｜invoke name="test_echo">'
+                '<｜DSML｜parameter name="text" string="true">x'
+                '</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+            )
+        )
+
+
 def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> None:
     llm = HarnessLlm()
     trace_path = tmp_path / "run.jsonl"
@@ -156,6 +169,15 @@ def test_harness_defaults_to_default_registry() -> None:
         "web_search",
     }
     assert "Visible tool guidance" not in llm.system_prompt
+
+
+def test_harness_fails_closed_when_provider_protocol_reaches_model_content() -> None:
+    harness = KlaraHarness(llm=LeakingProtocolLlm())
+
+    with pytest.raises(ModelCallError) as caught:
+        harness.run("hello", run_id="protocol-leak-run")
+
+    assert caught.value.code == "provider_tool_protocol_invalid"
 
 
 def test_run_profile_is_stable_immutable_and_secret_free(tmp_path, monkeypatch) -> None:

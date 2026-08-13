@@ -374,6 +374,54 @@ class TeamService:
             "worktrees": [item.to_public_dict() for item in self.repository.list_worktrees(scope)],
         }
 
+    def inspect_worktree(self, *, scope: TeamScope, worktree_id: str) -> dict[str, object]:
+        """Project a read-only Git status without exposing file contents."""
+
+        lease = self.repository.get_worktree(scope, worktree_id)
+        if lease is None:
+            raise TeamNotFoundError("team_worktree_not_found")
+        path = Path(lease.path).resolve()
+        _require_contained(self.worktree_root, path)
+        if lease.status is not WorktreeStatus.READY or not path.is_dir():
+            return {
+                "schema_version": "klara.team-worktree-inspection.v1",
+                "worktree_id": lease.worktree_id,
+                "status": lease.status.value,
+                "head_sha": lease.head_sha,
+                "ahead": 0,
+                "behind": 0,
+                "conflict_count": 0,
+                "changed_file_count": 0,
+                "files": [],
+            }
+        porcelain = self._git("-C", str(path), "status", "--porcelain=v1", "--untracked-files=all")
+        rows: list[dict[str, str]] = []
+        conflict_codes = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+        for raw in porcelain.splitlines()[:200]:
+            if len(raw) < 4:
+                continue
+            code = raw[:2]
+            rows.append(
+                {
+                    "path": raw[3:][:400],
+                    "status": _git_status_label(code),
+                    "code": code,
+                }
+            )
+        ahead, behind = self._worktree_divergence(path, lease.base_ref)
+        head = self._git("-C", str(path), "rev-parse", "HEAD").strip()
+        return {
+            "schema_version": "klara.team-worktree-inspection.v1",
+            "worktree_id": lease.worktree_id,
+            "status": lease.status.value,
+            "head_sha": head,
+            "ahead": ahead,
+            "behind": behind,
+            "conflict_count": sum(1 for row in rows if row["code"] in conflict_codes),
+            "changed_file_count": len(rows),
+            "files": rows,
+        }
+
     def shutdown(self) -> None:
         with self._lock:
             self._cancelled.update(self._threads)
@@ -464,6 +512,14 @@ class TeamService:
             raise TeamValidationError("git_operation_failed:" + (result.stderr.strip() or result.stdout.strip())[:400])
         return result.stdout
 
+    def _worktree_divergence(self, path: Path, base_ref: str) -> tuple[int, int]:
+        try:
+            value = self._git("-C", str(path), "rev-list", "--left-right", "--count", f"{base_ref}...HEAD")
+            behind, ahead = (int(item) for item in value.strip().split())
+            return ahead, behind
+        except (TeamValidationError, ValueError):
+            return 0, 0
+
 
 def _clean(value: str, limit: int) -> str:
     return " ".join(value.split())[:limit]
@@ -496,6 +552,20 @@ def _public_git_error(exc: Exception) -> str:
     if "contains modified or untracked files" in text:
         return "worktree_has_uncommitted_changes"
     return "worktree_git_operation_failed"
+
+
+def _git_status_label(code: str) -> str:
+    if code == "??":
+        return "untracked"
+    if code in {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}:
+        return "conflict"
+    if "D" in code:
+        return "deleted"
+    if "R" in code:
+        return "renamed"
+    if "A" in code:
+        return "added"
+    return "modified"
 
 
 def _public_error(exc: Exception) -> str:
