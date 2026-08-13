@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Klara Chapter 5 Todo Planning architecture</title>
+  <desc id="desc">A model todo_write call flows through validation and an atomic session store, then reaches trace, SSE, refresh recovery, and the plan panel.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fbf8f1"/><stop offset="1" stop-color="#e9efe5"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#202725" flood-opacity=".10"/></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#5f7b62"/></marker>
+    <style>
+      .title{font:700 29px Inter,Segoe UI,sans-serif;fill:#202725}.sub{font:500 15px Inter,Segoe UI,sans-serif;fill:#746d63}.label{font:700 17px Inter,Segoe UI,sans-serif;fill:#202725}.small{font:500 13px Inter,Segoe UI,sans-serif;fill:#746d63}.mono{font:600 13px Consolas,monospace;fill:#314640}.box{fill:#fffdf8;stroke:#ddd1bd;stroke-width:1.5;filter:url(#shadow)}.accent{fill:#e2eadf;stroke:#7d997f;stroke-width:1.5}.line{stroke:#5f7b62;stroke-width:2.2;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1200" height="620" rx="30" fill="url(#bg)"/>
+  <text x="64" y="66" class="title">Todo Planning: one versioned session state</text>
+  <text x="64" y="94" class="sub">Validated once, persisted atomically, projected everywhere</text>
+  <rect x="64" y="150" width="220" height="120" rx="20" class="box"/>
+  <text x="88" y="185" class="label">Model</text><text x="88" y="216" class="mono">todo_write</text><text x="88" y="243" class="small">replace | merge</text>
+  <rect x="360" y="150" width="250" height="120" rx="20" class="accent"/>
+  <text x="384" y="185" class="label">Planning contract</text><text x="384" y="216" class="small">unique stable ids · max 24</text><text x="384" y="243" class="small">≤ 1 item in_progress</text>
+  <rect x="686" y="150" width="250" height="120" rx="20" class="box"/>
+  <text x="710" y="185" class="label">Atomic JSONL store</text><text x="710" y="216" class="mono">version N → N + 1</text><text x="710" y="243" class="small">bound to current session</text>
+  <path d="M284 210h68" class="line"/><path d="M610 210h68" class="line"/>
+  <rect x="64" y="353" width="240" height="154" rx="20" class="box"/>
+  <text x="88" y="390" class="label">Trace evidence</text><text x="88" y="422" class="mono">tool.completed</text><text x="88" y="449" class="small">full public plan observation</text><text x="88" y="476" class="small">replayable from JSONL</text>
+  <rect x="350" y="353" width="240" height="154" rx="20" class="box"/>
+  <text x="374" y="390" class="label">Live projection</text><text x="374" y="422" class="mono">todo_plan_updated</text><text x="374" y="449" class="small">same version over SSE</text><text x="374" y="476" class="small">no polling required</text>
+  <rect x="636" y="353" width="240" height="154" rx="20" class="box"/>
+  <text x="660" y="390" class="label">Refresh recovery</text><text x="660" y="422" class="mono">SessionDetail.todo_plan</text><text x="660" y="449" class="small">latest session version</text><text x="660" y="476" class="small">deleted with conversation</text>
+  <rect x="922" y="353" width="214" height="154" rx="20" class="accent"/>
+  <text x="946" y="390" class="label">Plan panel</text><text x="946" y="422" class="small">ordered states</text><text x="946" y="449" class="small">progress + version</text><text x="946" y="476" class="small">desktop + mobile</text>
+  <path d="M811 270v38H184v37" class="line"/><path d="M811 270v38H470v37" class="line"/><path d="M811 270v75" class="line"/><path d="M936 210h93v135" class="line"/>
+  <text x="64" y="570" class="sub">Boundary: current-session planning only — no durable task graph, scheduler, or multi-agent claiming.</text>
+</svg>

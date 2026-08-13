@@ -18,6 +18,7 @@ import type {
   Message,
   ModelOption,
   Run,
+  TodoPlan,
 } from "../types/domain";
 import { KlaraHero } from "./klara/KlaraHero";
 import { KlaraThinkingDrawer } from "./klara/KlaraThinkingDrawer";
@@ -49,6 +50,7 @@ type Props = {
   theme: "light" | "dark";
   onToggleTheme: () => void;
   handoffTriggerRunId?: string | null;
+  todoPlan?: TodoPlan | null;
 };
 
 export function ChatWorkspace(props: Props) {
@@ -140,6 +142,7 @@ export function ChatWorkspace(props: Props) {
           <MessageList
             messages={props.messages}
             runs={props.runs}
+            todoPlan={props.todoPlan ?? null}
             activeRunId={activeRun?.run_id ?? null}
             handoffRunId={handoffRunId}
             arrivalRunId={arrivalRunId}
@@ -251,6 +254,7 @@ type ConversationTurn = {
 function MessageList({
   messages,
   runs,
+  todoPlan,
   activeRunId,
   handoffRunId,
   arrivalRunId,
@@ -259,6 +263,7 @@ function MessageList({
 }: {
   messages: Message[];
   runs: Record<string, Run>;
+  todoPlan: TodoPlan | null;
   activeRunId: string | null;
   handoffRunId: string | null;
   arrivalRunId: string | null;
@@ -309,6 +314,7 @@ function MessageList({
       aria-label="Messages"
       onScroll={rememberScrollIntent}
     >
+      <PlanPanel plan={todoPlan} />
       {turns.map((turn) => (
         <article className="conversation-turn" key={turn.key}>
           {turn.user ? <UserMessage message={turn.user} /> : null}
@@ -334,6 +340,42 @@ function MessageList({
         </article>
       ))}
     </section>
+  );
+}
+
+export function PlanPanel({ plan }: { plan: TodoPlan | null }) {
+  if (!plan || plan.items.length === 0) return null;
+  const completed = plan.items.filter((item) => item.status === "completed").length;
+  const progress = Math.round((completed / plan.items.length) * 100);
+
+  return (
+    <aside className="todo-plan-panel" aria-label="Current plan">
+      <header>
+        <span className="todo-plan-kicker">Plan</span>
+        <strong>{completed} of {plan.items.length} done</strong>
+        <span className="todo-plan-version">v{plan.version}</span>
+      </header>
+      <div className="todo-plan-progress" aria-label={`${progress}% complete`}>
+        <span style={{ width: `${progress}%` }} />
+      </div>
+      <ol>
+        {plan.items.map((item) => (
+          <li
+            className={`is-${item.status}`}
+            key={item.id}
+            aria-current={item.status === "in_progress" ? "step" : undefined}
+          >
+            <span className="todo-plan-marker" aria-hidden="true">
+              {item.status === "completed" ? "✓" : item.status === "in_progress" ? "•" : ""}
+            </span>
+            <span>{item.title}</span>
+            <small>
+              {item.status === "in_progress" ? "In progress" : item.status === "completed" ? "Done" : "Pending"}
+            </small>
+          </li>
+        ))}
+      </ol>
+    </aside>
   );
 }
 

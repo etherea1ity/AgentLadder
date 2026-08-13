@@ -1,0 +1,37 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch05-todo-planning",
+  "branch": "codex/ch05-todo-planning",
+  "parent_commit": "02afaeaf63ed00c3ce68e1fffb1a47851ced4cfe",
+  "mode": "local-pre-hku",
+  "datasets": ["tests/fixtures/behavior/agent_behavior_cases.json"],
+  "prompts": ["src/klara/prompts/persona.md"],
+  "model_ids": ["qwen/qwen-flash"],
+  "seeds": [17],
+  "budgets": {"paid_api_usd": 0, "maximum_todo_items": 24},
+  "evaluator_versions": ["klara.behavior-scorer.v1", "klara.documentation-validator.v1", "klara.ui-e2e.v1"],
+  "expected_artifacts": [
+    "docs/chapters/ch05-todo-planning.md",
+    "docs/chapters/ch05-todo-planning.en.md",
+    "docs/reports/product/ch05-todo-planning.json",
+    "docs/reports/product/ch05-todo-planning.md",
+    "docs/reports/product/ch05-todo-planning.en.md",
+    "docs/reports/product/ch05-todo-planning-ui-e2e.json"
+  ],
+  "acceptance": {
+    "todo_write_is_model_callable": true,
+    "one_active_item_invariant": true,
+    "replace_and_merge_are_deterministic": true,
+    "plan_is_session_persistent": true,
+    "plan_updates_are_trace_and_sse_visible": true,
+    "responsive_plan_ui": true,
+    "critical_behavior_regressions": 0
+  },
+  "exclusions": [
+    "durable task dependency graph",
+    "multi-agent claiming",
+    "background execution",
+    "HKU/VPN/SSH/Slurm",
+    "paid provider calls"
+  ]
+}

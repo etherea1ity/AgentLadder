@@ -3349,3 +3349,132 @@ body,
     min-width: 0;
   }
 }
+
+/* Chapter 5 current-session plan: a compact, inspectable rail inside the
+   message scroller. It stays visible while work advances without covering the
+   conversation or composer. */
+.todo-plan-panel {
+  position: sticky;
+  top: 10px;
+  z-index: 6;
+  width: var(--chat-rail-width);
+  margin: 0 auto 8px;
+  padding: 14px 16px 15px;
+  border: 1px solid rgba(95, 123, 98, 0.2);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-panel) 94%, #dfe9d9);
+  box-shadow: 0 12px 28px rgba(32, 39, 37, 0.06);
+}
+
+.todo-plan-panel header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.todo-plan-kicker,
+.todo-plan-version {
+  color: var(--text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.todo-plan-panel header strong {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 680;
+}
+
+.todo-plan-progress {
+  height: 3px;
+  margin: 10px 0 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(95, 123, 98, 0.12);
+}
+
+.todo-plan-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-running);
+  transition: width 220ms ease;
+}
+
+.todo-plan-panel ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.todo-plan-panel li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.todo-plan-panel li.is-in_progress {
+  color: var(--text-primary);
+  font-weight: 620;
+}
+
+.todo-plan-panel li.is-completed > span:nth-child(2) {
+  text-decoration: line-through;
+  text-decoration-color: rgba(95, 123, 98, 0.46);
+}
+
+.todo-plan-marker {
+  width: 17px;
+  height: 17px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(95, 123, 98, 0.36);
+  border-radius: 50%;
+  color: var(--accent-ink);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.todo-plan-panel li.is-in_progress .todo-plan-marker {
+  border-color: var(--accent-running);
+  background: rgba(95, 123, 98, 0.1);
+  box-shadow: 0 0 0 4px rgba(95, 123, 98, 0.08);
+}
+
+.todo-plan-panel li.is-completed .todo-plan-marker {
+  border-color: transparent;
+  background: var(--accent-running);
+  color: white;
+}
+
+.todo-plan-panel li small {
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.theme-dark .todo-plan-panel {
+  border-color: rgba(137, 209, 133, 0.18);
+  background: color-mix(in srgb, var(--bg-panel) 93%, #263425);
+  box-shadow: none;
+}
+
+@media (max-width: 520px) {
+  .todo-plan-panel {
+    padding: 13px 14px;
+  }
+  .todo-plan-panel li {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+  .todo-plan-panel li small {
+    display: none;
+  }
+}

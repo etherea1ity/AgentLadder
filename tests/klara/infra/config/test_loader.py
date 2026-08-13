@@ -69,6 +69,7 @@ def test_load_runtime_config_reads_loop_policy() -> None:
         "image_generate",
         "web_fetch",
         "web_search",
+        "todo_write",
         "update_activity",
     )
     assert profile.hooks == ("run_projection", "jsonl_trace")

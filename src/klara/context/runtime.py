@@ -42,6 +42,11 @@ def build_runtime_context_prompt(
                 "from memory."
             ),
             (
+                "For multi-step work, call todo_write before substantive actions; "
+                "keep one item in_progress, update scope changes, and mark verified "
+                "steps completed. Answer simple or one-step requests directly."
+            ),
+            (
                 "Keep web_search queries faithful to the user's scope and named "
                 "entities."
             ),

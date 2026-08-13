@@ -1,0 +1,56 @@
+{
+  "checks": {
+    "frontend_consumes_live_and_restored_plan": true,
+    "frontend_renders_accessible_plan": true,
+    "merge_advances_version": true,
+    "merge_is_ordered_upsert": true,
+    "one_active_item_enforced": true,
+    "product_path_persisted_plan": true,
+    "prompt_scopes_planning": true,
+    "restart_restores_plan": true,
+    "schema_is_versioned": true,
+    "session_delete_purges_plan": true,
+    "sse_projection_exists": true,
+    "stage_manifest_exists": true,
+    "todo_write_model_visible": true,
+    "trace_contains_plan_observation": true
+  },
+  "evaluated_at": "2026-08-13T04:10:41.863696+00:00",
+  "gate_kind": "deterministic_product_gate",
+  "interpretation": "Passing proves the local current-session Todo Planning state machine, persistence, product wiring, trace/SSE projection, and frontend contract. It does not claim general planning quality or ChatGPT equivalence.",
+  "metrics": {
+    "checks_passed": 14,
+    "checks_total": 14,
+    "plan_version_after_probe": 1,
+    "sse_plan_events": 1,
+    "todo_items_in_product_probe": 3,
+    "trace_plan_events": 1
+  },
+  "passed": true,
+  "probe_plan": {
+    "items": [
+      {
+        "id": "inspect",
+        "status": "completed",
+        "title": "Inspect"
+      },
+      {
+        "id": "build",
+        "status": "in_progress",
+        "title": "Build"
+      },
+      {
+        "id": "verify",
+        "status": "pending",
+        "title": "Verify"
+      }
+    ],
+    "schema_version": "klara.todo-plan.v1",
+    "session_id": "sess_3b2b4f2da4414fc7a5eea22bbb8dc73c",
+    "updated_at": "2026-08-13T04:10:41.758176+00:00",
+    "version": 1
+  },
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter05-todo-planning.v1",
+  "stage": "ch05-todo-planning"
+}

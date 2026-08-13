@@ -99,6 +99,16 @@ describe("Klara app flow", () => {
           trace_saved: true,
         }),
       ],
+      todo_plan: {
+        schema_version: "klara.todo-plan.v1",
+        session_id: "sess_1",
+        version: 2,
+        updated_at: now,
+        items: [
+          { id: "inspect", title: "Inspect repository", status: "completed" },
+          { id: "build", title: "Build the runtime", status: "in_progress" },
+        ],
+      },
     };
     runDetailResponse = {
       run: {
@@ -171,6 +181,8 @@ describe("Klara app flow", () => {
     ).toBeInTheDocument();
     expect(await screen.findByText(/Developer debug.*3 events.*1 tool/)).toBeInTheDocument();
     expect(screen.getByText("Trace saved")).toBeInTheDocument();
+    expect(screen.getByLabelText("Current plan")).toBeInTheDocument();
+    expect(screen.getByText("1 of 2 done")).toBeInTheDocument();
   });
 
   it("streams a runtime loop answer without a right-side trace panel", async () => {
@@ -264,6 +276,32 @@ describe("Klara app flow", () => {
         tool_result: { name: "current_time", ok: true },
       }),
     );
+    source.emit(
+      "todo_plan_updated",
+      evt("todo_plan_updated", "Plan updated.", {
+        schema_version: "klara.todo-plan.v1",
+        session_id: "sess_1",
+        version: 2,
+        updated_at: now,
+        items: [
+          { id: "inspect", title: "Inspect the runtime", status: "completed" },
+          { id: "answer", title: "Write the answer", status: "in_progress" },
+        ],
+      }),
+    );
+    expect(await screen.findByText("Write the answer")).toBeInTheDocument();
+    source.emit(
+      "todo_plan_updated",
+      evt("todo_plan_updated", "Stale plan ignored.", {
+        schema_version: "klara.todo-plan.v1",
+        session_id: "sess_1",
+        version: 1,
+        updated_at: now,
+        items: [{ id: "stale", title: "Stale plan", status: "in_progress" }],
+      }),
+    );
+    expect(screen.queryByText("Stale plan")).not.toBeInTheDocument();
+    expect(screen.getByText("Write the answer")).toBeInTheDocument();
     source.emit(
       "thinking_summary_completed",
       evt("thinking_summary_completed", "Thinking summary completed.", {

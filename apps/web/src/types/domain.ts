@@ -11,6 +11,16 @@ export type Session = {
   message_ids: string[];
 };
 
+export type TodoStatus = 'pending' | 'in_progress' | 'completed';
+export type TodoItem = { id: string; title: string; status: TodoStatus };
+export type TodoPlan = {
+  schema_version: 'klara.todo-plan.v1';
+  session_id: string;
+  version: number;
+  items: TodoItem[];
+  updated_at: string;
+};
+
 export type Message = {
   message_id: string;
   session_id: string;
@@ -28,6 +38,7 @@ export type Message = {
 export type RunEventType =
   | 'run_created'
   | 'run_profile_frozen'
+  | 'todo_plan_updated'
   | 'thinking_started'
   | 'thinking_summary_started'
   | 'thinking_summary_completed'

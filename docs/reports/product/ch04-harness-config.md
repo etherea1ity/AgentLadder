@@ -5,7 +5,7 @@
 Status: **PASS**
 
 - 评分器: `klara.chapter04-harness-config.v1`
-- 运行快照 hash: `de55caea7d51be41d9ea32db5896086ea20e4f3c0b12fa69872d1aed2fe49401`
+- 运行快照 hash: `6bf6f90021dfb5d1005916f431e258f6f37d9a43bf7e474eba056b669d54ec60`
 - 模型: `qwen/qwen-flash`
 
 ## 验收检查
@@ -41,8 +41,8 @@ Status: **PASS**
     "max_turns": 24
   },
   "model": "qwen/qwen-flash",
-  "persona_sha256": "25ba67f787134c5376aad70693303223d0c6a8e375382d687f3c267b4086e7f1",
-  "profile_sha256": "de55caea7d51be41d9ea32db5896086ea20e4f3c0b12fa69872d1aed2fe49401",
+  "persona_sha256": "9f346d86d01228e1f764350b2915250431121bf43d5cc300046ee79c30eb7680",
+  "profile_sha256": "6bf6f90021dfb5d1005916f431e258f6f37d9a43bf7e474eba056b669d54ec60",
   "required_model_capabilities": [
     "tools"
   ],
@@ -56,6 +56,7 @@ Status: **PASS**
     "image_generate",
     "web_fetch",
     "web_search",
+    "todo_write",
     "update_activity"
   ]
 }

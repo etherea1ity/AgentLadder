@@ -13,7 +13,30 @@ from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.app.user_context import UserContext
 from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.llm.routed_client import RoutedLlmClient
+from klara.planning.tool import TodoWriteTool
+from klara.planning.todo import TodoItem, TodoOperation, TodoPlan, apply_todo_update
 from klara.tools.registry import ToolRegistry
+
+
+class _CliTodoStore:
+    """In-memory current-run plan store for the CLI teaching path."""
+
+    def __init__(self) -> None:
+        self.plan: TodoPlan | None = None
+
+    def update_todo_plan(
+        self,
+        session_id: str,
+        operation: TodoOperation,
+        items: list[TodoItem],
+    ) -> TodoPlan:
+        self.plan = apply_todo_update(
+            session_id=session_id,
+            existing=self.plan,
+            operation=operation,
+            items=items,
+        )
+        return self.plan
 
 
 def build_harness(
@@ -30,9 +53,11 @@ def build_harness(
     selected_model = model or models.profile("agent").primary
     timezone = os.getenv("KLARA_TIMEZONE", "local").strip() or "local"
     user_context = replace(UserContext.local_default(), timezone=timezone)
+    registry = ToolRegistry.with_default_tools()
+    registry.register_tool(TodoWriteTool(session_id="cli-session", store=_CliTodoStore()))
     return KlaraHarness(
         llm=RoutedLlmClient(models=models, dotenv_path=".env"),
-        registry=ToolRegistry.with_default_tools(),
+        registry=registry,
         models=models,
         config=KlaraHarnessConfig(
             model=selected_model,

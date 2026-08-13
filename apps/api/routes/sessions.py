@@ -32,11 +32,13 @@ def get_session(session_id: str, store: JsonlAppStore = Depends(get_store)):
     if session is None:
         raise HTTPException(status_code=404, detail="session_not_found")
     runs = store.list_runs(session_id)
+    todo_plan = store.get_todo_plan(session_id)
     return SessionDetailResponse(
         session=session,
         messages=store.list_messages(session_id),
         runs=runs,
         events=[event for run in runs for event in store.list_events(run.run_id)],
+        todo_plan=todo_plan,
     )
 
 

@@ -12,7 +12,7 @@
     "secret_values_absent": true,
     "stage_manifest_exists": true
   },
-  "evaluated_at": "2026-08-13T03:38:37.348047+00:00",
+  "evaluated_at": "2026-08-13T04:06:22.556328+00:00",
   "gate_kind": "deterministic_product_gate",
   "interpretation": "Passing proves that local product entrypoints share one frozen, capability-checked, secret-free harness assembly. It does not test paid provider quality or later Agent chapters.",
   "metrics": {
@@ -21,7 +21,7 @@
     "configured_models": 6,
     "loop_max_tool_calls": 48,
     "loop_max_turns": 24,
-    "visible_tools": 5
+    "visible_tools": 6
   },
   "passed": true,
   "run_profile": {
@@ -38,8 +38,8 @@
       "max_turns": 24
     },
     "model": "qwen/qwen-flash",
-    "persona_sha256": "25ba67f787134c5376aad70693303223d0c6a8e375382d687f3c267b4086e7f1",
-    "profile_sha256": "de55caea7d51be41d9ea32db5896086ea20e4f3c0b12fa69872d1aed2fe49401",
+    "persona_sha256": "9f346d86d01228e1f764350b2915250431121bf43d5cc300046ee79c30eb7680",
+    "profile_sha256": "6bf6f90021dfb5d1005916f431e258f6f37d9a43bf7e474eba056b669d54ec60",
     "required_model_capabilities": [
       "tools"
     ],
@@ -53,6 +53,7 @@
       "image_generate",
       "web_fetch",
       "web_search",
+      "todo_write",
       "update_activity"
     ]
   },

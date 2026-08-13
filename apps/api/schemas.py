@@ -6,6 +6,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
+from klara.planning.todo import TodoPlan
+
 
 RunStatus = Literal["queued", "thinking", "streaming", "completed", "failed", "cancelled"]
 MessageStatus = Literal["idle", "running", "completed", "failed", "cancelled"]
@@ -13,6 +15,7 @@ TokenSource = Literal["reported", "estimated", "unknown"]
 RunEventType = Literal[
     "run_created",
     "run_profile_frozen",
+    "todo_plan_updated",
     "thinking_started",
     "llm_call_started",
     "answer_streaming_started",
@@ -135,6 +138,7 @@ class SessionDetailResponse(BaseModel):
     messages: list[MessageRecord]
     runs: list[RunRecord]
     events: list[RunEventRecord] = Field(default_factory=list)
+    todo_plan: TodoPlan | None = None
 
 
 class RenameSessionRequest(BaseModel):

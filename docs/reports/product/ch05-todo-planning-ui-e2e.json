@@ -1,0 +1,39 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "evaluated_at": "2026-08-13T12:05:15+08:00",
+  "target": "http://127.0.0.1:5123/",
+  "surface": "Current-session Todo Planning panel",
+  "browser": "Codex in-app browser",
+  "results": [
+    {
+      "viewport": {"width": 1280, "height": 720},
+      "status": "passed",
+      "plan_items": 4,
+      "completed_items": 2,
+      "panel_width": 900,
+      "panel_left": 330,
+      "panel_right": 1230,
+      "horizontal_overflow": false,
+      "composer_visible": true
+    },
+    {
+      "viewport": {"width": 390, "height": 844},
+      "status": "passed",
+      "plan_items": 4,
+      "completed_items": 2,
+      "panel_width": 358.4,
+      "panel_left": 16,
+      "panel_right": 374.4,
+      "horizontal_overflow": false,
+      "compact_status_labels": true,
+      "composer_visible": true
+    }
+  ],
+  "accessibility": {
+    "plan_landmark": "Current plan",
+    "progress_label": "50% complete",
+    "internal_session_id_visible": false
+  },
+  "console_error_count": 0,
+  "interpretation": "The API-backed plan restored after a page load, exposed ordered status and progress, remained usable at desktop and narrow mobile widths, and did not create horizontal overflow."
+}

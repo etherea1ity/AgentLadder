@@ -10,6 +10,7 @@ import type {
   Run,
   RunEvent,
   Session,
+  TodoPlan,
 } from "./types/domain";
 import "./styles/app.css";
 import "./styles/klara.css";
@@ -30,6 +31,7 @@ export default function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [messages, setMessages] = useState<Record<string, Message>>({});
   const [runs, setRuns] = useState<Record<string, Run>>({});
+  const [todoPlans, setTodoPlans] = useState<Record<string, TodoPlan>>({});
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [input, setInput] = useState("");
@@ -201,6 +203,14 @@ export default function App() {
           detail.messages.map((message) => [message.message_id, message]),
         ),
       }));
+      setTodoPlans((prev) => {
+        const current = prev[sessionId];
+        if (!detail.todo_plan) return current ? prev : { ...prev };
+        if (current && current.version > detail.todo_plan.version) return prev;
+        const next = { ...prev };
+        next[sessionId] = detail.todo_plan;
+        return next;
+      });
       setRuns((prev) => {
         const next = { ...prev };
         const eventsByRunId = groupEventsByRunId(detail.events ?? []);
@@ -606,6 +616,17 @@ export default function App() {
       });
     }
 
+    if (event.event_type === "todo_plan_updated") {
+      const plan = event.payload as unknown as TodoPlan;
+      if (plan.schema_version === "klara.todo-plan.v1" && plan.session_id) {
+        setTodoPlans((prev) => {
+          const current = prev[plan.session_id];
+          if (current && current.version >= plan.version) return prev;
+          return { ...prev, [plan.session_id]: plan };
+        });
+      }
+    }
+
     if (event.event_type === "run_completed") {
       closeRunSubscription(event.run_id);
       setActiveSseRunId((value) => (value === event.run_id ? null : value));
@@ -868,6 +889,11 @@ export default function App() {
           Object.entries(prev).filter(([, run]) => run.session_id !== id),
         ),
       );
+      setTodoPlans((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       if (activeSessionId === id) newChat();
     } catch (error) {
       notify(`Could not delete this conversation. ${friendlyError(error)}`);
@@ -948,6 +974,7 @@ export default function App() {
             setTheme((value) => (value === "dark" ? "light" : "dark"))
           }
           handoffTriggerRunId={handoffTriggerRunId}
+          todoPlan={activeSessionId ? todoPlans[activeSessionId] ?? null : null}
         />
       )}
       <ToastRegion toasts={toasts} />

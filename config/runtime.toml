@@ -22,6 +22,7 @@ visible_tools = [
   "image_generate",
   "web_fetch",
   "web_search",
+  "todo_write",
   "update_activity",
 ]
 hooks = ["run_projection", "jsonl_trace"]

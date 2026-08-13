@@ -8,6 +8,7 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from apps.api.schemas import MessageRecord, RunEventRecord, RunRecord, SessionRecord, now_iso
+from klara.planning.todo import TodoItem, TodoOperation, TodoPlan, apply_todo_update
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -23,6 +24,7 @@ class JsonlAppStore:
         self.messages_path = self.root / "messages.jsonl"
         self.runs_path = self.root / "runs.jsonl"
         self.events_path = self.root / "run_events.jsonl"
+        self.todo_plans_path = self.root / "todo_plans.jsonl"
 
     def create_session(self) -> SessionRecord:
         session = SessionRecord()
@@ -73,6 +75,7 @@ class JsonlAppStore:
             self._rewrite_without(self.messages_path, MessageRecord, lambda item: item.session_id == session_id or item.message_id in message_ids)
             self._rewrite_without(self.runs_path, RunRecord, lambda item: item.session_id == session_id or item.run_id in run_ids)
             self._rewrite_without(self.events_path, RunEventRecord, lambda item: item.run_id in run_ids)
+            self._rewrite_without(self.todo_plans_path, TodoPlan, lambda item: item.session_id == session_id)
             self._purge_traces(run_ids, trace_path)
         return deleted
 
@@ -133,6 +136,46 @@ class JsonlAppStore:
                 if record.get("run_id") == run_id:
                     result = record
         return result
+
+    def get_todo_plan(self, session_id: str) -> TodoPlan | None:
+        """Return the latest versioned plan for one visible session."""
+
+        if self.get_visible_session(session_id) is None:
+            return None
+        return self._load_latest(self.todo_plans_path, TodoPlan, "session_id").get(session_id)
+
+    def save_todo_plan(self, plan: TodoPlan) -> None:
+        """Append one validated plan version and touch its owning session."""
+
+        with self._lock:
+            session = self.get_visible_session(plan.session_id)
+            if session is None:
+                raise ValueError("session_not_found")
+            current = self.get_todo_plan(plan.session_id)
+            if current is not None and plan.version <= current.version:
+                raise ValueError("todo plan version must increase")
+            self._append(self.todo_plans_path, plan)
+            self.save_session(session.model_copy(update={"updated_at": now_iso()}))
+
+    def update_todo_plan(
+        self,
+        session_id: str,
+        operation: TodoOperation,
+        items: list[TodoItem],
+    ) -> TodoPlan:
+        """Atomically derive and append the next current-session plan version."""
+
+        if operation not in {"replace", "merge"}:
+            raise ValueError("operation must be replace or merge")
+        with self._lock:
+            plan = apply_todo_update(
+                session_id=session_id,
+                existing=self.get_todo_plan(session_id),
+                operation=operation,
+                items=items,
+            )
+            self.save_todo_plan(plan)
+            return plan
 
 
     def _rewrite_without(self, path: Path, model_type: type[T], should_remove) -> None:

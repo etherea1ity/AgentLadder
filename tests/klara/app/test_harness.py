@@ -99,6 +99,8 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     assert "You are Klara" in llm.system_prompt
     assert "Klara is clear, warm, curious, and practical." in llm.system_prompt
     assert "use available runtime tools when they matter" in llm.system_prompt
+    assert "call todo_write before substantive actions" in llm.system_prompt
+    assert "Answer simple or one-step requests directly" in llm.system_prompt
     assert "<runtime_context>" in llm.system_prompt
     assert "Conversation date:" in llm.system_prompt
     assert "Call current_time only for exact wall-clock time" in llm.system_prompt

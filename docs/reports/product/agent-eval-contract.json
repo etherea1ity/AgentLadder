@@ -741,7 +741,7 @@
     "observations": 24
   },
   "documentation": {
-    "pair_count": 10,
+    "pair_count": 12,
     "passed": true,
     "results": [
       {
@@ -809,6 +809,23 @@
         },
         "chinese_path": "docs/chapters/ch04-harness-and-config.md",
         "english_path": "docs/chapters/ch04-harness-and-config.en.md",
+        "failures": [],
+        "passed": true
+      },
+      {
+        "checks": {
+          "chinese_local_links_exist": true,
+          "chinese_toggle_present": true,
+          "code_fence_parity": true,
+          "details_balanced_chinese": true,
+          "details_balanced_english": true,
+          "english_local_links_exist": true,
+          "english_toggle_present": true,
+          "heading_count_parity": true,
+          "heading_level_parity": true
+        },
+        "chinese_path": "docs/chapters/ch05-todo-planning.md",
+        "english_path": "docs/chapters/ch05-todo-planning.en.md",
         "failures": [],
         "passed": true
       },
@@ -909,6 +926,23 @@
           "heading_count_parity": true,
           "heading_level_parity": true
         },
+        "chinese_path": "docs/reports/product/ch05-todo-planning.md",
+        "english_path": "docs/reports/product/ch05-todo-planning.en.md",
+        "failures": [],
+        "passed": true
+      },
+      {
+        "checks": {
+          "chinese_local_links_exist": true,
+          "chinese_toggle_present": true,
+          "code_fence_parity": true,
+          "details_balanced_chinese": true,
+          "details_balanced_english": true,
+          "english_local_links_exist": true,
+          "english_toggle_present": true,
+          "heading_count_parity": true,
+          "heading_level_parity": true
+        },
         "chinese_path": "docs/reports/product/completion-ledger.md",
         "english_path": "docs/reports/product/completion-ledger.en.md",
         "failures": [],
@@ -917,7 +951,7 @@
     ],
     "scorer_version": "klara.documentation-validator.v1"
   },
-  "evaluated_at": "2026-08-13T03:35:26.697445+00:00",
+  "evaluated_at": "2026-08-13T04:10:42.190951+00:00",
   "fixture_sha256": "c2521f22422d5775f424b51104e47585a760d0ba09b38bc7ce0b7bdb01ae3732",
   "gate_kind": "contract_control_probe",
   "human_review_queue": {

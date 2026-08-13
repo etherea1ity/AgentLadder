@@ -21,6 +21,7 @@ def test_profile_only_prints_secret_free_run_profile(capsys, monkeypatch) -> Non
         "image_generate",
         "web_fetch",
         "web_search",
+        "todo_write",
         "update_activity",
     ]
     assert "must-not-leak" not in json.dumps(payload)

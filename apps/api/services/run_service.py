@@ -37,6 +37,8 @@ from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig
 from klara.infra.config.runtime import CapabilityProfile
+from klara.planning.todo import TodoPlan
+from klara.planning.tool import TodoWriteTool
 from klara.tools.registry import ToolRegistry
 
 MAX_HISTORY_MESSAGES = 12
@@ -243,7 +245,7 @@ class RunService:
         try:
             harness = KlaraHarness(
                 llm=self.llm_client,
-                registry=ToolRegistry.with_default_tools(),
+                registry=self._registry_for_run(run.session_id),
                 config=KlaraHarnessConfig(
                     model=selected_model,
                     thinking_enabled=thinking_enabled,
@@ -535,6 +537,13 @@ class RunService:
             timezone_name=_message_timezone_name(message, self.user_context.timezone),
         )
 
+    def _registry_for_run(self, session_id: str) -> ToolRegistry:
+        """Return default tools plus current-session planning capability."""
+
+        registry = ToolRegistry.with_default_tools()
+        registry.register_tool(TodoWriteTool(session_id=session_id, store=self.store))
+        return registry
+
 
 class RunProjectionHook:
     """Thin hook adapter that emits projected API run events."""
@@ -561,6 +570,20 @@ class RunProjectionHook:
                 projected.message,
                 projected.payload,
             )
+        if event.type == "tool.completed":
+            tool_result = event.payload.get("tool_result")
+            if isinstance(tool_result, dict) and tool_result.get("name") == "todo_write" and tool_result.get("ok") is not False:
+                try:
+                    plan = TodoPlan.model_validate_json(str(tool_result.get("content", "")))
+                except ValueError:
+                    plan = None
+                if plan is not None:
+                    self.service._emit(
+                        self.run_id,
+                        "todo_plan_updated",
+                        "Plan updated.",
+                        plan.model_dump(mode="json"),
+                    )
 
 
 def _client_timezone_name(client_context: ClientContext | None) -> str | None:

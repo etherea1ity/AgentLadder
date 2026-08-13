@@ -1,8 +1,8 @@
-import type { ClientContext, EvaluationSummary, Message, ModelOption, Run, RunEvent, Session } from '../types/domain';
+import type { ClientContext, EvaluationSummary, Message, ModelOption, Run, RunEvent, Session, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
-type SessionDetail = { session: Session; messages: Message[]; runs: Omit<Run, 'events'>[]; events?: RunEvent[] };
+type SessionDetail = { session: Session; messages: Message[]; runs: Omit<Run, 'events'>[]; events?: RunEvent[]; todo_plan?: TodoPlan | null };
 type CreateRunResponse = { run_id: string; session_id: string; user_message_id: string; assistant_message_id: string; status: Run['status']; events_url: string };
 type RunDetail = { run: Omit<Run, 'events'>; events: RunEvent[]; trace: Record<string, unknown> | null };
 export type RunEventSubscription = { runId: string; close: () => void };
@@ -64,6 +64,8 @@ export const api = {
     const source = new EventSource(`${API_BASE}/api/runs/${runId}/events/stream`);
     const eventTypes: RunEvent['event_type'][] = [
       'run_created',
+      'run_profile_frozen',
+      'todo_plan_updated',
       'thinking_started',
       'thinking_summary_started',
       'thinking_summary_completed',
