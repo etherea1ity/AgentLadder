@@ -406,6 +406,63 @@ export type DurableTaskDetail = {
   events: { event_id: string; operation: string; from_state?: string | null; to_state: string; occurred_at: string }[];
 };
 
+export type ScheduleKind = 'once' | 'interval' | 'daily' | 'weekly';
+export type ScheduleStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+export type ScheduleRecord = {
+  schedule_id: string;
+  scope: { tenant_id: string; owner_id: string; agent_id: string };
+  title: string;
+  task_description: string;
+  session_id?: string | null;
+  kind: ScheduleKind;
+  timezone: string;
+  status: ScheduleStatus;
+  run_at?: string | null;
+  local_time?: string | null;
+  weekdays: number[];
+  interval_seconds?: number | null;
+  misfire_policy: 'fire_once' | 'skip';
+  misfire_grace_seconds: number;
+  overlap_policy: 'skip' | 'queue_one';
+  next_run_at?: string | null;
+  last_scheduled_at?: string | null;
+  last_result?: string | null;
+  queued_overlap: boolean;
+  created_at: string;
+  updated_at: string;
+};
+export type ScheduleOccurrence = {
+  occurrence_id: string;
+  schedule_id: string;
+  task_id?: string | null;
+  scheduled_for: string;
+  status: 'reserved' | 'enqueued' | 'skipped_misfire' | 'skipped_overlap' | 'completed' | 'failed' | 'cancelled';
+  trigger: string;
+  result?: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+};
+export type ScheduleNotification = {
+  notification_id: string;
+  schedule_id: string;
+  occurrence_id: string;
+  task_id: string;
+  session_id?: string | null;
+  result: string;
+  title: string;
+  message: string;
+  created_at: string;
+  read_at?: string | null;
+  delivered_at?: string | null;
+};
+export type SchedulerState = {
+  schema_version: 'klara.scheduler-state.v1';
+  schedules: ScheduleRecord[];
+  occurrences: ScheduleOccurrence[];
+  notifications: ScheduleNotification[];
+};
+
 // Klara Presence public event model. This is intentionally separate from the
 // current backend RunEvent DTO above so the UI can grow without coupling presentation motion to transport events.
 export type KlaraVisualPhase =

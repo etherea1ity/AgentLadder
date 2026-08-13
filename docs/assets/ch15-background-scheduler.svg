@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="420" viewBox="0 0 1120 420" role="img" aria-labelledby="title desc">
+  <title id="title">Klara background scheduler state flow</title>
+  <desc id="desc">A due schedule is leased, assigned a deterministic occurrence identifier, materialized as a durable task, dispatched through the existing agent runtime, and completed with a retryable notification.</desc>
+  <defs><style>.bg{fill:#f6f5f1}.box{fill:#fff;stroke:#d8d6cf;stroke-width:2}.accent{fill:#e8f2ec;stroke:#76a889;stroke-width:2}.text{font:600 17px system-ui;fill:#242925}.sub{font:13px system-ui;fill:#69706b}.arrow{stroke:#8b928d;stroke-width:2;fill:none;marker-end:url(#m)}</style><marker id="m" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0l8 4-8 4z" fill="#8b928d"/></marker></defs>
+  <rect class="bg" width="1120" height="420" rx="28"/>
+  <text class="text" x="62" y="62">Chapter 15 · one schedule occurrence, one durable execution truth</text>
+  <g transform="translate(50 125)"><rect class="box" width="175" height="105" rx="16"/><text class="text" x="20" y="40">Due schedule</text><text class="sub" x="20" y="67">timezone · next run</text><text class="sub" x="20" y="87">misfire · overlap</text></g>
+  <path class="arrow" d="M225 178h55"/>
+  <g transform="translate(280 125)"><rect class="box" width="175" height="105" rx="16"/><text class="text" x="20" y="40">Lease + ID</text><text class="sub" x="20" y="67">hashed lease token</text><text class="sub" x="20" y="87">stable occurrence ID</text></g>
+  <path class="arrow" d="M455 178h55"/>
+  <g transform="translate(510 125)"><rect class="accent" width="175" height="105" rx="16"/><text class="text" x="20" y="40">Durable task</text><text class="sub" x="20" y="67">Chapter 14 state</text><text class="sub" x="20" y="87">attempt · recovery</text></g>
+  <path class="arrow" d="M685 178h55"/>
+  <g transform="translate(740 125)"><rect class="box" width="150" height="105" rx="16"/><text class="text" x="20" y="40">KlaraLoop</text><text class="sub" x="20" y="67">same agent runtime</text><text class="sub" x="20" y="87">no second loop</text></g>
+  <path class="arrow" d="M890 178h55"/>
+  <g transform="translate(945 125)"><rect class="box" width="125" height="105" rx="16"/><text class="text" x="17" y="40">Result</text><text class="sub" x="17" y="67">chat update</text><text class="sub" x="17" y="87">retryable</text></g>
+  <path class="arrow" d="M1005 230v72H598v-72"/>
+  <text class="sub" x="705" y="327">terminal task state is reconciled before delivery</text>
+  <text class="sub" x="50" y="382">STOP: cancelled/completed · BLOCK: active lease or invalid schedule · CONTINUE: next_run_at is due</text>
+</svg>

@@ -120,6 +120,7 @@ class MessageRecord(BaseModel):
     client_created_at: str | None = None
     client_timezone: str | None = None
     client_utc_offset_minutes: int | None = None
+    model_visible: bool = True
 
 
 class RunError(BaseModel):

@@ -1,0 +1,55 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "ch15-background-scheduler",
+  "source_branch": "codex/ch15-background-scheduler",
+  "evaluated_at": "2026-08-13T13:58:31+00:00",
+  "browser_surface": "in_app_browser",
+  "backend": "real_local_api_with_scheduler_worker",
+  "journey": [
+    "restart API and web after implementation",
+    "create a real chat session",
+    "open Scheduler from the application sidebar",
+    "create an owner-scoped interval schedule through the UI",
+    "observe timezone, recurrence, next run, and empty occurrence state",
+    "run now and observe a real enqueued durable-task occurrence",
+    "pause and observe Resume from the persisted API state",
+    "cancel and observe terminal occurrence plus delivered notification"
+  ],
+  "desktop": {
+    "viewport": "1280x720",
+    "document_scroll_width": 1280,
+    "body_scroll_width": 1280,
+    "main_client_width": 985,
+    "main_scroll_width": 985,
+    "horizontal_overflow": false,
+    "create_visible": true,
+    "run_now_visible": true,
+    "pause_resume_verified": true,
+    "occurrence_history_verified": true
+  },
+  "mobile": {
+    "viewport": "390x844",
+    "document_scroll_width": 390,
+    "body_scroll_width": 390,
+    "main_client_width": 375,
+    "main_scroll_width": 375,
+    "horizontal_overflow": false,
+    "cancelled_state_visible": true
+  },
+  "console": {
+    "error_or_warning_count": 0,
+    "unhandled_rejection_count": 0
+  },
+  "real_state": {
+    "schedule_id": "schedule_21c09e6298824161aabd753a899f70b8",
+    "final_schedule_status": "cancelled",
+    "occurrence_status": "cancelled",
+    "notification_result": "cancelled",
+    "notification_delivered": true
+  },
+  "limitations": [
+    "The live journey used cancellation to avoid spending provider tokens; completion notification success and retry are additionally covered by deterministic integration tests.",
+    "Axe accessibility automation is reserved for the product-polish cross-feature gate; this stage checked semantics, keyboard-addressable native controls, overflow, and console state."
+  ],
+  "passed": true
+}

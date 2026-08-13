@@ -18,6 +18,8 @@ from klara.memory import MemoryScope, MemoryService, SQLiteMemoryRepository
 from klara.permissions import PermissionScope, PermissionService, SQLitePermissionRepository
 from klara.skills import SkillCatalog
 from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope
+from klara.scheduler import SchedulerService, SQLiteScheduleRepository
+from apps.api.services.scheduler_runner import SchedulerRunner
 
 
 def _load_model_options(
@@ -145,6 +147,13 @@ _run_service = RunService(
     task_service=_task_service,
     task_scope=_task_scope,
 )
+_schedule_repository = SQLiteScheduleRepository(_store.root / "schedules.sqlite3")
+_scheduler_service = SchedulerService(_schedule_repository, _task_service)
+_scheduler_runner = SchedulerRunner(
+    service=_scheduler_service,
+    scope=_task_scope,
+    run_service=_run_service,
+)
 
 
 def get_store() -> JsonlAppStore:
@@ -207,3 +216,15 @@ def get_task_scope() -> TaskScope:
     """Return the authenticated local task owner partition."""
 
     return _task_scope
+
+
+def get_scheduler_service() -> SchedulerService:
+    """Return the tenant-scoped schedule state machine."""
+
+    return _scheduler_service
+
+
+def get_scheduler_runner() -> SchedulerRunner:
+    """Return the local background worker and its idempotent dispatch callbacks."""
+
+    return _scheduler_runner

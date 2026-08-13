@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,8 +14,21 @@ from apps.api.routes.runs import router as runs_router
 from apps.api.routes.sessions import router as sessions_router
 from apps.api.routes.skills import router as skills_router
 from apps.api.routes.tasks import router as tasks_router
+from apps.api.routes.scheduler import router as scheduler_router
+from apps.api.dependencies import get_scheduler_runner
 
-app = FastAPI(title="Klara API")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    runner = get_scheduler_runner()
+    runner.start()
+    try:
+        yield
+    finally:
+        runner.stop()
+
+
+app = FastAPI(title="Klara API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,6 +47,7 @@ app.include_router(skills_router)
 app.include_router(memory_router)
 app.include_router(permissions_router)
 app.include_router(tasks_router)
+app.include_router(scheduler_router)
 
 
 @app.get("/api/health")

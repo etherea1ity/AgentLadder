@@ -1,0 +1,49 @@
+{
+  "behavior": {
+    "candidate_observation": "DST gap resolved to 07:00 UTC, duplicate tick created zero work, one overlap was queued, and the persisted notification delivered on retry.",
+    "question": "每天纽约时间 02:30 运行；夏令时跳过、进程重启或上次还没结束时怎么办？",
+    "question_answer_consistent": true,
+    "reference_answer": "春季缺失时刻前移到首个有效分钟；同一 occurrence ID 只创建一个 durable task；重启重新投递未终结项；重叠只排队一次；通知失败后持久化重试。",
+    "strange_response_p0_count": 0
+  },
+  "checks": {
+    "api_exposes_state_actions_retry_and_read": true,
+    "background_runner_has_start_stop_and_serial_tick": true,
+    "bilingual_tutorial_exists": true,
+    "chat_notification_is_model_hidden_and_idempotent": true,
+    "duplicate_tick_does_not_duplicate_occurrence": true,
+    "iana_timezone_and_spring_dst_gap_policy": true,
+    "misfire_skip_is_audited_without_task": true,
+    "notification_delivery_is_retried_and_acknowledged": true,
+    "occurrence_id_is_deterministic_and_nonsecret": true,
+    "one_shot_materializes_one_durable_task": true,
+    "overlap_queues_at_most_one": true,
+    "pause_resume_cancel_are_persisted": true,
+    "schedule_lease_token_is_not_persisted_raw": true,
+    "scheduler_dispatches_through_existing_run_service": true,
+    "stage_manifest_exists": true,
+    "tenant_owner_isolation_is_opaque": true,
+    "terminal_notification_survives_delivery_failure": true,
+    "ui_reads_real_scheduler_contract": true,
+    "ui_shows_timezone_recurrence_next_run_and_history": true
+  },
+  "evaluated_at": "2026-08-13T13:54:01.992383+00:00",
+  "gate_kind": "deterministic_time_restart_idempotency_and_ui_contract_gate",
+  "limitations": [
+    "The gate proves the frozen single-host SQLite scheduler, not multi-region consensus.",
+    "The API worker polls one configured local tenant; Chapter 18 adds authenticated multi-tenant workers.",
+    "The behavior item is a deterministic self/reference consistency probe, not an independent human or model-judge comparison."
+  ],
+  "metrics": {
+    "checks_passed": 19,
+    "checks_total": 19,
+    "critical_scheduler_rate": 1.0,
+    "durable_tasks_created": 2,
+    "notification_delivery_attempts": 2,
+    "public_secret_leak_count": 0
+  },
+  "passed": true,
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter15-background-scheduler.v1",
+  "stage": "ch15-background-scheduler"
+}

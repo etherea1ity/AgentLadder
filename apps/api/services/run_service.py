@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import threading
 from dataclasses import replace
@@ -202,6 +203,120 @@ class RunService:
             user_message_id=user_message.message_id,
             assistant_message_id=assistant_message.message_id,
             status="queued",
+            events_url=f"/api/runs/{run.run_id}/events/stream",
+        )
+
+    def create_scheduled_run(
+        self,
+        *,
+        session_id: str,
+        task_id: str,
+        question: str,
+        schedule_title: str,
+    ) -> CreateRunResponse:
+        """Start or safely resume one scheduler-owned durable task as a chat run."""
+
+        if self.store.get_visible_session(session_id) is None:
+            raise KeyError("session_not_found")
+        existing = self.store.get_run(task_id)
+        if existing is not None:
+            live_thread = self._threads.get(task_id)
+            if existing.status == "completed" or (
+                live_thread is not None and live_thread.is_alive()
+            ):
+                return self._run_response(existing)
+            if existing.status in {"failed", "cancelled"}:
+                assistant = self.store.get_message(existing.assistant_message_id)
+                if assistant is not None:
+                    self.store.update_message(
+                        assistant.model_copy(update={"content": "", "status": "running"})
+                    )
+                run = existing.model_copy(
+                    update={
+                        "status": "queued",
+                        "started_at": None,
+                        "completed_at": None,
+                        "error": None,
+                    }
+                )
+                self.store.save_run(run)
+            else:
+                # The app process died after persisting a queued run. Its durable
+                # task lease determines whether execution can be reclaimed.
+                run = existing
+        else:
+            suffix = hashlib.sha256(task_id.encode("utf-8")).hexdigest()[:24]
+            user_message = MessageRecord(
+                message_id=f"msg_schedule_user_{suffix}",
+                session_id=session_id,
+                role="user",
+                content=f"[Scheduled: {schedule_title}]\n{question}".strip(),
+                status="completed",
+            )
+            assistant_message = MessageRecord(
+                message_id=f"msg_schedule_assistant_{suffix}",
+                session_id=session_id,
+                role="assistant",
+                content="",
+                run_id=task_id,
+                status="running",
+            )
+            run = RunRecord(
+                run_id=task_id,
+                session_id=session_id,
+                user_message_id=user_message.message_id,
+                assistant_message_id=assistant_message.message_id,
+                status="queued",
+                model=self._select_model(None),
+                thinking_enabled=self._select_thinking_enabled(
+                    self._select_model(None), None
+                ),
+            )
+            self.store.save_message(user_message)
+            self.store.save_message(assistant_message)
+            self.store.save_run(run)
+            self._emit(
+                run.run_id,
+                "run_created",
+                "Scheduled run created.",
+                {"session_id": session_id, "scheduled": True},
+            )
+        thread = threading.Thread(
+            target=self._run_thread, args=(run.run_id,), daemon=True
+        )
+        self._threads[run.run_id] = thread
+        thread.start()
+        return self._run_response(run)
+
+    def inject_schedule_notification(
+        self, *, notification_id: str, session_id: str | None, message: str
+    ) -> None:
+        """Project completion into chat without adding it to future model context."""
+
+        if session_id is None or self.store.get_visible_session(session_id) is None:
+            return
+        message_id = f"msg_{notification_id}"
+        if self.store.get_message(message_id) is not None:
+            return
+        self.store.save_message(
+            MessageRecord(
+                message_id=message_id,
+                session_id=session_id,
+                role="assistant",
+                content=message,
+                status="completed",
+                model_visible=False,
+            )
+        )
+
+    @staticmethod
+    def _run_response(run: RunRecord) -> CreateRunResponse:
+        return CreateRunResponse(
+            run_id=run.run_id,
+            session_id=run.session_id,
+            user_message_id=run.user_message_id,
+            assistant_message_id=run.assistant_message_id,
+            status=run.status,
             events_url=f"/api/runs/{run.run_id}/events/stream",
         )
 
@@ -649,7 +764,11 @@ class RunService:
         for message in self.store.list_messages(session_id):
             if message.message_id == before_message_id:
                 break
-            if message.status != "completed" or not message.content.strip():
+            if (
+                message.status != "completed"
+                or not message.content.strip()
+                or not message.model_visible
+            ):
                 continue
             if message.role not in {"user", "assistant"}:
                 continue

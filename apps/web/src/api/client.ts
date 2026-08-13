@@ -1,4 +1,4 @@
-import type { ClientContext, DurableTaskDetail, DurableTaskList, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
+import type { ClientContext, DurableTaskDetail, DurableTaskList, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, ScheduleKind, ScheduleOccurrence, ScheduleRecord, SchedulerState, Session, SkillsCatalog, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -67,6 +67,14 @@ export const api = {
   resumeTask: (taskId: string, signal?: AbortSignal) => request<{ task: DurableTaskDetail['task'] }>(`/api/tasks/${taskId}/resume`, { method: 'POST', body: '{}', signal }),
   retryTask: (taskId: string, signal?: AbortSignal) => request<{ task: DurableTaskDetail['task'] }>(`/api/tasks/${taskId}/retry`, { method: 'POST', body: '{}', signal }),
   cancelTask: (taskId: string, signal?: AbortSignal) => request<{ task: DurableTaskDetail['task'] }>(`/api/tasks/${taskId}/cancel`, { method: 'POST', body: '{}', signal }),
+  getSchedulerState: (signal?: AbortSignal) => request<SchedulerState>('/api/scheduler', { signal }),
+  createSchedule: (value: { title: string; task_description: string; session_id: string; kind: ScheduleKind; timezone: string; run_at?: string; local_time?: string; weekdays?: number[]; interval_seconds?: number; misfire_policy: 'fire_once' | 'skip'; overlap_policy: 'skip' | 'queue_one' }, signal?: AbortSignal) => request<{ schedule: ScheduleRecord }>('/api/scheduler', { method: 'POST', body: JSON.stringify(value), signal }),
+  pauseSchedule: (scheduleId: string, signal?: AbortSignal) => request<{ schedule: ScheduleRecord }>(`/api/scheduler/${scheduleId}/pause`, { method: 'POST', body: '{}', signal }),
+  resumeSchedule: (scheduleId: string, signal?: AbortSignal) => request<{ schedule: ScheduleRecord }>(`/api/scheduler/${scheduleId}/resume`, { method: 'POST', body: '{}', signal }),
+  cancelSchedule: (scheduleId: string, signal?: AbortSignal) => request<{ schedule: ScheduleRecord }>(`/api/scheduler/${scheduleId}/cancel`, { method: 'POST', body: '{}', signal }),
+  runScheduleNow: (scheduleId: string, signal?: AbortSignal) => request<{ occurrence: ScheduleOccurrence }>(`/api/scheduler/${scheduleId}/run-now`, { method: 'POST', body: '{}', signal }),
+  retryScheduleOccurrence: (occurrenceId: string, signal?: AbortSignal) => request<{ occurrence: ScheduleOccurrence }>(`/api/scheduler/occurrences/${occurrenceId}/retry`, { method: 'POST', body: '{}', signal }),
+  readScheduleNotification: (notificationId: string, signal?: AbortSignal) => request(`/api/scheduler/notifications/${notificationId}/read`, { method: 'POST', body: '{}', signal }),
   createRun: (
     session_id: string,
     question: string,

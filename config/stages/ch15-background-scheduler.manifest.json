@@ -1,0 +1,52 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch15-background-scheduler",
+  "branch": "codex/ch15-background-scheduler",
+  "parent_commit": "36e192ef9fdbe27d0bf685184539d504d6c922b0",
+  "mode": "full-end-to-end",
+  "datasets": [
+    "tests/klara/scheduler/test_scheduler.py",
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "model_ids": ["none-deterministic-clock-and-queue-gate"],
+  "seeds": [15],
+  "budgets": {
+    "paid_api_usd": 0,
+    "scheduler_poll_seconds": 1,
+    "maximum_catch_up_occurrences": 1,
+    "maximum_schedule_horizon_days": 370
+  },
+  "evaluator_versions": [
+    "klara.chapter15-background-scheduler.v1",
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "acceptance": {
+    "reuses_chapter14_durable_tasks": true,
+    "one_shot_daily_weekly_and_interval": true,
+    "iana_timezone_and_dst_policy": true,
+    "next_run_and_misfire_policy": true,
+    "overlap_prevention": true,
+    "pause_resume_run_now_cancel": true,
+    "idempotent_occurrence_ids": true,
+    "restart_and_duplicate_delivery_recovery": true,
+    "completion_notification_queue": true,
+    "real_scheduler_timeline_ui": true
+  },
+  "expected_artifacts": [
+    "docs/chapters/ch15-background-scheduler.md",
+    "docs/chapters/ch15-background-scheduler.en.md",
+    "docs/reports/product/ch15-background-scheduler.json",
+    "docs/reports/product/ch15-background-scheduler.md",
+    "docs/reports/product/ch15-background-scheduler.en.md",
+    "docs/reports/product/ch15-background-scheduler-ui-e2e.json",
+    "docs/reports/product/ch15-background-scheduler-behavior-control.json"
+  ],
+  "exclusions": [
+    "unbounded autonomous task creation",
+    "multi-region consensus or worker-fleet scaling",
+    "arbitrary tools outside the frozen Agent permission/runtime profile",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

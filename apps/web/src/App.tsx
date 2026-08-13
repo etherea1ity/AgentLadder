@@ -8,6 +8,7 @@ import { SkillsCatalog } from "./components/SkillsCatalog";
 import { MemoryManager } from "./components/MemoryManager";
 import { PermissionCenter } from "./components/PermissionCenter";
 import { TaskBoard } from "./components/TaskBoard";
+import { SchedulerTimeline } from "./components/SchedulerTimeline";
 import type {
   Message,
   ModelOption,
@@ -53,7 +54,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState("");
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
-  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions" | "tasks">("chat");
+  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions" | "tasks" | "scheduler">("chat");
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
   );
@@ -928,6 +929,7 @@ export default function App() {
     activeWorkspace === "memory" ? "has-memory" : "",
     activeWorkspace === "permissions" ? "has-permissions" : "",
     activeWorkspace === "tasks" ? "has-tasks" : "",
+    activeWorkspace === "scheduler" ? "has-scheduler" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -962,6 +964,8 @@ export default function App() {
         onOpenPermissions={() => setActiveWorkspace("permissions")}
         tasksActive={activeWorkspace === "tasks"}
         onOpenTasks={() => setActiveWorkspace("tasks")}
+        schedulerActive={activeWorkspace === "scheduler"}
+        onOpenScheduler={() => setActiveWorkspace("scheduler")}
       />
       {activeWorkspace === "evaluations" ? (
         <EvaluationDashboard onBackToChat={() => setActiveWorkspace("chat")} />
@@ -973,6 +977,8 @@ export default function App() {
         <PermissionCenter onBackToChat={() => setActiveWorkspace("chat")} />
       ) : activeWorkspace === "tasks" ? (
         <TaskBoard onBackToChat={() => setActiveWorkspace("chat")} />
+      ) : activeWorkspace === "scheduler" ? (
+        <SchedulerTimeline onBackToChat={() => setActiveWorkspace("chat")} />
       ) : (
         <ChatWorkspace
           activeSessionId={activeSessionId}

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { BarChart3, BookOpen, Brain, ClipboardList, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, Brain, CalendarClock, ClipboardList, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
 import type { Session } from '../types/domain';
 import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
@@ -24,9 +24,11 @@ type Props = {
   onOpenPermissions?: () => void;
   tasksActive?: boolean;
   onOpenTasks?: () => void;
+  schedulerActive?: boolean;
+  onOpenScheduler?: () => void;
 };
 
-export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined, tasksActive = false, onOpenTasks = () => undefined }: Props) {
+export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined, tasksActive = false, onOpenTasks = () => undefined, schedulerActive = false, onOpenScheduler = () => undefined }: Props) {
   const today = sessions.filter((session) => isToday(session.updated_at));
   const earlier = sessions.filter((session) => !isToday(session.updated_at));
   return (
@@ -65,6 +67,11 @@ export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionI
         <ClipboardList size={18} />
         <span className="sidebar-copy">Tasks</span>
         <span className="sidebar-copy sidebar-evaluations-badge">Durable</span>
+      </button>
+      <button className={`sidebar-evaluations ${schedulerActive ? 'active' : ''}`} onClick={onOpenScheduler} title="Background scheduler" aria-label="Scheduler" aria-pressed={schedulerActive}>
+        <CalendarClock size={18} />
+        <span className="sidebar-copy">Scheduler</span>
+        <span className="sidebar-copy sidebar-evaluations-badge">Timed</span>
       </button>
       <div className="sidebar-footer"><span className="avatar">K</span><Settings size={18} /></div>
     </aside>
