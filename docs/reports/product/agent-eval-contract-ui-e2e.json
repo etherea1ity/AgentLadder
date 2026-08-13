@@ -1,0 +1,26 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "evaluated_at": "2026-08-13T11:12:00+08:00",
+  "target": "http://127.0.0.1:5123/",
+  "surface": "Agent evaluations",
+  "browser": "Codex in-app browser",
+  "results": [
+    {
+      "viewport": {"width": 1280, "height": 720},
+      "status": "passed",
+      "checks_rendered": 10,
+      "horizontal_overflow": false,
+      "hidden_case_or_review_keys_visible": false
+    },
+    {
+      "viewport": {"width": 390, "height": 844},
+      "status": "passed",
+      "metric_columns": 1,
+      "action_columns": 2,
+      "horizontal_overflow": false,
+      "title_visible": true
+    }
+  ],
+  "console_errors": 0,
+  "interpretation": "The aggregate evaluation surface rendered and remained usable at desktop and narrow mobile widths. This UI check does not score Agent behavior."
+}

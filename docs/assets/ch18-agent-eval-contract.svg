@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Klara Agent evaluation contract</title>
+  <desc id="desc">Frozen behavior cases flow through deterministic checks, independent review, and a bounded release decision.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f0e5"/>
+      <stop offset="1" stop-color="#e9dfcf"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#202725" flood-opacity=".1"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0 0 12 6 0 12Z" fill="#6f776f"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="620" rx="32" fill="url(#bg)"/>
+  <circle cx="1090" cy="65" r="165" fill="#5f7b62" opacity=".08"/>
+  <circle cx="90" cy="565" r="190" fill="#a5653f" opacity=".07"/>
+  <text x="72" y="82" fill="#202725" font-family="Segoe UI, sans-serif" font-size="34" font-weight="700">Behavior evidence before release</text>
+  <text x="72" y="118" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="18">Frozen inputs, explicit gates, bounded claims.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="72" y="190" width="270" height="250" rx="24" fill="#fffdf8" stroke="#ddd1bd"/>
+    <rect x="465" y="190" width="270" height="250" rx="24" fill="#fffdf8" stroke="#ddd1bd"/>
+    <rect x="858" y="190" width="270" height="250" rx="24" fill="#fffdf8" stroke="#ddd1bd"/>
+  </g>
+  <path d="M342 315H443" stroke="#6f776f" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M735 315H836" stroke="#6f776f" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <circle cx="125" cy="242" r="24" fill="#a5653f" opacity=".16"/>
+  <path d="M114 242h22M125 231v22" stroke="#a5653f" stroke-width="3" stroke-linecap="round"/>
+  <text x="112" y="298" fill="#202725" font-family="Segoe UI, sans-serif" font-size="24" font-weight="700">Frozen cases</text>
+  <text x="112" y="335" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">splits + hashes</text>
+  <text x="112" y="367" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">tools + permissions</text>
+  <text x="112" y="399" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">budgets + invariants</text>
+
+  <circle cx="518" cy="242" r="24" fill="#5f7b62" opacity=".16"/>
+  <path d="m507 242 8 8 15-17" fill="none" stroke="#5f7b62" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="505" y="298" fill="#202725" font-family="Segoe UI, sans-serif" font-size="24" font-weight="700">Two lenses</text>
+  <text x="505" y="335" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">deterministic safety</text>
+  <text x="505" y="367" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">blind answer review</text>
+  <text x="505" y="399" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">repeat stability</text>
+
+  <circle cx="911" cy="242" r="24" fill="#314640" opacity=".14"/>
+  <path d="M899 242h24M911 230v24" stroke="#314640" stroke-width="3" stroke-linecap="round"/>
+  <text x="898" y="298" fill="#202725" font-family="Segoe UI, sans-serif" font-size="24" font-weight="700">Release proof</text>
+  <text x="898" y="335" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">JSON source of truth</text>
+  <text x="898" y="367" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">bilingual report</text>
+  <text x="898" y="399" fill="#746d63" font-family="Segoe UI, sans-serif" font-size="16">aggregate-only UI</text>
+
+  <rect x="72" y="492" width="1056" height="68" rx="18" fill="#314640"/>
+  <text x="104" y="535" fill="#fffdf8" font-family="Segoe UI, sans-serif" font-size="18" font-weight="600">PASS means: this frozen contract works. It does not mean the unfinished Agent equals GPT.</text>
+</svg>

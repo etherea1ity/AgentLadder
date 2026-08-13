@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PanelLeft } from "lucide-react";
 import { api, ApiError, type RunEventSubscription } from "./api/client";
 import { ChatWorkspace } from "./components/ChatWorkspace";
+import { EvaluationDashboard } from "./components/EvaluationDashboard";
 import { Sidebar } from "./components/Sidebar";
 import type {
   Message,
@@ -46,6 +47,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState("");
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
+  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations">("chat");
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
   );
@@ -189,6 +191,7 @@ export default function App() {
     options: { restoreRunId?: string | null } = {},
   ) {
     try {
+      setActiveWorkspace("chat");
       setHandoffTriggerRunId(null);
       const detail = await api.getSession(sessionId);
       setActiveSessionId(sessionId);
@@ -228,6 +231,7 @@ export default function App() {
   }
 
   function newChat() {
+    setActiveWorkspace("chat");
     setHandoffTriggerRunId(null);
     setActiveSessionId(null);
     setInput("");
@@ -889,6 +893,7 @@ export default function App() {
     empty ? "is-empty" : "has-chat",
     sidebarCollapsed ? "sidebar-collapsed" : "",
     theme === "dark" ? "theme-dark" : "",
+    activeWorkspace === "evaluations" ? "has-evaluations" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -913,32 +918,38 @@ export default function App() {
         onSelect={(id) => void loadSession(id)}
         onRename={renameSession}
         onDelete={deleteSession}
+        evaluationsActive={activeWorkspace === "evaluations"}
+        onOpenEvaluations={() => setActiveWorkspace("evaluations")}
       />
-      <ChatWorkspace
-        activeSessionId={activeSessionId}
-        messages={activeMessages}
-        runs={runs}
-        input={input}
-        running={running}
-        submitting={isSubmittingRun}
-        cancelling={Boolean(cancellingRunId)}
-        onInput={setInput}
-        onSend={send}
-        onStop={stop}
-        modelOptions={modelOptions}
-        selectedModel={selectedModel}
-        thinkingEnabled={effectiveThinkingEnabled}
-        onThinkingChange={setThinkingEnabled}
-        onModelChange={(model) => {
-          setSelectedModel(model);
-          setThinkingEnabled(defaultThinkingForModel(modelOptions, model));
-        }}
-        theme={theme}
-        onToggleTheme={() =>
-          setTheme((value) => (value === "dark" ? "light" : "dark"))
-        }
-        handoffTriggerRunId={handoffTriggerRunId}
-      />
+      {activeWorkspace === "evaluations" ? (
+        <EvaluationDashboard onBackToChat={() => setActiveWorkspace("chat")} />
+      ) : (
+        <ChatWorkspace
+          activeSessionId={activeSessionId}
+          messages={activeMessages}
+          runs={runs}
+          input={input}
+          running={running}
+          submitting={isSubmittingRun}
+          cancelling={Boolean(cancellingRunId)}
+          onInput={setInput}
+          onSend={send}
+          onStop={stop}
+          modelOptions={modelOptions}
+          selectedModel={selectedModel}
+          thinkingEnabled={effectiveThinkingEnabled}
+          onThinkingChange={setThinkingEnabled}
+          onModelChange={(model) => {
+            setSelectedModel(model);
+            setThinkingEnabled(defaultThinkingForModel(modelOptions, model));
+          }}
+          theme={theme}
+          onToggleTheme={() =>
+            setTheme((value) => (value === "dark" ? "light" : "dark"))
+          }
+          handoffTriggerRunId={handoffTriggerRunId}
+        />
+      )}
       <ToastRegion toasts={toasts} />
     </div>
   );

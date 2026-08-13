@@ -181,6 +181,19 @@ export type ClientContext = {
   utc_offset_minutes: number;
 };
 
+export type EvaluationSummary = {
+  available: boolean;
+  status: 'passed' | 'failed' | 'not_run';
+  gate_kind: string;
+  interpretation: string;
+  scorer_version?: string | null;
+  evaluated_at?: string | null;
+  counts: Record<string, number>;
+  metrics: Record<string, number>;
+  checks: Record<string, boolean>;
+  split_hashes: Record<string, string>;
+};
+
 // Klara Presence public event model. This is intentionally separate from the
 // current backend RunEvent DTO above so the UI can grow without coupling presentation motion to transport events.
 export type KlaraVisualPhase =

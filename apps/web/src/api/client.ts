@@ -1,4 +1,4 @@
-import type { ClientContext, Message, ModelOption, Run, RunEvent, Session } from '../types/domain';
+import type { ClientContext, EvaluationSummary, Message, ModelOption, Run, RunEvent, Session } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -38,6 +38,7 @@ export const api = {
   renameSession: (id: string, title: string, signal?: AbortSignal) => request<Session>(`/api/sessions/${id}`, { method: 'PATCH', body: JSON.stringify({ title }), signal }),
   deleteSession: (id: string, signal?: AbortSignal) => request<{ session_id: string; deleted: boolean; deleted_at: string }>(`/api/sessions/${id}`, { method: 'DELETE', signal }),
   listModels: (signal?: AbortSignal) => request<{ default_model: string; models: ModelOption[] }>('/api/models', { signal }),
+  getEvaluationSummary: (signal?: AbortSignal) => request<EvaluationSummary>('/api/evaluations/summary', { signal }),
   createRun: (
     session_id: string,
     question: string,

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
+import { BarChart3, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
 import type { Session } from '../types/domain';
 import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
@@ -14,9 +14,11 @@ type Props = {
   onSelect: (id: string) => void;
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
+  evaluationsActive?: boolean;
+  onOpenEvaluations?: () => void;
 };
 
-export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete }: Props) {
+export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined }: Props) {
   const today = sessions.filter((session) => isToday(session.updated_at));
   const earlier = sessions.filter((session) => !isToday(session.updated_at));
   return (
@@ -31,6 +33,11 @@ export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionI
       <button className="new-chat" onClick={onNewChat} title="New Chat"><Plus size={18} /><span className="sidebar-copy">New Chat</span><kbd className="sidebar-copy">⌘N</kbd></button>
       <ConversationGroup title="Today" sessions={today} activeSessionId={activeSessionId} deletingSessionIds={deletingSessionIds} renamingSessionIds={renamingSessionIds} onSelect={onSelect} onRename={onRename} onDelete={onDelete} />
       <ConversationGroup title="Earlier" sessions={earlier} activeSessionId={activeSessionId} deletingSessionIds={deletingSessionIds} renamingSessionIds={renamingSessionIds} onSelect={onSelect} onRename={onRename} onDelete={onDelete} />
+      <button className={`sidebar-evaluations ${evaluationsActive ? 'active' : ''}`} onClick={onOpenEvaluations} title="Agent evaluations" aria-label="Evaluations" aria-pressed={evaluationsActive}>
+        <BarChart3 size={18} />
+        <span className="sidebar-copy">Evaluations</span>
+        <span className="sidebar-copy sidebar-evaluations-badge">Lab</span>
+      </button>
       <div className="sidebar-footer"><span className="avatar">K</span><Settings size={18} /></div>
     </aside>
   );

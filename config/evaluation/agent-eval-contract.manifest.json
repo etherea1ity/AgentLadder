@@ -1,0 +1,38 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "phase-0b-agent-eval-contract",
+  "branch": "codex/agent-eval-contract",
+  "parent_commit": "3266fea1f7cd4f340ae34dceeb74f86c455af009",
+  "parent_bundle_sha256": "db8abf6765d95ffa240e35a36d95ac99b710388662fe10a0998ea6717e51a910",
+  "mode": "local-pre-hku",
+  "datasets": [
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "prompts": [],
+  "model_ids": [],
+  "seeds": [17],
+  "budgets": {
+    "paid_api_usd": 0,
+    "maximum_case_steps": 16,
+    "maximum_case_tokens": 12000
+  },
+  "evaluator_versions": [
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1"
+  ],
+  "expected_artifacts": [
+    "docs/reports/product/agent-eval-contract.json",
+    "docs/reports/product/agent-eval-contract.md",
+    "docs/reports/product/agent-eval-contract.en.md",
+    "docs/reports/product/agent-eval-contract-ui-e2e.json",
+    "docs/chapters/ch18-production-runtime-and-eval-bridge.md",
+    "docs/chapters/ch18-production-runtime-and-eval-bridge.en.md"
+  ],
+  "exclusions": [
+    "paid reference-model calls",
+    "provider-hidden reasoning",
+    "large public benchmark downloads",
+    "HKU/VPN/SSH/Slurm",
+    "claim that later product chapters are complete"
+  ]
+}

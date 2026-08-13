@@ -126,6 +126,24 @@ describe("Klara app flow", () => {
               },
             ],
           });
+        if (url === "/api/evaluations/summary")
+          return json({
+            available: true,
+            status: "passed",
+            gate_kind: "contract_control_probe",
+            interpretation: "Control probe only.",
+            scorer_version: "klara.behavior-scorer.v1",
+            evaluated_at: now,
+            counts: { observations: 24 },
+            metrics: {
+              normal_task_success_rate: 1,
+              critical_deterministic_rate: 1,
+              reference_gap: 0,
+              human_acceptability_rate: 1,
+            },
+            checks: { p0_zero: true },
+            split_hashes: { validation: "a".repeat(64) },
+          });
         if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: listedSessions });
         if (url === "/api/sessions" && init?.method === "POST") return json(session);
         if (url === "/api/runs") return json(runResponse);
@@ -302,6 +320,17 @@ describe("Klara app flow", () => {
     await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
 
     expect(container.querySelector(".app-shell")).toHaveClass("sidebar-collapsed");
+  });
+
+  it("opens aggregate evaluations and returns to chat", async () => {
+    render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Evaluations" }));
+    expect(await screen.findByRole("heading", { name: "Agent evaluations" })).toBeInTheDocument();
+    expect(await screen.findByText("Contract gate passed")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Back to chat" }));
+    expect(await screen.findByPlaceholderText("Ask your first question...")).toBeInTheDocument();
   });
 
   it("keeps live thinking after a failed run is reconciled from a sparse snapshot", async () => {

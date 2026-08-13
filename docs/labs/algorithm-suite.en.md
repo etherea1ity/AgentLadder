@@ -102,6 +102,13 @@ its own fixture, scorer, manifest, and checkpoint hash. Cloud artifacts remain a
 /userhome/cs2/u3665453/AgentLadder/artifacts/algorithm-suite-freeze/job-133919/
 ```
 
+Only the reports are committed to this repository:
+
+```text
+docs/reports/algorithm/algorithm-suite-freeze.json
+docs/reports/algorithm/algorithm-suite-freeze.md
+```
+
 ## Limitations
 
 - Gold data and the micro-corpus are deliberately small mechanism tests.
