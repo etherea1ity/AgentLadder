@@ -12,7 +12,7 @@ Mode: `full-end-to-end`
 | ch05-todo-planning | `codex/ch05-todo-planning` | passed |
 | ch06-07-context | `codex/ch06-07-context` | passed |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | passed |
-| ch09-skills-runtime | `codex/ch09-skills-runtime` | pending |
+| ch09-skills-runtime | `codex/ch09-skills-runtime` | passed |
 | ch10-memory | `codex/ch10-memory` | pending |
 | ch11-formal-rag | `none` | deferred_by_scope |
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | pending |
@@ -45,4 +45,6 @@ Mode: `full-end-to-end`
 
 - Chapter 8: commit `2f5af037c3ac55f7c6fa29a9a1c2439ccd5935d3` passes `18/18` machine checks, Python `288 passed, 1 skipped`, frontend `52 passed`, the production build, and the behavior contract. Fault injection covers transient retry, context-length compaction retry, compatible fallback, tool-failure observations, and the safe recovery UI. Desktop and `390x844` layouts have no horizontal overflow, and the provider response body is not exposed. See the [Chapter 8 report](./ch08-provider-recovery.en.md).
 
-The sequential gate is now at `ch09-skills-runtime`.
+- Chapter 9: commit `ecf9e93e2fbcefbb0eae84cc90212419ebf443f0` passes `14/14` machine checks, Python `295 passed, 1 skipped`, frontend `54 passed`, the production build, and 24 behavior observations. The three-scope catalog has deterministic precedence, metadata-first discovery, and explicit on-demand loading; tool or permission dependency failures close safely, while public trace, SSE, and UI expose no Skill body. Desktop and `390x844` layouts have no horizontal overflow or console errors. See the [Chapter 9 report](./ch09-skills-runtime.en.md).
+
+The sequential gate is now at `ch10-memory`.

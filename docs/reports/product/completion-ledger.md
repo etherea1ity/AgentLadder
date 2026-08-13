@@ -12,7 +12,7 @@
 | ch05-todo-planning | `codex/ch05-todo-planning` | passed |
 | ch06-07-context | `codex/ch06-07-context` | passed |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | passed |
-| ch09-skills-runtime | `codex/ch09-skills-runtime` | pending |
+| ch09-skills-runtime | `codex/ch09-skills-runtime` | passed |
 | ch10-memory | `codex/ch10-memory` | pending |
 | ch11-formal-rag | `none` | deferred_by_scope |
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | pending |
@@ -45,4 +45,6 @@
 
 - Chapter 8：提交 `2f5af037c3ac55f7c6fa29a9a1c2439ccd5935d3`，机器门禁 `18/18`，Python `288 passed, 1 skipped`，前端 `52 passed`，生产构建与行为契约通过；故障注入覆盖瞬态重试、上下文超限压缩重试、兼容 fallback、工具失败观察与安全 UI。桌面和 `390x844` 均无水平溢出，未公开 provider response body；详见 [Chapter 8 报告](./ch08-provider-recovery.md)。
 
-当前顺序门禁已经进入 `ch09-skills-runtime`。
+- Chapter 9：提交 `ecf9e93e2fbcefbb0eae84cc90212419ebf443f0`，机器门禁 `14/14`，Python `295 passed, 1 skipped`，前端 `54 passed`，生产构建与 24 条行为观察通过。三级 Skill 目录采用确定性覆盖、元数据优先和按需加载；权限/工具依赖失败时关闭，公开 trace、SSE 与 UI 均不暴露 Skill 正文。桌面与 `390x844` 无水平溢出、无控制台错误；详见 [Chapter 9 报告](./ch09-skills-runtime.md)。
+
+当前顺序门禁已经进入 `ch10-memory`。
