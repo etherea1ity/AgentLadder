@@ -13,7 +13,7 @@ Mode: `full-end-to-end`
 | ch06-07-context | `codex/ch06-07-context` | passed |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | passed |
 | ch09-skills-runtime | `codex/ch09-skills-runtime` | passed |
-| ch10-memory | `codex/ch10-memory` | pending |
+| ch10-memory | `codex/ch10-memory` | passed |
 | ch11-formal-rag | `none` | deferred_by_scope |
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | pending |
 | permission-engine | `codex/permission-engine` | pending |
@@ -47,4 +47,6 @@ Mode: `full-end-to-end`
 
 - Chapter 9: commit `ecf9e93e2fbcefbb0eae84cc90212419ebf443f0` passes `14/14` machine checks, Python `295 passed, 1 skipped`, frontend `54 passed`, the production build, and 24 behavior observations. The three-scope catalog has deterministic precedence, metadata-first discovery, and explicit on-demand loading; tool or permission dependency failures close safely, while public trace, SSE, and UI expose no Skill body. Desktop and `390x844` layouts have no horizontal overflow or console errors. See the [Chapter 9 report](./ch09-skills-runtime.en.md).
 
-The sequential gate is now at `ch10-memory`.
+- Chapter 10: commit `ca5e20a4b19ce9036878b84205a10fa670972f33` passes `16/16` machine checks, Python `305 passed, 1 skipped`, frontend `56 passed`, the production build, and 24 behavior-control observations. Memory now provides tenant/user/agent/session isolation, explicit writes, candidate review, versioned temporal validity, forgetting, and verified hard deletion. On the same local retrieval corpus, hybrid reaches `6/6` top-1 and `3/3` critical top-1. Mem0/MEM1 and public benchmarks remain explicitly `not_executed`; see the [Chapter 10 report](./ch10-memory.en.md).
+
+The sequential gate is now at `ch12-13-evidence-runtime`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.
