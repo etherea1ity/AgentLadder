@@ -505,3 +505,47 @@ class TaskDetailResponse(BaseModel):
     artifacts: list[dict[str, Any]]
     latest_checkpoint: dict[str, Any] | None = None
     events: list[dict[str, Any]]
+
+
+class CreateTeammateRequest(BaseModel):
+    name: str
+    role: str
+    capability_names: list[str] = Field(default_factory=list)
+
+
+class SpawnSubagentRequest(BaseModel):
+    title: str
+    instructions: str
+    capability_names: list[str] = Field(default_factory=list)
+    parent_task_id: str | None = None
+    model: str | None = None
+
+
+class TeamMessageRequest(BaseModel):
+    sender_id: str = "klara"
+    recipient_id: str
+    kind: Literal["task_assignment", "progress", "question", "handoff", "result", "cancel"]
+    body: str
+    task_id: str | None = None
+
+
+class TeamTaskClaimRequest(BaseModel):
+    task_id: str
+    lease_seconds: int = Field(default=60, ge=1, le=3600)
+
+
+class TeamTaskClaimNextRequest(BaseModel):
+    lease_seconds: int = Field(default=60, ge=1, le=3600)
+
+
+class DelegateAuthorityRequest(BaseModel):
+    parent_grant_id: str
+    effect: Literal["allow_once", "allow_task"]
+    expires_seconds: int = Field(default=3600, ge=1, le=2592000)
+
+
+class CreateWorktreeRequest(BaseModel):
+    agent_id: str
+    task_id: str
+    branch_name: str
+    base_ref: str = "HEAD"

@@ -10,6 +10,7 @@ import { PermissionCenter } from "./components/PermissionCenter";
 import { TaskBoard } from "./components/TaskBoard";
 import { SchedulerTimeline } from "./components/SchedulerTimeline";
 import { McpIntegrations } from "./components/McpIntegrations";
+import { TeamWorkspace } from "./components/TeamWorkspace";
 import type {
   Message,
   ModelOption,
@@ -55,7 +56,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState("");
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
-  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions" | "tasks" | "scheduler" | "integrations">("chat");
+  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions" | "tasks" | "scheduler" | "integrations" | "team">("chat");
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
   );
@@ -932,6 +933,7 @@ export default function App() {
     activeWorkspace === "tasks" ? "has-tasks" : "",
     activeWorkspace === "scheduler" ? "has-scheduler" : "",
     activeWorkspace === "integrations" ? "has-integrations" : "",
+    activeWorkspace === "team" ? "has-team" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -970,6 +972,8 @@ export default function App() {
         onOpenScheduler={() => setActiveWorkspace("scheduler")}
         integrationsActive={activeWorkspace === "integrations"}
         onOpenIntegrations={() => setActiveWorkspace("integrations")}
+        teamActive={activeWorkspace === "team"}
+        onOpenTeam={() => setActiveWorkspace("team")}
       />
       {activeWorkspace === "evaluations" ? (
         <EvaluationDashboard onBackToChat={() => setActiveWorkspace("chat")} />
@@ -985,6 +989,8 @@ export default function App() {
         <SchedulerTimeline onBackToChat={() => setActiveWorkspace("chat")} />
       ) : activeWorkspace === "integrations" ? (
         <McpIntegrations onBackToChat={() => setActiveWorkspace("chat")} onOpenPermissions={() => setActiveWorkspace("permissions")} />
+      ) : activeWorkspace === "team" ? (
+        <TeamWorkspace onBackToChat={() => setActiveWorkspace("chat")} onOpenPermissions={() => setActiveWorkspace("permissions")} />
       ) : (
         <ChatWorkspace
           activeSessionId={activeSessionId}

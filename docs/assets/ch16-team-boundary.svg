@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" role="img" aria-labelledby="title desc">
+  <title id="title">Klara bounded team runtime</title>
+  <desc id="desc">A parent Agent delegates an explicit task through permission and durable task boundaries to an isolated agent, which returns a summary through its mailbox and may receive an isolated worktree.</desc>
+  <defs><style>.box{fill:#f8f8fc;stroke:#6960d7;stroke-width:2}.guard{fill:#fff7e8;stroke:#dc8d1c;stroke-width:2}.store{fill:#eef9f3;stroke:#25885c;stroke-width:2}.t{font:600 18px system-ui;fill:#24223d}.s{font:14px system-ui;fill:#58566e}.a{stroke:#6960d7;stroke-width:2.5;fill:none;marker-end:url(#m)}</style><marker id="m" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#6960d7"/></marker></defs>
+  <rect x="30" y="52" width="180" height="100" rx="20" class="box"/><text x="120" y="91" text-anchor="middle" class="t">Parent Agent</text><text x="120" y="119" text-anchor="middle" class="s">explicit task packet</text>
+  <rect x="270" y="52" width="180" height="100" rx="20" class="guard"/><text x="360" y="91" text-anchor="middle" class="t">Permission</text><text x="360" y="119" text-anchor="middle" class="s">exact + attenuated</text>
+  <rect x="510" y="52" width="180" height="100" rx="20" class="store"/><text x="600" y="91" text-anchor="middle" class="t">Durable Task</text><text x="600" y="119" text-anchor="middle" class="s">lease + cancellation</text>
+  <rect x="750" y="52" width="180" height="100" rx="20" class="box"/><text x="840" y="91" text-anchor="middle" class="t">Isolated Agent</text><text x="840" y="119" text-anchor="middle" class="s">clean transcript</text>
+  <path d="M210 102H268M450 102H508M690 102H748" class="a"/>
+  <rect x="140" y="250" width="210" height="110" rx="20" class="store"/><text x="245" y="292" text-anchor="middle" class="t">Mailbox</text><text x="245" y="320" text-anchor="middle" class="s">summary / question / handoff</text>
+  <rect x="610" y="250" width="210" height="110" rx="20" class="guard"/><text x="715" y="292" text-anchor="middle" class="t">Git Worktree</text><text x="715" y="320" text-anchor="middle" class="s">project-contained branch</text>
+  <path d="M840 152C840 220 350 205 350 250" class="a"/><path d="M750 152C750 195 715 215 715 248" class="a"/><path d="M140 305C80 305 75 155 120 155" class="a"/>
+</svg>

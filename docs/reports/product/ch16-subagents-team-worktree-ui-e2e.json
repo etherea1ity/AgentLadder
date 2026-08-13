@@ -1,0 +1,56 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "ch16-subagents-team-worktree",
+  "source_branch": "codex/ch16-subagents-team-worktree",
+  "evaluated_at": "2026-08-13T15:24:00+00:00",
+  "browser_surface": "in_app_browser",
+  "backend": "real_local_api_with_sqlite_permission_and_team_state",
+  "journey": [
+    "restart API and web after implementation",
+    "open Team from the real application sidebar",
+    "attempt persistent teammate creation and verify fail-closed exact permission",
+    "open Permissions and inspect team_runtime/create_teammate resource",
+    "grant allow-once authority",
+    "return to Team and create the teammate",
+    "observe real idle teammate, role, capabilities, mailbox and stop actions",
+    "measure desktop and mobile overflow and inspect browser console"
+  ],
+  "desktop": {
+    "viewport": "1280x720",
+    "document_scroll_width": 1280,
+    "body_scroll_width": 1280,
+    "main_client_width": 985,
+    "main_scroll_width": 985,
+    "horizontal_overflow": false,
+    "permission_block_visible": true,
+    "permission_resource_exact": true,
+    "created_member_visible": true,
+    "mailbox_and_worktree_surfaces_visible": true
+  },
+  "mobile": {
+    "viewport": "390x844",
+    "document_scroll_width": 390,
+    "body_scroll_width": 390,
+    "main_client_width": 375,
+    "main_scroll_width": 375,
+    "horizontal_overflow": false,
+    "created_member_visible": true
+  },
+  "console": {
+    "error_or_warning_count": 0,
+    "unhandled_rejection_count": 0
+  },
+  "real_state": {
+    "team_id": "default-team",
+    "agent_name": "Research teammate",
+    "agent_kind": "teammate",
+    "final_status": "idle",
+    "capabilities": ["web_search", "web_fetch"],
+    "grant_effect": "allow_once"
+  },
+  "limitations": [
+    "The browser journey creates a persistent teammate; deterministic service tests cover one-shot execution and real Git worktree lifecycle without making a provider call for UI evidence.",
+    "The local product remains a single authenticated owner until Chapter 18 replaces the development identity boundary."
+  ],
+  "passed": true
+}

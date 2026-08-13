@@ -515,6 +515,59 @@ export type McpState = {
   audit: McpAuditEvent[];
 };
 
+export type TeamAgentKind = 'one_shot' | 'teammate';
+export type TeamAgentStatus = 'idle' | 'running' | 'waiting' | 'completed' | 'failed' | 'stopped';
+export type TeamAgent = {
+  agent_id: string;
+  scope: { tenant_id: string; owner_id: string; team_id: string };
+  name: string;
+  role: string;
+  kind: TeamAgentKind;
+  status: TeamAgentStatus;
+  capability_names: string[];
+  parent_agent_id?: string | null;
+  parent_task_id?: string | null;
+  child_task_id?: string | null;
+  context_sha256?: string | null;
+  summary?: string | null;
+  summary_sha256?: string | null;
+  error_code?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type TeamMessage = {
+  message_id: string;
+  sender_id: string;
+  recipient_id: string;
+  kind: 'task_assignment' | 'progress' | 'question' | 'handoff' | 'result' | 'cancel';
+  body: string;
+  task_id?: string | null;
+  sequence: number;
+  created_at: string;
+  acknowledged_at?: string | null;
+};
+export type TeamWorktree = {
+  worktree_id: string;
+  agent_id: string;
+  task_id: string;
+  branch_name: string;
+  base_ref: string;
+  path: string;
+  status: 'creating' | 'ready' | 'removing' | 'removed' | 'failed';
+  head_sha?: string | null;
+  error_code?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type TeamState = {
+  schema_version: 'klara.team-state.v1';
+  team: { tenant_id: string; owner_id: string; team_id: string };
+  agents: TeamAgent[];
+  root_inbox: TeamMessage[];
+  mailbox_counts: Record<string, number>;
+  worktrees: TeamWorktree[];
+};
+
 // Klara Presence public event model. This is intentionally separate from the
 // current backend RunEvent DTO above so the UI can grow without coupling presentation motion to transport events.
 export type KlaraVisualPhase =

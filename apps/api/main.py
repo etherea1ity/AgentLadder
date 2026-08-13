@@ -16,7 +16,8 @@ from apps.api.routes.skills import router as skills_router
 from apps.api.routes.tasks import router as tasks_router
 from apps.api.routes.scheduler import router as scheduler_router
 from apps.api.routes.mcp import router as mcp_router
-from apps.api.dependencies import get_mcp_service, get_scheduler_runner
+from apps.api.routes.teams import router as teams_router
+from apps.api.dependencies import get_mcp_service, get_scheduler_runner, get_team_service
 
 
 @asynccontextmanager
@@ -27,6 +28,7 @@ async def lifespan(_app: FastAPI):
         yield
     finally:
         runner.stop()
+        get_team_service().shutdown()
         get_mcp_service().shutdown()
 
 
@@ -51,6 +53,7 @@ app.include_router(permissions_router)
 app.include_router(tasks_router)
 app.include_router(scheduler_router)
 app.include_router(mcp_router)
+app.include_router(teams_router)
 
 
 @app.get("/api/health")

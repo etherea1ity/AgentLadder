@@ -20,6 +20,7 @@ from klara.skills import SkillCatalog
 from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope
 from klara.scheduler import SchedulerService, SQLiteScheduleRepository
 from klara.mcp import McpService, SQLiteMcpRepository
+from klara.teams import KlaraOneShotExecutor, SQLiteTeamRepository, TeamScope, TeamService
 from apps.api.services.scheduler_runner import SchedulerRunner
 
 
@@ -125,6 +126,7 @@ _task_scope = TaskScope(
     owner_id="local-user",
     agent_id="klara",
 )
+_team_repository = SQLiteTeamRepository(_store.root / "teams.sqlite3")
 _llm = RoutedLlmClient(
     models=_models,
     dotenv_path=".env",
@@ -150,6 +152,27 @@ _run_service = RunService(
     task_service=_task_service,
     task_scope=_task_scope,
     mcp_service=_mcp_service,
+)
+_team_scope = TeamScope(
+    tenant_id="local-tenant",
+    owner_id="local-user",
+    team_id="default-team",
+)
+_team_service = TeamService(
+    _team_repository,
+    _task_service,
+    _permission_service,
+    project_root=_workspace_root,
+    executor=KlaraOneShotExecutor(
+        llm=_llm,
+        model=_default_model_ref,
+        models=_models,
+        user_context=_local_user_context(),
+        workspace_root=_workspace_root,
+        data_root=_store.root,
+        loop_policy=_runtime.loop_policy,
+        provider_recovery_policy=_runtime.provider_recovery_policy,
+    ),
 )
 _schedule_repository = SQLiteScheduleRepository(_store.root / "schedules.sqlite3")
 _scheduler_service = SchedulerService(_schedule_repository, _task_service)
@@ -226,6 +249,18 @@ def get_task_scope() -> TaskScope:
     """Return the authenticated local task owner partition."""
 
     return _task_scope
+
+
+def get_team_service() -> TeamService:
+    """Return the bounded local team runtime."""
+
+    return _team_service
+
+
+def get_team_scope() -> TeamScope:
+    """Return the authenticated local team partition."""
+
+    return _team_scope
 
 
 def get_scheduler_service() -> SchedulerService:

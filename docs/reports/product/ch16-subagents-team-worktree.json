@@ -1,0 +1,48 @@
+{
+  "behavior": {
+    "candidate_observation": "Evidence checked; the cited page supports the bounded claim.",
+    "question": "把这个证据检查交给子 Agent，但不要把整段对话或额外权限交出去；完成后只告诉我结论。",
+    "question_answer_consistent": true,
+    "reference_answer": "先请求精确委派权限，只传显式任务包和白名单能力，在隔离任务中执行，并通过父邮箱返回简洁结论；不得共享隐藏推理。",
+    "strange_response_p0_count": 0
+  },
+  "checks": {
+    "api_exposes_team_mailbox_claim_authority_and_worktrees": true,
+    "autonomous_claim_reuses_durable_lease": true,
+    "bilingual_tutorial_exists": true,
+    "mailbox_has_monotonic_cursor_and_ack": true,
+    "mailbox_owner_isolation_is_opaque": true,
+    "one_shot_projects_one_completed_child_task": true,
+    "one_shot_returns_summary_only_with_hash": true,
+    "one_shot_runs_explicit_packet_without_parent_history": true,
+    "one_shot_spawn_requires_exact_permission": true,
+    "permission_bubbling_uses_existing_attenuation": true,
+    "persistent_teammate_requires_permission": true,
+    "question_answer_consistency_and_no_strange_output": true,
+    "real_git_worktree_is_project_contained": true,
+    "stage_manifest_exists": true,
+    "task_context_is_hashed_and_lease_token_not_persisted": true,
+    "ui_reads_real_team_state_and_actions": true,
+    "ui_shows_authority_mailbox_worktree_and_stop": true,
+    "worktree_create_and_remove_require_permission": true,
+    "worktree_does_not_use_shell_interpolation": true
+  },
+  "evaluated_at": "2026-08-13T15:19:09.160665+00:00",
+  "gate_kind": "deterministic_context_permission_mailbox_task_and_real_git_worktree_gate",
+  "limitations": [
+    "The gate proves bounded single-host SQLite orchestration, not a production worker fleet or distributed consensus.",
+    "The deterministic one-shot executor proves isolation plumbing; independent cross-model behavioral comparison remains part of Agent Product Freeze.",
+    "Learned multi-agent routing is deliberately excluded until the frozen runtime has produced comparable trajectory data."
+  ],
+  "metrics": {
+    "checks_passed": 19,
+    "checks_total": 19,
+    "critical_delegation_isolation_rate": 1.0,
+    "delegated_agents": 2,
+    "public_secret_leak_count": 0
+  },
+  "passed": true,
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter16-teams-worktrees.v1",
+  "stage": "ch16-subagents-team-worktree"
+}

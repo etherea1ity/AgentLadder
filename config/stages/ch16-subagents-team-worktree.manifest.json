@@ -1,0 +1,54 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch16-subagents-team-worktree",
+  "branch": "codex/ch16-subagents-team-worktree",
+  "parent_commit": "e0890d1431991b5cd3157e2a8abd61ff76e58c4b",
+  "mode": "full-end-to-end",
+  "datasets": [
+    "tests/klara/teams/test_team_service.py",
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "model_ids": ["none-deterministic-delegation-contract-gate"],
+  "seeds": [16],
+  "budgets": {
+    "paid_api_usd": 0,
+    "maximum_teammates": 8,
+    "maximum_instruction_chars": 12000,
+    "maximum_message_chars": 8000,
+    "maximum_summary_chars": 12000
+  },
+  "evaluator_versions": [
+    "klara.chapter16-teams-worktrees.v1",
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "acceptance": {
+    "one_shot_clean_context": true,
+    "summary_only_return": true,
+    "persistent_teammate_mailbox": true,
+    "mailbox_owner_isolation": true,
+    "autonomous_durable_task_claim": true,
+    "cancellation_propagation": true,
+    "attenuated_permission_bubbling": true,
+    "real_git_worktree_isolation": true,
+    "permissioned_worktree_lifecycle": true,
+    "real_team_workspace_ui": true
+  },
+  "expected_artifacts": [
+    "docs/chapters/ch16-subagents-teams-worktrees.md",
+    "docs/chapters/ch16-subagents-teams-worktrees.en.md",
+    "docs/reports/product/ch16-subagents-team-worktree.json",
+    "docs/reports/product/ch16-subagents-team-worktree.md",
+    "docs/reports/product/ch16-subagents-team-worktree.en.md",
+    "docs/reports/product/ch16-subagents-team-worktree-ui-e2e.json",
+    "docs/reports/product/ch16-subagents-team-worktree-behavior-control.json"
+  ],
+  "exclusions": [
+    "unbounded recursive delegation",
+    "shared parent chain-of-thought or hidden provider reasoning",
+    "production orchestration fleet",
+    "learned multi-agent routing",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

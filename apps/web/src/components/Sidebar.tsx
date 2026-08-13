@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { BarChart3, BookOpen, Brain, CalendarClock, ClipboardList, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, PlugZap, Plus, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, Brain, CalendarClock, ClipboardList, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, PlugZap, Plus, Settings, Users } from 'lucide-react';
 import type { Session } from '../types/domain';
 import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
@@ -28,9 +28,11 @@ type Props = {
   onOpenScheduler?: () => void;
   integrationsActive?: boolean;
   onOpenIntegrations?: () => void;
+  teamActive?: boolean;
+  onOpenTeam?: () => void;
 };
 
-export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined, tasksActive = false, onOpenTasks = () => undefined, schedulerActive = false, onOpenScheduler = () => undefined, integrationsActive = false, onOpenIntegrations = () => undefined }: Props) {
+export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined, tasksActive = false, onOpenTasks = () => undefined, schedulerActive = false, onOpenScheduler = () => undefined, integrationsActive = false, onOpenIntegrations = () => undefined, teamActive = false, onOpenTeam = () => undefined }: Props) {
   const today = sessions.filter((session) => isToday(session.updated_at));
   const earlier = sessions.filter((session) => !isToday(session.updated_at));
   return (
@@ -79,6 +81,11 @@ export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionI
         <PlugZap size={18} />
         <span className="sidebar-copy">Integrations</span>
         <span className="sidebar-copy sidebar-evaluations-badge">MCP</span>
+      </button>
+      <button className={`sidebar-evaluations ${teamActive ? 'active' : ''}`} onClick={onOpenTeam} title="Subagents and teams" aria-label="Team" aria-pressed={teamActive}>
+        <Users size={18} />
+        <span className="sidebar-copy">Team</span>
+        <span className="sidebar-copy sidebar-evaluations-badge">Isolated</span>
       </button>
       <div className="sidebar-footer"><span className="avatar">K</span><Settings size={18} /></div>
     </aside>
