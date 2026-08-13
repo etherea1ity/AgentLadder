@@ -18,8 +18,10 @@ def test_signed_token_round_trip_tamper_and_expiry() -> None:
     assert principal.roles == {"owner"}
     assert "token_id" not in principal.to_public_dict()
 
+    header, payload, signature = token.split(".")
+    replacement = "A" if signature[0] != "A" else "B"
     with pytest.raises(AuthError, match="invalid_signature"):
-        service.verify_bearer(f"Bearer {token[:-1]}A")
+        service.verify_bearer(f"Bearer {header}.{payload}.{replacement}{signature[1:]}")
     with pytest.raises(AuthError, match="malformed"):
         service.verify_bearer(f"Bearer {token}=")
     clock[0] += 121

@@ -31,8 +31,11 @@
   ],
   "acceptance": {
     "signed_bearer_and_rbac": true,
+    "oidc_rs256_jwks_and_revocation": true,
     "tenant_and_owner_isolation": true,
     "versioned_checked_migrations": true,
+    "sqlite_backup_restore_integrity_and_retention": true,
+    "postgres_adapter_contract_and_skip_locked": true,
     "idempotent_lease_queue": true,
     "cooperative_cancellation_and_sse": true,
     "transactional_outbox": true,
@@ -53,7 +56,8 @@
     "docs/reports/product/ch18-production-runtime-regression.en.md"
   ],
   "exclusions": [
-    "managed OIDC provider deployment",
+    "live external OIDC provider deployment smoke",
+    "external long-lived PostgreSQL deployment operations",
     "multi-region database consensus",
     "external message broker operations",
     "real trajectory corpus freeze",

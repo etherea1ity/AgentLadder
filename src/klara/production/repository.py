@@ -6,8 +6,10 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 import hashlib
 import json
+import os
 from pathlib import Path
 import secrets
+import shutil
 import sqlite3
 import threading
 import time
@@ -74,6 +76,243 @@ class ProductionRepository:
         with self._connect() as connection:
             rows = connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall()
         return tuple(int(row["version"]) for row in rows)
+
+    def assert_schema_compatible(self) -> None:
+        """Apply the forward-only rollback policy and reject unknown future schema."""
+
+        versions = self.migration_versions()
+        expected = tuple(version for version, _ in _MIGRATIONS)
+        if versions != expected:
+            raise RuntimeError(
+                f"production schema is not at the supported forward-only version: {versions}"
+            )
+
+    def integrity_report(self) -> dict[str, Any]:
+        """Return SQLite integrity, foreign-key, migration, and row-count evidence."""
+
+        with self._connect() as connection:
+            quick = [str(row[0]) for row in connection.execute("PRAGMA quick_check").fetchall()]
+            foreign_keys = connection.execute("PRAGMA foreign_key_check").fetchall()
+            counts = {
+                table: int(
+                    connection.execute(f"SELECT COUNT(*) AS value FROM {table}").fetchone()["value"]
+                )
+                for table in _PRODUCTION_TABLES
+            }
+        return {
+            "schema_version": "klara.production-integrity.v1",
+            "database_kind": "sqlite",
+            "quick_check": quick,
+            "foreign_key_violation_count": len(foreign_keys),
+            "migration_versions": list(self.migration_versions()),
+            "row_counts": counts,
+            "passed": quick == ["ok"] and not foreign_keys,
+        }
+
+    def backup_to(self, destination: str | Path) -> dict[str, Any]:
+        """Create and verify a consistent SQLite backup without copying WAL files."""
+
+        target = Path(destination).resolve()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target == self.path.resolve():
+            raise ValueError("backup_destination_must_differ")
+        staging = target.with_name(f".{target.name}.{uuid4().hex}.tmp")
+        try:
+            source = sqlite3.connect(self.path)
+            sink = sqlite3.connect(staging)
+            try:
+                source.backup(sink)
+                sink.commit()
+            finally:
+                sink.close()
+                source.close()
+            check = _sqlite_file_integrity(staging)
+            if not check["passed"]:
+                raise RuntimeError("backup_integrity_failed")
+            os.replace(staging, target)
+        finally:
+            if staging.exists():
+                staging.unlink()
+        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        return {
+            "schema_version": "klara.production-backup.v1",
+            "database_kind": "sqlite",
+            "path": str(target),
+            "sha256": digest,
+            "size_bytes": target.stat().st_size,
+            "integrity": check,
+        }
+
+    def restore_from(self, source: str | Path) -> dict[str, Any]:
+        """Restore a verified SQLite backup and keep a recoverable pre-restore copy."""
+
+        backup = Path(source).resolve()
+        if not backup.is_file() or backup == self.path.resolve():
+            raise ValueError("invalid_restore_source")
+        check = _sqlite_file_integrity(backup)
+        if not check["passed"]:
+            raise RuntimeError("restore_source_integrity_failed")
+        staging = self.path.with_name(f".{self.path.name}.{uuid4().hex}.restore")
+        previous = self.path.with_suffix(self.path.suffix + ".pre-restore")
+        shutil.copy2(backup, staging)
+        try:
+            if self.path.exists():
+                shutil.copy2(self.path, previous)
+            os.replace(staging, self.path)
+            self.migrate()
+            self.assert_schema_compatible()
+            restored = self.integrity_report()
+            if not restored["passed"]:
+                raise RuntimeError("restored_database_integrity_failed")
+            return {
+                "schema_version": "klara.production-restore.v1",
+                "database_kind": "sqlite",
+                "source_sha256": hashlib.sha256(backup.read_bytes()).hexdigest(),
+                "pre_restore_path": str(previous) if previous.exists() else None,
+                "integrity": restored,
+            }
+        except Exception:
+            if previous.exists():
+                os.replace(previous, self.path)
+            raise
+        finally:
+            if staging.exists():
+                staging.unlink()
+
+    def apply_retention(self, *, before_epoch: float) -> dict[str, int]:
+        """Remove old delivery/audit rows and redact terminal payloads by policy."""
+
+        cutoff = _iso(before_epoch)
+        with self._transaction() as connection:
+            outbox = connection.execute(
+                "DELETE FROM prod_outbox WHERE state = 'delivered' AND delivered_at < ?",
+                (cutoff,),
+            ).rowcount
+            audits = connection.execute(
+                "DELETE FROM prod_audit WHERE created_at < ?", (cutoff,)
+            ).rowcount
+            jobs = connection.execute(
+                "UPDATE prod_jobs SET payload_json = '{}', result_json = NULL "
+                "WHERE state IN ('completed', 'failed', 'cancelled', 'dead_letter') AND completed_at < ?",
+                (cutoff,),
+            ).rowcount
+        return {
+            "outbox_rows_deleted": int(outbox),
+            "audit_rows_deleted": int(audits),
+            "terminal_job_payloads_redacted": int(jobs),
+        }
+
+    def revoke_token(
+        self,
+        principal: Principal,
+        *,
+        token_id: str,
+        expires_at: int,
+        reason: str,
+    ) -> None:
+        """Persist a tenant-bound credential revocation without storing the bearer."""
+
+        if len(token_id) > 128 or not token_id:
+            raise ValueError("invalid_token_id")
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO prod_token_revocations(tenant_id, token_id_hash, expires_at, reason, revoked_by, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(tenant_id, token_id_hash) DO NOTHING",
+                (principal.tenant_id, _hash(token_id), expires_at, reason[:80], principal.user_id, _iso(self._clock())),
+            )
+            connection.commit()
+
+    def is_token_revoked(self, tenant_id: str, token_id: str) -> bool:
+        """Return whether the exact tenant/token pair is actively revoked."""
+
+        now = int(self._clock())
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT 1 FROM prod_token_revocations WHERE tenant_id = ? AND token_id_hash = ? AND expires_at > ?",
+                (tenant_id, _hash(token_id), now),
+            ).fetchone()
+        return row is not None
+
+    def put_state(
+        self,
+        principal: Principal,
+        *,
+        namespace: str,
+        record_id: str,
+        value: dict[str, Any],
+        expected_version: int | None = None,
+    ) -> dict[str, Any]:
+        """Create or CAS-update one tenant/owner state record."""
+
+        _validate_state_identity(namespace, record_id)
+        value_json = _canonical(value)
+        if len(value_json.encode("utf-8")) > 262144:
+            raise QueueConflict("state_value_too_large")
+        now = _iso(self._clock())
+        with self._transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM prod_state_records WHERE tenant_id = ? AND owner_id = ? AND namespace = ? AND record_id = ?",
+                (principal.tenant_id, principal.user_id, namespace, record_id),
+            ).fetchone()
+            current_version = int(row["version"]) if row else 0
+            if expected_version is not None and expected_version != current_version:
+                raise QueueConflict("state_version_conflict")
+            next_version = current_version + 1
+            if row:
+                connection.execute(
+                    "UPDATE prod_state_records SET version = ?, value_json = ?, value_sha256 = ?, updated_at = ?, deleted_at = NULL "
+                    "WHERE tenant_id = ? AND owner_id = ? AND namespace = ? AND record_id = ?",
+                    (next_version, value_json, _hash(value_json), now, principal.tenant_id, principal.user_id, namespace, record_id),
+                )
+            else:
+                connection.execute(
+                    "INSERT INTO prod_state_records(tenant_id, owner_id, namespace, record_id, version, value_json, value_sha256, created_at, updated_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (principal.tenant_id, principal.user_id, namespace, record_id, next_version, value_json, _hash(value_json), now, now),
+                )
+            updated = connection.execute(
+                "SELECT * FROM prod_state_records WHERE tenant_id = ? AND owner_id = ? AND namespace = ? AND record_id = ?",
+                (principal.tenant_id, principal.user_id, namespace, record_id),
+            ).fetchone()
+        return _state_record(updated, include_value=True)
+
+    def get_state(
+        self,
+        principal: Principal,
+        *,
+        namespace: str,
+        record_id: str,
+    ) -> dict[str, Any] | None:
+        """Return one visible state record; foreign owners remain opaque."""
+
+        _validate_state_identity(namespace, record_id)
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM prod_state_records WHERE tenant_id = ? AND owner_id = ? AND namespace = ? AND record_id = ? AND deleted_at IS NULL",
+                (principal.tenant_id, principal.user_id, namespace, record_id),
+            ).fetchone()
+        return _state_record(row, include_value=True) if row else None
+
+    def delete_state(
+        self,
+        principal: Principal,
+        *,
+        namespace: str,
+        record_id: str,
+        expected_version: int,
+    ) -> bool:
+        """CAS tombstone an owner-visible record without cross-scope side channels."""
+
+        _validate_state_identity(namespace, record_id)
+        now = _iso(self._clock())
+        with self._connect() as connection:
+            changed = connection.execute(
+                "UPDATE prod_state_records SET deleted_at = ?, updated_at = ?, value_json = '{}', value_sha256 = ? "
+                "WHERE tenant_id = ? AND owner_id = ? AND namespace = ? AND record_id = ? AND version = ? AND deleted_at IS NULL",
+                (now, now, _hash("{}"), principal.tenant_id, principal.user_id, namespace, record_id, expected_version),
+            ).rowcount
+            connection.commit()
+        return changed == 1
 
     def create_session(self, principal: Principal, *, title: str) -> dict[str, Any]:
         session_id = f"psess_{uuid4().hex}"
@@ -543,6 +782,23 @@ def _job_event(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
+def _state_record(row: sqlite3.Row, *, include_value: bool) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "schema_version": "klara.production-state-record.v1",
+        "tenant_id": row["tenant_id"],
+        "owner_id": row["owner_id"],
+        "namespace": row["namespace"],
+        "record_id": row["record_id"],
+        "version": row["version"],
+        "value_sha256": row["value_sha256"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+    }
+    if include_value:
+        result["value"] = json.loads(row["value_json"])
+    return result
+
+
 def _canonical(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
@@ -557,6 +813,46 @@ def hmac_compare(expected_hash: str | None, raw_value: str) -> bool:
 
 def _iso(epoch: float) -> str:
     return datetime.fromtimestamp(epoch, UTC).isoformat()
+
+
+def _validate_state_identity(namespace: str, record_id: str) -> None:
+    allowed_namespaces = {
+        "run",
+        "event",
+        "plan",
+        "context_summary",
+        "memory",
+        "permission",
+        "task",
+        "schedule",
+        "team",
+        "mcp_connection",
+        "artifact",
+    }
+    if namespace not in allowed_namespaces:
+        raise ValueError("unsupported_state_namespace")
+    if not record_id or len(record_id) > 160 or any(char.isspace() for char in record_id):
+        raise ValueError("invalid_state_record_id")
+
+
+def _sqlite_file_integrity(path: Path) -> dict[str, Any]:
+    try:
+        connection = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
+        quick = [str(row[0]) for row in connection.execute("PRAGMA quick_check").fetchall()]
+        foreign_keys = connection.execute("PRAGMA foreign_key_check").fetchall()
+        versions = [int(row[0]) for row in connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall()]
+    except sqlite3.DatabaseError as exc:
+        return {"quick_check": [type(exc).__name__], "foreign_key_violation_count": -1, "migration_versions": [], "passed": False}
+    finally:
+        if "connection" in locals():
+            connection.close()
+    expected = [version for version, _ in _MIGRATIONS]
+    return {
+        "quick_check": quick,
+        "foreign_key_violation_count": len(foreign_keys),
+        "migration_versions": versions,
+        "passed": quick == ["ok"] and not foreign_keys and versions == expected,
+    }
 
 
 _MIGRATIONS: tuple[tuple[int, tuple[str, ...]], ...] = (
@@ -579,4 +875,22 @@ _MIGRATIONS: tuple[tuple[int, tuple[str, ...]], ...] = (
         "CREATE TABLE prod_job_events (event_id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES prod_jobs(job_id), run_id TEXT NOT NULL, tenant_id TEXT NOT NULL, owner_id TEXT NOT NULL, seq INTEGER NOT NULL, event_type TEXT NOT NULL, payload_json TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(job_id, seq))",
         "CREATE INDEX idx_prod_job_events_owner ON prod_job_events(tenant_id, owner_id, job_id, seq)",
     )),
+    (4, (
+        "CREATE TABLE prod_token_revocations (tenant_id TEXT NOT NULL, token_id_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, reason TEXT NOT NULL, revoked_by TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(tenant_id, token_id_hash))",
+        "CREATE INDEX idx_prod_token_revocations_expiry ON prod_token_revocations(expires_at)",
+        "CREATE TABLE prod_state_records (tenant_id TEXT NOT NULL, owner_id TEXT NOT NULL, namespace TEXT NOT NULL, record_id TEXT NOT NULL, version INTEGER NOT NULL, value_json TEXT NOT NULL, value_sha256 TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, deleted_at TEXT, PRIMARY KEY(tenant_id, owner_id, namespace, record_id))",
+        "CREATE INDEX idx_prod_state_owner ON prod_state_records(tenant_id, owner_id, namespace, updated_at)",
+    )),
+)
+
+
+_PRODUCTION_TABLES = (
+    "prod_sessions",
+    "prod_jobs",
+    "prod_outbox",
+    "prod_audit",
+    "prod_exports",
+    "prod_job_events",
+    "prod_token_revocations",
+    "prod_state_records",
 )

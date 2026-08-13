@@ -53,6 +53,22 @@ async def production_request_boundary(request, call_next):
     request_id = request.headers.get("X-Request-ID", "").strip()[:128] or f"req_{uuid4().hex}"
     request.state.request_id = request_id
     started = perf_counter()
+    if (
+        request.url.path.startswith("/api/production")
+        and request.method not in {"GET", "HEAD", "OPTIONS"}
+        and request.headers.get("Sec-Fetch-Site", "").lower() == "cross-site"
+    ):
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "cross_site_mutation_rejected"},
+            headers={
+                "X-Request-ID": request_id,
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "no-store",
+            },
+        )
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Content-Type-Options"] = "nosniff"

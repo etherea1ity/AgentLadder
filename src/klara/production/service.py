@@ -178,6 +178,90 @@ class ProductionRuntimeService:
         principal.require("owner", "operator")
         return self.repository.list_job_events(principal, job_id)
 
+    def revoke_current_credential(
+        self,
+        principal: Principal,
+        *,
+        reason: str,
+        request_id: str,
+    ) -> dict[str, Any]:
+        """Revoke the current local or OIDC token id until its declared expiry."""
+
+        principal.require("owner", "operator", "worker", "evaluator")
+        self.repository.revoke_token(
+            principal,
+            token_id=principal.token_id,
+            expires_at=principal.expires_at,
+            reason=reason or "self_revoked",
+        )
+        self._audit(principal, "credential.revoke", "credential", principal.token_id, request_id)
+        return {
+            "schema_version": "klara.credential-revocation.v1",
+            "revoked": True,
+            "expires_at": principal.expires_at,
+        }
+
+    def put_state(
+        self,
+        principal: Principal,
+        *,
+        namespace: str,
+        record_id: str,
+        value: dict[str, Any],
+        expected_version: int | None,
+        request_id: str,
+    ) -> dict[str, Any]:
+        """Persist one tenant/owner Agent-domain record with CAS semantics."""
+
+        principal.require("owner", "operator")
+        record = self.repository.put_state(
+            principal,
+            namespace=namespace,
+            record_id=record_id,
+            value=value,
+            expected_version=expected_version,
+        )
+        self._audit(principal, "state.put", namespace, record_id, request_id)
+        return record
+
+    def get_state(
+        self,
+        principal: Principal,
+        *,
+        namespace: str,
+        record_id: str,
+    ) -> dict[str, Any] | None:
+        """Read one owner-visible Agent-domain record."""
+
+        principal.require("owner", "operator")
+        return self.repository.get_state(
+            principal,
+            namespace=namespace,
+            record_id=record_id,
+        )
+
+    def delete_state(
+        self,
+        principal: Principal,
+        *,
+        namespace: str,
+        record_id: str,
+        expected_version: int,
+        request_id: str,
+    ) -> bool:
+        """CAS tombstone one owner-visible Agent-domain record."""
+
+        principal.require("owner", "operator")
+        deleted = self.repository.delete_state(
+            principal,
+            namespace=namespace,
+            record_id=record_id,
+            expected_version=expected_version,
+        )
+        if deleted:
+            self._audit(principal, "state.delete", namespace, record_id, request_id)
+        return deleted
+
     def _audit(
         self,
         principal: Principal,

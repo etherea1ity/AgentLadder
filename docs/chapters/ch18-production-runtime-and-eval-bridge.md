@@ -73,7 +73,9 @@ python -m klara.eval.chapter18_cli `
 
 Session 和 job 都持久化 `tenant_id`、`owner_id`。owner API 的每条查询都同时带两个过滤条件；同 tenant 的另一个 user、另一个 tenant 中同名的 user 都只会得到 not found。Worker 只有在 `worker` 角色检查之后才进入单独的 tenant-scoped 查询。公共 job 记录只返回生命周期元数据与 payload hash，不返回问题、结果、lease hash 或 worker credential。
 
-当前 repository 使用 SQLite WAL 证明单主机可靠性。Service/repository 分层是有意保留的：部署可以添加遵守同一 CAS 与 Outbox 合同的 PostgreSQL adapter，但不能削弱 owner predicate 或租约校验。
+当前 repository 使用 SQLite WAL 证明单主机可靠性；`PostgresProductionRepository` 则提供部署 adapter，用 JSONB、transaction context 与 `FOR UPDATE SKIP LOCKED` 支持多 worker，同时保持相同的 owner predicate、CAS 租约和 Outbox 合同。安装 `production-postgres` extra，并通过 `KLARA_DATABASE_URL=postgresql://...` 显式选择它。本阶段还用一次性 PostgreSQL 16 Alpine 容器运行了真实 driver/migration/isolation/queue/lease/Outbox/JSONB/state/revocation 集成测试，镜像 digest 与结果保存在机器报告，测试后容器已删除。
+
+SQLite 运维 CLI 还支持 `integrity`、一致性 `backup`、校验后 `restore` 与 retention。Rollback policy 是 forward-only migration：恢复前保留 `.pre-restore` 副本，恢复文件先通过 quick/foreign-key/migration 检查，仓库不会假装支持危险的自动降级 migration。
 
 ## 3. 幂等队列、租约、取消与事件流
 
@@ -146,6 +148,6 @@ git diff --check
 
 ## 限制与下一阶段
 
-本章证明单主机上的认证多用户隔离与 durable queue 语义，不负责部署 identity provider、多区域共识、托管数据库静态加密或外部消息 broker。这些是部署选择，不是削弱 repository 合同的理由。
+本章证明 SQLite 上的真实认证多用户隔离、backup/restore/retention 与 durable queue 语义，也通过了一次性 PostgreSQL 16 的真实集成测试。外部 OIDC provider 未配置，所以真实 provider smoke 仍为 `not_executed`；RS256 discovery/JWKS/claim/revocation 路径使用生成密钥和确定性 metadata 测试。多区域共识、托管数据库静态加密和外部消息 broker 仍属于部署运维，而不是本地已通过项。
 
 学习策略仍然不能接管 Agent runtime。下一步 Lab A 通过本桥收集真实、许可清楚、检查 contamination 的轨迹并冻结评测集；只有完整 Agent Product Freeze 通过后，才允许启动 HKU 训练。

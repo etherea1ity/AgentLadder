@@ -8,9 +8,13 @@
   "checks": {
     "bilingual_tutorial_exists": true,
     "forged_job_lease_is_rejected": true,
+    "forward_only_restore_and_retention_policy_exist": true,
+    "generic_state_covers_all_agent_domains_with_owner_scope": true,
     "idempotency_reuses_exact_payload_only": true,
     "job_api_never_projects_payload_or_result": true,
-    "production_api_exposes_auth_queue_stream_cancel_outbox_export_metrics": true,
+    "oidc_discovery_jwks_rs256_and_revocation_exist": true,
+    "postgres_adapter_matches_service_surface_and_skip_locked": true,
+    "production_api_exposes_auth_state_queue_stream_cancel_outbox_export_metrics": true,
     "question_answer_consistency_and_no_strange_output": true,
     "queue_executes_one_bounded_payload": true,
     "raw_bearer_and_lease_are_not_persisted": true,
@@ -18,6 +22,7 @@
     "roles_separate_owner_and_worker_authority": true,
     "session_and_job_rows_are_owner_isolated": true,
     "signed_bearer_tampering_is_rejected": true,
+    "sqlite_integrity_and_verified_backup_pass": true,
     "terminal_job_and_outbox_commit_together": true,
     "trajectory_drops_prompts_arguments_results_and_reasoning": true,
     "trajectory_export_requires_owner_visible_job": true,
@@ -27,18 +32,34 @@
     "worker_has_cooperative_cancel_and_heartbeat": true,
     "worker_heartbeat_and_public_events_exist": true
   },
-  "evaluated_at": "2026-08-13T16:00:37.928361+00:00",
+  "environment_evidence": {
+    "external_oidc_provider_smoke": {
+      "reason": "No owner-authorized external OIDC tenant/provider was configured; RS256 discovery/JWKS/claim/revocation paths were tested with generated keys and deterministic metadata.",
+      "status": "not_executed"
+    },
+    "postgres_integration": {
+      "command": "KLARA_TEST_POSTGRES_DSN=<redacted> python -m pytest tests/klara/production/test_postgres_integration.py -q",
+      "container_removed_after_test": true,
+      "engine": "PostgreSQL 16 Alpine in disposable Docker container",
+      "image_digest": "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777",
+      "status": "passed",
+      "tests_passed": 1
+    }
+  },
+  "evaluated_at": "2026-08-13T16:41:51.281521+00:00",
   "gate_kind": "auth_tenant_migration_lease_queue_outbox_trajectory_and_regression_gate",
   "limitations": [
-    "This gate proves a single-host SQLite production adapter; multi-region consensus and managed identity-provider deployment remain environment-specific operations.",
+    "This gate proves SQLite operations plus one disposable PostgreSQL 16 integration run; multi-region consensus and managed identity-provider deployment remain environment-specific operations.",
+    "No owner-authorized external OIDC tenant was configured, so the live provider smoke is not executed; deterministic RS256/JWKS/claim/revocation tests cover the adapter itself.",
     "The queue executor seam is ready for the frozen Agent runtime, but learned-policy takeover remains forbidden until Agent Product Freeze and hidden-set gates pass.",
     "The trajectory bridge exports one deterministic public trace here; real licensed trajectory collection and contamination review are later frozen stages."
   ],
   "metrics": {
-    "checks_passed": 20,
-    "checks_total": 20,
+    "checks_passed": 25,
+    "checks_total": 25,
     "critical_contract_rate": 1.0,
     "p0_strange_response_count": 0,
+    "postgres_integration_tests_passed": 1,
     "public_secret_leak_count": 0,
     "queue_attempts": 1,
     "trajectory_events": 5,

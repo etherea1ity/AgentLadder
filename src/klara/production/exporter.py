@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 from uuid import uuid4
 
 from klara.eval.trajectory import (
@@ -17,7 +17,29 @@ from klara.eval.trajectory import (
     stable_sha256,
 )
 from klara.production.auth import Principal
-from klara.production.repository import ProductionRepository
+
+
+class ExportRepository(Protocol):
+    """Minimal owner-aware persistence contract needed by the exporter."""
+
+    def get_job(
+        self,
+        principal: Principal,
+        job_id: str,
+        *,
+        tenant_worker: bool = False,
+    ) -> dict[str, Any] | None: ...
+
+    def record_export(
+        self,
+        principal: Principal,
+        *,
+        export_id: str,
+        job_id: str,
+        dataset_path: str,
+        dataset_sha256: str,
+        manifest_sha256: str,
+    ) -> None: ...
 
 
 class TrajectoryExportService:
@@ -25,7 +47,7 @@ class TrajectoryExportService:
 
     def __init__(
         self,
-        repository: ProductionRepository,
+        repository: ExportRepository,
         output_root: str | Path,
         *,
         allowed_trace_roots: tuple[str | Path, ...] = ("data/traces",),

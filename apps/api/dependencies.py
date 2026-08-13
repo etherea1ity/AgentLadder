@@ -21,7 +21,7 @@ from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope
 from klara.scheduler import SchedulerService, SQLiteScheduleRepository
 from klara.mcp import McpService, SQLiteMcpRepository
 from klara.teams import KlaraOneShotExecutor, SQLiteTeamRepository, TeamScope, TeamService
-from klara.production import AuthConfig, AuthService, ProductionRepository, ProductionRuntimeService, SafeRuntimeMetrics, TrajectoryExportService
+from klara.production import AuthConfig, AuthService, OidcConfig, OidcVerifier, PostgresProductionRepository, ProductionIdentityBoundary, ProductionRepository, ProductionRuntimeService, SafeRuntimeMetrics, TrajectoryExportService
 from apps.api.services.scheduler_runner import SchedulerRunner
 
 
@@ -182,10 +182,29 @@ _scheduler_runner = SchedulerRunner(
     scope=_task_scope,
     run_service=_run_service,
 )
-_production_repository = ProductionRepository(
-    os.getenv("KLARA_PRODUCTION_DB", str(_store.root / "production.sqlite3"))
+_database_url = os.getenv("KLARA_DATABASE_URL", "").strip()
+_production_repository = (
+    PostgresProductionRepository(_database_url)
+    if _database_url.startswith(("postgresql://", "postgres://"))
+    else ProductionRepository(
+        os.getenv("KLARA_PRODUCTION_DB", str(_store.root / "production.sqlite3"))
+    )
 )
-_production_auth = AuthService(AuthConfig.from_env())
+_production_auth_config = AuthConfig.from_env()
+_production_auth = AuthService(_production_auth_config)
+_oidc_issuer = os.getenv("KLARA_OIDC_ISSUER", "").strip()
+_oidc_audience = os.getenv("KLARA_OIDC_AUDIENCE", "").strip()
+_production_oidc = (
+    OidcVerifier(OidcConfig(issuer=_oidc_issuer, audience=_oidc_audience))
+    if _oidc_issuer and _oidc_audience
+    else None
+)
+_production_identity = ProductionIdentityBoundary(
+    local=_production_auth,
+    oidc=_production_oidc,
+    revocations=_production_repository,
+    oidc_bearer=_production_auth_config.mode == "production" and _production_oidc is not None,
+)
 _production_metrics = SafeRuntimeMetrics()
 _trajectory_exporter = TrajectoryExportService(
     _production_repository,
@@ -294,6 +313,12 @@ def get_production_auth() -> AuthService:
     """Return the signed bearer-token boundary."""
 
     return _production_auth
+
+
+def get_production_identity() -> ProductionIdentityBoundary:
+    """Return the local/OIDC identity and revocation boundary."""
+
+    return _production_identity
 
 
 def get_production_runtime() -> ProductionRuntimeService:

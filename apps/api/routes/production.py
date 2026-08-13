@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from apps.api.dependencies import get_production_auth, get_production_metrics, get_production_runtime
-from klara.production import AuthError, AuthService, Principal, ProductionRuntimeService, QueueConflict, QueueLeaseError, SafeRuntimeMetrics
+from apps.api.dependencies import get_production_auth, get_production_identity, get_production_metrics, get_production_runtime
+from klara.production import AuthError, AuthService, Principal, ProductionIdentityBoundary, ProductionRuntimeService, QueueConflict, QueueLeaseError, SafeRuntimeMetrics
 
 
 router = APIRouter(prefix="/api/production", tags=["production"])
@@ -61,12 +61,25 @@ class ExportRequest(BaseModel):
     trace_path: str = Field(min_length=1, max_length=500)
 
 
+class RevokeCredentialRequest(BaseModel):
+    reason: str = Field(default="self_revoked", max_length=80)
+
+
+class StatePutRequest(BaseModel):
+    value: dict[str, Any]
+    expected_version: int | None = Field(default=None, ge=0)
+
+
+class StateDeleteRequest(BaseModel):
+    expected_version: int = Field(ge=1)
+
+
 def production_principal(
     authorization: str | None = Header(default=None),
-    auth: AuthService = Depends(get_production_auth),
+    identity: ProductionIdentityBoundary = Depends(get_production_identity),
 ) -> Principal:
     try:
-        return auth.verify_bearer(authorization)
+        return identity.verify_authorization(authorization)
     except AuthError as exc:
         raise HTTPException(status_code=401, detail=str(exc), headers={"WWW-Authenticate": "Bearer"}) from None
 
@@ -107,6 +120,32 @@ def issue_dev_token(request: DevTokenRequest, raw: Request, auth: AuthService = 
 @router.get("/whoami")
 def whoami(principal: Principal = Depends(production_principal)):
     return principal.to_public_dict()
+
+
+@router.post("/auth/revoke-current")
+def revoke_current_credential(request: RevokeCredentialRequest, raw: Request, principal: Principal = Depends(production_principal), service: ProductionRuntimeService = Depends(get_production_runtime)):
+    return _guard(lambda: service.revoke_current_credential(principal, reason=request.reason, request_id=_request_id(raw)))
+
+
+@router.put("/state/{namespace}/{record_id}")
+def put_state(namespace: str, record_id: str, request: StatePutRequest, raw: Request, principal: Principal = Depends(production_principal), service: ProductionRuntimeService = Depends(get_production_runtime)):
+    return _guard(lambda: service.put_state(principal, namespace=namespace, record_id=record_id, value=request.value, expected_version=request.expected_version, request_id=_request_id(raw)))
+
+
+@router.get("/state/{namespace}/{record_id}")
+def get_state(namespace: str, record_id: str, principal: Principal = Depends(production_principal), service: ProductionRuntimeService = Depends(get_production_runtime)):
+    record = _guard(lambda: service.get_state(principal, namespace=namespace, record_id=record_id))
+    if record is None:
+        raise HTTPException(status_code=404, detail="state_not_found")
+    return record
+
+
+@router.delete("/state/{namespace}/{record_id}")
+def delete_state(namespace: str, record_id: str, request: StateDeleteRequest, raw: Request, principal: Principal = Depends(production_principal), service: ProductionRuntimeService = Depends(get_production_runtime)):
+    deleted = _guard(lambda: service.delete_state(principal, namespace=namespace, record_id=record_id, expected_version=request.expected_version, request_id=_request_id(raw)))
+    if not deleted:
+        raise HTTPException(status_code=409, detail="state_version_conflict_or_not_found")
+    return {"schema_version": "klara.production-state-delete.v1", "deleted": True, "record_id": record_id}
 
 
 @router.post("/sessions", status_code=201)

@@ -18,7 +18,7 @@ def test_migrations_owner_isolation_and_idempotency(tmp_path: Path) -> None:
     stranger = principal("tenant-b", "alice", "owner", "operator")
     session = repository.create_session(alice, title="Private")
 
-    assert repository.migration_versions() == (1, 2, 3)
+    assert repository.migration_versions() == (1, 2, 3, 4)
     assert repository.get_session(alice, session["session_id"]) is not None
     assert repository.get_session(bob, session["session_id"]) is None
     assert repository.get_session(stranger, session["session_id"]) is None
@@ -131,3 +131,72 @@ def test_queued_cancel_is_terminal_and_emits_outbox(tmp_path: Path) -> None:
     assert repository.claim_next(worker, lease_seconds=30) is None
     event = repository.claim_outbox(worker, lease_seconds=30)
     assert event and event["event_type"] == "job.cancelled"
+
+
+def test_backup_restore_integrity_retention_and_generic_state(tmp_path: Path) -> None:
+    clock = [1_700_000_000.0]
+    database = tmp_path / "production.sqlite3"
+    repository = ProductionRepository(database, clock=lambda: clock[0])
+    owner = principal("tenant-a", "alice", "owner")
+    other = principal("tenant-a", "bob", "owner")
+    session = repository.create_session(owner, title="Before backup")
+    state = repository.put_state(
+        owner,
+        namespace="plan",
+        record_id="plan-1",
+        value={"status": "in_progress"},
+        expected_version=0,
+    )
+    assert state["version"] == 1
+    assert repository.get_state(other, namespace="plan", record_id="plan-1") is None
+    with pytest.raises(QueueConflict, match="state_version_conflict"):
+        repository.put_state(
+            owner,
+            namespace="plan",
+            record_id="plan-1",
+            value={"status": "completed"},
+            expected_version=0,
+        )
+    updated = repository.put_state(
+        owner,
+        namespace="plan",
+        record_id="plan-1",
+        value={"status": "completed"},
+        expected_version=1,
+    )
+    backup = repository.backup_to(tmp_path / "backup.sqlite3")
+    assert backup["integrity"]["passed"] is True
+    repository.create_session(owner, title="After backup")
+    assert len(repository.list_sessions(owner)) == 2
+    restored = repository.restore_from(tmp_path / "backup.sqlite3")
+    assert restored["integrity"]["passed"] is True
+    assert [item["title"] for item in repository.list_sessions(owner)] == ["Before backup"]
+    assert repository.integrity_report()["passed"] is True
+    assert repository.delete_state(owner, namespace="plan", record_id="plan-1", expected_version=updated["version"])
+    assert repository.get_state(owner, namespace="plan", record_id="plan-1") is None
+
+    job, _ = repository.enqueue_job(
+        owner,
+        session_id=session["session_id"],
+        kind="agent.run",
+        payload={"question": "redact later"},
+        idempotency_key="retention-job",
+        max_attempts=2,
+    )
+    assert repository.cancel(owner, job["job_id"])["state"] == "cancelled"
+    worker = principal("tenant-a", "worker", "worker")
+    outbox = repository.claim_outbox(worker, lease_seconds=30)
+    repository.acknowledge_outbox(worker, event_id=outbox["event_id"], delivery_token=outbox["delivery_token"])
+    clock[0] += 86400
+    counts = repository.apply_retention(before_epoch=clock[0] - 1)
+    assert counts["outbox_rows_deleted"] == 1
+    assert counts["terminal_job_payloads_redacted"] == 1
+
+
+def test_token_revocation_is_tenant_bound(tmp_path: Path) -> None:
+    repository = ProductionRepository(tmp_path / "production.sqlite3")
+    owner = principal("tenant-a", "alice", "owner")
+    repository.revoke_token(owner, token_id="token-id-1", expires_at=2_000_000_000, reason="logout")
+    assert repository.is_token_revoked("tenant-a", "token-id-1") is True
+    assert repository.is_token_revoked("tenant-b", "token-id-1") is False
+    assert b"token-id-1" not in (tmp_path / "production.sqlite3").read_bytes()

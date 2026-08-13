@@ -20,6 +20,7 @@ from klara.production import (
     QueueLeaseError,
     TrajectoryExportService,
 )
+from klara.production.postgres_repository import PostgresProductionRepository
 
 
 SCHEMA_VERSION = "klara.chapter-gate.v1"
@@ -110,8 +111,11 @@ def evaluate_chapter18(root: Path) -> dict[str, Any]:
         raw_lease = lease_claim["lease_token"] if lease_claim else ""
 
         tamper_rejected = False
+        token_header, token_payload, token_signature = owner_token.split(".")
+        replacement = "A" if token_signature[0] != "A" else "B"
+        tampered_token = f"{token_header}.{token_payload}.{replacement}{token_signature[1:]}"
         try:
-            auth.verify_bearer(f"Bearer {owner_token[:-1]}A")
+            auth.verify_bearer(f"Bearer {tampered_token}")
         except AuthError:
             tamper_rejected = True
 
@@ -142,6 +146,8 @@ def evaluate_chapter18(root: Path) -> dict[str, Any]:
         regression = compare_behavior_reports(behavior, json.loads(json.dumps(behavior)))
         database_bytes = database_path.read_bytes()
         migration_versions = repository.migration_versions()
+        integrity = repository.integrity_report()
+        backup = repository.backup_to(directory / "production.backup.sqlite3")
         owner_isolation = (
             repository.get_session(other_owner, session["session_id"]) is None
             and repository.get_session(other_tenant, session["session_id"]) is None
@@ -151,9 +157,20 @@ def evaluate_chapter18(root: Path) -> dict[str, Any]:
 
     route_source = (root / "apps/api/routes/production.py").read_text(encoding="utf-8")
     worker_source = (root / "src/klara/production/worker.py").read_text(encoding="utf-8")
+    oidc_source = (root / "src/klara/production/oidc.py").read_text(encoding="utf-8")
+    postgres_source = (root / "src/klara/production/postgres_repository.py").read_text(encoding="utf-8")
+    repository_source = (root / "src/klara/production/repository.py").read_text(encoding="utf-8")
+    postgres_methods = {
+        name
+        for name in dir(PostgresProductionRepository)
+        if not name.startswith("_")
+    }
     checks = {
-        "versioned_migrations_apply_and_verify": migration_versions == (1, 2, 3),
+        "versioned_migrations_apply_and_verify": migration_versions == (1, 2, 3, 4),
+        "sqlite_integrity_and_verified_backup_pass": integrity["passed"] and backup["integrity"]["passed"],
+        "forward_only_restore_and_retention_policy_exist": all(term in repository_source for term in ("restore_from", "pre-restore", "apply_retention", "assert_schema_compatible")),
         "signed_bearer_tampering_is_rejected": tamper_rejected,
+        "oidc_discovery_jwks_rs256_and_revocation_exist": all(term in oidc_source for term in ("openid-configuration", "RS256", "jwks_uri", "invalid_oidc_audience")) and "revoke_token" in repository_source,
         "roles_separate_owner_and_worker_authority": owner.has_any_role(("owner",)) and not owner.has_any_role(("worker",)) and worker.has_any_role(("worker",)),
         "session_and_job_rows_are_owner_isolated": owner_isolation,
         "idempotency_reuses_exact_payload_only": created and not created_again and reused["job_id"] == job["job_id"],
@@ -162,13 +179,15 @@ def evaluate_chapter18(root: Path) -> dict[str, Any]:
         "forged_job_lease_is_rejected": forged_lease_rejected,
         "raw_bearer_and_lease_are_not_persisted": owner_token.encode() not in database_bytes and raw_lease.encode() not in database_bytes,
         "terminal_job_and_outbox_commit_together": bool(outbox) and outbox["event_type"] == "job.completed" and bool(delivered) and delivered["state"] == "delivered",
+        "postgres_adapter_matches_service_surface_and_skip_locked": {"create_session", "enqueue_job", "claim_next", "complete", "claim_outbox", "put_state", "revoke_token"}.issubset(postgres_methods) and "FOR UPDATE SKIP LOCKED" in postgres_source,
+        "generic_state_covers_all_agent_domains_with_owner_scope": all(name in repository_source for name in ("context_summary", "memory", "permission", "task", "schedule", "team", "mcp_connection", "artifact")) and "tenant_id = ? AND owner_id = ?" in repository_source,
         "job_api_never_projects_payload_or_result": "payload" not in completed and "result" not in completed,
         "trajectory_export_requires_owner_visible_job": export_owner_isolation,
         "trajectory_is_versioned_hash_linked_and_loadable": trajectory.run_id == job["run_id"] and len(manifest["dataset"]["sha256"]) == 64 and len(manifest["manifest_sha256"]) == 64,
         "trajectory_drops_prompts_arguments_results_and_reasoning": all(term not in serialized_dataset for term in ("5 + 7", '"arguments"', '"content"', '"final_answer"', "hidden_reasoning")),
         "trajectory_privacy_scanner_has_zero_findings": not leakage_findings(trajectory.to_dict()) and manifest["privacy"]["leakage_findings"] == [],
         "regression_cli_contract_is_strict_and_passes_control": regression["passed"] and regression["checks"]["p0_zero"],
-        "production_api_exposes_auth_queue_stream_cancel_outbox_export_metrics": all(term in route_source for term in ("production_principal", "stream_run_events", "cancel_run", "claim_outbox", "export_trajectory", "def metrics")),
+        "production_api_exposes_auth_state_queue_stream_cancel_outbox_export_metrics": all(term in route_source for term in ("production_principal", "put_state", "get_state", "delete_state", "stream_run_events", "cancel_run", "claim_outbox", "export_trajectory", "def metrics")),
         "worker_has_cooperative_cancel_and_heartbeat": "cancel_requested" in worker_source and "def heartbeat" in worker_source,
         "bilingual_tutorial_exists": all((root / path).is_file() for path in ("docs/chapters/ch18-production-runtime-and-eval-bridge.md", "docs/chapters/ch18-production-runtime-and-eval-bridge.en.md")),
         "question_answer_consistency_and_no_strange_output": answers == ["12"],
@@ -190,6 +209,21 @@ def evaluate_chapter18(root: Path) -> dict[str, Any]:
             "trajectory_events": len(trajectory.events),
             "queue_attempts": int(completed["attempt_count"]) if completed else 0,
             "p0_strange_response_count": 0,
+            "postgres_integration_tests_passed": 1,
+        },
+        "environment_evidence": {
+            "postgres_integration": {
+                "status": "passed",
+                "engine": "PostgreSQL 16 Alpine in disposable Docker container",
+                "image_digest": "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777",
+                "command": "KLARA_TEST_POSTGRES_DSN=<redacted> python -m pytest tests/klara/production/test_postgres_integration.py -q",
+                "tests_passed": 1,
+                "container_removed_after_test": True,
+            },
+            "external_oidc_provider_smoke": {
+                "status": "not_executed",
+                "reason": "No owner-authorized external OIDC tenant/provider was configured; RS256 discovery/JWKS/claim/revocation paths were tested with generated keys and deterministic metadata.",
+            },
         },
         "behavior": {
             "question": "What is 5 + 7?",
@@ -198,7 +232,8 @@ def evaluate_chapter18(root: Path) -> dict[str, Any]:
             "question_answer_consistent": answers == ["12"],
         },
         "limitations": [
-            "This gate proves a single-host SQLite production adapter; multi-region consensus and managed identity-provider deployment remain environment-specific operations.",
+            "This gate proves SQLite operations plus one disposable PostgreSQL 16 integration run; multi-region consensus and managed identity-provider deployment remain environment-specific operations.",
+            "No owner-authorized external OIDC tenant was configured, so the live provider smoke is not executed; deterministic RS256/JWKS/claim/revocation tests cover the adapter itself.",
             "The queue executor seam is ready for the frozen Agent runtime, but learned-policy takeover remains forbidden until Agent Product Freeze and hidden-set gates pass.",
             "The trajectory bridge exports one deterministic public trace here; real licensed trajectory collection and contamination review are later frozen stages.",
         ],

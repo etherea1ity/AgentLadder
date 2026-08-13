@@ -73,7 +73,9 @@ The development issuer is not a production login system. It only makes the bound
 
 Sessions and jobs store `tenant_id` and `owner_id`. Owner APIs put both fields in every query, so another user in the same tenant and the same user name in another tenant receive the same not-found result. Workers use a separate tenant-scoped query only after the `worker` role check. Public job records expose lifecycle metadata and a payload hash, never the question, result, lease hash, or worker credential.
 
-The current repository uses SQLite WAL for one-host reliability. The service/repository seam is deliberate: a deployment can add a PostgreSQL adapter with the same compare-and-swap and Outbox contracts. It must not weaken owner predicates or lease verification.
+The current repository uses SQLite WAL for one-host reliability. `PostgresProductionRepository` is the deployment adapter: it uses JSONB, transaction contexts, and `FOR UPDATE SKIP LOCKED` for multiple workers while keeping the same owner predicates, CAS leases, and Outbox contract. Install the `production-postgres` extra and select it explicitly through `KLARA_DATABASE_URL=postgresql://...`. This stage also ran a real driver/migration/isolation/queue/lease/Outbox/JSONB/state/revocation integration test against a disposable PostgreSQL 16 Alpine container. Its image digest and result are in the machine report, and the container was removed afterward.
+
+The SQLite operations CLI also supplies `integrity`, consistent `backup`, verified `restore`, and retention. The rollback policy is forward-only migration: restore preserves a `.pre-restore` copy and validates quick check, foreign keys, and migration versions before promotion. The repository does not pretend that unsafe automatic down-migrations are supported.
 
 ## 3. Idempotent queue, leases, cancellation, and event streaming
 
@@ -146,6 +148,6 @@ The focused suite covers signature tampering/expiry, missing production keys, ro
 
 ## Limitations and next stage
 
-This chapter proves authenticated multi-user isolation and durable queue semantics on one host. It does not deploy an identity provider, multi-region consensus, encrypted-at-rest database service, or an external message broker. Those are deployment choices, not reasons to weaken the repository contract.
+This chapter proves real authenticated multi-user isolation, backup/restore/retention, and durable queue semantics on SQLite and passes a real disposable PostgreSQL 16 integration run. No external OIDC provider was configured, so that provider smoke remains `not_executed`; the RS256 discovery/JWKS/claim/revocation path uses generated keys and deterministic metadata. Multi-region consensus, managed at-rest encryption, and an external broker remain deployment operations rather than local passes.
 
 The Agent runtime is still frozen from learned-policy takeover. Lab A next collects real, licensed, contamination-reviewed trajectories through this bridge and fixes the evaluation set. Only after the full Agent Product Freeze may HKU training start.
