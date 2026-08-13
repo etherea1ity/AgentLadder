@@ -1,6 +1,6 @@
 {
-  "authoritative_parent": "9643d5fd37851a1fd21b725f30a387626381c67e",
-  "current_stage": "ch18-production-runtime",
+  "authoritative_parent": "40389110a1d41328e83fe19a06a12ef86fe200bf",
+  "current_stage": "agent-product-polish",
   "mode": "full-end-to-end",
   "objectives": [
     {
@@ -775,17 +775,59 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch18-production-runtime-and-eval-bridge.md",
+        "docs/chapters/ch18-production-runtime-and-eval-bridge.en.md",
+        "docs/reports/product/ch18-production-runtime.json",
+        "docs/reports/product/ch18-production-runtime.md",
+        "docs/reports/product/ch18-production-runtime.en.md",
+        "docs/reports/product/ch18-production-runtime-regression.json",
+        "docs/reports/product/ch18-production-runtime-regression.md",
+        "docs/reports/product/ch18-production-runtime-regression.en.md"
+      ],
       "branch": "codex/ch18-production-runtime",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter18_cli ...",
+        "python -m klara.eval.regression_cli ...",
+        "python -m pytest -q",
+        "npm test -- --run (apps/web)",
+        "npm run build (apps/web)",
+        "git diff --check"
+      ],
+      "commit": "40ea358",
+      "datasets": [
+        "tests/klara/production",
+        "tests/fixtures/behavior/agent_behavior_cases.json",
+        "docs/reports/product/ch16-subagents-team-worktree-behavior-control.json"
+      ],
+      "evaluator_versions": [
+        "klara.chapter18-production-runtime.v1",
+        "klara.production-regression.v1",
+        "klara.trajectory.v1",
+        "klara.behavior-scorer.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {"passed": 20, "total": 20},
+        "python_tests": {"collected": 396, "passed": 395, "skipped": 1},
+        "focused_tests": {"passed": 15},
+        "frontend_tests": {"passed": 68},
+        "frontend_build": "passed",
+        "production_regression_control": "passed",
+        "versioned_migrations": [1, 2, 3],
+        "tenant_owner_isolation": "passed",
+        "raw_bearer_or_lease_persisted": false,
+        "trajectory_records": 1,
+        "trajectory_events": 5
+      },
       "id": "ch18-production-runtime",
-      "metrics": {},
+      "metrics": {
+        "chapter_gate_checks": "20/20",
+        "critical_contract_rate": 1.0,
+        "public_secret_leak_count": 0,
+        "p0_strange_response_count": 0
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -880,5 +922,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-13T14:03:00+00:00"
+  "updated_at": "2026-08-14T00:12:00+08:00"
 }

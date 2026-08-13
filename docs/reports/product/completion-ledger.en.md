@@ -21,7 +21,7 @@ Mode: `full-end-to-end`
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | passed |
 | ch17-mcp | `codex/ch17-mcp` | passed |
 | ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | passed |
-| ch18-production-runtime | `codex/ch18-production-runtime` | pending |
+| ch18-production-runtime | `codex/ch18-production-runtime` | passed |
 | agent-product-polish | `codex/agent-product-polish` | pending |
 | agent-product-benchmarks | `codex/agent-product-benchmarks` | pending |
 | agent-product-freeze | `codex/agent-product-freeze` | pending |
@@ -61,4 +61,6 @@ Mode: `full-end-to-end`
 
 - Chapter 16: commit `9643d5fd37851a1fd21b725f30a387626381c67e` passes `19/19` deterministic checks with a `1.0` critical delegation/isolation rate and `0` public secret leaks. Python reports `380 passed, 1 skipped`, frontend reports `68 passed`, while the production build and 24 behavior-control observations pass. A real browser journey completed creation block → exact approval → allow once → teammate visible, with no horizontal overflow or console errors/warnings at desktop and `390x844`; real Git tests cover isolated worktree creation and safe removal. See the [Chapter 16 report](./ch16-subagents-team-worktree.en.md).
 
-The sequential gate is now at `ch18-production-runtime`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.
+- Chapter 18 passes `20/20` deterministic checks with a `1.0` critical contract rate and `0` public-secret/P0-strange-response findings. Python reports `395 passed, 1 skipped`, frontend reports `68 passed`, and the production build plus frozen regression control pass. It adds signed bearer/RBAC, tenant+owner isolation, checksummed SQLite migrations, an idempotent CAS lease queue, cooperative cancellation/SSE, transactional Outbox, payload-free metrics/audit, authorized redacted trajectory export, and a baseline/candidate CLI. See the [Chapter 18 report](./ch18-production-runtime.en.md).
+
+The sequential gate is now at `agent-product-polish`; Chapter 11 remains deferred by the agreed scope and is not counted as passed. Agent Product Freeze has not passed, so model training remains disabled.
