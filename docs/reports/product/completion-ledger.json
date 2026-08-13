@@ -1,6 +1,6 @@
 {
   "authoritative_parent": "b440df32c71df56c892b4657c392e37f9ea53e9a",
-  "current_stage": "ch06-07-context",
+  "current_stage": "ch08-provider-recovery",
   "mode": "local-pre-hku",
   "objectives": [
     {
@@ -195,17 +195,69 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "docs/chapters/ch06-system-prompt-and-context-assembly.md",
+        "docs/chapters/ch06-system-prompt-and-context-assembly.en.md",
+        "docs/chapters/ch07-context-compression.md",
+        "docs/chapters/ch07-context-compression.en.md",
+        "docs/reports/product/ch06-07-context.json",
+        "docs/reports/product/ch06-07-context.md",
+        "docs/reports/product/ch06-07-context.en.md",
+        "docs/reports/product/ch06-07-context-ui-e2e.json"
+      ],
       "branch": "codex/ch06-07-context",
-      "commands": [],
-      "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "commands": [
+        "python -m klara.eval.chapter06_07_cli ...",
+        "python -m klara.eval.behavior_cli ...",
+        "python -m pytest -q",
+        "npm test (apps/web)",
+        "npm run build (apps/web)"
+      ],
+      "commit": "ca8a2bd3605f5eea3488b0f83cc809881fa017e3",
+      "datasets": [
+        "tests/fixtures/behavior/agent_behavior_cases.json"
+      ],
+      "evaluator_versions": [
+        "klara.chapter06-07-context.v1",
+        "klara.behavior-scorer.v1",
+        "klara.documentation-validator.v1",
+        "klara.ui-e2e.v1"
+      ],
+      "evidence": {
+        "chapter_gate": {
+          "passed": 15,
+          "total": 15
+        },
+        "python_tests": {
+          "collected": 280,
+          "passed": 279,
+          "skipped": 1
+        },
+        "frontend_tests": {
+          "passed": 49
+        },
+        "frontend_build": "passed",
+        "behavior_contract": "passed",
+        "bilingual_document_pairs": {
+          "checked": 15,
+          "passed": 15
+        },
+        "ui_viewports": [
+          "1280x720",
+          "390x844"
+        ],
+        "public_summary_content_exposed": false
+      },
       "id": "ch06-07-context",
-      "metrics": {},
+      "metrics": {
+        "history_messages_before_current": 10,
+        "model_messages_after_compaction": 4,
+        "messages_summarized": 8,
+        "precompact_projected_events": 2,
+        "tool_results_micro_compacted": 1
+      },
       "remaining_failures": [],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -443,5 +495,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-13T04:08:00+00:00"
+  "updated_at": "2026-08-13T05:04:00+00:00"
 }

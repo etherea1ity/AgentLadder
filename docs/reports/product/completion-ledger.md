@@ -10,7 +10,7 @@
 | phase-0b-agent-eval-contract | `codex/agent-eval-contract` | passed |
 | ch04-harness-config | `codex/ch04-harness-config` | passed |
 | ch05-todo-planning | `codex/ch05-todo-planning` | passed |
-| ch06-07-context | `codex/ch06-07-context` | pending |
+| ch06-07-context | `codex/ch06-07-context` | passed |
 | ch08-provider-recovery | `codex/ch08-provider-recovery` | pending |
 | ch09-skills-runtime | `codex/ch09-skills-runtime` | pending |
 | ch10-memory | `codex/ch10-memory` | pending |
@@ -41,4 +41,6 @@
 - Chapter 4：提交 `3168b61`，机器门禁 `11/11`，Python `254 passed, 1 skipped`，前端 `45 passed`，生产构建和桌面/窄屏模型能力选择器通过；详见 [Chapter 4 报告](./ch04-harness-config.md)。
 - Chapter 5：提交 `5b200f22`，机器门禁 `14/14`，Python `267 passed, 1 skipped`，前端 `47 passed`，生产构建通过；真实产品探针证明 plan 进入 JSONL trace 与 SSE，桌面/窄屏均无水平溢出；详见 [Chapter 5 报告](./ch05-todo-planning.md)。
 
-当前顺序门禁已经进入 `ch06-07-context`。
+- Chapter 6–7：提交 `ca8a2bd`，机器门禁 `15/15`，Python `279 passed, 1 skipped`，前端 `49 passed`，生产构建通过；真实产品探针把 10 条长历史压缩为 4 条模型可见消息、汇总 8 条旧消息，摘要正文未进入公开 trace/SSE，桌面与 390px 布局均无水平溢出；详见 [Chapter 6–7 报告](./ch06-07-context.md)。
+
+当前顺序门禁已经进入 `ch08-provider-recovery`。
