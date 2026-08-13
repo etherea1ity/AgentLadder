@@ -2,6 +2,8 @@
 
 语言：中文 | [English](./ch13-research-agent.en.md)
 
+下一章：[Chapter 14：Durable Task System](./ch14-durable-tasks.md)
+
 > 第 13 章把第 12 章的证据门放进 bounded web research 状态机。目标是可观察、可停止、可复现的研究过程，不是无边界爬虫或黑盒 `deep_search` 工具。
 
 ![Research Agent 证据流](../assets/ch12-13-evidence-flow.svg)

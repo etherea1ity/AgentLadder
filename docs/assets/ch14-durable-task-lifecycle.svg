@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Klara durable task lifecycle</title>
+  <desc id="desc">A durable task moves through dependency, lease, checkpoint, recovery, artifact and terminal-state gates.</desc>
+  <rect width="1280" height="720" fill="#f7f5f0"/>
+  <g font-family="Inter,Segoe UI,sans-serif" fill="#28231f">
+    <text x="72" y="82" font-size="34" font-weight="700">A task survives the worker that started it</text>
+    <text x="72" y="120" font-size="18" fill="#6d645c">owner scope · immutable attempts · leased execution · artifact-gated completion</text>
+    <g transform="translate(74 208)"><rect width="194" height="112" rx="20" fill="#fff" stroke="#d8d1c7" stroke-width="2"/><text x="97" y="47" text-anchor="middle" font-size="20" font-weight="700">Waiting</text><text x="97" y="78" text-anchor="middle" font-size="14" fill="#6d645c">dependencies</text></g>
+    <path d="M268 264H356" stroke="#847a71" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(356 208)"><rect width="194" height="112" rx="20" fill="#e8f0ee" stroke="#487c73" stroke-width="2"/><text x="97" y="47" text-anchor="middle" font-size="20" font-weight="700">Ready</text><text x="97" y="78" text-anchor="middle" font-size="14">claim</text></g>
+    <path d="M550 264H638" stroke="#847a71" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(638 184)"><rect width="246" height="160" rx="22" fill="#ede8f5" stroke="#765a98" stroke-width="2"/><text x="123" y="43" text-anchor="middle" font-size="20" font-weight="700">Running attempt</text><text x="123" y="76" text-anchor="middle" font-size="14">lease + heartbeat</text><text x="123" y="103" text-anchor="middle" font-size="14">progress + checkpoint</text><text x="123" y="130" text-anchor="middle" font-size="14">effect receipts</text></g>
+    <path d="M884 264H976" stroke="#438260" stroke-width="4" marker-end="url(#greenArrow)"/>
+    <g transform="translate(976 208)"><rect width="222" height="112" rx="20" fill="#e8f3eb" stroke="#438260" stroke-width="2"/><text x="111" y="46" text-anchor="middle" font-size="20" font-weight="700">Completed</text><text x="111" y="77" text-anchor="middle" font-size="14">artifacts + evidence</text></g>
+    <path d="M760 344V438" stroke="#b67748" stroke-width="4" marker-end="url(#amberArrow)"/>
+    <g transform="translate(532 438)"><rect width="456" height="142" rx="22" fill="#f8eee6" stroke="#b67748" stroke-width="2"/><text x="228" y="42" text-anchor="middle" font-size="20" font-weight="700">Lease expired / process died</text><text x="228" y="75" text-anchor="middle" font-size="14">old attempt → abandoned</text><text x="228" y="102" text-anchor="middle" font-size="14">new attempt restores latest checkpoint</text><text x="228" y="126" text-anchor="middle" font-size="14">committed effect receipt → do not repeat</text></g>
+    <path d="M532 509H424V344H638" fill="none" stroke="#b67748" stroke-width="4" stroke-dasharray="9 8" marker-end="url(#amberArrow)"/>
+    <text x="72" y="650" font-size="16" fill="#6d645c">pause / block / fail preserve the attempt · cancel propagates to descendants · every transition appends an event</text>
+  </g>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3L0 6Z" fill="#847a71"/></marker><marker id="greenArrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3L0 6Z" fill="#438260"/></marker><marker id="amberArrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3L0 6Z" fill="#b67748"/></marker></defs>
+</svg>

@@ -1,4 +1,4 @@
-import type { ClientContext, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
+import type { ClientContext, DurableTaskDetail, DurableTaskList, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, PermissionEffect, PermissionGrantRecord, PermissionState, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -61,6 +61,12 @@ export const api = {
   listPermissions: (signal?: AbortSignal) => request<PermissionState>('/api/permissions', { signal }),
   decidePermission: (requestId: string, effect: PermissionEffect, expiresSeconds: number, signal?: AbortSignal) => request<PermissionGrantRecord>(`/api/permissions/requests/${requestId}/decision`, { method: 'POST', body: JSON.stringify({ effect, expires_seconds: expiresSeconds }), signal }),
   revokePermission: (grantId: string, signal?: AbortSignal) => request<PermissionGrantRecord>(`/api/permissions/grants/${grantId}/revoke`, { method: 'POST', body: '{}', signal }),
+  listTasks: (signal?: AbortSignal) => request<DurableTaskList>('/api/tasks', { signal }),
+  getTask: (taskId: string, signal?: AbortSignal) => request<DurableTaskDetail>(`/api/tasks/${taskId}`, { signal }),
+  createTask: (title: string, description = '', signal?: AbortSignal) => request<{ task: DurableTaskDetail['task'] }>('/api/tasks', { method: 'POST', body: JSON.stringify({ title, description }), signal }),
+  resumeTask: (taskId: string, signal?: AbortSignal) => request<{ task: DurableTaskDetail['task'] }>(`/api/tasks/${taskId}/resume`, { method: 'POST', body: '{}', signal }),
+  retryTask: (taskId: string, signal?: AbortSignal) => request<{ task: DurableTaskDetail['task'] }>(`/api/tasks/${taskId}/retry`, { method: 'POST', body: '{}', signal }),
+  cancelTask: (taskId: string, signal?: AbortSignal) => request<{ task: DurableTaskDetail['task'] }>(`/api/tasks/${taskId}/cancel`, { method: 'POST', body: '{}', signal }),
   createRun: (
     session_id: string,
     question: string,

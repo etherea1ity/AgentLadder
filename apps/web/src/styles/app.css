@@ -4032,6 +4032,54 @@ body,
   width: min(100%, 760px);
 }
 
+.task-page {
+  min-width: 0;
+  height: 100vh;
+  overflow: auto;
+  padding: clamp(24px, 4vw, 58px);
+  background: radial-gradient(circle at 88% 4%, rgba(66, 104, 86, 0.1), transparent 29rem), var(--bg-main);
+}
+.task-header, .task-contract, .task-layout { width: min(1180px, 100%); margin-inline: auto; }
+.task-header h1 { margin: 9px 0 0; font-size: clamp(34px, 6vw, 58px); letter-spacing: -0.055em; }
+.task-header > p { max-width: 760px; margin: 14px 0 0; color: var(--text-secondary); font-size: 16px; line-height: 1.65; }
+.task-contract { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 28px; padding: 14px 0; border-block: 1px solid var(--border-soft); color: var(--text-secondary); font-size: 12px; }
+.task-contract span, .task-contract button { display: inline-flex; align-items: center; gap: 7px; }
+.task-contract button { margin-left: auto; color: var(--text-secondary); }
+.task-layout { position: relative; margin-top: 26px; padding-bottom: 60px; }
+.task-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.task-column { min-width: 0; }
+.task-column > header { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 10px; }
+.task-column > header h2 { margin: 0; font-size: 14px; }
+.task-column > header span { color: var(--text-muted); font-size: 12px; }
+.task-card { margin-bottom: 10px; overflow: hidden; border: 1px solid var(--border-soft); border-left: 3px solid var(--border-subtle); border-radius: 15px; background: color-mix(in srgb, var(--bg-panel) 95%, transparent); }
+.task-card.state-running { border-left-color: var(--accent-running); }
+.task-card.state-completed { border-left-color: var(--accent-success); }
+.task-card.state-failed, .task-card.state-cancelled { border-left-color: var(--accent-error); }
+.task-card.selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-ink) 22%, transparent); }
+.task-card-main { display: grid; width: 100%; min-width: 0; gap: 9px; padding: 15px; text-align: left; color: var(--text-primary); }
+.task-state { width: fit-content; padding: 3px 7px; border-radius: 999px; background: var(--bg-input); color: var(--text-muted); font-size: 10px; font-weight: 720; letter-spacing: .06em; text-transform: uppercase; }
+.task-card strong { overflow-wrap: anywhere; font-size: 14px; }
+.task-card small { overflow-wrap: anywhere; color: var(--text-secondary); }
+.task-progress { position: relative; height: 7px; overflow: hidden; border-radius: 99px; background: var(--bg-input); color: transparent; font-size: 0; }
+.task-progress i { display: block; height: 100%; border-radius: inherit; background: var(--accent-success); }
+.task-card footer { display: flex; justify-content: flex-end; gap: 7px; padding: 9px 12px; border-top: 1px solid var(--border-soft); }
+.task-card footer button, .task-inspector button { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 5px 8px; border: 1px solid var(--border-subtle); border-radius: 9px; background: var(--bg-input); color: var(--text-secondary); font-size: 11px; }
+.task-card footer button.danger { color: var(--accent-error); }
+.task-inspector { position: fixed; z-index: 30; top: clamp(18px, 4vw, 52px); right: clamp(18px, 4vw, 52px); bottom: clamp(18px, 4vw, 52px); width: min(410px, calc(100vw - 36px)); overflow: auto; padding: 22px; border: 1px solid var(--border-subtle); border-radius: 20px; background: color-mix(in srgb, var(--bg-panel) 98%, transparent); box-shadow: 0 28px 90px rgba(20, 25, 22, .2); }
+.task-inspector > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.task-inspector h2 { margin: 8px 0 0; font-size: 21px; }
+.task-inspector dl { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; margin: 20px 0; border: 1px solid var(--border-soft); border-radius: 12px; background: var(--border-soft); }
+.task-inspector dl div { padding: 10px 12px; background: var(--bg-panel); }
+.task-inspector dt { color: var(--text-muted); font-size: 10px; }
+.task-inspector dd { margin: 4px 0 0; overflow-wrap: anywhere; font-size: 12px; }
+.task-inspector section { margin-top: 22px; }
+.task-inspector section h3 { margin: 0 0 9px; font-size: 13px; }
+.task-inspector section p { display: grid; gap: 3px; margin: 0; padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 12px; }
+.task-inspector section p span, .task-inspector section small { overflow-wrap: anywhere; color: var(--text-muted); }
+.task-block-reason { padding: 11px; border-radius: 10px; background: color-mix(in srgb, var(--accent-error) 8%, transparent); color: var(--accent-error); font-size: 12px; }
+@media (max-width: 900px) { .task-columns { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .task-page { padding: 72px 16px 28px; } .task-inspector { inset: 58px 10px 10px; width: auto; } .task-contract button { margin-left: 0; } }
+
 .permission-page {
   min-width: 0;
   height: 100vh;

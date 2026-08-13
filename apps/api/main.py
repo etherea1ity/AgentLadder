@@ -11,6 +11,7 @@ from apps.api.routes.permissions import router as permissions_router
 from apps.api.routes.runs import router as runs_router
 from apps.api.routes.sessions import router as sessions_router
 from apps.api.routes.skills import router as skills_router
+from apps.api.routes.tasks import router as tasks_router
 
 app = FastAPI(title="Klara API")
 
@@ -30,6 +31,7 @@ app.include_router(evaluations_router)
 app.include_router(skills_router)
 app.include_router(memory_router)
 app.include_router(permissions_router)
+app.include_router(tasks_router)
 
 
 @app.get("/api/health")

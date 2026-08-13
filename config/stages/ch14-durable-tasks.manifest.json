@@ -1,0 +1,52 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch14-durable-tasks",
+  "branch": "codex/ch14-durable-tasks",
+  "parent_commit": "d96234538dd725645354f5bf0159215cb914316e",
+  "mode": "full-end-to-end",
+  "datasets": [
+    "tests/fixtures/behavior/agent_behavior_cases.json",
+    "tests/klara/tasks/test_durable_tasks.py"
+  ],
+  "model_ids": ["none-deterministic-state-machine-gate"],
+  "seeds": [14],
+  "budgets": {
+    "paid_api_usd": 0,
+    "default_lease_seconds": 60,
+    "maximum_lease_seconds": 3600,
+    "maximum_attempts": 8
+  },
+  "evaluator_versions": [
+    "klara.chapter14-durable-tasks.v1",
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "acceptance": {
+    "tenant_and_owner_isolation": true,
+    "valid_create_claim_progress_block_pause_resume_cancel_fail_retry_complete_transitions": true,
+    "dependencies_and_parent_child_lineage": true,
+    "leased_claim_and_heartbeat": true,
+    "checkpoint_crash_recovery": true,
+    "idempotent_effect_receipts": true,
+    "required_artifact_and_evidence_gate": true,
+    "cancellation_propagation": true,
+    "immutable_attempt_history": true,
+    "real_api_task_board": true
+  },
+  "expected_artifacts": [
+    "docs/chapters/ch14-durable-tasks.md",
+    "docs/chapters/ch14-durable-tasks.en.md",
+    "docs/reports/product/ch14-durable-tasks.json",
+    "docs/reports/product/ch14-durable-tasks.md",
+    "docs/reports/product/ch14-durable-tasks.en.md",
+    "docs/reports/product/ch14-durable-tasks-ui-e2e.json",
+    "docs/reports/product/ch14-durable-tasks-behavior-control.json"
+  ],
+  "exclusions": [
+    "Chapter 15 calendar or recurring schedule semantics",
+    "distributed multi-region consensus",
+    "raw checkpoint payloads in public API or trace",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

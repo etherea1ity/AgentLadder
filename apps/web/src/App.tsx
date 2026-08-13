@@ -7,6 +7,7 @@ import { Sidebar } from "./components/Sidebar";
 import { SkillsCatalog } from "./components/SkillsCatalog";
 import { MemoryManager } from "./components/MemoryManager";
 import { PermissionCenter } from "./components/PermissionCenter";
+import { TaskBoard } from "./components/TaskBoard";
 import type {
   Message,
   ModelOption,
@@ -52,7 +53,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState("");
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
-  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions">("chat");
+  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills" | "memory" | "permissions" | "tasks">("chat");
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
   );
@@ -926,6 +927,7 @@ export default function App() {
     activeWorkspace === "skills" ? "has-skills" : "",
     activeWorkspace === "memory" ? "has-memory" : "",
     activeWorkspace === "permissions" ? "has-permissions" : "",
+    activeWorkspace === "tasks" ? "has-tasks" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -958,6 +960,8 @@ export default function App() {
         onOpenMemory={() => setActiveWorkspace("memory")}
         permissionsActive={activeWorkspace === "permissions"}
         onOpenPermissions={() => setActiveWorkspace("permissions")}
+        tasksActive={activeWorkspace === "tasks"}
+        onOpenTasks={() => setActiveWorkspace("tasks")}
       />
       {activeWorkspace === "evaluations" ? (
         <EvaluationDashboard onBackToChat={() => setActiveWorkspace("chat")} />
@@ -967,6 +971,8 @@ export default function App() {
         <MemoryManager onBackToChat={() => setActiveWorkspace("chat")} />
       ) : activeWorkspace === "permissions" ? (
         <PermissionCenter onBackToChat={() => setActiveWorkspace("chat")} />
+      ) : activeWorkspace === "tasks" ? (
+        <TaskBoard onBackToChat={() => setActiveWorkspace("chat")} />
       ) : (
         <ChatWorkspace
           activeSessionId={activeSessionId}

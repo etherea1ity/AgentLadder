@@ -1,0 +1,43 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "ch14-durable-tasks",
+  "source_branch": "codex/ch14-durable-tasks",
+  "evaluated_at": "2026-08-13T13:10:00+00:00",
+  "browser_surface": "in_app_browser",
+  "backend": "real_local_api",
+  "journey": [
+    "restart API and web",
+    "create a real owner-scoped task through POST /api/tasks",
+    "open Tasks from the application sidebar",
+    "inspect task detail and immutable created event",
+    "cancel the task from Task Board",
+    "observe real cancelled state and appended cancelled event"
+  ],
+  "desktop": {
+    "viewport": "1280x720",
+    "document_scroll_width": 1280,
+    "body_scroll_width": 1280,
+    "main_client_width": 1000,
+    "main_scroll_width": 1000,
+    "horizontal_overflow": false,
+    "result": "passed"
+  },
+  "mobile": {
+    "viewport": "390x844",
+    "result": "passed_by_component_and_responsive_css_tests",
+    "live_screenshot_captured": false,
+    "reason": "The selected in-app browser surface did not expose viewport mutation in this run."
+  },
+  "real_states_observed": ["ready", "cancelled"],
+  "detail_states_observed": ["no attempts", "no artifacts", "immutable created event", "immutable cancelled event"],
+  "console": {
+    "live_console_api_available": false,
+    "automated_component_unhandled_errors": 0,
+    "note": "The browser surface did not expose a console reader. Production build and component tests passed; no browser-visible error state occurred."
+  },
+  "limitations": [
+    "Crash/recovery and checkpoint restoration are exercised by the deterministic service gate, not forced by killing the browser-hosted API during this UI journey.",
+    "A live mobile screenshot was not captured; responsive behavior is covered by source and component gates and remains a final product-freeze visual item."
+  ],
+  "passed": true
+}

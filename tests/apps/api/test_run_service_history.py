@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 
 from apps.api.schemas import ClientContext, MessageRecord
 from apps.api.services.app_store import JsonlAppStore
@@ -9,6 +10,7 @@ from apps.api.services.sse_bus import SSEBus
 from klara.app.user_context import UserContext
 from klara.context.history import GENERATED_IMAGE_PLACEHOLDER
 from klara.core.messages import ModelResponse
+from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope, TaskState
 
 
 class FinalLlm:
@@ -43,6 +45,53 @@ class CaptureLlm:
         self.system_prompt = str(kwargs["system_prompt"])
         self.messages = kwargs["messages"]
         return ModelResponse(content="ok")
+
+
+class BlockingLlm:
+    def __init__(self) -> None:
+        self.started = threading.Event()
+        self.release = threading.Event()
+
+    def complete(self, **_: object) -> ModelResponse:
+        self.started.set()
+        assert self.release.wait(timeout=5)
+        return ModelResponse(content="This answer must not overwrite cancellation.")
+
+
+def test_run_service_projects_chat_run_into_durable_task_and_cancellation_wins(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    llm = BlockingLlm()
+    task_scope = TaskScope("tenant-test", "owner-test", "klara")
+    task_service = DurableTaskService(
+        SQLiteTaskRepository(tmp_path / "app" / "tasks.sqlite3")
+    )
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=llm,
+        task_service=task_service,
+        task_scope=task_scope,
+        answer_chunk_delay_ms=0,
+    )
+
+    created = service.create_run(session.session_id, "Do cancellable work")
+    assert llm.started.wait(timeout=5)
+    task_before_cancel = task_service.get(scope=task_scope, task_id=created.run_id)
+    assert task_before_cancel.state is TaskState.RUNNING
+    service.cancel_run(created.run_id)
+    llm.release.set()
+    service._threads[created.run_id].join(timeout=5)
+
+    run = store.get_run(created.run_id)
+    task = task_service.get(scope=task_scope, task_id=created.run_id)
+    assistant = store.get_message(created.assistant_message_id)
+    event_types = [item.event_type for item in store.list_events(created.run_id)]
+    assert run is not None and run.status == "cancelled"
+    assert task.state is TaskState.CANCELLED
+    assert assistant is not None and assistant.status == "cancelled"
+    assert "run_completed" not in event_types
+    assert "run_failed" not in event_types
 
 
 def test_conversation_history_uses_completed_messages_before_current_turn(tmp_path) -> None:

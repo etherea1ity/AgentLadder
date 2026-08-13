@@ -414,3 +414,93 @@ class PermissionGrantResponse(BaseModel):
     remaining_uses: int | None = None
     parent_grant_id: str | None = None
     revoked_at: str | None = None
+
+
+TaskStateValue = Literal[
+    "waiting", "ready", "running", "paused", "blocked", "completed", "failed", "cancelled"
+]
+
+
+class CreateTaskRequest(BaseModel):
+    title: str
+    description: str = ""
+    dependency_ids: list[str] = Field(default_factory=list)
+    parent_task_id: str | None = None
+    required_artifacts: list[str] = Field(default_factory=list)
+    required_evidence: list[str] = Field(default_factory=list)
+    max_attempts: int = Field(default=3, ge=1, le=8)
+
+    @field_validator("title")
+    @classmethod
+    def task_title_not_empty(cls, value: str) -> str:
+        title = " ".join(value.split())
+        if not title:
+            raise ValueError("task title must not be empty")
+        return title[:160]
+
+
+class TaskClaimRequest(BaseModel):
+    worker_id: str = "klara-api"
+    lease_seconds: int = Field(default=60, ge=1, le=3600)
+
+
+class TaskLeaseRequest(BaseModel):
+    lease_token: str
+
+
+class TaskHeartbeatRequest(TaskLeaseRequest):
+    lease_seconds: int = Field(default=60, ge=1, le=3600)
+
+
+class TaskProgressRequest(TaskLeaseRequest):
+    progress: int = Field(ge=0, le=100)
+    current_step: str = ""
+
+
+class TaskCheckpointRequest(TaskLeaseRequest):
+    summary: str = ""
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class TaskArtifactRequest(TaskLeaseRequest):
+    name: str
+    uri: str
+    media_type: str = "application/octet-stream"
+    sha256: str
+    is_evidence: bool = False
+
+
+class TaskBlockRequest(TaskLeaseRequest):
+    reason: str
+
+
+class TaskFailRequest(TaskLeaseRequest):
+    code: str
+    message: str
+
+
+class TaskStateResponse(BaseModel):
+    schema_version: Literal["klara.durable-task.v1"]
+    task: dict[str, Any]
+
+
+class TaskClaimResponse(BaseModel):
+    schema_version: Literal["klara.durable-task-claim.v1"]
+    task: dict[str, Any]
+    lease_token: str
+    restored_checkpoint: dict[str, Any] | None = None
+
+
+class TaskListResponse(BaseModel):
+    schema_version: Literal["klara.durable-task-list.v1"]
+    tasks: list[dict[str, Any]]
+    counts_by_state: dict[str, int]
+
+
+class TaskDetailResponse(BaseModel):
+    schema_version: Literal["klara.durable-task-detail.v1"]
+    task: dict[str, Any]
+    attempts: list[dict[str, Any]]
+    artifacts: list[dict[str, Any]]
+    latest_checkpoint: dict[str, Any] | None = None
+    events: list[dict[str, Any]]

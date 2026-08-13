@@ -2,6 +2,8 @@
 
 Language: [Chinese](./ch13-research-agent.md) | English
 
+Next: [Chapter 14: Durable Task System](./ch14-durable-tasks.en.md)
+
 > Chapter 13 puts the Chapter 12 evidence gate inside a bounded web-research state machine. The target is observable, stoppable, reproducible research—not an unbounded crawler or a black-box `deep_search` tool.
 
 ![Research Agent evidence flow](../assets/ch12-13-evidence-flow.svg)

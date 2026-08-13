@@ -474,24 +474,32 @@ Main question: how does Klara persist larger goals as ordered work?
 
 Runnable result:
 
-- tasks are written to disk
-- dependencies and status are visible
-- task records survive process restart
+- task, dependency, attempt, lease, heartbeat, checkpoint, artifact, effect
+  receipt, parent/child lineage, and immutable events are written to SQLite
+- every chat Run projects into the same-ID durable task
+- expired workers are abandoned and a new attempt restores the latest checkpoint
+- completion is blocked until declared artifacts and evidence exist
+- the Task Board exposes lifecycle, recovery history, cancellation, and retry
 
 Includes:
 
-- TaskRecord
-- task states
-- blocked-by dependencies
-- claim/complete contract
-- task board
-- trace events
+- tenant- and owner-scoped DurableTask records
+- deterministic waiting / ready / running / paused / blocked / failed /
+  completed / cancelled transitions
+- dependency promotion and parent/child cancellation propagation
+- exclusive claim, hashed lease token, heartbeat, and attempt budget
+- checkpoint metadata/public-data boundary
+- idempotent side-effect reservation and commit receipt
+- artifact/evidence completion gate
+- Task Board and full lifecycle API
+- RunService integration and terminal-state race control
 
 Excludes:
 
 - team agents
-- background execution
-- scheduler
+- automatic due-work scanning and notifications
+- one-shot or recurring schedule calculation
+- distributed consensus or worker-fleet scaling
 
 ### Chapter 15 - Background Work And Scheduler
 

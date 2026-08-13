@@ -344,6 +344,68 @@ export type PermissionState = {
   audit: PermissionAuditRecord[];
 };
 
+export type DurableTaskState = 'waiting' | 'ready' | 'running' | 'paused' | 'blocked' | 'completed' | 'failed' | 'cancelled';
+export type DurableTask = {
+  task_id: string;
+  scope: { tenant_id: string; owner_id: string; agent_id: string };
+  title: string;
+  description: string;
+  state: DurableTaskState;
+  dependency_ids: string[];
+  parent_task_id?: string | null;
+  required_artifacts: string[];
+  required_evidence: string[];
+  active_attempt_id?: string | null;
+  attempt_count: number;
+  max_attempts: number;
+  progress: number;
+  current_step?: string | null;
+  block_reason?: string | null;
+  lease_worker_id?: string | null;
+  lease_expires_at?: string | null;
+  heartbeat_at?: string | null;
+  checkpoint_sequence: number;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+};
+export type DurableTaskAttempt = {
+  attempt_id: string;
+  task_id: string;
+  number: number;
+  worker_id: string;
+  outcome: 'running' | 'completed' | 'paused' | 'blocked' | 'failed' | 'cancelled' | 'abandoned';
+  started_at: string;
+  ended_at?: string | null;
+  failure_code?: string | null;
+  failure_message?: string | null;
+};
+export type DurableTaskArtifact = {
+  artifact_id: string;
+  task_id: string;
+  name: string;
+  uri: string;
+  media_type: string;
+  sha256: string;
+  is_evidence: boolean;
+  attempt_id: string;
+  created_at: string;
+};
+export type DurableTaskList = {
+  schema_version: 'klara.durable-task-list.v1';
+  tasks: DurableTask[];
+  counts_by_state: Record<string, number>;
+};
+export type DurableTaskDetail = {
+  schema_version: 'klara.durable-task-detail.v1';
+  task: DurableTask;
+  attempts: DurableTaskAttempt[];
+  artifacts: DurableTaskArtifact[];
+  latest_checkpoint?: { checkpoint_id: string; sequence: number; summary: string; payload_sha256: string; payload_field_count: number } | null;
+  events: { event_id: string; operation: string; from_state?: string | null; to_state: string; occurred_at: string }[];
+};
+
 // Klara Presence public event model. This is intentionally separate from the
 // current backend RunEvent DTO above so the UI can grow without coupling presentation motion to transport events.
 export type KlaraVisualPhase =

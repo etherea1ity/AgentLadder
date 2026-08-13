@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { BarChart3, BookOpen, Brain, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, Brain, ClipboardList, KeyRound, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
 import type { Session } from '../types/domain';
 import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
@@ -22,9 +22,11 @@ type Props = {
   onOpenMemory?: () => void;
   permissionsActive?: boolean;
   onOpenPermissions?: () => void;
+  tasksActive?: boolean;
+  onOpenTasks?: () => void;
 };
 
-export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined }: Props) {
+export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined, permissionsActive = false, onOpenPermissions = () => undefined, tasksActive = false, onOpenTasks = () => undefined }: Props) {
   const today = sessions.filter((session) => isToday(session.updated_at));
   const earlier = sessions.filter((session) => !isToday(session.updated_at));
   return (
@@ -58,6 +60,11 @@ export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionI
         <KeyRound size={18} />
         <span className="sidebar-copy">Permissions</span>
         <span className="sidebar-copy sidebar-evaluations-badge">Guarded</span>
+      </button>
+      <button className={`sidebar-evaluations ${tasksActive ? 'active' : ''}`} onClick={onOpenTasks} title="Durable tasks" aria-label="Tasks" aria-pressed={tasksActive}>
+        <ClipboardList size={18} />
+        <span className="sidebar-copy">Tasks</span>
+        <span className="sidebar-copy sidebar-evaluations-badge">Durable</span>
       </button>
       <div className="sidebar-footer"><span className="avatar">K</span><Settings size={18} /></div>
     </aside>

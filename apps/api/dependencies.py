@@ -17,6 +17,7 @@ from klara.infra.llm.openai_compatible import OpenAICompatibleSettings
 from klara.memory import MemoryScope, MemoryService, SQLiteMemoryRepository
 from klara.permissions import PermissionScope, PermissionService, SQLitePermissionRepository
 from klara.skills import SkillCatalog
+from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope
 
 
 def _load_model_options(
@@ -112,6 +113,13 @@ _permission_scope = PermissionScope(
     actor_id="local-user",
     agent_id="klara",
 )
+_task_repository = SQLiteTaskRepository(_store.root / "tasks.sqlite3")
+_task_service = DurableTaskService(_task_repository)
+_task_scope = TaskScope(
+    tenant_id="local-tenant",
+    owner_id="local-user",
+    agent_id="klara",
+)
 _llm = RoutedLlmClient(
     models=_models,
     dotenv_path=".env",
@@ -134,6 +142,8 @@ _run_service = RunService(
     user_context=_local_user_context(),
     models_config=_models,
     capability_profile=_runtime.profile(),
+    task_service=_task_service,
+    task_scope=_task_scope,
 )
 
 
@@ -185,3 +195,15 @@ def get_permission_scope() -> PermissionScope:
     """Return the authenticated local owner partition for permission records."""
 
     return _permission_scope
+
+
+def get_task_service() -> DurableTaskService:
+    """Return the task service shared by runs and the Task Board API."""
+
+    return _task_service
+
+
+def get_task_scope() -> TaskScope:
+    """Return the authenticated local task owner partition."""
+
+    return _task_scope

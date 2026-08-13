@@ -41,6 +41,15 @@ from klara.infra.config.runtime import CapabilityProfile, ProviderRecoveryPolicy
 from klara.planning.todo import TodoPlan
 from klara.planning.tool import TodoWriteTool
 from klara.tools.registry import ToolRegistry
+from klara.tasks import (
+    DurableTaskService,
+    TaskLeaseError,
+    TaskNotFoundError,
+    TaskScope,
+    TaskState,
+    TaskTransitionError,
+    TaskWriteConflict,
+)
 
 class RunService:
     """Project Klara loop runs into the local chat API and SSE event stream."""
@@ -63,6 +72,8 @@ class RunService:
         capability_profile: CapabilityProfile | None = None,
         context_policy: ContextPolicy | None = None,
         provider_recovery_policy: ProviderRecoveryPolicy | None = None,
+        task_service: DurableTaskService | None = None,
+        task_scope: TaskScope | None = None,
     ) -> None:
         """Create the local run service.
 
@@ -103,8 +114,12 @@ class RunService:
             provider_recovery_policy or ProviderRecoveryPolicy()
         )
         self.trace_path = trace_path
+        self.task_service = task_service
+        self.task_scope = task_scope
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
+        self._task_leases: dict[str, str] = {}
+        self._terminal_lock = threading.RLock()
 
     def create_run(
         self,
@@ -140,8 +155,6 @@ class RunService:
                 client_context.utc_offset_minutes if client_context else None
             ),
         )
-        self.store.save_message(user_message)
-
         run = RunRecord(
             session_id=session_id,
             user_message_id=user_message.message_id,
@@ -158,6 +171,15 @@ class RunService:
             status="running",
         )
         run = run.model_copy(update={"assistant_message_id": assistant_message.message_id})
+        if self.task_service is not None and self.task_scope is not None:
+            self.task_service.create(
+                scope=self.task_scope,
+                task_id=run.run_id,
+                title=title,
+                description=question,
+                max_attempts=3,
+            )
+        self.store.save_message(user_message)
         self.store.save_message(assistant_message)
         self.store.save_run(run)
         self._emit(
@@ -186,19 +208,21 @@ class RunService:
     def cancel_run(self, run_id: str) -> RunRecord | None:
         """Request cancellation and immediately mark the visible run stopped."""
 
-        run = self.store.get_run(run_id)
-        if run is None:
-            return None
-        if run.status in {"completed", "failed", "cancelled"}:
-            return run
-        self._cancel_requested.add(run_id)
-        cancelled = run.model_copy(update={"status": "cancelled", "completed_at": now_iso()})
-        self.store.save_run(cancelled)
-        message = self.store.get_message(run.assistant_message_id)
-        if message:
-            self.store.update_message(message.model_copy(update={"status": "cancelled"}))
-        self._emit(run_id, "run_cancelled", "Run cancelled.", {})
-        return cancelled
+        with self._terminal_lock:
+            run = self.store.get_run(run_id)
+            if run is None:
+                return None
+            if run.status in {"completed", "failed", "cancelled"}:
+                return run
+            self._cancel_requested.add(run_id)
+            self._cancel_durable_task(run_id)
+            cancelled = run.model_copy(update={"status": "cancelled", "completed_at": now_iso()})
+            self.store.save_run(cancelled)
+            message = self.store.get_message(run.assistant_message_id)
+            if message:
+                self.store.update_message(message.model_copy(update={"status": "cancelled"}))
+            self._emit(run_id, "run_cancelled", "Run cancelled.", {})
+            return cancelled
 
     def cancel_active_runs_for_session(self, session_id: str) -> None:
         """Cancel all non-terminal runs before deleting a conversation."""
@@ -221,8 +245,18 @@ class RunService:
             self._cleanup_run_runtime(run_id)
             return
 
+        if run.status == "cancelled" or run_id in self._cancel_requested:
+            self._cleanup_run_runtime(run_id)
+            return
+        if not self._claim_durable_task(run_id):
+            self._cleanup_run_runtime(run_id)
+            return
+        if run_id in self._cancel_requested:
+            self._cleanup_run_runtime(run_id)
+            return
         current = run.model_copy(update={"status": "thinking", "started_at": now_iso()})
         self.store.save_run(current)
+        self._progress_durable_task(run_id, 5, "Runtime started")
         selected_model = current.model or self.default_model or "fake-model"
         thinking_enabled = current.thinking_enabled
         run_user_context = replace(
@@ -286,6 +320,8 @@ class RunService:
             if run_id in self._cancel_requested:
                 return
 
+            self._progress_durable_task(run_id, 82, "Preparing verified answer")
+
             thinking_duration_ms = int((perf_counter() - started) * 1000)
             self._emit(
                 run_id,
@@ -303,6 +339,8 @@ class RunService:
                 assistant_message=assistant_message,
                 final_text=final_text,
             )
+            if run_id in self._cancel_requested:
+                return
 
             latency_ms = int((perf_counter() - started) * 1000)
             usage_totals = projector.usage_totals
@@ -327,24 +365,29 @@ class RunService:
                     "trace_saved": trace_saved,
                 }
             )
-            self.store.save_run(completed)
-            self.store.update_message(assistant_message.model_copy(update={"status": "completed", "content": final_text}))
-            self._emit(
-                run_id,
-                "run_completed",
-                "Run completed.",
-                {
-                    "latency_ms": latency_ms,
-                    "prompt_tokens": usage_totals.prompt_tokens,
-                    "completion_tokens": usage_totals.completion_tokens,
-                    "total_tokens": usage_totals.total_tokens,
-                    "token_source": token_source,
-                    "stop_reason": result.stop_reason.value,
-                    "hook_failures": result.hook_failures,
-                    "trace_saved": trace_saved,
-                    "metrics": completed_metrics,
-                },
-            )
+            with self._terminal_lock:
+                latest = self.store.get_run(run_id)
+                if run_id in self._cancel_requested or latest is None or latest.status == "cancelled":
+                    return
+                self._complete_durable_task(run_id)
+                self.store.save_run(completed)
+                self.store.update_message(assistant_message.model_copy(update={"status": "completed", "content": final_text}))
+                self._emit(
+                    run_id,
+                    "run_completed",
+                    "Run completed.",
+                    {
+                        "latency_ms": latency_ms,
+                        "prompt_tokens": usage_totals.prompt_tokens,
+                        "completion_tokens": usage_totals.completion_tokens,
+                        "total_tokens": usage_totals.total_tokens,
+                        "token_source": token_source,
+                        "stop_reason": result.stop_reason.value,
+                        "hook_failures": result.hook_failures,
+                        "trace_saved": trace_saved,
+                        "metrics": completed_metrics,
+                    },
+                )
         except Exception as exc:
             latency_ms = int((perf_counter() - started) * 1000)
             error = RunError(
@@ -352,18 +395,23 @@ class RunService:
                 message=_public_error_message(exc),
                 stage="runtime_loop",
             )
-            failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
-            self.store.save_run(failed)
-            self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
-            self._emit(
-                run_id,
-                "run_failed",
-                "Run failed.",
-                {
-                    "error": error.model_dump(mode="json"),
-                    "latency_ms": latency_ms,
-                },
-            )
+            with self._terminal_lock:
+                latest = self.store.get_run(run_id)
+                if run_id in self._cancel_requested or latest is None or latest.status == "cancelled":
+                    return
+                failed = current.model_copy(update={"status": "failed", "completed_at": now_iso(), "latency_ms": latency_ms, "error": error})
+                self._fail_durable_task(run_id, exc)
+                self.store.save_run(failed)
+                self.store.update_message(assistant_message.model_copy(update={"status": "failed"}))
+                self._emit(
+                    run_id,
+                    "run_failed",
+                    "Run failed.",
+                    {
+                        "error": error.model_dump(mode="json"),
+                        "latency_ms": latency_ms,
+                    },
+                )
         finally:
             self._cleanup_run_runtime(run_id)
 
@@ -458,6 +506,8 @@ class RunService:
         streamed_chars = 0
         accumulated: list[str] = []
         for index, chunk in enumerate(chunks):
+            if run_id in self._cancel_requested:
+                return
             streamed_chars += len(chunk)
             accumulated.append(chunk)
             self.store.update_message(
@@ -489,6 +539,77 @@ class RunService:
 
         self._cancel_requested.discard(run_id)
         self._threads.pop(run_id, None)
+        self._task_leases.pop(run_id, None)
+
+    def _claim_durable_task(self, run_id: str) -> bool:
+        if self.task_service is None or self.task_scope is None:
+            return True
+        try:
+            claim = self.task_service.claim(
+                scope=self.task_scope,
+                task_id=run_id,
+                worker_id=f"api-thread:{threading.get_ident()}",
+                lease_seconds=3600,
+            )
+        except (
+            TaskLeaseError,
+            TaskNotFoundError,
+            TaskTransitionError,
+            TaskWriteConflict,
+        ):
+            return False
+        self._task_leases[run_id] = claim.lease_token
+        return True
+
+    def _progress_durable_task(self, run_id: str, progress: int, step: str) -> None:
+        if self.task_service is None or self.task_scope is None:
+            return
+        token = self._task_leases.get(run_id)
+        if token is None:
+            return
+        self.task_service.progress(
+            scope=self.task_scope,
+            task_id=run_id,
+            lease_token=token,
+            progress=progress,
+            current_step=step,
+        )
+
+    def _complete_durable_task(self, run_id: str) -> None:
+        if self.task_service is None or self.task_scope is None:
+            return
+        token = self._task_leases.get(run_id)
+        if token is not None:
+            self.task_service.complete(
+                scope=self.task_scope, task_id=run_id, lease_token=token
+            )
+
+    def _fail_durable_task(self, run_id: str, error: Exception) -> None:
+        if self.task_service is None or self.task_scope is None:
+            return
+        token = self._task_leases.get(run_id)
+        if token is None:
+            return
+        try:
+            self.task_service.fail(
+                scope=self.task_scope,
+                task_id=run_id,
+                lease_token=token,
+                code=_error_code(error),
+                message=_public_error_message(error),
+            )
+        except (TaskLeaseError, TaskTransitionError, TaskWriteConflict):
+            return
+
+    def _cancel_durable_task(self, run_id: str) -> None:
+        if self.task_service is None or self.task_scope is None:
+            return
+        try:
+            task = self.task_service.get(scope=self.task_scope, task_id=run_id)
+            if task.state not in {TaskState.COMPLETED, TaskState.CANCELLED}:
+                self.task_service.cancel(scope=self.task_scope, task_id=run_id)
+        except LookupError:
+            return
 
     def _select_model(self, requested_model: str | None) -> str | None:
         """Validate the requested model against the configured local registry."""
