@@ -17,7 +17,7 @@ Mode: `full-end-to-end`
 | ch11-formal-rag | `none` | deferred_by_scope |
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | passed |
 | permission-engine | `codex/permission-engine` | passed |
-| ch14-durable-tasks | `codex/ch14-durable-tasks` | pending |
+| ch14-durable-tasks | `codex/ch14-durable-tasks` | passed |
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | pending |
 | ch17-mcp | `codex/ch17-mcp` | pending |
 | ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | pending |
@@ -53,4 +53,6 @@ Mode: `full-end-to-end`
 
 - Permission Engine: branch `codex/permission-engine` passes `25/25` deterministic checks with a `1.0` critical isolation/bypass rate and `0` raw tool-argument leaks. Python reports `325 passed, 1 skipped`, frontend reports `60 passed`, and the production build passes. A real browser journey completed pending → allow once → revoke with no desktop horizontal overflow; narrow layout is backed by component and responsive-CSS gates. See the [Permission Engine report](./permission-engine.en.md).
 
-The sequential gate is now at `ch14-durable-tasks`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.
+- Chapter 14: commit `38b46d94982b1847f50e553e0ff58bf87d4e6dc4` passes `21/21` deterministic checks with a `1.0` critical recovery/isolation/idempotency rate and `0` public secret leaks. Python reports `341 passed, 1 skipped`, frontend reports `62 passed`, while the production build and 24 behavior-control observations pass. A real browser journey completed ready → detail → cancelled with no desktop horizontal overflow; narrow layout is backed by component and responsive-CSS gates. See the [Chapter 14 report](./ch14-durable-tasks.en.md).
+
+The sequential gate is now at `ch15-background-scheduler`; Chapter 11 remains deferred by the agreed scope and is not counted as passed.

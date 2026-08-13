@@ -17,7 +17,7 @@
 | ch11-formal-rag | `none` | deferred_by_scope |
 | ch12-13-evidence-runtime | `codex/ch12-13-evidence-runtime` | passed |
 | permission-engine | `codex/permission-engine` | passed |
-| ch14-durable-tasks | `codex/ch14-durable-tasks` | pending |
+| ch14-durable-tasks | `codex/ch14-durable-tasks` | passed |
 | ch15-background-scheduler | `codex/ch15-background-scheduler` | pending |
 | ch17-mcp | `codex/ch17-mcp` | pending |
 | ch16-subagents-team-worktree | `codex/ch16-subagents-team-worktree` | pending |
@@ -53,4 +53,6 @@
 
 - Permission Engine：分支 `codex/permission-engine`，确定性门禁 `25/25`，关键隔离与绕过通过率 `1.0`，原始工具参数泄漏 `0`；Python `325 passed, 1 skipped`，前端 `60 passed`，生产构建通过。真实浏览器完成 pending → allow once → revoke，桌面无水平溢出；窄屏由组件与响应式 CSS 门禁验证。详见 [Permission Engine 报告](./permission-engine.md)。
 
-当前顺序门禁已经进入 `ch14-durable-tasks`；Chapter 11 按既定范围延期，不计为通过。
+- Chapter 14：提交 `38b46d94982b1847f50e553e0ff58bf87d4e6dc4`，确定性门禁 `21/21`，关键恢复/隔离/幂等通过率 `1.0`，公共秘密泄漏 `0`；Python `341 passed, 1 skipped`，前端 `62 passed`，生产构建和 24 条行为控制观察通过。真实浏览器完成 ready → detail → cancelled，桌面无水平溢出；窄屏由组件与响应式 CSS 门禁验证。详见 [Chapter 14 报告](./ch14-durable-tasks.md)。
+
+当前顺序门禁已经进入 `ch15-background-scheduler`；Chapter 11 按既定范围延期，不计为通过。
