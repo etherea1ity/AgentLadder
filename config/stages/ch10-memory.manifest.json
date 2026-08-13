@@ -1,0 +1,68 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch10-memory",
+  "branch": "codex/ch10-memory",
+  "parent_commit": "c3fadfa0608fd6f9ef17b613a523a29154ec4105",
+  "mode": "full-end-to-end",
+  "datasets": [
+    "tests/fixtures/memory/ch10_retrieval_cases.json",
+    "tests/fixtures/behavior/agent_behavior_cases.json"
+  ],
+  "prompts": ["src/klara/prompts/persona.md"],
+  "model_ids": ["none-deterministic-local-gate"],
+  "seeds": [10],
+  "budgets": {
+    "paid_api_usd": 0,
+    "retrieval_top_k": 5,
+    "max_memory_chars": 8000
+  },
+  "evaluator_versions": [
+    "klara.chapter10-memory.v1",
+    "klara.memory-benchmark.v1",
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "expected_artifacts": [
+    "docs/chapters/ch10-memory-system.md",
+    "docs/chapters/ch10-memory-system.en.md",
+    "docs/reports/product/ch10-memory.json",
+    "docs/reports/product/ch10-memory.md",
+    "docs/reports/product/ch10-memory.en.md",
+    "docs/reports/product/ch10-memory-ui-e2e.json"
+  ],
+  "acceptance": {
+    "five_memory_kinds": true,
+    "scope_provenance_time_confidence_ttl_supersession": true,
+    "explicit_and_reviewed_writes_only": true,
+    "remember_search_update_forget_delete_export_audit": true,
+    "hybrid_retrieval_and_ablations": true,
+    "temporal_conflict_and_history": true,
+    "deletion_and_tenant_isolation": true,
+    "responsive_memory_ui": true,
+    "critical_behavior_regressions": 0
+  },
+  "frozen_future_benchmark_contract": {
+    "same_answer_model": true,
+    "same_dataset_and_split": true,
+    "same_context_and_generation_budget": true,
+    "systems": [
+      "full_context",
+      "recent_window",
+      "lexical_only",
+      "vector_only",
+      "klara_hybrid",
+      "mem0_official",
+      "mem1_official"
+    ],
+    "benchmarks": ["LoCoMo", "LongMemEval", "MemoryAgentBench", "BEAM_128K_upward"]
+  },
+  "exclusions": [
+    "claiming public benchmark scores before execution",
+    "claiming Mem0 or MEM1 comparison before official adapter execution",
+    "automatic saving of ordinary chat",
+    "document RAG",
+    "paid provider calls",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

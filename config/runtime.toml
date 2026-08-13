@@ -47,6 +47,11 @@ visible_tools = [
   "todo_write",
   "skills_list",
   "skill_view",
+  "memory_remember",
+  "memory_search",
+  "memory_update",
+  "memory_forget",
+  "memory_delete",
   "update_activity",
 ]
 hooks = ["run_projection", "jsonl_trace"]

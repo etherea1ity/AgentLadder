@@ -82,6 +82,11 @@ def test_load_runtime_config_reads_loop_policy() -> None:
         "todo_write",
         "skills_list",
         "skill_view",
+        "memory_remember",
+        "memory_search",
+        "memory_update",
+        "memory_forget",
+        "memory_delete",
         "update_activity",
     )
     assert profile.hooks == ("run_projection", "jsonl_trace")

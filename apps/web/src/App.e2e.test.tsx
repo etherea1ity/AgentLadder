@@ -181,6 +181,24 @@ describe("Klara app flow", () => {
               },
             ],
           });
+        if (url === "/api/memory")
+          return json({
+            schema_version: "klara.memory-list.v1",
+            counts_by_kind: { user_preference: 1 },
+            records: [{
+              memory_id: "mem-1",
+              scope: { tenant_id: "local-tenant", user_id: "local-user" },
+              kind: "user_preference",
+              content: "Prefer concise status updates",
+              sensitivity: "standard",
+              provenance: { source_type: "explicit_ui", actor_id: "local-user" },
+              created_at: now,
+              updated_at: now,
+              confidence: 1,
+              status: "active",
+              metadata: {},
+            }],
+          });
         if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: listedSessions });
         if (url === "/api/sessions" && init?.method === "POST") return json(session);
         if (url === "/api/runs") return json(runResponse);
@@ -424,6 +442,16 @@ describe("Klara app flow", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Back to chat" }));
     expect(await screen.findByPlaceholderText("Ask your first question...")).toBeInTheDocument();
+  });
+
+  it("opens tenant-scoped Memory with provenance and deletion controls", async () => {
+    render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Memory" }));
+    expect(await screen.findByRole("heading", { name: "Memory" })).toBeInTheDocument();
+    expect(await screen.findByText("Prefer concise status updates")).toBeInTheDocument();
+    expect(screen.getByText("Tenant isolated")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete memory" })).toBeInTheDocument();
   });
 
   it("keeps live thinking after a failed run is reconciled from a sparse snapshot", async () => {

@@ -19,6 +19,13 @@ from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig
 from klara.infra.config.runtime import CapabilityProfile, ProviderRecoveryPolicy
+from klara.memory import (
+    MemoryRuntimeController,
+    MemoryScope,
+    MemoryService,
+    SQLiteMemoryRepository,
+    memory_tools,
+)
 from klara.services.web import WebResearchController
 from klara.skills import SkillCatalog, SkillListTool, SkillRuntimeController, SkillViewTool
 from klara.tools.executor import ToolExecutor
@@ -53,6 +60,9 @@ class KlaraHarnessConfig:
     user_skills_root: Path | None = None
     project_skills_root: Path | None = None
     allowed_skill_permissions: tuple[str, ...] = ()
+    memory_path: Path = Path("data/memory/klara.sqlite3")
+    session_id: str | None = None
+    agent_id: str = "klara"
 
     # Legacy property access stays stable for the Chapter 1 tutorial while the
     # canonical policy is now one immutable object.
@@ -146,6 +156,16 @@ class KlaraHarness:
         self.models = models
         self.extra_hooks = tuple(hooks)
         self.controllers = controllers
+        self.memory_repository = SQLiteMemoryRepository(self.config.memory_path)
+        self.memory_service = MemoryService(self.memory_repository)
+        self.memory_scope = MemoryScope(
+            tenant_id=self.config.user_context.tenant_id,
+            user_id=self.config.user_context.user_id,
+            agent_id=self.config.agent_id,
+            session_id=self.config.session_id,
+        )
+        for tool in memory_tools(self.memory_service, self.memory_scope):
+            self.registry.register_tool(tool)
         self.skill_catalog = self._build_skill_catalog()
         self.registry.register_tool(SkillListTool(self.skill_catalog))
         self.registry.register_tool(SkillViewTool(self.skill_catalog))
@@ -173,6 +193,7 @@ class KlaraHarness:
                     capabilities=self._visible_tool_names(),
                     workspace_root=self.config.workspace_root,
                 ),
+                MemoryRuntimeController(),
                 WebResearchController(user_timezone=self.config.user_context.timezone),
                 SkillRuntimeController(self.skill_catalog),
             )

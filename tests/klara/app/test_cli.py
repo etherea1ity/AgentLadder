@@ -24,6 +24,11 @@ def test_profile_only_prints_secret_free_run_profile(capsys, monkeypatch) -> Non
             "todo_write",
             "skills_list",
             "skill_view",
+            "memory_remember",
+            "memory_search",
+            "memory_update",
+            "memory_forget",
+            "memory_delete",
             "update_activity",
     ]
     assert "must-not-leak" not in json.dumps(payload)

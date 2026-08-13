@@ -45,6 +45,12 @@ PUBLIC_RUNTIME_EVENT_MESSAGES = {
     "skills.selected": "Skill selected.",
     "skills.loaded": "Skill loaded.",
     "skills.load_rejected": "Skill load rejected.",
+    "memory.review_completed": "Memory write review completed.",
+    "memory.remembered": "Memory saved.",
+    "memory.retrieved": "Memory retrieved.",
+    "memory.updated": "Memory updated.",
+    "memory.forgotten": "Memory forgotten.",
+    "memory.deleted": "Memory deleted.",
 }
 
 
@@ -226,11 +232,19 @@ class RunEventProjector:
             )
 
         if str(event.type) in PUBLIC_RUNTIME_EVENT_MESSAGES:
+            payload = dict(event.payload)
+            if str(event.type).startswith("memory."):
+                payload = {
+                    key: value
+                    for key, value in payload.items()
+                    if key not in {"content", "query", "results", "provenance"}
+                }
+                payload["content_exposed"] = False
             return (
                 ProjectedRunEvent(
                     event_type=cast(RunEventType, str(event.type)),
                     message=PUBLIC_RUNTIME_EVENT_MESSAGES[str(event.type)],
-                    payload=dict(event.payload),
+                    payload=payload,
                 ),
             )
 

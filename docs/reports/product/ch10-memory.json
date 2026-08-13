@@ -1,0 +1,400 @@
+{
+  "checks": {
+    "api_exposes_governed_lifecycle": true,
+    "api_is_owner_scoped": true,
+    "audit_uses_hash_not_raw_deleted_content": true,
+    "bilingual_tutorial_exists": true,
+    "competitors_are_not_falsely_claimed": true,
+    "current_fact_supersedes_old_fact": true,
+    "five_memory_kinds_declared": true,
+    "frontend_has_search_provenance_update_forget_delete": true,
+    "hard_delete_is_verified": true,
+    "historical_query_recovers_old_fact": true,
+    "hybrid_retrieval_critical_top1_is_perfect": true,
+    "public_projection_hides_content_and_query": true,
+    "retrieval_ablation_matrix_is_complete": true,
+    "stage_manifest_exists": true,
+    "tenant_mutation_isolation": true,
+    "tenant_read_isolation": true
+  },
+  "deletion_receipt": {
+    "content_sha256": "9c6b59f7d6ead816af70cb60a7c58eed304a99029c0bbdcf1278566c12dae9fb",
+    "deleted": true,
+    "deletion_verified": true,
+    "memory_id": "mem_97150984053240e9bfb09dcfc53fef42",
+    "raw_content_occurrences": 0
+  },
+  "evaluated_at": "2026-08-13T10:43:33.900290+00:00",
+  "gate_kind": "deterministic_memory_lifecycle_and_retrieval_gate",
+  "interpretation": "Passing proves the repository-native memory lifecycle, owner partition, temporal supersession, hard-delete proof, trace privacy, UI controls, and a small deterministic retrieval-ablation gate. It does not claim end-to-end LoCoMo, LongMemEval, MemoryAgentBench, BEAM, Mem0, or MEM1 superiority; those remain frozen same-model benchmark work before Agent Product Freeze.",
+  "metrics": {
+    "checks_passed": 16,
+    "checks_total": 16,
+    "hybrid_critical_top1_accuracy": 1.0,
+    "hybrid_top1_accuracy": 1.0,
+    "memory_kind_count": 5,
+    "raw_deleted_content_occurrences": 0,
+    "tenant_isolation_failure_count": 0
+  },
+  "passed": true,
+  "retrieval_matrix": {
+    "competitors": {
+      "mem0": {
+        "adapter": "official_pipeline_required",
+        "repository": "https://github.com/mem0ai/memory-benchmarks",
+        "status": "not_executed"
+      },
+      "mem1": {
+        "adapter": "official_checkpoint_and_rollout_required",
+        "repository": "https://github.com/MIT-MI/MEM1",
+        "status": "not_executed"
+      }
+    },
+    "fixture_sha256": "85482c92eb85bc32dcc4d6332c6b73d5e6674129ed47bd265125a4e6828bc2ae",
+    "interpretation": "This local gate validates retrieval ablations only. It does not claim Mem0/MEM1 or public benchmark superiority; those require official adapters and the same frozen answer model.",
+    "public_benchmarks": {
+      "beam": {
+        "repository": "https://github.com/mohammadtavakoli78/BEAM",
+        "status": "hku_scale_only",
+        "task": "128k_to_10m_long_term_memory"
+      },
+      "locomo": {
+        "repository": "https://github.com/snap-research/locomo",
+        "status": "adapter_contract_ready_dataset_not_vendored",
+        "task": "very_long_term_conversational_qa"
+      },
+      "longmemeval": {
+        "repository": "https://github.com/xiaowu0162/LongMemEval",
+        "status": "adapter_contract_ready_dataset_not_vendored",
+        "task": "extraction_multisession_update_temporal_abstention"
+      },
+      "memoryagentbench": {
+        "repository": "https://github.com/HUST-AI-HYZ/MemoryAgentBench",
+        "status": "adapter_contract_ready_dataset_not_vendored",
+        "task": "retrieval_test_time_learning_long_range_conflict"
+      }
+    },
+    "same_answer_model": "not_applicable_retrieval_only_local_gate",
+    "same_cases": true,
+    "same_memory_corpus": true,
+    "same_top_k": 5,
+    "schema_version": "klara.memory-benchmark.v1",
+    "systems": {
+      "full_context": {
+        "cases": 6,
+        "critical_top1_accuracy": 0.0,
+        "latency_ms": 10,
+        "precision_at_k": 0.166667,
+        "recall_at_k": 0.833333,
+        "rows": [
+          {
+            "case_id": "language_preference",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "current_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "historical_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "runtime_deadline",
+            "critical": false,
+            "precision_at_k": 0.0,
+            "recall_at_k": 0.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "gpu_precondition",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "branch_naming",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          }
+        ],
+        "top1_accuracy": 0.166667
+      },
+      "hybrid": {
+        "cases": 6,
+        "critical_top1_accuracy": 1.0,
+        "latency_ms": 10,
+        "precision_at_k": 0.2,
+        "recall_at_k": 1.0,
+        "rows": [
+          {
+            "case_id": "language_preference",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "current_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "historical_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "runtime_deadline",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "gpu_precondition",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "branch_naming",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          }
+        ],
+        "top1_accuracy": 1.0
+      },
+      "lexical": {
+        "cases": 6,
+        "critical_top1_accuracy": 1.0,
+        "latency_ms": 10,
+        "precision_at_k": 0.2,
+        "recall_at_k": 1.0,
+        "rows": [
+          {
+            "case_id": "language_preference",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "current_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "historical_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "runtime_deadline",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "gpu_precondition",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "branch_naming",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          }
+        ],
+        "top1_accuracy": 1.0
+      },
+      "mem0_compatible": {
+        "cases": 6,
+        "critical_top1_accuracy": 0.666667,
+        "latency_ms": 10,
+        "precision_at_k": 0.2,
+        "recall_at_k": 1.0,
+        "rows": [
+          {
+            "case_id": "language_preference",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "current_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "historical_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "runtime_deadline",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "gpu_precondition",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "branch_naming",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          }
+        ],
+        "top1_accuracy": 0.833333
+      },
+      "recent": {
+        "cases": 6,
+        "critical_top1_accuracy": 0.0,
+        "latency_ms": 10,
+        "precision_at_k": 0.166667,
+        "recall_at_k": 0.833333,
+        "rows": [
+          {
+            "case_id": "language_preference",
+            "critical": true,
+            "precision_at_k": 0.0,
+            "recall_at_k": 0.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "current_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "historical_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "runtime_deadline",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "gpu_precondition",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "branch_naming",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          }
+        ],
+        "top1_accuracy": 0.166667
+      },
+      "vector": {
+        "cases": 6,
+        "critical_top1_accuracy": 0.666667,
+        "latency_ms": 10,
+        "precision_at_k": 0.2,
+        "recall_at_k": 1.0,
+        "rows": [
+          {
+            "case_id": "language_preference",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "current_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "historical_theme",
+            "critical": true,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": false
+          },
+          {
+            "case_id": "runtime_deadline",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "gpu_precondition",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          },
+          {
+            "case_id": "branch_naming",
+            "critical": false,
+            "precision_at_k": 0.2,
+            "recall_at_k": 1.0,
+            "top1_correct": true
+          }
+        ],
+        "top1_accuracy": 0.833333
+      }
+    }
+  },
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter10-memory.v1",
+  "stage": "ch10-memory"
+}

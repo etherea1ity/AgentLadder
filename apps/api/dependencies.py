@@ -14,6 +14,7 @@ from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.config.models import ModelsConfig, ProviderModel
 from klara.infra.llm.routed_client import RoutedLlmClient
 from klara.infra.llm.openai_compatible import OpenAICompatibleSettings
+from klara.memory import MemoryScope, MemoryService, SQLiteMemoryRepository
 from klara.skills import SkillCatalog
 
 
@@ -96,6 +97,13 @@ _skill_catalog = SkillCatalog.discover(
     project_root=_workspace_root / ".klara" / "skills",
     allowed_tools=set(_runtime.profile().visible_tools),
 )
+_memory_repository = SQLiteMemoryRepository(_store.root / "memory.sqlite3")
+_memory_service = MemoryService(_memory_repository)
+_memory_scope = MemoryScope(
+    tenant_id="local-tenant",
+    user_id="local-user",
+    agent_id="klara",
+)
 _llm = RoutedLlmClient(
     models=_models,
     dotenv_path=".env",
@@ -145,3 +153,15 @@ def get_skill_catalog() -> SkillCatalog:
     """Return the same resolved local catalog contract used by product runs."""
 
     return _skill_catalog
+
+
+def get_memory_service() -> MemoryService:
+    """Return the local durable memory service."""
+
+    return _memory_service
+
+
+def get_memory_scope() -> MemoryScope:
+    """Return the authenticated local owner partition for API requests."""
+
+    return _memory_scope

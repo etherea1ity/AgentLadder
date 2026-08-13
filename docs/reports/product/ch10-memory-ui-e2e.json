@@ -1,0 +1,34 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "stage": "ch10-memory",
+  "status": "passed",
+  "evaluated_at": "2026-08-13T18:43:00+08:00",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 720,
+      "document_scroll_width": 1280,
+      "memory_heading_visible": true,
+      "tenant_contract_visible": true,
+      "remember_control_visible": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "document_scroll_width": 390,
+      "body_scroll_width": 390,
+      "memory_heading_visible": true,
+      "remember_control_visible": true
+    }
+  ],
+  "checks": {
+    "real_api_loaded": true,
+    "remember_update_forget_delete_visible": true,
+    "provenance_visible_to_owner": true,
+    "browser_remember_delete_round_trip": true,
+    "deleted_text_absent_after_receipt": true,
+    "horizontal_overflow": false,
+    "console_error_count": 0
+  },
+  "interpretation": "The in-app browser loaded the real local API, created an explicit Memory record, showed owner provenance and delete controls, completed verified deletion, and found no desktop/mobile overflow or browser warnings/errors."
+}

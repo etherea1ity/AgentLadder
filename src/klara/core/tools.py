@@ -116,6 +116,9 @@ class ToolResult:
     ok: bool = True
     # Error carries public failure text when ok is false.
     error: str | None = None
+    # Sensitive tools may expose a separate trace-safe observation while keeping
+    # full content model-visible inside the run.
+    public_content: str | None = None
 
     def to_public_dict(self) -> JsonObject:
         """Serialize the result for trace and hook payloads.
@@ -125,13 +128,15 @@ class ToolResult:
         """
 
         # Keep the public payload compact while preserving failure semantics.
-        content_preview = self.content[:TOOL_RESULT_PREVIEW_CHARS]
+        exposed_content = self.content if self.public_content is None else self.public_content
+        content_preview = exposed_content[:TOOL_RESULT_PREVIEW_CHARS]
         data: JsonObject = {
             "tool_call_id": self.tool_call_id,
             "name": self.name,
-            "content": self.content,
+            "content": exposed_content,
             "content_preview": content_preview,
             "content_length": len(self.content),
+            "content_redacted": self.public_content is not None,
             "ok": self.ok,
         }
         if self.error is not None:

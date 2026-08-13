@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { BarChart3, BookOpen, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, Brain, LoaderCircle, MessageCircle, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Settings } from 'lucide-react';
 import type { Session } from '../types/domain';
 import { useDismissibleDetails } from '../hooks/useDismissibleDetails';
 
@@ -18,9 +18,11 @@ type Props = {
   onOpenEvaluations?: () => void;
   skillsActive?: boolean;
   onOpenSkills?: () => void;
+  memoryActive?: boolean;
+  onOpenMemory?: () => void;
 };
 
-export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined }: Props) {
+export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionIds = {}, renamingSessionIds = {}, onToggleCollapsed, onNewChat, onSelect, onRename, onDelete, evaluationsActive = false, onOpenEvaluations = () => undefined, skillsActive = false, onOpenSkills = () => undefined, memoryActive = false, onOpenMemory = () => undefined }: Props) {
   const today = sessions.filter((session) => isToday(session.updated_at));
   const earlier = sessions.filter((session) => !isToday(session.updated_at));
   return (
@@ -44,6 +46,11 @@ export function Sidebar({ sessions, activeSessionId, collapsed, deletingSessionI
         <BookOpen size={18} />
         <span className="sidebar-copy">Skills</span>
         <span className="sidebar-copy sidebar-evaluations-badge">Runtime</span>
+      </button>
+      <button className={`sidebar-evaluations ${memoryActive ? 'active' : ''}`} onClick={onOpenMemory} title="Long-term Memory" aria-label="Memory" aria-pressed={memoryActive}>
+        <Brain size={18} />
+        <span className="sidebar-copy">Memory</span>
+        <span className="sidebar-copy sidebar-evaluations-badge">Private</span>
       </button>
       <div className="sidebar-footer"><span className="avatar">K</span><Settings size={18} /></div>
     </aside>

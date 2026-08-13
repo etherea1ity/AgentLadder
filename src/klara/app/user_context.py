@@ -24,6 +24,8 @@ class UserContext:
     timezone: str = "UTC"
     # Storage key is the filesystem/database partition handle for local adapters.
     storage_key: str = "local"
+    # Tenant id is always part of durable-memory and later authorization keys.
+    tenant_id: str = "local-tenant"
 
     @classmethod
     def local_default(cls) -> "UserContext":

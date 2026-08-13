@@ -68,6 +68,12 @@ RunEventType = Literal[
     "skills.selected",
     "skills.loaded",
     "skills.load_rejected",
+    "memory.review_completed",
+    "memory.remembered",
+    "memory.retrieved",
+    "memory.updated",
+    "memory.forgotten",
+    "memory.deleted",
     "run_completed",
     "run_failed",
     "run_cancelled",
@@ -302,3 +308,70 @@ class ListSkillsResponse(BaseModel):
     precedence: list[str]
     body_loading: Literal["on_demand"]
     skills: list[SkillOption]
+
+
+MemoryKindValue = Literal[
+    "user_preference", "stable_fact", "episodic", "task", "agent_learning"
+]
+MemorySensitivityValue = Literal["standard", "personal", "sensitive", "restricted"]
+
+
+class MemoryRecordResponse(BaseModel):
+    memory_id: str
+    scope: dict[str, Any]
+    kind: MemoryKindValue
+    content: str
+    sensitivity: MemorySensitivityValue
+    provenance: dict[str, Any]
+    created_at: str
+    updated_at: str
+    confidence: float
+    valid_from: str | None = None
+    valid_to: str | None = None
+    expires_at: str | None = None
+    supersedes_id: str | None = None
+    superseded_by_id: str | None = None
+    status: Literal["active", "superseded", "forgotten"]
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ListMemoriesResponse(BaseModel):
+    schema_version: Literal["klara.memory-list.v1"]
+    records: list[MemoryRecordResponse]
+    counts_by_kind: dict[str, int]
+
+
+class CreateMemoryRequest(BaseModel):
+    content: str
+    kind: MemoryKindValue
+    sensitivity: MemorySensitivityValue = "standard"
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    ttl_seconds: int | None = Field(default=None, ge=1)
+
+    @field_validator("content")
+    @classmethod
+    def memory_content_not_empty(cls, value: str) -> str:
+        content = " ".join(value.split())
+        if not content:
+            raise ValueError("memory content must not be empty")
+        return content
+
+
+class UpdateMemoryRequest(BaseModel):
+    content: str
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class SearchMemoriesResponse(BaseModel):
+    schema_version: Literal["klara.memory-search.v1"]
+    query: str
+    mode: str
+    results: list[dict[str, Any]]
+
+
+class DeleteMemoryResponse(BaseModel):
+    memory_id: str
+    deleted: bool
+    content_sha256: str
+    raw_content_occurrences: int
+    deletion_verified: bool

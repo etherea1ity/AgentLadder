@@ -81,6 +81,12 @@ export type RunEventType =
   | 'skills.selected'
   | 'skills.loaded'
   | 'skills.load_rejected'
+  | 'memory.review_completed'
+  | 'memory.remembered'
+  | 'memory.retrieved'
+  | 'memory.updated'
+  | 'memory.forgotten'
+  | 'memory.deleted'
   | 'llm_call_started'
   | 'answer_streaming_started'
   | 'answer_delta'
@@ -244,6 +250,34 @@ export type SkillsCatalog = {
   precedence: string[];
   body_loading: 'on_demand';
   skills: SkillOption[];
+};
+
+export type MemoryKind = 'user_preference' | 'stable_fact' | 'episodic' | 'task' | 'agent_learning';
+export type MemorySensitivity = 'standard' | 'personal' | 'sensitive' | 'restricted';
+
+export type MemoryRecord = {
+  memory_id: string;
+  scope: { tenant_id: string; user_id: string; agent_id?: string | null; session_id?: string | null };
+  kind: MemoryKind;
+  content: string;
+  sensitivity: MemorySensitivity;
+  provenance: { source_type: string; actor_id: string; source_id?: string | null; note?: string | null };
+  created_at: string;
+  updated_at: string;
+  confidence: number;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  expires_at?: string | null;
+  supersedes_id?: string | null;
+  superseded_by_id?: string | null;
+  status: 'active' | 'superseded' | 'forgotten';
+  metadata: Record<string, unknown>;
+};
+
+export type MemoryList = {
+  schema_version: 'klara.memory-list.v1';
+  records: MemoryRecord[];
+  counts_by_kind: Record<string, number>;
 };
 
 // Klara Presence public event model. This is intentionally separate from the

@@ -113,6 +113,11 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     assert "Runtime user context" not in llm.system_prompt
     assert [tool.name for tool in llm.tools] == [
         "test_echo",
+        "memory_remember",
+        "memory_search",
+        "memory_update",
+        "memory_forget",
+        "memory_delete",
         "skills_list",
         "skill_view",
         "update_activity",
@@ -138,6 +143,11 @@ def test_harness_defaults_to_default_registry() -> None:
     assert {tool.name for tool in llm.tools} == {
         "current_time",
         "image_generate",
+        "memory_remember",
+        "memory_search",
+        "memory_update",
+        "memory_forget",
+        "memory_delete",
         "skill_view",
         "skills_list",
         "update_activity",

@@ -260,6 +260,8 @@ class RunService:
                     provider_recovery_policy=self.provider_recovery_policy,
                     user_context=run_user_context,
                     workspace_root=Path.cwd(),
+                    session_id=run.session_id,
+                    memory_path=self.store.root / "memory.sqlite3",
                 ),
                 models=self.models_config,
                 hooks=(RunProjectionHook(self, run_id, projector),),

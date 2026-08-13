@@ -1,4 +1,4 @@
-import type { ClientContext, EvaluationSummary, Message, ModelOption, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
+import type { ClientContext, EvaluationSummary, MemoryKind, MemoryList, MemoryRecord, MemorySensitivity, Message, ModelOption, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -52,6 +52,12 @@ export const api = {
   listModels: (signal?: AbortSignal) => request<{ default_model: string; models: ModelOption[] }>('/api/models', { signal }),
   getEvaluationSummary: (signal?: AbortSignal) => request<EvaluationSummary>('/api/evaluations/summary', { signal }),
   listSkills: (signal?: AbortSignal) => request<SkillsCatalog>('/api/skills', { signal }),
+  listMemories: (signal?: AbortSignal) => request<MemoryList>('/api/memory', { signal }),
+  searchMemories: (query: string, signal?: AbortSignal) => request<{ results: MemoryRecord[] }>(`/api/memory/search?q=${encodeURIComponent(query)}`, { signal }),
+  createMemory: (content: string, kind: MemoryKind, sensitivity: MemorySensitivity = 'standard', signal?: AbortSignal) => request<MemoryRecord>('/api/memory', { method: 'POST', body: JSON.stringify({ content, kind, sensitivity }), signal }),
+  updateMemory: (memoryId: string, content: string, signal?: AbortSignal) => request<MemoryRecord>(`/api/memory/${memoryId}`, { method: 'PATCH', body: JSON.stringify({ content }), signal }),
+  forgetMemory: (memoryId: string, signal?: AbortSignal) => request<MemoryRecord>(`/api/memory/${memoryId}/forget`, { method: 'POST', body: '{}', signal }),
+  deleteMemory: (memoryId: string, signal?: AbortSignal) => request<{ memory_id: string; deleted: boolean; deletion_verified: boolean }>(`/api/memory/${memoryId}`, { method: 'DELETE', signal }),
   createRun: (
     session_id: string,
     question: string,
@@ -121,6 +127,12 @@ export const api = {
       'skills.selected',
       'skills.loaded',
       'skills.load_rejected',
+      'memory.review_completed',
+      'memory.remembered',
+      'memory.retrieved',
+      'memory.updated',
+      'memory.forgotten',
+      'memory.deleted',
       'llm_call_started',
       'answer_streaming_started',
       'answer_delta',

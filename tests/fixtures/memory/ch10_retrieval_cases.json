@@ -1,0 +1,19 @@
+{
+  "schema_version": "klara.memory-fixture.v1",
+  "memories": [
+    {"memory_id": "pref_language", "kind": "user_preference", "content": "The user prefers Chinese answers for project status updates."},
+    {"memory_id": "old_theme", "kind": "user_preference", "content": "The user preferred dark mode before July 2026.", "valid_from": "2026-01-01T00:00:00+00:00", "valid_to": "2026-07-01T00:00:00+00:00"},
+    {"memory_id": "new_theme", "kind": "user_preference", "content": "The user now prefers light mode after July 2026.", "valid_from": "2026-07-01T00:00:00+00:00"},
+    {"memory_id": "task_deadline", "kind": "task", "content": "The AgentLadder runtime freeze deadline is Friday evening."},
+    {"memory_id": "episode_hku", "kind": "episodic", "content": "The HKU GPU job was postponed until Agent Product Freeze passes."},
+    {"memory_id": "stable_repo", "kind": "stable_fact", "content": "AgentLadder uses Chapter branches prefixed with codex slash."}
+  ],
+  "cases": [
+    {"case_id": "language_preference", "query": "Which language should project status use?", "expected_memory_ids": ["pref_language"], "critical": true},
+    {"case_id": "current_theme", "query": "What theme does the user prefer now?", "expected_memory_ids": ["new_theme"], "critical": true},
+    {"case_id": "historical_theme", "query": "What theme did the user prefer in March?", "expected_memory_ids": ["old_theme"], "at_time": "2026-03-15T00:00:00+00:00", "critical": true},
+    {"case_id": "runtime_deadline", "query": "When is the AgentLadder runtime freeze deadline?", "expected_memory_ids": ["task_deadline"]},
+    {"case_id": "gpu_precondition", "query": "Why was the HKU GPU job postponed?", "expected_memory_ids": ["episode_hku"]},
+    {"case_id": "branch_naming", "query": "What prefix names the Chapter branches?", "expected_memory_ids": ["stable_repo"]}
+  ]
+}
