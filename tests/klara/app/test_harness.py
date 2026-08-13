@@ -111,7 +111,12 @@ def test_harness_assembles_persona_tools_user_context_and_trace(tmp_path) -> Non
     assert "preferred_source" not in llm.system_prompt
     assert "source-limited analysis" not in llm.system_prompt
     assert "Runtime user context" not in llm.system_prompt
-    assert [tool.name for tool in llm.tools] == ["test_echo", "update_activity"]
+    assert [tool.name for tool in llm.tools] == [
+        "test_echo",
+        "skills_list",
+        "skill_view",
+        "update_activity",
+    ]
     assert llm.messages_seen[1][-1].content == "from harness"
 
     # Parse trace lines to verify the harness attached a working trace hook.
@@ -133,6 +138,8 @@ def test_harness_defaults_to_default_registry() -> None:
     assert {tool.name for tool in llm.tools} == {
         "current_time",
         "image_generate",
+        "skill_view",
+        "skills_list",
         "update_activity",
         "web_fetch",
         "web_search",
@@ -168,6 +175,8 @@ def test_run_profile_is_stable_immutable_and_secret_free(tmp_path, monkeypatch) 
     second = KlaraHarness(llm=HarnessLlm(), registry=ToolRegistry([EchoFixtureTool()]), config=config, models=models)
 
     assert first.run_profile.profile_sha256 == second.run_profile.profile_sha256
+    assert first.run_profile.skill_catalog_count >= 1
+    assert len(first.run_profile.skill_catalog_sha256) == 64
     public = json.dumps(first.run_profile.to_public_dict(), sort_keys=True)
     assert "should-never-appear" not in public
     assert not any(key.lower() in public.lower() for key in ("api_key", "password", "secret"))

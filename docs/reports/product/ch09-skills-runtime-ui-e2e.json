@@ -1,0 +1,40 @@
+{
+  "schema_version": "klara.ui-e2e.v1",
+  "evaluated_at": "2026-08-13T17:23:00+08:00",
+  "target": "http://127.0.0.1:5123/",
+  "surface": "Skills catalog and progressive-disclosure contract",
+  "browser": "Codex in-app browser",
+  "results": [
+    {
+      "viewport": {"width": 1280, "height": 720},
+      "status": "passed",
+      "heading": "Skills",
+      "resolved_card_count": 1,
+      "permission_boundary_visible": true,
+      "back_to_chat_visible": true,
+      "horizontal_overflow": false
+    },
+    {
+      "viewport": {"width": 390, "height": 844},
+      "status": "passed",
+      "resolved_card_count": 1,
+      "permission_boundary_visible": true,
+      "back_to_chat_visible": true,
+      "horizontal_overflow": false,
+      "body_scroll_width": 390
+    }
+  ],
+  "privacy": {
+    "skill_body_visible": false,
+    "absolute_source_path_visible": false,
+    "credential_material_visible": false
+  },
+  "accessibility": {
+    "catalog_landmark": "Skills catalog",
+    "catalog_heading": "Skills",
+    "available_skills_landmark": "Available Skills",
+    "back_action_label": "Back to chat"
+  },
+  "console_error_count": 0,
+  "interpretation": "The real API-backed Skill catalog rendered one resolved metadata card at desktop and mobile widths, exposed the on-demand and fail-closed contract, returned to chat, produced no horizontal overflow or console errors, and did not expose the built-in Skill body."
+}

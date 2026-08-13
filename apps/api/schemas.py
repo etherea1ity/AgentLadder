@@ -64,6 +64,10 @@ RunEventType = Literal[
     "model_call.failed",
     "prompt_recovery.started",
     "prompt_recovery.completed",
+    "skills.catalog_ready",
+    "skills.selected",
+    "skills.loaded",
+    "skills.load_rejected",
     "run_completed",
     "run_failed",
     "run_cancelled",
@@ -273,3 +277,28 @@ class ModelOption(BaseModel):
 class ListModelsResponse(BaseModel):
     default_model: str
     models: list[ModelOption]
+
+
+class SkillOption(BaseModel):
+    """Safe metadata for one resolved procedural Skill."""
+
+    name: str
+    description: str
+    version: str
+    scope: Literal["built_in", "user", "project"]
+    source: str
+    sha256: str
+    tools: list[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
+    references: list[str] = Field(default_factory=list)
+    shadowed_scopes: list[str] = Field(default_factory=list)
+
+
+class ListSkillsResponse(BaseModel):
+    """Read-only resolved Skill catalog response."""
+
+    schema_version: Literal["klara.skills-catalog.v1"]
+    precedence: list[str]
+    body_loading: Literal["on_demand"]
+    skills: list[SkillOption]

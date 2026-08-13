@@ -1,4 +1,4 @@
-import type { ClientContext, EvaluationSummary, Message, ModelOption, Run, RunEvent, Session, TodoPlan } from '../types/domain';
+import type { ClientContext, EvaluationSummary, Message, ModelOption, Run, RunEvent, Session, SkillsCatalog, TodoPlan } from '../types/domain';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -23,12 +23,24 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(resolveApiUrl(path), {
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     ...init
   });
   if (!response.ok) throw new ApiError(response.status, await response.text());
   return response.json() as Promise<T>;
+}
+
+function resolveApiUrl(path: string) {
+  if (API_BASE) return `${API_BASE}${path}`;
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname === '127.0.0.1' &&
+    window.location.port === '5123'
+  ) {
+    return `http://127.0.0.1:8011${path}`;
+  }
+  return path;
 }
 
 export const api = {
@@ -39,6 +51,7 @@ export const api = {
   deleteSession: (id: string, signal?: AbortSignal) => request<{ session_id: string; deleted: boolean; deleted_at: string }>(`/api/sessions/${id}`, { method: 'DELETE', signal }),
   listModels: (signal?: AbortSignal) => request<{ default_model: string; models: ModelOption[] }>('/api/models', { signal }),
   getEvaluationSummary: (signal?: AbortSignal) => request<EvaluationSummary>('/api/evaluations/summary', { signal }),
+  listSkills: (signal?: AbortSignal) => request<SkillsCatalog>('/api/skills', { signal }),
   createRun: (
     session_id: string,
     question: string,
@@ -61,7 +74,7 @@ export const api = {
   getRun: (id: string, signal?: AbortSignal) => request<RunDetail>(`/api/runs/${id}`, { signal }),
   cancelRun: (id: string, signal?: AbortSignal) => request<{ run_id: string; status: Run['status'] }>(`/api/runs/${id}/cancel`, { method: 'POST', body: '{}', signal }),
   subscribeRunEvents(runId: string, onEvent: (event: RunEvent) => void, onClose?: () => void) {
-    const source = new EventSource(`${API_BASE}/api/runs/${runId}/events/stream`);
+    const source = new EventSource(resolveApiUrl(`/api/runs/${runId}/events/stream`));
     const eventTypes: RunEvent['event_type'][] = [
       'run_created',
       'run_profile_frozen',
@@ -104,6 +117,10 @@ export const api = {
       'model_call.failed',
       'prompt_recovery.started',
       'prompt_recovery.completed',
+      'skills.catalog_ready',
+      'skills.selected',
+      'skills.loaded',
+      'skills.load_rejected',
       'llm_call_started',
       'answer_streaming_started',
       'answer_delta',

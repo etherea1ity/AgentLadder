@@ -160,6 +160,27 @@ describe("Klara app flow", () => {
             checks: { p0_zero: true },
             split_hashes: { validation: "a".repeat(64) },
           });
+        if (url === "/api/skills")
+          return json({
+            schema_version: "klara.skills-catalog.v1",
+            precedence: ["project", "user", "built_in"],
+            body_loading: "on_demand",
+            skills: [
+              {
+                name: "repository-work",
+                description: "Inspect a repository before changing code.",
+                version: "1.0.0",
+                scope: "built_in",
+                source: "built_in:repository_work",
+                sha256: "a".repeat(64),
+                tools: [],
+                permissions: [],
+                dependencies: [],
+                references: [],
+                shadowed_scopes: [],
+              },
+            ],
+          });
         if (url === "/api/sessions" && (!init || init.method === undefined)) return json({ sessions: listedSessions });
         if (url === "/api/sessions" && init?.method === "POST") return json(session);
         if (url === "/api/runs") return json(runResponse);
@@ -388,6 +409,18 @@ describe("Klara app flow", () => {
     await userEvent.click(screen.getByRole("button", { name: "Evaluations" }));
     expect(await screen.findByRole("heading", { name: "Agent evaluations" })).toBeInTheDocument();
     expect(await screen.findByText("Contract gate passed")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Back to chat" }));
+    expect(await screen.findByPlaceholderText("Ask your first question...")).toBeInTheDocument();
+  });
+
+  it("opens the progressively loaded Skills catalog", async () => {
+    render(<App />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Skills" }));
+    expect(await screen.findByRole("heading", { name: "Skills" })).toBeInTheDocument();
+    expect(await screen.findByText("repository-work")).toBeInTheDocument();
+    expect(screen.getByText("Permissions fail closed")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Back to chat" }));
     expect(await screen.findByPlaceholderText("Ask your first question...")).toBeInTheDocument();

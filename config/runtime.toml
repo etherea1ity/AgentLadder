@@ -45,6 +45,8 @@ visible_tools = [
   "web_fetch",
   "web_search",
   "todo_write",
+  "skills_list",
+  "skill_view",
   "update_activity",
 ]
 hooks = ["run_projection", "jsonl_trace"]

@@ -80,6 +80,8 @@ def test_load_runtime_config_reads_loop_policy() -> None:
         "web_fetch",
         "web_search",
         "todo_write",
+        "skills_list",
+        "skill_view",
         "update_activity",
     )
     assert profile.hooks == ("run_projection", "jsonl_trace")

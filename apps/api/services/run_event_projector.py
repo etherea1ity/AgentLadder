@@ -41,6 +41,10 @@ PUBLIC_RUNTIME_EVENT_MESSAGES = {
     "model_call.failed": "Model call failed.",
     "prompt_recovery.started": "Prompt recovery started.",
     "prompt_recovery.completed": "Prompt recovery completed.",
+    "skills.catalog_ready": "Skills catalog ready.",
+    "skills.selected": "Skill selected.",
+    "skills.loaded": "Skill loaded.",
+    "skills.load_rejected": "Skill load rejected.",
 }
 
 

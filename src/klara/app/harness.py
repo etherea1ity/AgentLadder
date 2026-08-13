@@ -20,6 +20,7 @@ from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig
 from klara.infra.config.runtime import CapabilityProfile, ProviderRecoveryPolicy
 from klara.services.web import WebResearchController
+from klara.skills import SkillCatalog, SkillListTool, SkillRuntimeController, SkillViewTool
 from klara.tools.executor import ToolExecutor
 from klara.tools.registry import ToolRegistry
 
@@ -49,6 +50,9 @@ class KlaraHarnessConfig:
         default_factory=ProviderRecoveryPolicy
     )
     workspace_root: Path = field(default_factory=Path.cwd)
+    user_skills_root: Path | None = None
+    project_skills_root: Path | None = None
+    allowed_skill_permissions: tuple[str, ...] = ()
 
     # Legacy property access stays stable for the Chapter 1 tutorial while the
     # canonical policy is now one immutable object.
@@ -88,6 +92,8 @@ class KlaraRunProfile:
     persona_sha256: str
     context_policy: ContextPolicy
     provider_recovery_policy: ProviderRecoveryPolicy
+    skill_catalog_count: int
+    skill_catalog_sha256: str
     profile_sha256: str
 
     def to_public_dict(self) -> dict[str, Any]:
@@ -115,6 +121,8 @@ class KlaraRunProfile:
             "persona_sha256": self.persona_sha256,
             "context_policy": self.context_policy.to_public_dict(),
             "provider_recovery_policy": self.provider_recovery_policy.to_public_dict(),
+            "skill_catalog_count": self.skill_catalog_count,
+            "skill_catalog_sha256": self.skill_catalog_sha256,
             "profile_sha256": self.profile_sha256,
         }
 
@@ -138,6 +146,9 @@ class KlaraHarness:
         self.models = models
         self.extra_hooks = tuple(hooks)
         self.controllers = controllers
+        self.skill_catalog = self._build_skill_catalog()
+        self.registry.register_tool(SkillListTool(self.skill_catalog))
+        self.registry.register_tool(SkillViewTool(self.skill_catalog))
         self._selected_tools = self._select_tools()
         self._validate_model_capabilities()
         if (
@@ -163,6 +174,7 @@ class KlaraHarness:
                     workspace_root=self.config.workspace_root,
                 ),
                 WebResearchController(user_timezone=self.config.user_context.timezone),
+                SkillRuntimeController(self.skill_catalog),
             )
         return KlaraLoop(
             llm=self.llm,
@@ -213,6 +225,27 @@ class KlaraHarness:
         if missing:
             raise ValueError(f"capability_profile_missing_tools:{','.join(missing)}")
         return tuple(available[name] for name in requested if name in available)
+
+    def _build_skill_catalog(self) -> SkillCatalog:
+        """Discover the three Skill scopes under frozen run authority."""
+
+        user_root = self.config.user_skills_root
+        if user_root is None:
+            user_root = Path.home() / ".klara" / "skills"
+        project_root = self.config.project_skills_root
+        if project_root is None:
+            project_root = self.config.workspace_root / ".klara" / "skills"
+        built_in_root = Path(__file__).parents[1] / "skills" / "builtin"
+        allowed_tools = {
+            tool.spec.name for tool in self.registry.visible_tools()
+        } | set(INTERNAL_TOOL_NAMES) | {"skills_list", "skill_view"}
+        return SkillCatalog.discover(
+            built_in_root=built_in_root,
+            user_root=user_root,
+            project_root=project_root,
+            allowed_tools=allowed_tools,
+            allowed_permissions=self.config.allowed_skill_permissions,
+        )
 
     def _validate_model_capabilities(self) -> None:
         if self.models is None or self.config.model == "fake-model":
@@ -265,6 +298,8 @@ class KlaraHarness:
             "persona_sha256": persona_hash,
             "context_policy": self.config.context_policy.to_public_dict(),
             "provider_recovery_policy": self.config.provider_recovery_policy.to_public_dict(),
+            "skill_catalog_count": len(self.skill_catalog.list()),
+            "skill_catalog_sha256": self.skill_catalog.catalog_sha256,
         }
         profile_hash = hashlib.sha256(
             json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -285,6 +320,8 @@ class KlaraHarness:
             persona_sha256=persona_hash,
             context_policy=self.config.context_policy,
             provider_recovery_policy=self.config.provider_recovery_policy,
+            skill_catalog_count=len(self.skill_catalog.list()),
+            skill_catalog_sha256=self.skill_catalog.catalog_sha256,
             profile_sha256=profile_hash,
         )
 

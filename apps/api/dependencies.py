@@ -14,6 +14,7 @@ from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.config.models import ModelsConfig, ProviderModel
 from klara.infra.llm.routed_client import RoutedLlmClient
 from klara.infra.llm.openai_compatible import OpenAICompatibleSettings
+from klara.skills import SkillCatalog
 
 
 def _load_model_options(
@@ -88,6 +89,13 @@ _models = load_models_config(Path("config"))
 _runtime = load_runtime_config(Path("config"))
 _model_options = _load_model_options(_models)
 _default_model_ref = _default_model(_models, _model_options)
+_workspace_root = Path.cwd()
+_skill_catalog = SkillCatalog.discover(
+    built_in_root=Path(__file__).parents[2] / "src" / "klara" / "skills" / "builtin",
+    user_root=Path.home() / ".klara" / "skills",
+    project_root=_workspace_root / ".klara" / "skills",
+    allowed_tools=set(_runtime.profile().visible_tools),
+)
 _llm = RoutedLlmClient(
     models=_models,
     dotenv_path=".env",
@@ -131,3 +139,9 @@ def get_model_options() -> list[ModelOption]:
 
 def get_default_model() -> str:
     return _default_model_ref
+
+
+def get_skill_catalog() -> SkillCatalog:
+    """Return the same resolved local catalog contract used by product runs."""
+
+    return _skill_catalog

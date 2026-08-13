@@ -1,0 +1,42 @@
+{
+  "checks": {
+    "api_is_metadata_only": true,
+    "bilingual_tutorial_exists": true,
+    "catalog_is_metadata_only": true,
+    "frontend_explains_loading_and_permissions": true,
+    "irrelevant_skill_body_stays_out": true,
+    "loaded_event_projects_to_api": true,
+    "project_precedence_is_deterministic": true,
+    "public_trace_hides_skill_body": true,
+    "run_completes_after_loading": true,
+    "selection_and_version_are_traced": true,
+    "skill_body_loads_after_view": true,
+    "stage_manifest_exists": true,
+    "three_scopes_supported": true,
+    "tool_escalation_is_rejected": true
+  },
+  "evaluated_at": "2026-08-13T09:35:53.240809+00:00",
+  "gate_kind": "deterministic_progressive_disclosure_gate",
+  "interpretation": "Passing proves deterministic built-in/user/project precedence, metadata-first discovery, explicit on-demand loading, dependency/tool/permission fail-closed checks, safe lifecycle projection, and a responsive catalog surface. It does not claim a remote marketplace or production organization-wide registry.",
+  "metrics": {
+    "checks_passed": 14,
+    "checks_total": 14,
+    "loaded_skill_count": 1,
+    "public_body_leak_count": 0,
+    "resolved_skill_count": 2,
+    "shadowed_definition_count": 2
+  },
+  "passed": true,
+  "public_loading_evidence": {
+    "body_content_exposed": false,
+    "loaded_count": 1,
+    "name": "review",
+    "reference": null,
+    "scope": "project",
+    "sha256": "346947a020a680c5965ccf8f3939baa806dda67f78a2a65740f260dc8ecd0cf4",
+    "version": "1.0.0"
+  },
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter09-skills-runtime.v1",
+  "stage": "ch09-skills-runtime"
+}

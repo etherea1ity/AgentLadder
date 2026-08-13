@@ -77,6 +77,10 @@ export type RunEventType =
   | 'model_call.failed'
   | 'prompt_recovery.started'
   | 'prompt_recovery.completed'
+  | 'skills.catalog_ready'
+  | 'skills.selected'
+  | 'skills.loaded'
+  | 'skills.load_rejected'
   | 'llm_call_started'
   | 'answer_streaming_started'
   | 'answer_delta'
@@ -219,6 +223,27 @@ export type EvaluationSummary = {
   metrics: Record<string, number>;
   checks: Record<string, boolean>;
   split_hashes: Record<string, string>;
+};
+
+export type SkillOption = {
+  name: string;
+  description: string;
+  version: string;
+  scope: 'built_in' | 'user' | 'project';
+  source: string;
+  sha256: string;
+  tools: string[];
+  permissions: string[];
+  dependencies: string[];
+  references: string[];
+  shadowed_scopes: string[];
+};
+
+export type SkillsCatalog = {
+  schema_version: 'klara.skills-catalog.v1';
+  precedence: string[];
+  body_loading: 'on_demand';
+  skills: SkillOption[];
 };
 
 // Klara Presence public event model. This is intentionally separate from the

@@ -1,0 +1,48 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "ch09-skills-runtime",
+  "branch": "codex/ch09-skills-runtime",
+  "parent_commit": "8a47ccf745e6f143b76322634539431c1f4a8a6f",
+  "mode": "full-end-to-end",
+  "datasets": ["tests/fixtures/behavior/agent_behavior_cases.json"],
+  "prompts": ["src/klara/prompts/persona.md"],
+  "model_ids": ["deepseek/deepseek-v4-flash", "qwen/qwen3.7-plus"],
+  "seeds": [19],
+  "budgets": {
+    "paid_api_usd": 0,
+    "max_skill_body_chars": 20000,
+    "max_reference_chars": 12000,
+    "max_loaded_skills": 8
+  },
+  "evaluator_versions": [
+    "klara.chapter09-skills-runtime.v1",
+    "klara.behavior-scorer.v1",
+    "klara.documentation-validator.v1",
+    "klara.ui-e2e.v1"
+  ],
+  "expected_artifacts": [
+    "docs/chapters/ch09-skills-procedural-memory.md",
+    "docs/chapters/ch09-skills-procedural-memory.en.md",
+    "docs/reports/product/ch09-skills-runtime.json",
+    "docs/reports/product/ch09-skills-runtime.md",
+    "docs/reports/product/ch09-skills-runtime.en.md",
+    "docs/reports/product/ch09-skills-runtime-ui-e2e.json"
+  ],
+  "acceptance": {
+    "built_in_user_project_catalogs": true,
+    "deterministic_precedence_and_conflicts": true,
+    "metadata_first_progressive_loading": true,
+    "dependency_and_permission_checks": true,
+    "skill_content_cannot_escalate_authority": true,
+    "selection_load_rejection_and_version_trace": true,
+    "api_and_responsive_skills_ui": true,
+    "critical_behavior_regressions": 0
+  },
+  "exclusions": [
+    "plugin marketplace",
+    "remote skill installation",
+    "production organization-wide skill registry",
+    "paid provider calls",
+    "HKU/VPN/SSH/Slurm"
+  ]
+}

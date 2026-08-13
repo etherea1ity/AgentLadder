@@ -4,6 +4,7 @@ import { api, ApiError, type RunEventSubscription } from "./api/client";
 import { ChatWorkspace } from "./components/ChatWorkspace";
 import { EvaluationDashboard } from "./components/EvaluationDashboard";
 import { Sidebar } from "./components/Sidebar";
+import { SkillsCatalog } from "./components/SkillsCatalog";
 import type {
   Message,
   ModelOption,
@@ -49,7 +50,7 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState("");
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => readTheme());
-  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations">("chat");
+  const [activeWorkspace, setActiveWorkspace] = useState<"chat" | "evaluations" | "skills">("chat");
   const [handoffTriggerRunId, setHandoffTriggerRunId] = useState<string | null>(
     null,
   );
@@ -920,6 +921,7 @@ export default function App() {
     sidebarCollapsed ? "sidebar-collapsed" : "",
     theme === "dark" ? "theme-dark" : "",
     activeWorkspace === "evaluations" ? "has-evaluations" : "",
+    activeWorkspace === "skills" ? "has-skills" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -946,9 +948,13 @@ export default function App() {
         onDelete={deleteSession}
         evaluationsActive={activeWorkspace === "evaluations"}
         onOpenEvaluations={() => setActiveWorkspace("evaluations")}
+        skillsActive={activeWorkspace === "skills"}
+        onOpenSkills={() => setActiveWorkspace("skills")}
       />
       {activeWorkspace === "evaluations" ? (
         <EvaluationDashboard onBackToChat={() => setActiveWorkspace("chat")} />
+      ) : activeWorkspace === "skills" ? (
+        <SkillsCatalog onBackToChat={() => setActiveWorkspace("chat")} />
       ) : (
         <ChatWorkspace
           activeSessionId={activeSessionId}

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Klara Skills progressive disclosure</title>
+  <desc id="desc">Klara first reads compact metadata, selects one relevant Skill, validates dependencies and authority, then loads only that procedure into the next model turn.</desc>
+  <rect width="1280" height="720" rx="36" fill="#f6f5ef"/>
+  <text x="70" y="78" fill="#263129" font-family="Segoe UI, sans-serif" font-size="34" font-weight="700">Skills: metadata first, instructions on demand</text>
+  <text x="70" y="118" fill="#687069" font-family="Segoe UI, sans-serif" font-size="18">A procedure can guide the model, but it cannot grant tools or permissions.</text>
+  <g font-family="Segoe UI, sans-serif">
+    <rect x="70" y="210" width="230" height="230" rx="28" fill="#ffffff" stroke="#d8ddd6" stroke-width="2"/>
+    <text x="98" y="256" fill="#263129" font-size="22" font-weight="700">Catalog</text>
+    <text x="98" y="296" fill="#687069" font-size="16">name · description</text>
+    <text x="98" y="328" fill="#687069" font-size="16">version · scope</text>
+    <text x="98" y="360" fill="#687069" font-size="16">tools · permissions</text>
+    <text x="98" y="402" fill="#52705a" font-size="15" font-weight="650">No instruction body</text>
+    <path d="M314 325H410" stroke="#88918a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M394 311L412 325L394 339" fill="none" stroke="#88918a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="430" y="190" width="270" height="270" rx="30" fill="#e8efe8" stroke="#aabbaa" stroke-width="2"/>
+    <text x="462" y="238" fill="#263129" font-size="22" font-weight="700">Relevant?</text>
+    <path d="M565 270L642 325L565 380L488 325Z" fill="#ffffff" stroke="#6f8b73" stroke-width="3"/>
+    <text x="528" y="319" fill="#263129" font-size="16" font-weight="650">skill_view</text>
+    <text x="516" y="344" fill="#687069" font-size="14">explicit request</text>
+    <text x="462" y="426" fill="#52705a" font-size="15">Irrelevant Skills stay out</text>
+    <path d="M714 325H810" stroke="#88918a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M794 311L812 325L794 339" fill="none" stroke="#88918a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="830" y="210" width="380" height="230" rx="28" fill="#ffffff" stroke="#d8ddd6" stroke-width="2"/>
+    <text x="862" y="256" fill="#263129" font-size="22" font-weight="700">Validate, then load</text>
+    <text x="862" y="298" fill="#687069" font-size="16">✓ dependency exists</text>
+    <text x="862" y="330" fill="#687069" font-size="16">✓ tool already allowed</text>
+    <text x="862" y="362" fill="#687069" font-size="16">✓ permission already granted</text>
+    <text x="862" y="404" fill="#52705a" font-size="15" font-weight="650">Body → next private model turn</text>
+
+    <rect x="328" y="530" width="624" height="94" rx="24" fill="#263129"/>
+    <text x="365" y="571" fill="#ffffff" font-size="18" font-weight="650">Public trace / UI</text>
+    <text x="365" y="601" fill="#cad5cc" font-size="15">selected · loaded · rejected · version · hash — never the private body</text>
+  </g>
+</svg>
