@@ -101,7 +101,8 @@ class MemorySearchTool(BaseTool):
                 "query": {"type": "string"},
                 "mode": {
                     "type": "string",
-                    "enum": ["hybrid", "lexical", "vector", "recent", "full_context", "mem0_compatible"],
+                    "enum": ["hybrid", "lexical", "vector", "recent", "full_context", "semantic_recency", "mem0_compatible"],
+                    "description": "Use semantic_recency for the local vector-plus-recency ablation. mem0_compatible is a deprecated compatibility alias and is not official Mem0.",
                 },
                 "at_time": {"type": "string"},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 20},

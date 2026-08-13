@@ -17,7 +17,7 @@ def test_memory_retrieval_matrix_is_fair_and_does_not_fake_competitors(tmp_path)
     assert report["same_memory_corpus"] is True
     assert report["same_cases"] is True
     assert set(report["systems"]) == {
-        "full_context", "recent", "lexical", "vector", "hybrid", "mem0_compatible"
+        "full_context", "recent", "lexical", "vector", "hybrid", "semantic_recency"
     }
     assert report["systems"]["hybrid"]["critical_top1_accuracy"] == 1.0
     assert report["competitors"]["mem0"]["status"] == "not_executed"

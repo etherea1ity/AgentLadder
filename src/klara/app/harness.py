@@ -267,7 +267,8 @@ class KlaraHarness:
         controllers = self.controllers
         if controllers is None:
             web_research = WebResearchController(
-                user_timezone=self.config.user_context.timezone
+                user_timezone=self.config.user_context.timezone,
+                available_tools=self._visible_tool_names(),
             )
             controllers = (
                 ContextController(

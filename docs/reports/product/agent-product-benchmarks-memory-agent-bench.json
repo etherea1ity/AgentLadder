@@ -1,0 +1,89 @@
+{
+  "adapter_version": "klara.memory-agent-bench-adapter.v1",
+  "benchmark": "MemoryAgentBench",
+  "checks": {
+    "all_four_competencies_present": true,
+    "all_split_contracts_pass": true,
+    "official_revision_pinned": true,
+    "official_row_count_146": true
+  },
+  "limitations": [
+    "This run validates all official split schemas, sources, and labels; it is not an answer-accuracy result.",
+    "Official execution needs incremental memory ingestion and the same frozen answer model for Klara and competitors.",
+    "The four aggregate capabilities must not be reduced to retrieval-only metrics."
+  ],
+  "passed": true,
+  "schema_version": "klara.public-memory-benchmark.v1",
+  "source": {
+    "dataset": "https://huggingface.co/datasets/ai-hyz/MemoryAgentBench",
+    "dataset_revision": "7ea066982b140a19337e17e60d45d4076e042faf",
+    "license": "MIT",
+    "repository": "https://github.com/HUST-AI-HYZ/MemoryAgentBench",
+    "repository_commit": "455306dcabc3842526eb83cd4e225e5d486c5c5d"
+  },
+  "splits": {
+    "Accurate_Retrieval": {
+      "expected_rows": 22,
+      "official_file_sha256": "56c3cd80fb6731a3e53cd1a6be3148f54df60ff2d290ee50e28f8acebf9655c1",
+      "passed": true,
+      "question_answer_alignment": true,
+      "questions": 2000,
+      "rows": 22,
+      "sources": {
+        "eventqa_131072": 5,
+        "eventqa_65536": 5,
+        "eventqa_full": 5,
+        "longmemeval_s*": 5,
+        "ruler_qa1_197K": 1,
+        "ruler_qa2_421K": 1
+      }
+    },
+    "Conflict_Resolution": {
+      "expected_rows": 8,
+      "official_file_sha256": "24d5c3f09ce0ce15625cb9f8a98f44f0d864ca6c94d7b4ad04eb697ca3a5ff45",
+      "passed": true,
+      "question_answer_alignment": true,
+      "questions": 800,
+      "rows": 8,
+      "sources": {
+        "factconsolidation_mh_262k": 1,
+        "factconsolidation_mh_32k": 1,
+        "factconsolidation_mh_64k": 1,
+        "factconsolidation_mh_6k": 1,
+        "factconsolidation_sh_262k": 1,
+        "factconsolidation_sh_32k": 1,
+        "factconsolidation_sh_64k": 1,
+        "factconsolidation_sh_6k": 1
+      }
+    },
+    "Long_Range_Understanding": {
+      "expected_rows": 110,
+      "official_file_sha256": "5ab175461954db67770d4a4cb69e569b513ebb96aceb9ee79b57f67488bcd539",
+      "passed": true,
+      "question_answer_alignment": true,
+      "questions": 171,
+      "rows": 110,
+      "sources": {
+        "detective_qa": 10,
+        "infbench_sum_eng_shots2": 100
+      }
+    },
+    "Test_Time_Learning": {
+      "expected_rows": 6,
+      "official_file_sha256": "5338753be48f925d03318eed66117286e3489025fabe050a547bd086cd7d79c0",
+      "passed": true,
+      "question_answer_alignment": true,
+      "questions": 700,
+      "rows": 6,
+      "sources": {
+        "icl_banking77_5900shot_balance": 1,
+        "icl_clinic150_7050shot_balance": 1,
+        "icl_nlu_8296shot_balance": 1,
+        "icl_trec_coarse_6600shot_balance": 1,
+        "icl_trec_fine_6400shot_balance": 1,
+        "recsys_redial_full": 1
+      }
+    }
+  },
+  "task": "official_dataset_contract"
+}

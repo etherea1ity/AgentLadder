@@ -949,16 +949,66 @@
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "config/stages/agent-product-benchmarks.manifest.json",
+        "docs/chapters/agent-product-benchmarks.md",
+        "docs/chapters/agent-product-benchmarks.en.md",
+        "docs/reports/product/agent-product-benchmarks.json",
+        "docs/reports/product/agent-product-benchmarks.md",
+        "docs/reports/product/agent-product-benchmarks.en.md",
+        "docs/reports/product/agent-product-benchmarks-runtime-calibration.json",
+        "docs/reports/product/agent-product-benchmarks-locomo.json",
+        "docs/reports/product/agent-product-benchmarks-longmemeval.json",
+        "docs/reports/product/agent-product-benchmarks-memory-agent-bench.json",
+        "docs/reports/product/agent-product-benchmarks-public-agent-contracts.json",
+        "docs/reports/product/agent-product-benchmarks-memory-competitors.json"
+      ],
       "branch": "codex/agent-product-benchmarks",
-      "commands": [],
+      "commands": [
+        "python -m pytest -q",
+        "npm --prefix apps/web test -- --run",
+        "npm --prefix apps/web run build",
+        "git diff --check"
+      ],
       "commit": null,
-      "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "datasets": [
+        "KlaraBench v2: 11 cases / 41 observations",
+        "LoCoMo official categories 1-4: 100-question deterministic slice",
+        "LongMemEval cleaned oracle: 60-question deterministic contract slice",
+        "MemoryAgentBench: 146 rows / 3671 questions",
+        "AgentBench and tau2 official source/task contracts",
+        "Mem0, MEM1, and BEAM official implementation contracts"
+      ],
+      "evaluator_versions": [
+        "klara.behavior-live-runner.v1",
+        "klara.behavior-scorer.v2",
+        "klara.behavior-label-merger.v1",
+        "klara.memory-public-adapter.v1",
+        "klara.product-benchmarks.v1"
+      ],
+      "evidence": {
+        "agent_product_freeze_allowed": false,
+        "frontend_build": "passed",
+        "frontend_tests": "71 passed",
+        "local_pre_freeze_ready": true,
+        "python_regression": "443 passed, 2 documented skips",
+        "runtime_calibration": "41/41 (contract calibration, not a model score)",
+        "training_allowed": false
+      },
       "id": "agent-product-benchmarks",
-      "metrics": {},
-      "remaining_failures": [],
+      "metrics": {
+        "locomo_evidence_hit_at_5": 0.68,
+        "locomo_evidence_mrr": 0.439,
+        "locomo_evidence_recall_at_5": 0.630588,
+        "official_competitor_scores_claimed": 0,
+        "public_secret_leaks": 0
+      },
+      "remaining_failures": [
+        "No authorized paid budget for exact-coverage live candidate, reference, and independent-judge runs",
+        "No complete independent blind-human review with at least 95% acceptability",
+        "Official comparable AgentBench and tau2 runs are not executed",
+        "Official comparable Mem0, MEM1, and BEAM runs are not executed"
+      ],
       "status": "pending"
     },
     {

@@ -407,10 +407,12 @@ class WebResearchController:
         *,
         user_timezone: str = "local",
         policy: WebResearchPolicy | None = None,
+        available_tools: tuple[str, ...] = (),
     ) -> None:
         """Create an empty controller for one run."""
 
         self.user_timezone = user_timezone
+        self.available_tools = frozenset(available_tools)
         self.state = WebResearchState(user_timezone=user_timezone)
         self.ledger = EvidenceLedger()
         self.policy = policy or WebResearchPolicy()
@@ -423,7 +425,7 @@ class WebResearchController:
         """Initialize state for one run from the user request."""
 
         self._run_id = run_id
-        mode = _classify_mode(user_input)
+        mode = _classify_mode(user_input, available_tools=self.available_tools)
         self.state = WebResearchState(
             active=mode != "off",
             mode=mode,
@@ -783,9 +785,15 @@ def _no_viable_action_feedback(decision: ResearchDecision) -> str:
     return " ".join(parts)
 
 
-def _classify_mode(user_input: str) -> ResearchMode:
+def _classify_mode(
+    user_input: str,
+    *,
+    available_tools: frozenset[str] = frozenset(),
+) -> ResearchMode:
     compact = _strip_timestamp_envelope(user_input).lower()
     if _is_exact_time_request(compact):
+        return "off"
+    if _is_local_state_request(compact, available_tools=available_tools):
         return "off"
     deep_terms = (
         "research",
@@ -839,6 +847,48 @@ def _classify_mode(user_input: str) -> ResearchMode:
     if any(term in compact for term in quick_terms):
         return "quick"
     return "off"
+
+
+def _is_local_state_request(
+    compact: str,
+    *,
+    available_tools: frozenset[str],
+) -> bool:
+    """Keep owner-scoped product state out of the public-web evidence path."""
+
+    cues = {
+        "task_list": (
+            "my durable task",
+            "my task status",
+            "我的任务",
+            "任务状态",
+        ),
+        "schedule_list": (
+            "my schedule",
+            "my scheduled task",
+            "我的定时任务",
+            "我的日程",
+            "定时任务状态",
+        ),
+        "memory_search": (
+            "do i prefer",
+            "my preference",
+            "remember about me",
+            "我的偏好",
+            "我喜欢",
+            "记得我",
+        ),
+        "skills_list": (
+            "available skill",
+            "list the skill",
+            "列出 skill",
+            "列出这个 skill",
+        ),
+    }
+    return any(
+        tool_name in available_tools and any(cue in compact for cue in tool_cues)
+        for tool_name, tool_cues in cues.items()
+    )
 
 
 def _is_exact_time_request(compact: str) -> bool:

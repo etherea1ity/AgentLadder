@@ -1,0 +1,583 @@
+{
+  "adapter_version": "klara.longmemeval-oracle-adapter.v1",
+  "benchmark": "LongMemEval",
+  "checks": {
+    "answer_session_ids_resolve": true,
+    "answers_nonempty": true,
+    "frozen_sample_size": true,
+    "multiple_capability_types_present": true,
+    "official_dataset_hash": true,
+    "official_question_count_500": true,
+    "session_content_nonempty": true
+  },
+  "limitations": [
+    "The oracle split already contains only answer-bearing evidence sessions; it cannot measure retrieval quality.",
+    "This contract run validates official labels and adapter alignment, not answer accuracy.",
+    "End-to-end LongMemEval requires the same frozen answer model and official judge and is a separate paid/live gate."
+  ],
+  "passed": true,
+  "rows": [
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "720133ac",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_d31cdae3",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 3,
+      "answer_sessions_present": true,
+      "question_id": "80ec1f4f_abs",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 3
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "07741c45",
+      "question_type": "knowledge-update",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_4edbafa2",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "c4f10528",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "bcbe585f",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 5,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_7fce9456",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 5
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "1d4da289",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_6ed717ea",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "70b3e69b",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "09ba9854",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_e414231f",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "54026fce",
+      "question_type": "single-session-preference",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "b6019101",
+      "question_type": "knowledge-update",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 3,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_93f6379c",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 3
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 3,
+      "answer_sessions_present": true,
+      "question_id": "00ca467f",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 3
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "a08a253f",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "58bf7951",
+      "question_type": "single-session-user",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "4f54b7c9",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_cd90e484",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "c8c3f81d",
+      "question_type": "single-session-user",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "2c63a862",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "06878be2",
+      "question_type": "single-session-preference",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "6456829e",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "ceb54acb",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "6071bd76",
+      "question_type": "knowledge-update",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "2311e44b",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "a3045048",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "a11281a2",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "ad7109d1",
+      "question_type": "single-session-user",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "a2f3aa27",
+      "question_type": "knowledge-update",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "7405e8b1",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "3249768e",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "c6853660",
+      "question_type": "knowledge-update",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "1de5cff2",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_fa19884d",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "36580ce8",
+      "question_type": "single-session-user",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "b01defab",
+      "question_type": "knowledge-update",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "bc8a6e93_abs",
+      "question_type": "single-session-user",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 3,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_2f56ae70",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 3
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_fe651585",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "61f8c8f8",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "488d3006",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "eaca4986",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "6222b6eb",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_b0863698",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "2ebe6c90",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "eac54add",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "51a45a95",
+      "question_type": "single-session-user",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "195a1a1b",
+      "question_type": "single-session-preference",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_d9af6064",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "ef66a6e5",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "ac031881",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 4,
+      "answer_sessions_present": true,
+      "question_id": "e3038f8c",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 4
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 1,
+      "answer_sessions_present": true,
+      "question_id": "e8a79c70",
+      "question_type": "single-session-assistant",
+      "session_content_nonempty": true,
+      "session_count": 1
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_fa19884c",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "87f22b4a",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "f35224e0",
+      "question_type": "multi-session",
+      "session_content_nonempty": true,
+      "session_count": 2
+    },
+    {
+      "answer_present": true,
+      "answer_session_count": 2,
+      "answer_sessions_present": true,
+      "question_id": "gpt4_7de946e7",
+      "question_type": "temporal-reasoning",
+      "session_content_nonempty": true,
+      "session_count": 2
+    }
+  ],
+  "schema_version": "klara.public-memory-benchmark.v1",
+  "selection": {
+    "algorithm": "sha256(question_id), first N",
+    "question_ids_sha256": "8d71b31fd1682138839eda560712fe82f4c39f32880c6e2f1b72658c1ea9dd0d",
+    "question_type_counts": {
+      "knowledge-update": 6,
+      "multi-session": 16,
+      "single-session-assistant": 11,
+      "single-session-preference": 3,
+      "single-session-user": 6,
+      "temporal-reasoning": 18
+    },
+    "sample_size": 60
+  },
+  "source": {
+    "commit": "9e0b455f4ef0e2ab8f2e582289761153549043fc",
+    "dataset": "https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned",
+    "dataset_sha256": "821a2034d219ab45846873dd14c14f12cfe7776e73527a483f9dac095d38620c",
+    "license": "MIT",
+    "repository": "https://github.com/xiaowu0162/LongMemEval"
+  },
+  "task": "cleaned_oracle_adapter_contract"
+}

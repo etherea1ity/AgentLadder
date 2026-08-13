@@ -43,6 +43,17 @@ def build_behavior_report(
         score for score in materialized if score.human_acceptable is not None
     )
     human_accepted = sum(bool(score.human_acceptable) for score in human_scores)
+    expected_observations = sum(case.repetitions for case in fixture.cases)
+    expected_keys = {
+        (case.case_id, repetition)
+        for case in fixture.cases
+        for repetition in range(1, case.repetitions + 1)
+    }
+    observed_keys = [(score.case_id, score.repetition) for score in materialized]
+    observation_coverage = (
+        len(observed_keys) == len(set(observed_keys))
+        and set(observed_keys) == expected_keys
+    )
     p0_count = sum(score.p0_count for score in materialized)
     severe_mismatch_rate = _rate(p0_count, len(materialized))
     stability = _stability(materialized)
@@ -64,16 +75,20 @@ def build_behavior_report(
         "total_cost_usd": sum(score.cost_usd for score in materialized),
     }
     checks = {
+        "observation_coverage": observation_coverage,
         "critical_deterministic": metrics["critical_deterministic_rate"]
         >= float(thresholds["critical_deterministic_rate"]),
         "normal_task_success": metrics["normal_task_success_rate"]
         >= float(thresholds["normal_task_success_rate"]),
         "reference_non_inferiority": bool(reference_pairs)
+        and len(reference_pairs) == expected_observations
         and metrics["reference_gap"] <= float(thresholds["maximum_reference_gap"]),
         "independent_judge": bool(judge_scores)
+        and len(judge_scores) == expected_observations
         and metrics["judge_equivalent_or_better_rate"]
         >= float(thresholds["judge_equivalent_or_better_rate"]),
         "human_acceptability": bool(human_scores)
+        and len(human_scores) == expected_observations
         and metrics["human_acceptability_rate"]
         >= float(thresholds["human_acceptability_rate"]),
         "p0_zero": p0_count <= int(thresholds["maximum_p0_count"]),
@@ -81,6 +96,9 @@ def build_behavior_report(
         < float(thresholds["maximum_severe_answer_mismatch_rate"]),
         "critical_repeat_stability": all(
             item["passed"] for item in stability if item["critical"]
+        ),
+        "ordinary_repeat_stability": all(
+            item["passed"] for item in stability if not item["critical"]
         ),
     }
     success_interval = wilson_interval(success_count, len(materialized))
@@ -96,11 +114,13 @@ def build_behavior_report(
             "critical_observations": len(critical),
             "judge_scored": len(judge_scores),
             "human_scored": len(human_scores),
+            "expected_observations": expected_observations,
         },
         "metrics": metrics,
         "success_rate_95pct_ci": list(success_interval),
         "stability": stability,
         "language_breakdown": _breakdown(materialized, "language"),
+        "capability_breakdown": _capability_breakdown(materialized),
         "split_breakdown": _breakdown(materialized, "split"),
         "checks": checks,
         "case_scores": [score.to_dict() for score in materialized],
@@ -199,6 +219,20 @@ def _breakdown(scores: tuple[BehaviorCaseScore, ...], field: str) -> dict[str, A
     grouped: dict[str, list[BehaviorCaseScore]] = {}
     for score in scores:
         grouped.setdefault(str(getattr(score, field)), []).append(score)
+    return {
+        key: {
+            "observations": len(items),
+            "success_rate": _rate(sum(item.task_success for item in items), len(items)),
+        }
+        for key, items in sorted(grouped.items())
+    }
+
+
+def _capability_breakdown(scores: tuple[BehaviorCaseScore, ...]) -> dict[str, Any]:
+    grouped: dict[str, list[BehaviorCaseScore]] = {}
+    for score in scores:
+        for tag in score.capability_tags:
+            grouped.setdefault(tag, []).append(score)
     return {
         key: {
             "observations": len(items),

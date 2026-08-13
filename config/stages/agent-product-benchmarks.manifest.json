@@ -1,0 +1,120 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-product-benchmarks",
+  "branch": "codex/agent-product-benchmarks",
+  "parent_commit": "ac6f83eb0cb469f91c1caf8bcdb59e6ebc04aad8",
+  "mode": "full-end-to-end",
+  "frozen_at": "2026-08-14T00:00:00+08:00",
+  "datasets": [
+    "tests/fixtures/behavior/agent_behavior_cases.v2.json",
+    "tests/fixtures/memory/ch10_retrieval_cases.json",
+    "official public datasets fetched outside Git and verified by source commit plus SHA-256"
+  ],
+  "public_sources": {
+    "locomo": {
+      "repository": "https://github.com/snap-research/locomo",
+      "commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376"
+    },
+    "longmemeval": {
+      "repository": "https://github.com/xiaowu0162/LongMemEval",
+      "commit": "9e0b455f4ef0e2ab8f2e582289761153549043fc"
+    },
+    "memoryagentbench": {
+      "repository": "https://github.com/HUST-AI-HYZ/MemoryAgentBench",
+      "commit": "455306dcabc3842526eb83cd4e225e5d486c5c5d"
+    },
+    "beam": {
+      "repository": "https://github.com/mohammadtavakoli78/BEAM",
+      "commit": "3e12035532eb85768f1a7cd779832b650c4b2ef9"
+    },
+    "mem0": {
+      "repository": "https://github.com/mem0ai/memory-benchmarks",
+      "commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b"
+    },
+    "mem1": {
+      "repository": "https://github.com/MIT-MI/MEM1",
+      "commit": "2609aef4e7c46d8d0c0f06b9312bc4b4abe04b9d"
+    },
+    "agentbench": {
+      "repository": "https://github.com/THUDM/AgentBench",
+      "commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5"
+    },
+    "tau2": {
+      "repository": "https://github.com/sierra-research/tau2-bench",
+      "commit": "79975ac5741e23fbb1d2ac44262d62398a6d87bd"
+    }
+  },
+  "prompts": [
+    "src/klara/prompts/persona.md",
+    "frozen public reference answers in agent_behavior_cases.v2.json"
+  ],
+  "model_roles": {
+    "candidate": "deepseek/deepseek-v4-flash",
+    "reference_author": "codex/gpt-5.6 public-answer references, deterministically reviewed",
+    "independent_judge": "deepseek/deepseek-v4-pro",
+    "qwen_status": "credential authentication unavailable at stage freeze"
+  },
+  "seeds": [1401, 1402, 1403, 1404, 1405],
+  "split_hashes": {
+    "development": "b6d8337a5b98b4e817568b629cc2121684fea6518fd9b78f1bbec831ccd5b982",
+    "validation": "4cfec15dfeee78acda9e65ee9a21630c849f14a12a8fe845d3347785bf0476db",
+    "hidden_regression": "75bf510332d260cc6aae8d82b0e1675185d31c8a6946c0e076aac7d11aa5d131",
+    "adversarial": "c89b89037371aa2be6288a671ece3f60933fa3164f44ea9f400be86f0d35d455"
+  },
+  "budgets": {
+    "paid_api_usd": 0,
+    "maximum_steps_per_case": 16,
+    "maximum_generation_tokens_per_case": 1200,
+    "maximum_latency_ms_per_case": 120000,
+    "memory_top_k": 5
+  },
+  "thresholds": {
+    "critical_deterministic_rate": 1.0,
+    "normal_task_success_rate": 0.95,
+    "maximum_reference_gap": 0.05,
+    "judge_equivalent_or_better_rate": 0.90,
+    "human_acceptability_rate": 0.95,
+    "maximum_p0_count": 0,
+    "maximum_severe_answer_mismatch_rate": 0.01,
+    "critical_repetitions": 5,
+    "ordinary_repetitions": 3
+  },
+  "evaluator_versions": [
+    "klara.behavior-live-runner.v1",
+    "klara.behavior-scorer.v2",
+    "klara.behavior-label-merger.v1",
+    "klara.memory-public-adapter.v1",
+    "klara.product-benchmarks.v1"
+  ],
+  "expected_artifacts": [
+    "docs/reports/product/agent-product-benchmarks.json",
+    "docs/reports/product/agent-product-benchmarks.md",
+    "docs/reports/product/agent-product-benchmarks.en.md",
+    "docs/reports/product/agent-product-benchmarks-human-review.json",
+    "docs/reports/product/agent-product-benchmarks-runtime-calibration.json",
+    "docs/reports/product/agent-product-benchmarks-locomo.json",
+    "docs/reports/product/agent-product-benchmarks-longmemeval.json",
+    "docs/reports/product/agent-product-benchmarks-memory-agent-bench.json",
+    "docs/reports/product/agent-product-benchmarks-public-agent-contracts.json",
+    "docs/reports/product/agent-product-benchmarks-memory-competitors.json",
+    "docs/chapters/agent-product-benchmarks.md",
+    "docs/chapters/agent-product-benchmarks.en.md"
+  ],
+  "acceptance": {
+    "runtime_cases_use_only_current_product_tools": true,
+    "deterministic_safety_and_isolation": 1.0,
+    "reference_non_inferiority": true,
+    "independent_model_grading": true,
+    "blind_human_acceptability": true,
+    "public_benchmark_adapters_preserve_labels": true,
+    "memory_competitors_are_official_or_unclaimed": true,
+    "zero_hidden_reasoning_collection": true
+  },
+  "exclusions": [
+    "formal general-purpose RAG knowledge-base product",
+    "claiming a local semantic-recency ablation is Mem0",
+    "claiming MEM1 parity without its official model rollout",
+    "large paid teacher collection before Agent Product Freeze",
+    "HKU/VPN/SSH/Slurm or model training before Agent Product Freeze"
+  ]
+}

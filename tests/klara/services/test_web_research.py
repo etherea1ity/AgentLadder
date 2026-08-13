@@ -70,6 +70,43 @@ def test_stable_chat_leaves_web_research_off() -> None:
     assert controller.drain_events() == ()
 
 
+def test_owner_schedule_status_uses_local_tool_without_web_research() -> None:
+    controller = WebResearchController(
+        user_timezone="Asia/Shanghai",
+        available_tools=("schedule_list",),
+    )
+
+    controller.on_run_start(
+        user_input="我的定时任务现在什么状态？只说名称和状态。",
+        run_id="run-local-schedule",
+    )
+
+    assert controller.state.active is False
+    assert controller.before_final_answer(content="Weekly evidence review — active。").allowed
+
+
+def test_owner_memory_preference_does_not_treat_release_report_as_web_research() -> None:
+    controller = WebResearchController(available_tools=("memory_search",))
+
+    controller.on_run_start(
+        user_input="What style do I prefer for release reports?",
+        run_id="run-local-memory",
+    )
+
+    assert controller.state.active is False
+
+
+def test_public_schedule_still_requires_web_when_only_local_schedule_tool_exists() -> None:
+    controller = WebResearchController(available_tools=("schedule_list",))
+
+    controller.on_run_start(
+        user_input="Look up the latest NBA schedule.",
+        run_id="run-public-schedule",
+    )
+
+    assert controller.state.active is True
+
+
 def test_search_only_observation_blocks_final_answer() -> None:
     controller = WebResearchController()
     controller.on_run_start(user_input="look up the latest schedule", run_id="run-search-only")

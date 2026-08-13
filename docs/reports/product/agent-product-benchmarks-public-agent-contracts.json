@@ -1,0 +1,198 @@
+{
+  "benchmarks": {
+    "agentbench": {
+      "benchmark": "AgentBench",
+      "checks": {
+        "apache_2_license_present": true,
+        "dbbench_row_counts_match": true,
+        "lite_assignment_includes_dbbench_and_os": true,
+        "lite_server_includes_dbbench_and_os": true,
+        "source_commit_and_required_paths": true
+      },
+      "execution_status": "not_executed",
+      "passed": true,
+      "requirements_for_score": [
+        "start the pinned AgentBench task servers/containers",
+        "implement and validate a Klara-compatible AgentBench client adapter",
+        "declare a nonzero provider budget and exact model",
+        "run official task graders and retain their raw outputs"
+      ],
+      "schema_version": "klara.public-agent-benchmark-contract.v1",
+      "score_status": "not_claimed",
+      "source": {
+        "commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+        "license": "Apache-2.0",
+        "repository": "https://github.com/THUDM/AgentBench"
+      },
+      "source_inspection": {
+        "actual_commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+        "commit_matches": true,
+        "expected_commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+        "passed": true,
+        "path": ".tmp\\public-benchmarks\\agentbench",
+        "required_paths": {
+          "LICENSE": {
+            "exists": true,
+            "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+          },
+          "configs/assignments/lite.yaml": {
+            "exists": true,
+            "sha256": "538e3d5cab6392026c078d609e85667475025a12411478989b4d03c2a60180b1"
+          },
+          "configs/start_task_lite.yaml": {
+            "exists": true,
+            "sha256": "7630c79c3a458e3c0be03e0f28147195d9cbee82bc5f6c90790202f67b8ba382"
+          },
+          "configs/tasks/task_assembly.yaml": {
+            "exists": true,
+            "sha256": "1710d0a5ed0984a8ef3b2da470ed989382798010de824f64bc0e05da8a686fb8"
+          },
+          "data/dbbench/dev.jsonl": {
+            "exists": true,
+            "sha256": "eb941c58a7a5651357b19e46aa05070f6cd5a7d83ce70cefd24aa3581e1e1130"
+          },
+          "data/dbbench/standard.jsonl": {
+            "exists": true,
+            "sha256": "cf8dec6fb8051f46e6171136824aaa8b8707c3affbb3185c0bad2b39bc6b71e2"
+          }
+        }
+      },
+      "task_contract": {
+        "data_rows": {
+          "data/dbbench/dev.jsonl": 60,
+          "data/dbbench/standard.jsonl": 300
+        },
+        "local_low_resource_tasks": [
+          "dbbench-std",
+          "os-std"
+        ],
+        "official_task_definitions": 9
+      }
+    },
+    "tau2": {
+      "benchmark": "tau2-bench",
+      "checks": {
+        "all_domain_contracts_match": true,
+        "all_task_ids_unique": true,
+        "all_tasks_have_core_labels": true,
+        "mit_license_present": true,
+        "source_commit_and_required_paths": true
+      },
+      "domains": {
+        "airline": {
+          "contract_matches": true,
+          "descriptions_present": true,
+          "evaluation_criteria_present": true,
+          "sha256": "ccd8ba737b4cc371415af70151187788f728d6108d0916e73bb4317b40542052",
+          "tasks": 50,
+          "unique_ids": true,
+          "user_scenarios_present": true
+        },
+        "banking_knowledge": {
+          "contract_matches": true,
+          "descriptions_present": true,
+          "evaluation_criteria_present": true,
+          "sha256": "213c7f3e6dc0420b1184ee271e39e38c6ece3c43edfa362db49a560828ebd543",
+          "tasks": 97,
+          "unique_ids": true,
+          "user_scenarios_present": true
+        },
+        "mock": {
+          "contract_matches": true,
+          "descriptions_present": true,
+          "evaluation_criteria_present": true,
+          "sha256": "0d8bcd14798bf2e6e082432147f62570c57b0897b4e4e388c95bb02ecbe5d8cf",
+          "tasks": 10,
+          "unique_ids": true,
+          "user_scenarios_present": true
+        },
+        "retail": {
+          "contract_matches": true,
+          "descriptions_present": true,
+          "evaluation_criteria_present": true,
+          "sha256": "8e03ebce7901bd6218e7a7dc3105faa9324091a68058f7fe61c65262868812e8",
+          "tasks": 114,
+          "unique_ids": true,
+          "user_scenarios_present": true
+        },
+        "telecom": {
+          "contract_matches": true,
+          "descriptions_present": true,
+          "evaluation_criteria_present": true,
+          "sha256": "37e562e1ae3242577407e1303b1548bc64e7ea68e37d36173e6747990ceaf8a4",
+          "tasks": 2285,
+          "unique_ids": true,
+          "user_scenarios_present": true
+        }
+      },
+      "execution_status": "not_executed",
+      "passed": true,
+      "requirements_for_score": [
+        "install the pinned tau2 environment in an isolated benchmark runtime",
+        "build a Klara tau2 agent adapter without changing official tools or tasks",
+        "freeze both agent and user-simulator models plus generation budgets",
+        "declare a nonzero provider budget and run official trajectory evaluation"
+      ],
+      "schema_version": "klara.public-agent-benchmark-contract.v1",
+      "score_status": "not_claimed",
+      "source": {
+        "commit": "79975ac5741e23fbb1d2ac44262d62398a6d87bd",
+        "license": "MIT",
+        "repository": "https://github.com/sierra-research/tau2-bench"
+      },
+      "source_inspection": {
+        "actual_commit": "79975ac5741e23fbb1d2ac44262d62398a6d87bd",
+        "commit_matches": true,
+        "expected_commit": "79975ac5741e23fbb1d2ac44262d62398a6d87bd",
+        "passed": true,
+        "path": ".tmp\\public-benchmarks\\tau2",
+        "required_paths": {
+          "LICENSE": {
+            "exists": true,
+            "sha256": "e67c5aa0074dfcaefd3c3a1aedb94cb539234aecd15d5a972574e3200e6252fe"
+          },
+          "README.md": {
+            "exists": true,
+            "sha256": "ed39688aa5d40bd73007355df65f4e41a6c250960642e56764c3ad44da1df8d2"
+          },
+          "data/tau2/domains/airline/tasks.json": {
+            "exists": true,
+            "sha256": "ccd8ba737b4cc371415af70151187788f728d6108d0916e73bb4317b40542052"
+          },
+          "data/tau2/domains/banking_knowledge/tasks.json": {
+            "exists": true,
+            "sha256": "213c7f3e6dc0420b1184ee271e39e38c6ece3c43edfa362db49a560828ebd543"
+          },
+          "data/tau2/domains/mock/tasks.json": {
+            "exists": true,
+            "sha256": "0d8bcd14798bf2e6e082432147f62570c57b0897b4e4e388c95bb02ecbe5d8cf"
+          },
+          "data/tau2/domains/retail/tasks.json": {
+            "exists": true,
+            "sha256": "8e03ebce7901bd6218e7a7dc3105faa9324091a68058f7fe61c65262868812e8"
+          },
+          "data/tau2/domains/telecom/tasks.json": {
+            "exists": true,
+            "sha256": "37e562e1ae3242577407e1303b1548bc64e7ea68e37d36173e6747990ceaf8a4"
+          },
+          "docs/evaluation.md": {
+            "exists": true,
+            "sha256": "017e992b8e8b57c227523c63c4a2597b69a328c0108bd94b1c9028fed6a26ac4"
+          },
+          "pyproject.toml": {
+            "exists": true,
+            "sha256": "23d59670b4ad7bbc0f57420fd9643a8d9188c24abe4f29c9c965544d8cc4cb8d"
+          }
+        }
+      }
+    }
+  },
+  "docker": {
+    "available": true,
+    "error_present": false,
+    "server_version": "28.3.3"
+  },
+  "interpretation": "PASS means the pinned public source/task contracts are reproducible. Neither benchmark was executed and no Agent score is claimed.",
+  "passed": true,
+  "schema_version": "klara.public-agent-benchmarks.v1"
+}

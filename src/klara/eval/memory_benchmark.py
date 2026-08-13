@@ -18,27 +18,35 @@ RETRIEVAL_SYSTEMS = (
     "lexical",
     "vector",
     "hybrid",
-    "mem0_compatible",
+    "semantic_recency",
 )
 
 PUBLIC_BENCHMARK_CONTRACTS = {
     "locomo": {
         "repository": "https://github.com/snap-research/locomo",
+        "commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+        "license": "CC-BY-NC-4.0",
         "task": "very_long_term_conversational_qa",
         "status": "adapter_contract_ready_dataset_not_vendored",
     },
     "longmemeval": {
         "repository": "https://github.com/xiaowu0162/LongMemEval",
+        "commit": "9e0b455f4ef0e2ab8f2e582289761153549043fc",
+        "license": "MIT (repository); dataset terms must be recorded from the official distribution",
         "task": "extraction_multisession_update_temporal_abstention",
         "status": "adapter_contract_ready_dataset_not_vendored",
     },
     "memoryagentbench": {
         "repository": "https://github.com/HUST-AI-HYZ/MemoryAgentBench",
+        "commit": "455306dcabc3842526eb83cd4e225e5d486c5c5d",
+        "license": "MIT (repository); constituent dataset terms remain dataset-specific",
         "task": "retrieval_test_time_learning_long_range_conflict",
         "status": "adapter_contract_ready_dataset_not_vendored",
     },
     "beam": {
         "repository": "https://github.com/mohammadtavakoli78/BEAM",
+        "commit": "3e12035532eb85768f1a7cd779832b650c4b2ef9",
+        "license": "MIT code; CC-BY-SA-4.0 benchmark data",
         "task": "128k_to_10m_long_term_memory",
         "status": "hku_scale_only",
     },
@@ -47,11 +55,13 @@ PUBLIC_BENCHMARK_CONTRACTS = {
 COMPETITOR_CONTRACTS = {
     "mem0": {
         "repository": "https://github.com/mem0ai/memory-benchmarks",
+        "commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
         "adapter": "official_pipeline_required",
         "status": "not_executed",
     },
     "mem1": {
         "repository": "https://github.com/MIT-MI/MEM1",
+        "commit": "2609aef4e7c46d8d0c0f06b9312bc4b4abe04b9d",
         "adapter": "official_checkpoint_and_rollout_required",
         "status": "not_executed",
     },
@@ -125,7 +135,8 @@ def run_retrieval_matrix(
         "public_benchmarks": PUBLIC_BENCHMARK_CONTRACTS,
         "competitors": COMPETITOR_CONTRACTS,
         "interpretation": (
-            "This local gate validates retrieval ablations only. It does not claim Mem0/MEM1 "
+            "This local gate validates repository-native retrieval ablations only. semantic_recency "
+            "is a vector-plus-recency formula, not Mem0. It does not claim Mem0/MEM1 "
             "or public benchmark superiority; those require official adapters and the same frozen answer model."
         ),
     }

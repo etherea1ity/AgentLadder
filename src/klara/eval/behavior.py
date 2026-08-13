@@ -13,8 +13,12 @@ from pydantic import BaseModel, Field, model_validator
 
 
 CASE_SCHEMA_VERSION = "klara.behavior-case.v1"
+CASE_SCHEMA_VERSIONS = frozenset({CASE_SCHEMA_VERSION, "klara.behavior-case.v2"})
 FIXTURE_SCHEMA_VERSION = "klara.behavior-fixture.v1"
-SCORER_VERSION = "klara.behavior-scorer.v1"
+FIXTURE_SCHEMA_VERSIONS = frozenset(
+    {FIXTURE_SCHEMA_VERSION, "klara.behavior-fixture.v2"}
+)
+SCORER_VERSION = "klara.behavior-scorer.v2"
 
 BehaviorSplit = Literal[
     "development", "validation", "hidden_regression", "adversarial"
@@ -45,6 +49,13 @@ class BehaviorReference(BaseModel):
 
     answer: str = Field(min_length=1)
     actions: list[str] = Field(default_factory=list)
+    action_arguments: list[dict[str, Any]] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_actions(self) -> "BehaviorReference":
+        if self.action_arguments and len(self.action_arguments) != len(self.actions):
+            raise ValueError("reference action arguments must align with actions")
+        return self
 
 
 class KlaraBehaviorCase(BaseModel):
@@ -71,7 +82,9 @@ class KlaraBehaviorCase(BaseModel):
     expected_states: list[str] = Field(min_length=1)
     invariants: list[str] = Field(min_length=1)
     acceptable_answer_facts: list[str] = Field(default_factory=list)
+    acceptable_answer_fact_groups: list[list[str]] = Field(default_factory=list)
     prohibited_claims: list[str] = Field(default_factory=list)
+    must_call_in_order: list[str] = Field(default_factory=list)
     limits: BehaviorLimits
     repetitions: int = Field(ge=1)
     critical: bool = False
@@ -81,13 +94,17 @@ class KlaraBehaviorCase(BaseModel):
     def validate_contract(self) -> "KlaraBehaviorCase":
         """Reject schema drift and contradictory action requirements."""
 
-        if self.schema_version != CASE_SCHEMA_VERSION:
+        if self.schema_version not in CASE_SCHEMA_VERSIONS:
             raise ValueError(f"unsupported behavior case schema: {self.schema_version}")
         must = set(self.must_call)
         may = set(self.may_call)
         forbidden = set(self.must_not_call)
         if must & forbidden or may & forbidden:
             raise ValueError("allowed and forbidden action sets must be disjoint")
+        if self.must_call_in_order and not set(self.must_call_in_order).issubset(must):
+            raise ValueError("ordered calls must also be required calls")
+        if any(not group or any(not item.strip() for item in group) for group in self.acceptable_answer_fact_groups):
+            raise ValueError("answer fact groups must contain non-empty alternatives")
         if self.critical and self.repetitions < 5:
             raise ValueError("critical behavior cases require at least five repetitions")
         return self
@@ -104,7 +121,7 @@ class BehaviorFixture(BaseModel):
     def validate_fixture(self) -> "BehaviorFixture":
         """Enforce stable IDs and scenario-family split isolation."""
 
-        if self.schema_version != FIXTURE_SCHEMA_VERSION:
+        if self.schema_version not in FIXTURE_SCHEMA_VERSIONS:
             raise ValueError(f"unsupported behavior fixture schema: {self.schema_version}")
         ids = [case.case_id for case in self.cases]
         if len(ids) != len(set(ids)):
@@ -161,6 +178,7 @@ class BehaviorCaseScore:
     split: str
     language: str
     critical: bool
+    capability_tags: tuple[str, ...]
     checks: dict[str, bool]
     task_success: bool
     reference_success: bool | None
@@ -181,6 +199,7 @@ class BehaviorCaseScore:
             "split": self.split,
             "language": self.language,
             "critical": self.critical,
+            "capability_tags": list(self.capability_tags),
             "checks": self.checks,
             "task_success": self.task_success,
             "reference_success": self.reference_success,
@@ -244,6 +263,13 @@ def score_observation(
         "prohibited_claims_absent": not any(
             claim.lower() in normalized_answer for claim in case.prohibited_claims
         ),
+        "acceptable_facts_present": all(
+            any(alternative.casefold() in normalized_answer for alternative in group)
+            for group in case.acceptable_answer_fact_groups
+        ),
+        "required_call_order": _is_subsequence(
+            case.must_call_in_order, observation.actions
+        ),
         "step_budget": len(observation.actions) <= case.limits.maximum_steps,
         "token_budget": observation.tokens <= case.limits.maximum_tokens,
         "cost_budget": observation.cost_usd <= case.limits.maximum_cost_usd,
@@ -256,6 +282,7 @@ def score_observation(
         split=case.split,
         language=case.language,
         critical=case.critical,
+        capability_tags=tuple(case.capability_tags),
         checks=checks,
         task_success=all(checks.values()),
         reference_success=observation.reference_success,
@@ -281,10 +308,21 @@ def wilson_interval(successes: int, total: int, *, z: float = 1.96) -> tuple[flo
     return (max(0.0, center - margin), min(1.0, center + margin))
 
 
-def anonymous_review_pair(case: KlaraBehaviorCase, candidate: str) -> dict[str, str]:
+def anonymous_review_pair(
+    case: KlaraBehaviorCase,
+    candidate: str,
+    *,
+    repetition: int | None = None,
+) -> dict[str, str]:
     """Build a stable blind A/B pair without exposing which side is candidate."""
 
-    pair_id = stable_hash({"case_id": case.case_id, "candidate": candidate})[:20]
+    pair_id = stable_hash(
+        {
+            "case_id": case.case_id,
+            "repetition": repetition,
+            "candidate": candidate,
+        }
+    )[:20]
     candidate_first = int(pair_id[-1], 16) % 2 == 0
     return {
         "pair_id": pair_id,
@@ -305,5 +343,43 @@ def build_human_review_queue(
     # Preserve case/repetition order so review artifacts are reproducible.
     for observation in sorted(observations, key=lambda item: (item.case_id, item.repetition)):
         if observation.human_acceptable is None:
-            queue.append(anonymous_review_pair(cases[observation.case_id], observation.final_answer))
+            pair = anonymous_review_pair(
+                cases[observation.case_id],
+                observation.final_answer,
+                repetition=observation.repetition,
+            )
+            queue.append(
+                {
+                    key: value
+                    for key, value in pair.items()
+                    if key != "candidate_slot"
+                }
+            )
     return queue
+
+
+def build_human_review_key(
+    fixture: BehaviorFixture, observations: Sequence[BehaviorObservation]
+) -> dict[str, str]:
+    """Build the private decode key separately from the blind reviewer queue."""
+
+    cases = {case.case_id: case for case in fixture.cases}
+    return {
+        pair["pair_id"]: pair["candidate_slot"]
+        for observation in observations
+        if observation.human_acceptable is None
+        for pair in [
+            anonymous_review_pair(
+                cases[observation.case_id],
+                observation.final_answer,
+                repetition=observation.repetition,
+            )
+        ]
+    }
+
+
+def _is_subsequence(required: Sequence[str], observed: Sequence[str]) -> bool:
+    if not required:
+        return True
+    iterator = iter(observed)
+    return all(any(item == expected for item in iterator) for expected in required)

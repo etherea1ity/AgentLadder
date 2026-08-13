@@ -1,0 +1,9 @@
+{
+  "blind_review_pairs": 0,
+  "candidate_observations": 0,
+  "candidate_slot_exposed": false,
+  "next_step": "Generate the blind queue and private decode key separately after a fully covered candidate run.",
+  "reason": "live_candidate_not_executed_under_zero_paid_api_budget",
+  "schema_version": "klara.behavior-human-review-status.v1",
+  "status": "not_generated"
+}

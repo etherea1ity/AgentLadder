@@ -127,7 +127,7 @@ def evaluate_chapter10(root: Path) -> dict[str, Any]:
         ]
         == 1.0,
         "retrieval_ablation_matrix_is_complete": set(benchmark["systems"])
-        == {"full_context", "recent", "lexical", "vector", "hybrid", "mem0_compatible"},
+        == {"full_context", "recent", "lexical", "vector", "hybrid", "semantic_recency"},
         "competitors_are_not_falsely_claimed": all(
             value["status"] == "not_executed"
             for value in benchmark["competitors"].values()

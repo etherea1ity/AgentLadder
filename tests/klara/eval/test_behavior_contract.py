@@ -12,6 +12,8 @@ from klara.eval.behavior import (
     BehaviorObservation,
     KlaraBehaviorCase,
     anonymous_review_pair,
+    build_human_review_key,
+    build_human_review_queue,
     load_fixture,
     score_observation,
     wilson_interval,
@@ -96,3 +98,69 @@ def test_contract_gate_is_labeled_as_control_probe() -> None:
     assert report["gate_kind"] == "contract_control_probe"
     assert "does not measure" in report["interpretation"]
     assert report["documentation"]["passed"]
+
+
+def test_answer_fact_groups_and_required_order_are_enforced() -> None:
+    payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))["cases"][0]
+    payload["schema_version"] = "klara.behavior-case.v2"
+    payload["acceptable_answer_fact_groups"] = [["needle", "针"]]
+    case = KlaraBehaviorCase.model_validate(payload)
+    observation = BehaviorObservation(
+        case_id=case.case_id,
+        repetition=1,
+        final_answer="unrelated",
+        actions=[],
+        states=case.expected_states,
+        invariant_results={item: True for item in case.invariants},
+        latency_ms=1,
+        tokens=1,
+        cost_usd=0,
+    )
+
+    score = score_observation(case, observation)
+
+    assert score.checks["acceptable_facts_present"] is False
+    assert score.task_success is False
+
+
+def test_human_queue_does_not_reveal_candidate_slot() -> None:
+    fixture = load_fixture(FIXTURE_PATH)
+    case = fixture.cases[0]
+    observation = BehaviorObservation(
+        case_id=case.case_id,
+        repetition=1,
+        final_answer="candidate",
+        states=case.expected_states,
+        invariant_results={item: True for item in case.invariants},
+        latency_ms=1,
+        tokens=1,
+        cost_usd=0,
+    )
+
+    queue = build_human_review_queue(fixture, [observation])
+    key = build_human_review_key(fixture, [observation])
+
+    assert "candidate_slot" not in queue[0]
+    assert key[queue[0]["pair_id"]] in {"a", "b"}
+
+
+def test_repeated_identical_answers_receive_unique_blind_pair_ids() -> None:
+    fixture = load_fixture(FIXTURE_PATH)
+    case = fixture.cases[0]
+    observations = [
+        BehaviorObservation(
+            case_id=case.case_id,
+            repetition=repetition,
+            final_answer="same answer",
+            states=case.expected_states,
+            invariant_results={item: True for item in case.invariants},
+            latency_ms=1,
+            tokens=1,
+            cost_usd=0,
+        )
+        for repetition in (1, 2)
+    ]
+
+    queue = build_human_review_queue(fixture, observations)
+
+    assert len({item["pair_id"] for item in queue}) == 2

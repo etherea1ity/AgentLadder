@@ -1,0 +1,116 @@
+{
+  "agent_product_freeze_allowed": false,
+  "artifacts": {
+    "locomo": {
+      "path": "docs/reports/product/agent-product-benchmarks-locomo.json",
+      "sha256": "564ebb79a5ce12b4ceaff5bc091f70640a2f2aebca8f9bc52067873e078474e9"
+    },
+    "longmemeval": {
+      "path": "docs/reports/product/agent-product-benchmarks-longmemeval.json",
+      "sha256": "18cda33582abda17cdfcdb7fb0748e9f4c07de476051b36140a5f2f92d664483"
+    },
+    "memory_agent_bench": {
+      "path": "docs/reports/product/agent-product-benchmarks-memory-agent-bench.json",
+      "sha256": "8afeaa6e3def9926b08b3cf3bc8373bb5f3cd7d20e4341b49c756ed29e2da740"
+    },
+    "memory_competitor_contracts": {
+      "path": "docs/reports/product/agent-product-benchmarks-memory-competitors.json",
+      "sha256": "16d9926e8a3a4bd1e5dac2beeb48dd2abd9902262965e1e8e69bd00a57fd4eb5"
+    },
+    "public_agent_contracts": {
+      "path": "docs/reports/product/agent-product-benchmarks-public-agent-contracts.json",
+      "sha256": "d025a2b3fb59424074d922f086fa3ec3d49bbd1f48a6bbdd4c7ac79fdae7987a"
+    },
+    "runtime_calibration": {
+      "path": "docs/reports/product/agent-product-benchmarks-runtime-calibration.json",
+      "sha256": "9698934f83b5c48058e4e4709046aebc6cca018e04cb7c975d628cd9be87328e"
+    }
+  },
+  "blockers": [
+    {
+      "detail": "The frozen paid API budget is USD 0, so the 41-observation live candidate and independent judge runs are prohibited.",
+      "id": "paid-api-budget",
+      "kind": "external_authority",
+      "needed": "Approve a nonzero USD cap and frozen per-million input/output prices for the candidate and independent judge."
+    },
+    {
+      "detail": "Blind acceptability cannot be inferred by the same system that generated or scored the candidate outputs.",
+      "id": "blind-human-review",
+      "kind": "external_label",
+      "needed": "Collect blind labels after candidate outputs exist; target acceptance is at least 95%."
+    },
+    {
+      "detail": "AgentBench and tau2 source/task contracts pass, but official environments were not scored.",
+      "id": "official-public-agent-scores",
+      "kind": "external_execution",
+      "needed": "Run the pinned official graders with frozen agent/user models and declared budget."
+    },
+    {
+      "detail": "Mem0, MEM1, and BEAM are pinned but their official comparable pipelines were not executed.",
+      "id": "official-memory-competitor-scores",
+      "kind": "external_execution",
+      "needed": "Use identical data, answer/judge models, top-k, generation limits, and inference budgets; MEM1 additionally requires GPU rollout."
+    }
+  ],
+  "evaluated_at": "2026-08-13T21:12:30.407572+00:00",
+  "interpretation": "Local deterministic/product-source readiness passes. The Agent Product Benchmark gate remains failed until live candidate, independent judge, blind human, and official comparable benchmark scores pass.",
+  "local_checks": {
+    "agentbench_and_tau2_source_contracts": true,
+    "external_label_merger_is_frozen": true,
+    "locomo_gold_evidence_retrieval": true,
+    "longmemeval_oracle_contract": true,
+    "mem0_mem1_beam_source_contracts": true,
+    "memory_agent_bench_all_split_contracts": true,
+    "no_training_before_product_freeze": true,
+    "paid_api_budget_is_zero": true,
+    "runtime_reference_calibration_41_of_41": true
+  },
+  "local_pre_freeze_ready": true,
+  "mandatory_product_checks": {
+    "blind_human_acceptability_at_least_0_95": false,
+    "independent_model_judge_full_coverage": false,
+    "live_candidate_full_coverage": false,
+    "official_agentbench_score": false,
+    "official_beam_score": false,
+    "official_mem0_same_model_score": false,
+    "official_mem1_gpu_score": false,
+    "official_tau2_score": false,
+    "reference_non_inferiority": false
+  },
+  "manifest": {
+    "branch": "codex/agent-product-benchmarks",
+    "paid_api_budget_usd": 0,
+    "parent_commit": "ac6f83eb0cb469f91c1caf8bcdb59e6ebc04aad8",
+    "path": "config/stages/agent-product-benchmarks.manifest.json",
+    "sha256": "0bc0b6cd9148fd8e48b91813cb96c174c0663e1771889662b294b56ca1d15dc5",
+    "split_hashes": {
+      "adversarial": "c89b89037371aa2be6288a671ece3f60933fa3164f44ea9f400be86f0d35d455",
+      "development": "b6d8337a5b98b4e817568b629cc2121684fea6518fd9b78f1bbec831ccd5b982",
+      "hidden_regression": "75bf510332d260cc6aae8d82b0e1675185d31c8a6946c0e076aac7d11aa5d131",
+      "validation": "4cfec15dfeee78acda9e65ee9a21630c849f14a12a8fe845d3347785bf0476db"
+    }
+  },
+  "metrics": {
+    "blind_human_labels": 0,
+    "independent_judge_labels": 0,
+    "klara_bench_cases": 11,
+    "klara_bench_critical_observations": 20,
+    "klara_bench_observations": 41,
+    "locomo_hybrid_evidence_hit_at_5": 0.68,
+    "locomo_hybrid_evidence_recall_at_5": 0.630588,
+    "locomo_hybrid_mrr": 0.439,
+    "locomo_questions": 100,
+    "longmemeval_oracle_questions": 60,
+    "memory_agent_bench_questions": 3671,
+    "memory_agent_bench_rows": 146,
+    "official_memory_competitor_scores": 0,
+    "official_public_agent_scores": 0,
+    "paid_live_candidate_observations": 0
+  },
+  "model_training_allowed": false,
+  "passed": false,
+  "schema_version": "klara.agent-product-benchmarks.v1",
+  "scorer_version": "klara.product-benchmarks.v1",
+  "stage": "agent-product-benchmarks",
+  "status": "external_gates_pending"
+}

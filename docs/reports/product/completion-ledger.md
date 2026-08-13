@@ -68,4 +68,6 @@
 
 - 主 Agent 运行时集成：API 所用 `KlaraHarness` 现注入与 UI 相同的任务、调度、团队与 Worktree 持久服务，共暴露 `14` 个真实模型工具；写操作仍由精确权限门禁控制。确定性门禁 `14/14`，DeepSeek V4 Flash 冻结烟测 `3/3`、检查 `14/14`、未授权写入 `0`、P0 奇怪回答 `0`；全量 Python `424 passed, 2 skipped`，定向 `40 passed`，前端 `71 passed`，生产构建通过。模型观察与公共 Trace 均采用最小披露；详见 [运行时集成报告](./agent-runtime-integration.md)。
 
+- Agent Product Benchmarks 本地准备：KlaraBench v2 的 `41/41` 条脚本参考观察均通过真实 Harness，修复了本地状态请求被错误导向 Web Research 的问题，并固定 LoCoMo、LongMemEval、MemoryAgentBench、AgentBench、tau2、Mem0、MEM1、BEAM 的官方来源契约。LoCoMo 检索 Recall@5 为 `0.630588`、Hit@5 为 `0.68`、MRR 为 `0.439`，不冒充回答正确率。真实候选运行器严格执行零预算边界，脚本校准不冒充真实参考成绩，并提供与候选报告哈希绑定、要求完整覆盖的独立参考/裁判/盲人评标签合并器。全量 Python `443 passed, 2 skipped`，前端 `71` 项测试、生产构建和 diff 检查均通过；由于外部成绩和人评确实未执行，本阶段仍保持 pending。详见 [基准报告](./agent-product-benchmarks.md)。
+
 当前顺序门禁已经进入 `agent-product-benchmarks`；Chapter 11 按既定范围延期，不计为通过。Agent Product Freeze 仍未通过，因此模型训练保持禁用。
