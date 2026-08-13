@@ -61,6 +61,6 @@
 
 - Chapter 16：提交 `9643d5fd37851a1fd21b725f30a387626381c67e`，确定性门禁 `19/19`，关键委派/隔离率 `1.0`，公共秘密泄漏 `0`；Python `380 passed, 1 skipped`，前端 `68 passed`，生产构建与 24 条行为控制观察通过。真实浏览器完成创建阻断 → 精确审批 → allow once → 队友出现，桌面与 `390x844` 无水平溢出且控制台无错误/警告；真实 Git 测试覆盖隔离 Worktree 创建和安全移除。详见 [Chapter 16 报告](./ch16-subagents-team-worktree.md)。
 
-- Chapter 18：确定性门禁 `20/20`，关键合同通过率 `1.0`，公共秘密泄漏与 P0 奇怪回答均为 `0`；Python `395 passed, 1 skipped`，前端 `68 passed`，生产构建与冻结回归 control 通过。新增签名 bearer/RBAC、tenant+owner 隔离、带 checksum 的 SQLite migrations、幂等 CAS lease queue、协作取消/SSE、transactional Outbox、无 payload 指标/审计、授权脱敏 trajectory export 与 baseline/candidate CLI；详见 [Chapter 18 报告](./ch18-production-runtime.md)。
+- Chapter 18：确定性门禁 `25/25`，关键合同通过率 `1.0`，公共秘密泄漏与 P0 奇怪回答均为 `0`；Python `403 passed, 2 skipped`（其中 PostgreSQL 测试在常规无 DSN 回归中跳过，并已单独对真实 PostgreSQL 16 通过），前端 `68 passed`，生产构建与冻结回归 control 通过。除签名 bearer/RBAC、tenant+owner 隔离、幂等 lease queue/Outbox、脱敏 trajectory 与 CLI 外，还补齐 SQLite backup/restore/integrity/retention、OIDC RS256/JWKS/撤销 adapter、通用 Agent 状态持久化，并通过一次性 PostgreSQL 16 的真实 migration/isolation/JSONB/queue/lease/Outbox 集成测试；外部 OIDC provider smoke 明确为 `not_executed`。详见 [Chapter 18 报告](./ch18-production-runtime.md)。
 
 当前顺序门禁已经进入 `agent-product-polish`；Chapter 11 按既定范围延期，不计为通过。Agent Product Freeze 仍未通过，因此模型训练保持禁用。

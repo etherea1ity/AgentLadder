@@ -794,7 +794,7 @@
         "npm run build (apps/web)",
         "git diff --check"
       ],
-      "commit": "40ea358",
+      "commit": "9fe42e8",
       "datasets": [
         "tests/klara/production",
         "tests/fixtures/behavior/agent_behavior_cases.json",
@@ -807,13 +807,22 @@
         "klara.behavior-scorer.v1"
       ],
       "evidence": {
-        "chapter_gate": {"passed": 20, "total": 20},
-        "python_tests": {"collected": 396, "passed": 395, "skipped": 1},
-        "focused_tests": {"passed": 15},
+        "chapter_gate": {"passed": 25, "total": 25},
+        "python_tests": {"collected": 405, "passed": 403, "skipped": 2},
+        "focused_tests": {"passed": 23, "skipped_without_postgres_dsn": 1},
         "frontend_tests": {"passed": 68},
         "frontend_build": "passed",
         "production_regression_control": "passed",
-        "versioned_migrations": [1, 2, 3],
+        "versioned_migrations": [1, 2, 3, 4],
+        "sqlite_backup_restore_integrity_retention": "passed",
+        "postgres_integration": {
+          "status": "passed",
+          "tests_passed": 1,
+          "image_digest": "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777",
+          "container_removed": true
+        },
+        "external_oidc_provider_smoke": "not_executed",
+        "oidc_rs256_jwks_revocation_adapter_tests": "passed",
         "tenant_owner_isolation": "passed",
         "raw_bearer_or_lease_persisted": false,
         "trajectory_records": 1,
@@ -821,7 +830,7 @@
       },
       "id": "ch18-production-runtime",
       "metrics": {
-        "chapter_gate_checks": "20/20",
+        "chapter_gate_checks": "25/25",
         "critical_contract_rate": 1.0,
         "public_secret_leak_count": 0,
         "p0_strange_response_count": 0
