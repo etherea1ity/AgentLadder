@@ -34,7 +34,7 @@ class TodoWriteTool(BaseTool):
     store: TodoPlanStore
     spec: ToolSpec = ToolSpec(
         name="todo_write",
-        description="Create or update the current session plan for multi-step work. Do not plan simple answers. Keep at most one item in_progress and mark verified work completed.",
+        description="Create or update the current session plan for multi-step work. Do not plan simple answers. Use the minimum set of distinct, non-overlapping steps that covers the user's explicit goals; do not split discovery, fixing, and re-verification into separate steps unless the user asks. A non-empty unfinished replacement plan must have exactly one item in_progress (normally the first actionable item); keep every other unfinished item pending and mark verified work completed.",
         input_schema={
             "type": "object",
             "properties": {
@@ -79,6 +79,13 @@ class TodoWriteTool(BaseTool):
             return self.failure(arguments, "items must be an array")
         try:
             items = [TodoItem.model_validate(item) for item in raw_items]
+            if operation == "replace" and any(
+                item.status != "completed" for item in items
+            ) and sum(item.status == "in_progress" for item in items) != 1:
+                return self.failure(
+                    arguments,
+                    "unfinished replacement plan requires exactly one in-progress item",
+                )
             plan = self.store.update_todo_plan(
                 self.session_id,
                 operation=operation,

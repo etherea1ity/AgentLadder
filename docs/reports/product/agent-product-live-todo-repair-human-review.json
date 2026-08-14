@@ -1,0 +1,20 @@
+[
+  {
+    "answer_a": "The plan is ready.",
+    "answer_b": "The plan is ready.",
+    "case_id": "dev-todo-multistep-en-001",
+    "pair_id": "9bfcfb8738c76119606d"
+  },
+  {
+    "answer_a": "Plan is ready.",
+    "answer_b": "The plan is ready.",
+    "case_id": "dev-todo-multistep-en-001",
+    "pair_id": "1827cc537554bb104254"
+  },
+  {
+    "answer_a": "The plan is ready.",
+    "answer_b": "The plan is ready.",
+    "case_id": "dev-todo-multistep-en-001",
+    "pair_id": "2e96928d0b9c0186a255"
+  }
+]

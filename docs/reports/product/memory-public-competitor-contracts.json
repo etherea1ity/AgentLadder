@@ -1,0 +1,190 @@
+{
+  "checks": {
+    "all_licenses_present": true,
+    "all_sources_pinned": true,
+    "comparability_requirements_declared": true,
+    "no_competitor_score_claimed": true
+  },
+  "interpretation": "PASS proves pinned source, license, and execution contracts only. Mem0, MEM1, and BEAM scores remain unclaimed until their official pipelines run under frozen models, data, budgets, and graders.",
+  "passed": true,
+  "schema_version": "klara.public-memory-competitor-contract.v1",
+  "systems": {
+    "beam": {
+      "commit": "3e12035532eb85768f1a7cd779832b650c4b2ef9",
+      "execution_status": "not_executed",
+      "license": "MIT code; dataset terms must be checked at acquisition",
+      "license_present": true,
+      "published_contract": {
+        "context_scales": [
+          "128K",
+          "500K",
+          "1M",
+          "10M"
+        ],
+        "conversations": 100,
+        "readme_declares_statistics": true,
+        "validated_questions": 2000
+      },
+      "requirements_for_comparable_score": [
+        "download a licensed official BEAM dataset snapshot with file hashes",
+        "freeze context scale, question subset, prompt, answer model, and judge",
+        "run Klara and competitors on identical histories and limits",
+        "retain per-capability official evaluation outputs"
+      ],
+      "score_status": "not_claimed",
+      "source": "https://github.com/mohammadtavakoli78/BEAM",
+      "source_inspection": {
+        "actual_commit": "3e12035532eb85768f1a7cd779832b650c4b2ef9",
+        "commit_matches": true,
+        "expected_commit": "3e12035532eb85768f1a7cd779832b650c4b2ef9",
+        "passed": true,
+        "path": ".tmp\\public-benchmarks\\beam",
+        "required_paths": {
+          "LICENSE": {
+            "exists": true,
+            "sha256": "60c7b74ffaacaae383c3f06a48bc79d204b25bc9c1856df9711b3d290febd474"
+          },
+          "README.md": {
+            "exists": true,
+            "sha256": "6eb38ece9322cdd96dba99a50f882187688e55e80b594068ad8827db5bc08020"
+          },
+          "requirements.txt": {
+            "exists": true,
+            "sha256": "3fa257a0b1cd2b5d7489242f5258074bd8f0e483a71d011609ec358f8fde8792"
+          },
+          "src/evaluation/compute_metrics.py": {
+            "exists": true,
+            "sha256": "0715226375e9d24646c49c504194ba61cfb26d39415da5ebe9bdc4c6dcd3726c"
+          },
+          "src/evaluation/run_evaluation.py": {
+            "exists": true,
+            "sha256": "518894ab65860043a24259457ddf3b1ab8ae18427b6e01e5aa90cd29c4256a3b"
+          }
+        }
+      },
+      "system": "BEAM long-term-memory benchmark"
+    },
+    "mem0": {
+      "commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
+      "execution_status": "not_executed",
+      "license": "Apache-2.0",
+      "license_present": true,
+      "official_benchmarks": [
+        "LoCoMo",
+        "LongMemEval",
+        "BEAM"
+      ],
+      "requirements_for_comparable_score": [
+        "same LoCoMo/LongMemEval/BEAM split and top-k",
+        "same extraction and embedding models",
+        "same answerer and judge models",
+        "same generation limits and declared paid budget",
+        "official Mem0 raw result artifacts"
+      ],
+      "runtime_contract": {
+        "cloud_backend": "Mem0 API key",
+        "declares_docker": true,
+        "model_sensitive_components": [
+          "fact extraction",
+          "embeddings",
+          "answerer",
+          "judge"
+        ],
+        "self_hosted_backend": "Mem0 OSS + Qdrant through Docker Compose"
+      },
+      "score_status": "not_claimed",
+      "source": "https://github.com/mem0ai/memory-benchmarks",
+      "source_inspection": {
+        "actual_commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
+        "commit_matches": true,
+        "expected_commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
+        "passed": true,
+        "path": ".tmp\\public-benchmarks\\mem0",
+        "required_paths": {
+          "LICENSE": {
+            "exists": true,
+            "sha256": "e98f88a619b4f0fa274edcfcddc522c3d519f5b4cb829c23d99d48312dabd8f7"
+          },
+          "README.md": {
+            "exists": true,
+            "sha256": "ed4ee055be417ca6896aab00b2ad62d4b3c67205ed32f496544803492faffae2"
+          },
+          "benchmarks/beam/run.py": {
+            "exists": true,
+            "sha256": "c13ed8464d28f0b09c1f6f3d1b703cb2be92dbc51dbdb3e91834e355ad5aad0c"
+          },
+          "benchmarks/locomo/run.py": {
+            "exists": true,
+            "sha256": "4f104079de93ca28a8b6f9801f22f675625c539b683ca573878d7f7fefe32fd6"
+          },
+          "benchmarks/longmemeval/run.py": {
+            "exists": true,
+            "sha256": "99bd3d6d9a69072f9125550a0409f0de0aeaec66309416060db3daf12e137861"
+          },
+          "docker-compose.yml": {
+            "exists": true,
+            "sha256": "aae2317a8c84c1e1106a04a46d3a19f4751a541fd53b427db2a13d3eaff90d6d"
+          }
+        }
+      },
+      "system": "Mem0 official memory-benchmarks"
+    },
+    "mem1": {
+      "commit": "2609aef4e7c46d8d0c0f06b9312bc4b4abe04b9d",
+      "demo_trajectory_rows": 1000,
+      "execution_status": "not_executed",
+      "license": "MIT",
+      "license_present": true,
+      "released_model": "Mem-Lab/Qwen2.5-7B-RL-RAG-Q2-EM-Release",
+      "requirements_for_comparable_score": [
+        "serve the official 7B checkpoint through the pinned vLLM environment",
+        "serve the official retriever and use its released evaluation data",
+        "run official rollout and eval scripts on GPU",
+        "compare task success and memory/token use on the same objectives",
+        "do not compare its QA score directly with Klara LoCoMo retrieval Recall@5"
+      ],
+      "runtime_contract": {
+        "evaluation_task": "multi-objective QA trajectory exact/model-estimated match",
+        "not_drop_in_retrieval_baseline": true,
+        "requires_gpu_retriever": true,
+        "requires_vllm": true
+      },
+      "score_status": "not_claimed",
+      "source": "https://github.com/MIT-MI/MEM1",
+      "source_inspection": {
+        "actual_commit": "2609aef4e7c46d8d0c0f06b9312bc4b4abe04b9d",
+        "commit_matches": true,
+        "expected_commit": "2609aef4e7c46d8d0c0f06b9312bc4b4abe04b9d",
+        "passed": true,
+        "path": ".tmp\\public-benchmarks\\mem1",
+        "required_paths": {
+          "LICENSE": {
+            "exists": true,
+            "sha256": "f2dfa0d274559a8eda77670a01ad83bbafe6438c173599fad60ab6bfcecbc618"
+          },
+          "Mem1/inference/eval.py": {
+            "exists": true,
+            "sha256": "dec157668f3b3b4484848e6b2c68a9443f886abe165bd8cf5b691341ba294b66"
+          },
+          "Mem1/inference/generate_rollout.py": {
+            "exists": true,
+            "sha256": "d5df150715e17a130540c93a5c8b6fec5e5203cbd8840bfa628bf2d4a5106d5c"
+          },
+          "Mem1/inference/start_vllm.sh": {
+            "exists": true,
+            "sha256": "c8d8d62b189562012b93173a8dec1fcb8cdd5cfb066728d79dc2013a7b29fa26"
+          },
+          "README.md": {
+            "exists": true,
+            "sha256": "5fea816f19f254a1ae7c2ab5d4d6e8b4ad1324ba764e237b1f95d1c7b48547d2"
+          },
+          "examples/demo.jsonl": {
+            "exists": true,
+            "sha256": "43e5a0329294e5acaf758d687b23536118467f9d70cf96d8f8499105817f2c59"
+          }
+        }
+      },
+      "system": "MEM1 official learned constant-memory agent"
+    }
+  }
+}

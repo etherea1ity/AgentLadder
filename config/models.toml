@@ -6,6 +6,15 @@ allow_unlisted_models = false
 
 [[models.providers.qwen.models]]
 id = "qwen-flash"
+label = "Qwen Flash (legacy)"
+supports_tools = true
+supports_json = true
+supports_vision = false
+supports_thinking = true
+default_thinking = false
+
+[[models.providers.qwen.models]]
+id = "qwen3.7-flash"
 label = "Qwen 3.7 Flash"
 supports_tools = true
 supports_json = true
@@ -63,11 +72,12 @@ supports_thinking = true
 default_thinking = true
 
 [models.profiles.agent]
-primary = "qwen/qwen-flash"
+primary = "qwen/qwen3.7-flash"
 fallbacks = [
   "qwen/qwen3.7-plus",
   "qwen/qwen3.6-plus",
   "qwen/qwen3.7-max",
+  "qwen/qwen-flash",
   "deepseek/deepseek-v4-flash",
   "deepseek/deepseek-v4-pro",
 ]

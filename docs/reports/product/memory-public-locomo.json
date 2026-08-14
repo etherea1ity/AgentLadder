@@ -1,0 +1,5121 @@
+{
+  "adapter_version": "klara.locomo-retrieval-adapter.v1",
+  "benchmark": "LoCoMo",
+  "checks": {
+    "all_evidence_labels_resolve": true,
+    "balanced_ten_by_ten_subset": true,
+    "hybrid_hit_at_5_at_least_0_65": true,
+    "hybrid_not_below_strongest_ablation_by_more_than_0_03": true,
+    "hybrid_recall_at_5_at_least_0_50": true,
+    "official_dataset_hash": true
+  },
+  "dataset": {
+    "category_counts": {
+      "1": 278,
+      "2": 320,
+      "3": 89,
+      "4": 840,
+      "5": 446
+    },
+    "conversations": 10,
+    "eligible_questions": 1973,
+    "turns": 5882
+  },
+  "limitations": [
+    "This run measures retrieval of official gold evidence IDs, not end-to-end answer quality.",
+    "The local semantic signal is a dependency-free hashed character-ngram vector, not a learned embedding model.",
+    "LoCoMo is CC-BY-NC-4.0 and is kept outside the Git repository."
+  ],
+  "passed": true,
+  "same_corpus_queries_top_k": true,
+  "schema_version": "klara.public-memory-benchmark.v1",
+  "selection": {
+    "algorithm": "official scored categories 1-4; sha256(case_id), first N per conversation",
+    "per_conversation": 10,
+    "scored_categories": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "selected_case_ids_sha256": "d9af8757778be62507a32c2ee195ca62d50949bebef17e6ac29f55a452dd2ef2",
+    "selected_questions": 100
+  },
+  "source": {
+    "commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+    "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "license": "CC-BY-NC-4.0",
+    "repository": "https://github.com/snap-research/locomo"
+  },
+  "source_inspection": {
+    "actual_commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+    "commit_matches": true,
+    "expected_commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+    "passed": true,
+    "path": "C:\\Users\\jsj31\\Desktop\\AgentLadder\\.tmp\\public-benchmarks\\locomo",
+    "required_paths": {
+      "LICENSE.txt": {
+        "exists": true,
+        "sha256": "41003d4a74749c0220e33dd415042164b5a1093ed401f36277234f772d22d3d0"
+      },
+      "data/locomo10.json": {
+        "exists": true,
+        "sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4"
+      }
+    }
+  },
+  "systems": {
+    "hybrid": {
+      "cases": 100,
+      "evidence_hit_at_k": 0.68,
+      "evidence_precision_at_k": 0.144,
+      "evidence_recall_at_k": 0.630588,
+      "latency_ms": 3326,
+      "mean_reciprocal_rank": 0.439,
+      "rows": [
+        {
+          "case_id": "locomo-00-013",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-041",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-043",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-044",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-053",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-124",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-144",
+          "category": "4",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-005",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 0.6666666666666666,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-022",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-040",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-054",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-066",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-069",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-070",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-071",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-077",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-018",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-040",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-093",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-112",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-113",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-122",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-007",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-011",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 0.6666666666666666,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-019",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-022",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-033",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-034",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-053",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-155",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-193",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-004",
+          "category": "1",
+          "evidence_count": 7,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-010",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-030",
+          "category": "1",
+          "evidence_count": 4,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-039",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-064",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-076",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-087",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-157",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-000",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-008",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-042",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-083",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-089",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-104",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-013",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-030",
+          "category": "3",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-054",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-059",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-060",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.3333333333333333,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-066",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-117",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-149",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-026",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-030",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-082",
+          "category": "1",
+          "evidence_count": 5,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-128",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-133",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-137",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-168",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-169",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-184",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-020",
+          "category": "3",
+          "evidence_count": 17,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.058823529411764705,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-036",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-063",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-091",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-107",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-139",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-141",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-030",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.3333333333333333,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-036",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-045",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-049",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-056",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-085",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-126",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-140",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-147",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        }
+      ]
+    },
+    "lexical": {
+      "cases": 100,
+      "evidence_hit_at_k": 0.56,
+      "evidence_precision_at_k": 0.116,
+      "evidence_recall_at_k": 0.517588,
+      "latency_ms": 3244,
+      "mean_reciprocal_rank": 0.419,
+      "rows": [
+        {
+          "case_id": "locomo-00-013",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-041",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-043",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-044",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-053",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-124",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-144",
+          "category": "4",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-005",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 0.6666666666666666,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-022",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-040",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-054",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-066",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-069",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-070",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-071",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-077",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-018",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-040",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-093",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-112",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-113",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-122",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-007",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-011",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.3333333333333333,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-019",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-022",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-033",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-034",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-053",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-155",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-193",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-004",
+          "category": "1",
+          "evidence_count": 7,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-010",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-030",
+          "category": "1",
+          "evidence_count": 4,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-039",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-064",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-076",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-087",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-157",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-000",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-008",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-042",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-083",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-089",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-104",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-013",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-030",
+          "category": "3",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-054",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-059",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-060",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-066",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-117",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-149",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-026",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-030",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-082",
+          "category": "1",
+          "evidence_count": 5,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.2,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-128",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-133",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-137",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-168",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-169",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-184",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-020",
+          "category": "3",
+          "evidence_count": 17,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.058823529411764705,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-036",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-063",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-091",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-107",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-139",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-141",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-030",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-036",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-045",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-049",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-056",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-085",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-126",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-140",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-147",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        }
+      ]
+    },
+    "recent": {
+      "cases": 100,
+      "evidence_hit_at_k": 0.0,
+      "evidence_precision_at_k": 0.0,
+      "evidence_recall_at_k": 0.0,
+      "latency_ms": 4769,
+      "mean_reciprocal_rank": 0.0,
+      "rows": [
+        {
+          "case_id": "locomo-00-013",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-041",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-043",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-044",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-053",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-124",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-144",
+          "category": "4",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-005",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-022",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-040",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-054",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-066",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-069",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-070",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-071",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-077",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-018",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-040",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-093",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-112",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-113",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-122",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-007",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-011",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-019",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-022",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-033",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-034",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-053",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-155",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-193",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-004",
+          "category": "1",
+          "evidence_count": 7,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-010",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-030",
+          "category": "1",
+          "evidence_count": 4,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-039",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-064",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-076",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-087",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-157",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-000",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-008",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-042",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-083",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-089",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-104",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-013",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-030",
+          "category": "3",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-054",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-059",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-060",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-066",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-117",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-149",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-026",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-030",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-082",
+          "category": "1",
+          "evidence_count": 5,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-128",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-133",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-137",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-168",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-169",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-184",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-020",
+          "category": "3",
+          "evidence_count": 17,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-036",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-063",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-091",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-107",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-139",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-141",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-030",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-036",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-045",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-049",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-056",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-085",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-126",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-140",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-147",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        }
+      ]
+    },
+    "semantic_recency": {
+      "cases": 100,
+      "evidence_hit_at_k": 0.56,
+      "evidence_precision_at_k": 0.118,
+      "evidence_recall_at_k": 0.516667,
+      "latency_ms": 3283,
+      "mean_reciprocal_rank": 0.394833,
+      "rows": [
+        {
+          "case_id": "locomo-00-013",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-041",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-043",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-044",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-053",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-124",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-144",
+          "category": "4",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-005",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 0.6666666666666666,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-022",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-040",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-054",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-066",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-069",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-070",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-071",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-077",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-018",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-040",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-093",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-112",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-113",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-122",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-007",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-011",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 0.6666666666666666,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-019",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-022",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-033",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-034",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-053",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-155",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-193",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-004",
+          "category": "1",
+          "evidence_count": 7,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-010",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-030",
+          "category": "1",
+          "evidence_count": 4,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-039",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-064",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-076",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-087",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-157",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-000",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-008",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-042",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-083",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-089",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-104",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-013",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-030",
+          "category": "3",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-054",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-059",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-060",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.3333333333333333,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-066",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-117",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-149",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-026",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-030",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-082",
+          "category": "1",
+          "evidence_count": 5,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-128",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-133",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-137",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-168",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-169",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-184",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-020",
+          "category": "3",
+          "evidence_count": 17,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-036",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-063",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-091",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-107",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-139",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-141",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-030",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-036",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-045",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-049",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-056",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-085",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-126",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-140",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-147",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        }
+      ]
+    },
+    "vector": {
+      "cases": 100,
+      "evidence_hit_at_k": 0.56,
+      "evidence_precision_at_k": 0.118,
+      "evidence_recall_at_k": 0.516667,
+      "latency_ms": 3249,
+      "mean_reciprocal_rank": 0.394833,
+      "rows": [
+        {
+          "case_id": "locomo-00-013",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-041",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-043",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-044",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-053",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-124",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-00-144",
+          "category": "4",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-005",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 0.6666666666666666,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-022",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-040",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-054",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-066",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-069",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-070",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-071",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-01-077",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-018",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-040",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-058",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-093",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-112",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-113",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-02-122",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-007",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-011",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 0.6666666666666666,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-019",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.4,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-022",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-033",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-034",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-053",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-155",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-03-193",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-004",
+          "category": "1",
+          "evidence_count": 7,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-010",
+          "category": "2",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-030",
+          "category": "1",
+          "evidence_count": 4,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-039",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-064",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-076",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-087",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.25,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-111",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-04-157",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-000",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-008",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-042",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-062",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-083",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-089",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-102",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-104",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-05-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-013",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-030",
+          "category": "3",
+          "evidence_count": 2,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.5,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-054",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-059",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-060",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 0.3333333333333333,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-066",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.5,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-068",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-117",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-06-149",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-026",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-030",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-082",
+          "category": "1",
+          "evidence_count": 5,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-115",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-128",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-133",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-137",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-168",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-169",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.3333333333333333,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-07-184",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-020",
+          "category": "3",
+          "evidence_count": 17,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-024",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-036",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-063",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-091",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-099",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-100",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-107",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-139",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-08-141",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-030",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-036",
+          "category": "2",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 0.2,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-045",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-049",
+          "category": "1",
+          "evidence_count": 3,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-056",
+          "category": "1",
+          "evidence_count": 2,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-085",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-118",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-126",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-140",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": false,
+          "evidence_precision_at_k": 0.0,
+          "evidence_recall_at_k": 0.0,
+          "reciprocal_rank": 0.0,
+          "retrieved_count": 5
+        },
+        {
+          "case_id": "locomo-09-147",
+          "category": "4",
+          "evidence_count": 1,
+          "evidence_hit_at_k": true,
+          "evidence_precision_at_k": 0.2,
+          "evidence_recall_at_k": 1.0,
+          "reciprocal_rank": 1.0,
+          "retrieved_count": 5
+        }
+      ]
+    }
+  },
+  "task": "gold_evidence_id_retrieval",
+  "top_k": 5
+}

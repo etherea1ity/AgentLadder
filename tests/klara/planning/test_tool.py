@@ -86,3 +86,20 @@ def test_todo_write_rejects_unknown_fields_and_invalid_ids() -> None:
 
     assert result.ok is False
     assert result.content == ""
+
+
+def test_todo_write_rejects_unstarted_replacement_plan() -> None:
+    tool = TodoWriteTool(session_id="sess-1", store=MemoryTodoStore())
+
+    result = tool.run(
+        {
+            "operation": "replace",
+            "items": [
+                {"id": "inspect", "title": "Inspect", "status": "pending"},
+                {"id": "verify", "title": "Verify", "status": "pending"},
+            ],
+        }
+    )
+
+    assert result.ok is False
+    assert "exactly one in-progress" in (result.error or "")

@@ -1,0 +1,466 @@
+{
+  "candidate_role": "candidate_a",
+  "capability_breakdown": {
+    "state": {
+      "observations": 3,
+      "success_rate": 1.0
+    },
+    "todo_planning": {
+      "observations": 3,
+      "success_rate": 1.0
+    },
+    "tool_selection": {
+      "observations": 3,
+      "success_rate": 1.0
+    }
+  },
+  "case_scores": [
+    {
+      "capability_tags": [
+        "todo_planning",
+        "tool_selection",
+        "state"
+      ],
+      "case_id": "dev-todo-multistep-en-001",
+      "checks": {
+        "acceptable_facts_present": true,
+        "answer_present": true,
+        "cost_budget": true,
+        "expected_artifacts_present": true,
+        "expected_states_present": true,
+        "forbidden_calls_absent": true,
+        "invariants_pass": true,
+        "latency_budget": true,
+        "must_calls_present": true,
+        "no_p0_failure": true,
+        "prohibited_claims_absent": true,
+        "required_call_order": true,
+        "step_budget": true,
+        "token_budget": true
+      },
+      "cost_usd": 0.0005915,
+      "critical": false,
+      "human_acceptable": null,
+      "judge_outcome": "unscored",
+      "language": "en",
+      "latency_ms": 18043,
+      "p0_count": 0,
+      "p1_count": 0,
+      "reference_success": null,
+      "repetition": 1,
+      "split": "development",
+      "task_success": true,
+      "tokens": 135
+    },
+    {
+      "capability_tags": [
+        "todo_planning",
+        "tool_selection",
+        "state"
+      ],
+      "case_id": "dev-todo-multistep-en-001",
+      "checks": {
+        "acceptable_facts_present": true,
+        "answer_present": true,
+        "cost_budget": true,
+        "expected_artifacts_present": true,
+        "expected_states_present": true,
+        "forbidden_calls_absent": true,
+        "invariants_pass": true,
+        "latency_budget": true,
+        "must_calls_present": true,
+        "no_p0_failure": true,
+        "prohibited_claims_absent": true,
+        "required_call_order": true,
+        "step_budget": true,
+        "token_budget": true
+      },
+      "cost_usd": 0.0005986400000000001,
+      "critical": false,
+      "human_acceptable": null,
+      "judge_outcome": "unscored",
+      "language": "en",
+      "latency_ms": 15403,
+      "p0_count": 0,
+      "p1_count": 0,
+      "reference_success": null,
+      "repetition": 2,
+      "split": "development",
+      "task_success": true,
+      "tokens": 140
+    },
+    {
+      "capability_tags": [
+        "todo_planning",
+        "tool_selection",
+        "state"
+      ],
+      "case_id": "dev-todo-multistep-en-001",
+      "checks": {
+        "acceptable_facts_present": true,
+        "answer_present": true,
+        "cost_budget": true,
+        "expected_artifacts_present": true,
+        "expected_states_present": true,
+        "forbidden_calls_absent": true,
+        "invariants_pass": true,
+        "latency_budget": true,
+        "must_calls_present": true,
+        "no_p0_failure": true,
+        "prohibited_claims_absent": true,
+        "required_call_order": true,
+        "step_budget": true,
+        "token_budget": true
+      },
+      "cost_usd": 0.0005559400000000001,
+      "critical": false,
+      "human_acceptable": null,
+      "judge_outcome": "unscored",
+      "language": "en",
+      "latency_ms": 16855,
+      "p0_count": 0,
+      "p1_count": 0,
+      "reference_success": null,
+      "repetition": 3,
+      "split": "development",
+      "task_success": true,
+      "tokens": 133
+    }
+  ],
+  "checks": {
+    "critical_deterministic": false,
+    "critical_repeat_stability": true,
+    "human_acceptability": false,
+    "independent_judge": false,
+    "normal_task_success": true,
+    "observation_coverage": true,
+    "ordinary_repeat_stability": true,
+    "p0_zero": true,
+    "reference_non_inferiority": false,
+    "severe_answer_mismatch": true
+  },
+  "counts": {
+    "cases": 1,
+    "critical_observations": 0,
+    "expected_observations": 3,
+    "human_scored": 0,
+    "judge_scored": 0,
+    "observations": 3
+  },
+  "declared_budget_key": "maximum_deepseek_usd",
+  "declared_paid_api_budget_usd": 10.0,
+  "estimated_cost_usd": 0.0017460800000000001,
+  "evaluated_at": "2026-08-14T06:58:23.491770+00:00",
+  "fixture_sha256": "a9dd7fbed749cb471f3621720b48f211b24ae9bd64bc2bd04b8c676a58116e12",
+  "gate_kind": "live_candidate_evaluation_pending_external_labels",
+  "interpretation": "Current Agent outputs were executed through the real Harness. Live reference, independent judge, and blind human fields remain unscored until their separately produced labels are imported.",
+  "language_breakdown": {
+    "en": {
+      "observations": 3,
+      "success_rate": 1.0
+    }
+  },
+  "metrics": {
+    "candidate_reference_success_rate": 0.0,
+    "critical_deterministic_rate": 0.0,
+    "human_acceptability_rate": 0.0,
+    "judge_equivalent_or_better_rate": 0.0,
+    "normal_task_success_rate": 1.0,
+    "overall_task_success_rate": 1.0,
+    "p0_count": 0,
+    "reference_gap": 0.0,
+    "reference_success_rate": 0.0,
+    "severe_answer_mismatch_rate": 0.0,
+    "total_cost_usd": 0.0017460800000000001,
+    "total_latency_ms": 50301,
+    "total_tokens": 408
+  },
+  "model": "deepseek/deepseek-v4-flash",
+  "observations": [
+    {
+      "actions": [
+        "todo_write"
+      ],
+      "artifacts": [],
+      "case_id": "dev-todo-multistep-en-001",
+      "cost_usd": 0.0005915,
+      "final_answer": "The plan is ready.",
+      "human_acceptable": null,
+      "invariant_results": {
+        "status_only_no_invitation": true,
+        "todo_plan_persisted": true,
+        "todo_scope_covered": true,
+        "todo_single_in_progress": true
+      },
+      "judge_outcome": "unscored",
+      "latency_ms": 18043,
+      "p0_failures": [],
+      "p1_failures": [],
+      "reference_success": null,
+      "repetition": 1,
+      "states": [
+        "completed",
+        "todo_plan_persisted"
+      ],
+      "tokens": 135
+    },
+    {
+      "actions": [
+        "todo_write"
+      ],
+      "artifacts": [],
+      "case_id": "dev-todo-multistep-en-001",
+      "cost_usd": 0.0005986400000000001,
+      "final_answer": "Plan is ready.",
+      "human_acceptable": null,
+      "invariant_results": {
+        "status_only_no_invitation": true,
+        "todo_plan_persisted": true,
+        "todo_scope_covered": true,
+        "todo_single_in_progress": true
+      },
+      "judge_outcome": "unscored",
+      "latency_ms": 15403,
+      "p0_failures": [],
+      "p1_failures": [],
+      "reference_success": null,
+      "repetition": 2,
+      "states": [
+        "completed",
+        "todo_plan_persisted"
+      ],
+      "tokens": 140
+    },
+    {
+      "actions": [
+        "todo_write"
+      ],
+      "artifacts": [],
+      "case_id": "dev-todo-multistep-en-001",
+      "cost_usd": 0.0005559400000000001,
+      "final_answer": "The plan is ready.",
+      "human_acceptable": null,
+      "invariant_results": {
+        "status_only_no_invitation": true,
+        "todo_plan_persisted": true,
+        "todo_scope_covered": true,
+        "todo_single_in_progress": true
+      },
+      "judge_outcome": "unscored",
+      "latency_ms": 16855,
+      "p0_failures": [],
+      "p1_failures": [],
+      "reference_success": null,
+      "repetition": 3,
+      "states": [
+        "completed",
+        "todo_plan_persisted"
+      ],
+      "tokens": 133
+    }
+  ],
+  "passed": false,
+  "pricing": {
+    "input_cost_per_million": 0.14,
+    "output_cost_per_million": 0.28
+  },
+  "provider_max_generation_tokens": 800,
+  "resumable_checkpoint": "data\\eval\\agent-product-live-todo-repair-deepseek.checkpoint.json",
+  "runner_version": "klara.behavior-live-runner.v7",
+  "runtime_runs": [
+    {
+      "action_calls": [
+        {
+          "argument_keys": [
+            "items",
+            "operation"
+          ],
+          "arguments": {
+            "items": [
+              {
+                "id": "audit-branches",
+                "status": "in_progress",
+                "title": "Audit all branches"
+              },
+              {
+                "id": "fix-failing-tests",
+                "status": "pending",
+                "title": "Fix failing tests"
+              },
+              {
+                "id": "publish-report",
+                "status": "pending",
+                "title": "Publish verified report"
+              }
+            ],
+            "operation": "replace"
+          },
+          "arguments_exposed": true,
+          "id": "call_00_OS2l21gYnhqPH7tlHBVi8099",
+          "name": "todo_write"
+        }
+      ],
+      "blocked_actions": [],
+      "case_id": "dev-todo-multistep-en-001",
+      "comparison_contract_sha256": "175a719136a35c933373ad6760d29ce1ca6b56c92487288e8e7b92ecd2e03d65",
+      "executed_actions": [
+        "todo_write"
+      ],
+      "lifecycle_event_count": 36,
+      "provider_error": null,
+      "public_tool_observations": [
+        {
+          "content": "{\"schema_version\":\"klara.todo-plan.v1\",\"session_id\":\"behavior-dev-todo-multistep-en-001-1\",\"version\":1,\"items\":[{\"id\":\"audit-branches\",\"title\":\"Audit all branches\",\"status\":\"in_progress\"},{\"id\":\"fix-failing-tests\",\"title\":\"Fix failing tests\",\"status\":\"pending\"},{\"id\":\"publish-report\",\"title\":\"Publish verified report\",\"status\":\"pending\"}],\"updated_at\":\"2026-08-14T06:57:43.676146+00:00\"}",
+          "name": "todo_write",
+          "role": "tool",
+          "tool_call_id": "call_00_OS2l21gYnhqPH7tlHBVi8099"
+        }
+      ],
+      "repetition": 1,
+      "run_profile_sha256": "948834335b549487c7bc7ac90a1149f9f1dbc30d2c282a839367ea15719185d9"
+    },
+    {
+      "action_calls": [
+        {
+          "argument_keys": [
+            "items",
+            "operation"
+          ],
+          "arguments": {
+            "items": [
+              {
+                "id": "audit-branches",
+                "status": "in_progress",
+                "title": "Audit all branches and collect failing test results"
+              },
+              {
+                "id": "fix-tests",
+                "status": "pending",
+                "title": "Fix failing tests across branches"
+              },
+              {
+                "id": "publish-report",
+                "status": "pending",
+                "title": "Publish verified report"
+              }
+            ],
+            "operation": "replace"
+          },
+          "arguments_exposed": true,
+          "id": "call_00_qbQzSzW7D706pf8atznK2952",
+          "name": "todo_write"
+        }
+      ],
+      "blocked_actions": [],
+      "case_id": "dev-todo-multistep-en-001",
+      "comparison_contract_sha256": "175a719136a35c933373ad6760d29ce1ca6b56c92487288e8e7b92ecd2e03d65",
+      "executed_actions": [
+        "todo_write"
+      ],
+      "lifecycle_event_count": 36,
+      "provider_error": null,
+      "public_tool_observations": [
+        {
+          "content": "{\"schema_version\":\"klara.todo-plan.v1\",\"session_id\":\"behavior-dev-todo-multistep-en-001-2\",\"version\":1,\"items\":[{\"id\":\"audit-branches\",\"title\":\"Audit all branches and collect failing test results\",\"status\":\"in_progress\"},{\"id\":\"fix-tests\",\"title\":\"Fix failing tests across branches\",\"status\":\"pending\"},{\"id\":\"publish-report\",\"title\":\"Publish verified report\",\"status\":\"pending\"}],\"updated_at\":\"2026-08-14T06:57:59.349428+00:00\"}",
+          "name": "todo_write",
+          "role": "tool",
+          "tool_call_id": "call_00_qbQzSzW7D706pf8atznK2952"
+        }
+      ],
+      "repetition": 2,
+      "run_profile_sha256": "948834335b549487c7bc7ac90a1149f9f1dbc30d2c282a839367ea15719185d9"
+    },
+    {
+      "action_calls": [
+        {
+          "argument_keys": [
+            "items",
+            "operation"
+          ],
+          "arguments": {
+            "items": [
+              {
+                "id": "audit-branches",
+                "status": "in_progress",
+                "title": "Audit all branches"
+              },
+              {
+                "id": "fix-tests",
+                "status": "pending",
+                "title": "Fix failing tests"
+              },
+              {
+                "id": "publish-report",
+                "status": "pending",
+                "title": "Publish verified report"
+              }
+            ],
+            "operation": "replace"
+          },
+          "arguments_exposed": true,
+          "id": "call_00_a24gfihDzcrYu2eIMZU88486",
+          "name": "todo_write"
+        }
+      ],
+      "blocked_actions": [],
+      "case_id": "dev-todo-multistep-en-001",
+      "comparison_contract_sha256": "175a719136a35c933373ad6760d29ce1ca6b56c92487288e8e7b92ecd2e03d65",
+      "executed_actions": [
+        "todo_write"
+      ],
+      "lifecycle_event_count": 36,
+      "provider_error": null,
+      "public_tool_observations": [
+        {
+          "content": "{\"schema_version\":\"klara.todo-plan.v1\",\"session_id\":\"behavior-dev-todo-multistep-en-001-3\",\"version\":1,\"items\":[{\"id\":\"audit-branches\",\"title\":\"Audit all branches\",\"status\":\"in_progress\"},{\"id\":\"fix-tests\",\"title\":\"Fix failing tests\",\"status\":\"pending\"},{\"id\":\"publish-report\",\"title\":\"Publish verified report\",\"status\":\"pending\"}],\"updated_at\":\"2026-08-14T06:58:15.684297+00:00\"}",
+          "name": "todo_write",
+          "role": "tool",
+          "tool_call_id": "call_00_a24gfihDzcrYu2eIMZU88486"
+        }
+      ],
+      "repetition": 3,
+      "run_profile_sha256": "948834335b549487c7bc7ac90a1149f9f1dbc30d2c282a839367ea15719185d9"
+    }
+  ],
+  "schema_version": "klara.behavior-report.v1",
+  "scorer_version": "klara.behavior-scorer.v2",
+  "selected_case_ids": [
+    "dev-todo-multistep-en-001"
+  ],
+  "source_fixture_sha256": "03a037c5855a99aade1c730cd113f9f5088fe1824ee74900964ee00306e7d0ca",
+  "split_breakdown": {
+    "development": {
+      "observations": 3,
+      "success_rate": 1.0
+    }
+  },
+  "split_hashes": {
+    "adversarial": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "development": "04a476da2dcefcfd11001ed99f0e394b4ac26e50696d7c5f741c846b71e2595d",
+    "hidden_regression": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "validation": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "stability": [
+    {
+      "case_id": "dev-todo-multistep-en-001",
+      "critical": false,
+      "passed": true,
+      "required_runs": 3,
+      "runs": 3,
+      "successes": 3
+    }
+  ],
+  "success_rate_95pct_ci": [
+    0.43849391955098227,
+    1.0
+  ],
+  "thresholds": {
+    "critical_deterministic_rate": 1.0,
+    "human_acceptability_rate": 0.95,
+    "judge_equivalent_or_better_rate": 0.9,
+    "maximum_p0_count": 0,
+    "maximum_reference_gap": 0.05,
+    "maximum_severe_answer_mismatch_rate": 0.01,
+    "normal_task_success_rate": 0.95
+  }
+}

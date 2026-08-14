@@ -1,0 +1,10 @@
+{
+  "schema_version": "klara.behavior-external-label-status.v1",
+  "status": "blocked",
+  "labels_created": 0,
+  "labels_inferred": false,
+  "required_labels": 41,
+  "judge_model": "qwen/qwen3.7-max",
+  "reason": "All locally discovered Qwen credential candidates returned HTTP 401.",
+  "source": "agent-product-live-qwen-availability.json"
+}

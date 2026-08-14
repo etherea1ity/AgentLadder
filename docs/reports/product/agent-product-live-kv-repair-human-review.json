@@ -1,0 +1,20 @@
+[
+  {
+    "answer_a": "KV Cache 是推理时缓存已计算好的 Key 和 Value 矩阵，让后续生成 token 时无需重复计算前面所有 token 的注意力结果，从而加速生成、降低算力开销。",
+    "answer_b": "KV Cache 保存并复用已处理 token 的注意力 key/value，避免自回归解码时重复计算全部历史 token。",
+    "case_id": "dev-direct-kv-zh-001",
+    "pair_id": "303abbb2b5a8e859c874"
+  },
+  {
+    "answer_a": "KV Cache 保存并复用已处理 token 的注意力 key/value，避免自回归解码时重复计算全部历史 token。",
+    "answer_b": "KV Cache 是在自回归推理时缓存已算好的 Key 和 Value 矩阵，避免每个新 token 重复计算前面所有 token 的注意力，从而省算力、加速推理。",
+    "case_id": "dev-direct-kv-zh-001",
+    "pair_id": "3a50378b365c4e111d77"
+  },
+  {
+    "answer_a": "KV Cache 保存并复用已处理 token 的注意力 key/value，避免自回归解码时重复计算全部历史 token。",
+    "answer_b": "KV Cache 是推理时缓存已计算过的 Key 和 Value 张量、避免每个新 token 重复计算历史部分的技术，用显存换时间以加速生成。",
+    "case_id": "dev-direct-kv-zh-001",
+    "pair_id": "4da0d9e1697272418a33"
+  }
+]

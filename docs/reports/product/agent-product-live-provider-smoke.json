@@ -1,0 +1,91 @@
+{
+  "authorization": "The repository owner explicitly authorized direct use of the configured DeepSeek and Qwen APIs for real backtesting on 2026-08-14.",
+  "cases": [
+    {
+      "duration_ms": 6850,
+      "error": null,
+      "model_used": "deepseek/deepseek-v4-flash",
+      "native_cost": {
+        "amount": 7.994e-05,
+        "currency": "USD"
+      },
+      "provider_hidden_reasoning_collected": false,
+      "public_content": "",
+      "requested_model": "deepseek/deepseek-v4-flash",
+      "status": "completed",
+      "tool_call_valid": true,
+      "tool_calls": [
+        {
+          "argument_keys": [
+            "nonce"
+          ],
+          "arguments": {
+            "nonce": "klara-live-backtest-v1"
+          },
+          "arguments_exposed": true,
+          "id": "call_00_dQDSdjbAiURE75Uib10A6770",
+          "name": "backtest_probe"
+        }
+      ],
+      "usage": {
+        "completion_tokens": 71,
+        "prompt_tokens": 429,
+        "total_tokens": 500
+      }
+    },
+    {
+      "duration_ms": 9608,
+      "error": {
+        "code": "provider_transport_error",
+        "status_code": null,
+        "type": "LlmProviderError"
+      },
+      "model_used": null,
+      "native_cost": {
+        "amount": 0.0,
+        "currency": "CNY"
+      },
+      "provider_hidden_reasoning_collected": false,
+      "public_content": "",
+      "requested_model": "qwen/qwen3.7-flash",
+      "status": "failed",
+      "tool_call_valid": false,
+      "tool_calls": [],
+      "usage": {
+        "completion_tokens": 0,
+        "prompt_tokens": 0,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "checks": {
+    "all_exact_models_completed": false,
+    "all_exact_tool_calls": false,
+    "all_requests_completed": false,
+    "all_usage_reported": false,
+    "exactly_two_frozen_candidates": true,
+    "native_budget_below_declared_limits": true,
+    "no_provider_hidden_reasoning_collected": true
+  },
+  "evaluated_at": "2026-08-14T04:01:33.182340+00:00",
+  "limitations": [
+    "This proves live identity, authentication, usage reporting, and one structured tool call only.",
+    "It is not a product behavior score, a chapter pass, or a GPT-parity claim."
+  ],
+  "manifest_sha256": "faf74dd6939ccac18be1057dff474688f26c63fdc3c33c72e0a27a9c50b74191",
+  "models_config_sha256": "19288ed83abcfa53b46d32af1c398858e34dd47bac7cb96f4948ed1327d9f7cd",
+  "native_costs": {
+    "CNY": 0.0,
+    "USD": 7.994e-05
+  },
+  "passed": false,
+  "prompt": {
+    "encoding": "utf-8",
+    "system_sha256": "da4a9674e94f2b04d13c266e218cf765f46beda58bb4e5f795966ae832f33b13",
+    "user_sha256": "af399ff4bbad7821e1cd8b4a86c1347c95b2a3d3782ad0bfe258ceba2f2c938f"
+  },
+  "provider_hidden_reasoning_collected": false,
+  "request_count": 2,
+  "schema_version": "klara.agent-product-provider-smoke.v1",
+  "stage": "agent-product-live-backtest-provider-smoke"
+}

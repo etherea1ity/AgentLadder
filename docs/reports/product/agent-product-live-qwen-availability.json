@@ -1,0 +1,24 @@
+{
+  "schema_version": "klara.provider-availability.v1",
+  "provider": "qwen",
+  "checked_at": "2026-08-14",
+  "credential_candidates": 2,
+  "credential_values_exposed": false,
+  "credential_sources": [
+    "C:/Users/jsj31/Desktop/AgentLadder/.env",
+    "C:/Users/jsj31/Desktop/backup/HKU Agent/.env"
+  ],
+  "endpoints_checked": [
+    "DashScope mainland OpenAI-compatible endpoint",
+    "DashScope international OpenAI-compatible endpoint",
+    "DashScope US OpenAI-compatible endpoint"
+  ],
+  "result": "all_credentials_rejected",
+  "http_status": 401,
+  "available": false,
+  "billable_successful_requests": 0,
+  "impact": [
+    "qwen/qwen3.7-flash candidate B was not run",
+    "qwen/qwen3.7-max independent judge for DeepSeek was not run"
+  ]
+}

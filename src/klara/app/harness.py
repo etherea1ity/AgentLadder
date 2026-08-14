@@ -14,6 +14,7 @@ from klara.app.output_contract import OutputContractLlmClient
 from klara.context.runtime import build_system_prompt
 from klara.context.controller import ContextController
 from klara.context.policy import ContextPolicy
+from klara.context.response_contract import ResponseContractController
 from klara.core.hooks import HookManager, JsonlTraceHook, KlaraHook
 from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient, LoopController
 from klara.core.messages import KlaraMessage
@@ -277,6 +278,7 @@ class KlaraHarness:
                     capabilities=self._visible_tool_names(),
                     workspace_root=self.config.workspace_root,
                 ),
+                ResponseContractController(),
                 MemoryRuntimeController(),
                 web_research,
                 EvidenceRuntimeController(web_research),

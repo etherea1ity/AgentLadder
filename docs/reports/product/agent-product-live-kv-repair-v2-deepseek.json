@@ -1,0 +1,333 @@
+{
+  "candidate_role": "candidate_a",
+  "capability_breakdown": {
+    "answer_relevance": {
+      "observations": 3,
+      "success_rate": 1.0
+    },
+    "no_unnecessary_plan": {
+      "observations": 3,
+      "success_rate": 1.0
+    }
+  },
+  "case_scores": [
+    {
+      "capability_tags": [
+        "answer_relevance",
+        "no_unnecessary_plan"
+      ],
+      "case_id": "dev-direct-kv-zh-001",
+      "checks": {
+        "acceptable_facts_present": true,
+        "answer_present": true,
+        "cost_budget": true,
+        "expected_artifacts_present": true,
+        "expected_states_present": true,
+        "forbidden_calls_absent": true,
+        "invariants_pass": true,
+        "latency_budget": true,
+        "must_calls_present": true,
+        "no_p0_failure": true,
+        "prohibited_claims_absent": true,
+        "required_call_order": true,
+        "step_budget": true,
+        "token_budget": true
+      },
+      "cost_usd": 0.0002009,
+      "critical": false,
+      "human_acceptable": null,
+      "judge_outcome": "unscored",
+      "language": "zh",
+      "latency_ms": 8365,
+      "p0_count": 0,
+      "p1_count": 0,
+      "reference_success": null,
+      "repetition": 1,
+      "split": "development",
+      "task_success": true,
+      "tokens": 41
+    },
+    {
+      "capability_tags": [
+        "answer_relevance",
+        "no_unnecessary_plan"
+      ],
+      "case_id": "dev-direct-kv-zh-001",
+      "checks": {
+        "acceptable_facts_present": true,
+        "answer_present": true,
+        "cost_budget": true,
+        "expected_artifacts_present": true,
+        "expected_states_present": true,
+        "forbidden_calls_absent": true,
+        "invariants_pass": true,
+        "latency_budget": true,
+        "must_calls_present": true,
+        "no_p0_failure": true,
+        "prohibited_claims_absent": true,
+        "required_call_order": true,
+        "step_budget": true,
+        "token_budget": true
+      },
+      "cost_usd": 0.00020006,
+      "critical": false,
+      "human_acceptable": null,
+      "judge_outcome": "unscored",
+      "language": "zh",
+      "latency_ms": 9238,
+      "p0_count": 0,
+      "p1_count": 0,
+      "reference_success": null,
+      "repetition": 2,
+      "split": "development",
+      "task_success": true,
+      "tokens": 38
+    },
+    {
+      "capability_tags": [
+        "answer_relevance",
+        "no_unnecessary_plan"
+      ],
+      "case_id": "dev-direct-kv-zh-001",
+      "checks": {
+        "acceptable_facts_present": true,
+        "answer_present": true,
+        "cost_budget": true,
+        "expected_artifacts_present": true,
+        "expected_states_present": true,
+        "forbidden_calls_absent": true,
+        "invariants_pass": true,
+        "latency_budget": true,
+        "must_calls_present": true,
+        "no_p0_failure": true,
+        "prohibited_claims_absent": true,
+        "required_call_order": true,
+        "step_budget": true,
+        "token_budget": true
+      },
+      "cost_usd": 0.00019838000000000004,
+      "critical": false,
+      "human_acceptable": null,
+      "judge_outcome": "unscored",
+      "language": "zh",
+      "latency_ms": 6733,
+      "p0_count": 0,
+      "p1_count": 0,
+      "reference_success": null,
+      "repetition": 3,
+      "split": "development",
+      "task_success": true,
+      "tokens": 35
+    }
+  ],
+  "checks": {
+    "critical_deterministic": false,
+    "critical_repeat_stability": true,
+    "human_acceptability": false,
+    "independent_judge": false,
+    "normal_task_success": true,
+    "observation_coverage": true,
+    "ordinary_repeat_stability": true,
+    "p0_zero": true,
+    "reference_non_inferiority": false,
+    "severe_answer_mismatch": true
+  },
+  "counts": {
+    "cases": 1,
+    "critical_observations": 0,
+    "expected_observations": 3,
+    "human_scored": 0,
+    "judge_scored": 0,
+    "observations": 3
+  },
+  "declared_budget_key": "maximum_deepseek_usd",
+  "declared_paid_api_budget_usd": 10.0,
+  "estimated_cost_usd": 0.0005993400000000001,
+  "evaluated_at": "2026-08-14T06:23:23.252768+00:00",
+  "fixture_sha256": "aee3f07d2a2e1bee3145fd2cfede2133fb7d7f5c735bf6c9dc80d32cffd957f8",
+  "gate_kind": "live_candidate_evaluation_pending_external_labels",
+  "interpretation": "Current Agent outputs were executed through the real Harness. Live reference, independent judge, and blind human fields remain unscored until their separately produced labels are imported.",
+  "language_breakdown": {
+    "zh": {
+      "observations": 3,
+      "success_rate": 1.0
+    }
+  },
+  "metrics": {
+    "candidate_reference_success_rate": 0.0,
+    "critical_deterministic_rate": 0.0,
+    "human_acceptability_rate": 0.0,
+    "judge_equivalent_or_better_rate": 0.0,
+    "normal_task_success_rate": 1.0,
+    "overall_task_success_rate": 1.0,
+    "p0_count": 0,
+    "reference_gap": 0.0,
+    "reference_success_rate": 0.0,
+    "severe_answer_mismatch_rate": 0.0,
+    "total_cost_usd": 0.0005993400000000001,
+    "total_latency_ms": 24336,
+    "total_tokens": 114
+  },
+  "model": "deepseek/deepseek-v4-flash",
+  "observations": [
+    {
+      "actions": [],
+      "artifacts": [],
+      "case_id": "dev-direct-kv-zh-001",
+      "cost_usd": 0.0002009,
+      "final_answer": "KV Cache 是推理时把已生成 token 的 Key 和 Value 缓存下来，避免每次生成新 token 都重复计算前面所有 token 的注意力，从而加速解码。",
+      "human_acceptable": null,
+      "invariant_results": {
+        "answer_matches_question": true,
+        "maximum_sentences_1": true,
+        "no_unnecessary_plan": true
+      },
+      "judge_outcome": "unscored",
+      "latency_ms": 8365,
+      "p0_failures": [],
+      "p1_failures": [],
+      "reference_success": null,
+      "repetition": 1,
+      "states": [
+        "answer_directly",
+        "completed"
+      ],
+      "tokens": 41
+    },
+    {
+      "actions": [],
+      "artifacts": [],
+      "case_id": "dev-direct-kv-zh-001",
+      "cost_usd": 0.00020006,
+      "final_answer": "KV Cache 是在自回归推理时缓存历史 token 的 Key 和 Value 矩阵，避免每一步重复计算之前的注意力结果，从而加速生成、降低算力开销。",
+      "human_acceptable": null,
+      "invariant_results": {
+        "answer_matches_question": true,
+        "maximum_sentences_1": true,
+        "no_unnecessary_plan": true
+      },
+      "judge_outcome": "unscored",
+      "latency_ms": 9238,
+      "p0_failures": [],
+      "p1_failures": [],
+      "reference_success": null,
+      "repetition": 2,
+      "states": [
+        "answer_directly",
+        "completed"
+      ],
+      "tokens": 38
+    },
+    {
+      "actions": [],
+      "artifacts": [],
+      "case_id": "dev-direct-kv-zh-001",
+      "cost_usd": 0.00019838000000000004,
+      "final_answer": "KV Cache 是在 Transformer 推理时缓存已生成 token 的 Key 和 Value 矩阵，避免重复计算注意力，从而加速生成、节省算力。",
+      "human_acceptable": null,
+      "invariant_results": {
+        "answer_matches_question": true,
+        "maximum_sentences_1": true,
+        "no_unnecessary_plan": true
+      },
+      "judge_outcome": "unscored",
+      "latency_ms": 6733,
+      "p0_failures": [],
+      "p1_failures": [],
+      "reference_success": null,
+      "repetition": 3,
+      "states": [
+        "answer_directly",
+        "completed"
+      ],
+      "tokens": 35
+    }
+  ],
+  "passed": false,
+  "pricing": {
+    "input_cost_per_million": 0.14,
+    "output_cost_per_million": 0.28
+  },
+  "provider_max_generation_tokens": 800,
+  "resumable_checkpoint": "data\\eval\\agent-product-live-kv-repair-v2-deepseek.checkpoint.json",
+  "runner_version": "klara.behavior-live-runner.v5",
+  "runtime_runs": [
+    {
+      "action_calls": [],
+      "blocked_actions": [],
+      "case_id": "dev-direct-kv-zh-001",
+      "comparison_contract_sha256": "1dcb27854ee509d1865ae2179d7d79ac7760922f73e4e4a31b70e9aec60ac86a",
+      "executed_actions": [],
+      "lifecycle_event_count": 19,
+      "provider_error": null,
+      "public_tool_observations": [],
+      "repetition": 1,
+      "run_profile_sha256": "afec493232ef40cb036a3608b7539b7fc1499daa7315b27cdd3c6340a6e2fd51"
+    },
+    {
+      "action_calls": [],
+      "blocked_actions": [],
+      "case_id": "dev-direct-kv-zh-001",
+      "comparison_contract_sha256": "1dcb27854ee509d1865ae2179d7d79ac7760922f73e4e4a31b70e9aec60ac86a",
+      "executed_actions": [],
+      "lifecycle_event_count": 19,
+      "provider_error": null,
+      "public_tool_observations": [],
+      "repetition": 2,
+      "run_profile_sha256": "afec493232ef40cb036a3608b7539b7fc1499daa7315b27cdd3c6340a6e2fd51"
+    },
+    {
+      "action_calls": [],
+      "blocked_actions": [],
+      "case_id": "dev-direct-kv-zh-001",
+      "comparison_contract_sha256": "1dcb27854ee509d1865ae2179d7d79ac7760922f73e4e4a31b70e9aec60ac86a",
+      "executed_actions": [],
+      "lifecycle_event_count": 19,
+      "provider_error": null,
+      "public_tool_observations": [],
+      "repetition": 3,
+      "run_profile_sha256": "afec493232ef40cb036a3608b7539b7fc1499daa7315b27cdd3c6340a6e2fd51"
+    }
+  ],
+  "schema_version": "klara.behavior-report.v1",
+  "scorer_version": "klara.behavior-scorer.v2",
+  "selected_case_ids": [
+    "dev-direct-kv-zh-001"
+  ],
+  "source_fixture_sha256": "9cba47004eeb1a314886d95438fb53c07321141e9355e6dbcbe21914d6eb6c9b",
+  "split_breakdown": {
+    "development": {
+      "observations": 3,
+      "success_rate": 1.0
+    }
+  },
+  "split_hashes": {
+    "adversarial": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "development": "79a7df1b41e3fa28262b8ab0a09270c2883a8508ba4c26b9e98d03837586441c",
+    "hidden_regression": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "validation": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "stability": [
+    {
+      "case_id": "dev-direct-kv-zh-001",
+      "critical": false,
+      "passed": true,
+      "required_runs": 3,
+      "runs": 3,
+      "successes": 3
+    }
+  ],
+  "success_rate_95pct_ci": [
+    0.43849391955098227,
+    1.0
+  ],
+  "thresholds": {
+    "critical_deterministic_rate": 1.0,
+    "human_acceptability_rate": 0.95,
+    "judge_equivalent_or_better_rate": 0.9,
+    "maximum_p0_count": 0,
+    "maximum_reference_gap": 0.05,
+    "maximum_severe_answer_mismatch_rate": 0.01,
+    "normal_task_success_rate": 0.95
+  }
+}

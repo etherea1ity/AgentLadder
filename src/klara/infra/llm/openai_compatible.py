@@ -139,41 +139,61 @@ class OpenAICompatibleLlmClient:
                 requested=thinking_enabled,
             ),
         )
-        request = self._build_http_request(payload)
-        raw, runtime_events = _urlopen_with_retries(
-            request,
-            provider_id=self.provider_id,
-            model=model,
-            timeout_seconds=self.settings.timeout_seconds,
-            attempts=self.settings.retry_attempts,
-            retry_base_delay_seconds=self.settings.retry_base_delay_seconds,
-            retry_max_delay_seconds=self.settings.retry_max_delay_seconds,
-        )
-
-        try:
-            data = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise LlmProviderError(
-                "provider returned invalid JSON",
-                code="provider_response_invalid",
-                runtime_events=runtime_events,
-            ) from exc
-        try:
-            response = response_from_completion_data(
-                data,
-                model_ref=model_ref,
-                raw_preview=raw[:500],
+        all_runtime_events: list[LlmRuntimeEvent] = []
+        empty_response_attempts = min(2, self.settings.retry_attempts)
+        for response_attempt in range(1, empty_response_attempts + 1):
+            request = self._build_http_request(payload)
+            raw, runtime_events = _urlopen_with_retries(
+                request,
+                provider_id=self.provider_id,
+                model=model,
+                timeout_seconds=self.settings.timeout_seconds,
+                attempts=self.settings.retry_attempts,
+                retry_base_delay_seconds=self.settings.retry_base_delay_seconds,
+                retry_max_delay_seconds=self.settings.retry_max_delay_seconds,
             )
-        except LlmProviderError as exc:
-            exc.runtime_events = runtime_events
-            raise
-        return ModelResponse(
-            **{
-                **response.__dict__,
-                "model_used": model,
-                "runtime_events": runtime_events,
-            }
-        )
+            all_runtime_events.extend(runtime_events)
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                raise LlmProviderError(
+                    "provider returned invalid JSON",
+                    code="provider_response_invalid",
+                    runtime_events=tuple(all_runtime_events),
+                ) from exc
+            try:
+                response = response_from_completion_data(
+                    data,
+                    model_ref=model_ref,
+                    raw_preview=raw[:500],
+                )
+            except LlmProviderError as exc:
+                if (
+                    exc.code == "provider_response_empty"
+                    and response_attempt < empty_response_attempts
+                ):
+                    all_runtime_events.append(
+                        LlmRuntimeEvent(
+                            type="provider.retry_scheduled",
+                            payload={
+                                "provider": self.provider_id,
+                                "model": model,
+                                "reason": exc.code,
+                                "response_attempt": response_attempt,
+                            },
+                        )
+                    )
+                    continue
+                exc.runtime_events = tuple(all_runtime_events)
+                raise
+            return ModelResponse(
+                **{
+                    **response.__dict__,
+                    "model_used": model,
+                    "runtime_events": tuple(all_runtime_events),
+                }
+            )
+        raise AssertionError("empty-response retry loop exhausted without result")
 
     def _enable_thinking(
         self,

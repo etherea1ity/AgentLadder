@@ -1,0 +1,10 @@
+{
+  "schema_version": "klara.blocked-candidate-run.v1",
+  "candidate_role": "candidate_b",
+  "model": "qwen/qwen3.7-flash",
+  "status": "blocked_credentials_rejected",
+  "http_status": 401,
+  "observations": 0,
+  "score_inferred": false,
+  "source": "agent-product-live-qwen-availability.json"
+}

@@ -17,9 +17,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     parser.add_argument("--input-cost-per-million", type=float, required=True)
     parser.add_argument("--output-cost-per-million", type=float, required=True)
+    parser.add_argument("--candidate-role", default="candidate")
     parser.add_argument("--json-out", type=Path, required=True)
     parser.add_argument("--review-queue-out", type=Path, required=True)
     parser.add_argument("--review-key-out", type=Path, required=True)
+    parser.add_argument("--checkpoint-out", type=Path)
+    parser.add_argument("--case-id", action="append", default=[])
     return parser
 
 
@@ -34,12 +37,18 @@ def _write(path: Path, value: Any) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    checkpoint_out = args.checkpoint_out or args.json_out.with_name(
+        args.json_out.stem + ".checkpoint.json"
+    )
     report, queue, key = run_live_candidate_evaluation(
         args.fixture,
         args.manifest,
         repository_root=args.repository_root.resolve(),
         input_cost_per_million=args.input_cost_per_million,
         output_cost_per_million=args.output_cost_per_million,
+        candidate_role=args.candidate_role,
+        checkpoint_path=checkpoint_out,
+        case_ids=tuple(args.case_id),
     )
     _write(args.json_out, report)
     _write(args.review_queue_out, queue)

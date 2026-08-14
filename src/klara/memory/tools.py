@@ -6,7 +6,14 @@ from dataclasses import dataclass
 
 import json
 
-from klara.core.tools import JsonObject, ToolMetadata, ToolResult, ToolSideEffect, ToolSpec
+from klara.core.tools import (
+    JsonObject,
+    ToolMetadata,
+    ToolOutputTrust,
+    ToolResult,
+    ToolSideEffect,
+    ToolSpec,
+)
 from klara.memory.models import MemoryKind, MemoryProvenance, MemoryScope, MemorySensitivity
 from klara.memory.service import MemoryNotFoundError, MemoryService, MemoryValidationError
 from klara.tools.base import BaseTool, ToolInputError
@@ -116,6 +123,7 @@ class MemorySearchTool(BaseTool):
         category="memory",
         side_effect=ToolSideEffect.READ,
         max_output_chars=20_000,
+        output_trust=ToolOutputTrust.UNTRUSTED,
     )
 
     def run(self, arguments: JsonObject):

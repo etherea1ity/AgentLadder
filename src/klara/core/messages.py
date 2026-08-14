@@ -101,7 +101,7 @@ class ModelResponse:
     # Tool calls request runtime work before the next model turn.
     tool_calls: tuple[ToolCall, ...] = field(default_factory=tuple)
     # Usage stays optional because fake LLMs and some providers may omit it.
-    usage: dict[str, int] | None = None
+    usage: dict[str, Any] | None = None
     # Optional provider-visible reasoning summary for UI only, never history.
     reasoning_summary: str | None = None
     # Structured provider reasoning items are reserved for streaming adapters.

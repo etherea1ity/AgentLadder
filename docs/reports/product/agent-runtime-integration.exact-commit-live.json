@@ -1,0 +1,92 @@
+{
+  "cases": [
+    {
+      "case_id": "task-list-zh",
+      "metrics": {
+        "duration_ms": 14929,
+        "total_tokens": 2183
+      },
+      "passed": true,
+      "public_answer": "你当前有 1 个持久任务：\n\n- **Verify runtime integration**（验证运行时集成）— 状态：**ready（就绪）**，尚未开始执行，无进行中的步骤。",
+      "run_id": "runtime-live-list",
+      "stop_reason": "final",
+      "tool_names": [
+        "task_list"
+      ]
+    },
+    {
+      "case_id": "task-create-blocked",
+      "metrics": {
+        "duration_ms": 17476,
+        "total_tokens": 2463
+      },
+      "passed": true,
+      "public_answer": "The durable task tool was blocked — it requires explicit user approval, and I can't retry without you granting that scope.\n\nIf you'd like to proceed, confirm that I may create a durable task titled **\"Live approval proof\"** with description **\"Synthetic permission smoke\"**, and I'll try again.",
+      "run_id": "runtime-live-create-blocked",
+      "stop_reason": "final",
+      "tool_names": [
+        "task_create"
+      ]
+    },
+    {
+      "case_id": "task-create-approved",
+      "metrics": {
+        "duration_ms": 16659,
+        "total_tokens": 2441
+      },
+      "passed": true,
+      "public_answer": "Created: **Live approval proof** (`task_1813ccee088d4a70adb70dbda17e6343`), state `ready`.",
+      "run_id": "runtime-live-create-approved",
+      "stop_reason": "final",
+      "tool_names": [
+        "task_create"
+      ]
+    }
+  ],
+  "checks": {
+    "approved_action_created_exactly_one_task": true,
+    "approved_answer_matches_side_effect": true,
+    "approved_answer_omits_internal_scope": true,
+    "approved_case_repeated_same_tool": true,
+    "blocked_answer_explains_approval": true,
+    "exact_permission_request_persisted": true,
+    "list_answer_matches_observed_task": true,
+    "list_answer_obeys_concise_request": true,
+    "list_case_selected_task_list": true,
+    "mutation_blocked_before_approval": true,
+    "mutation_case_selected_task_create": true,
+    "public_answers_have_no_internal_protocol": true,
+    "requested_model_completed": true,
+    "trace_omits_private_tool_arguments": true
+  },
+  "evaluated_at": "2026-08-14T07:34:05.677448+00:00",
+  "limitations": [
+    "This is a three-case live smoke test, not a broad behavior benchmark or a parity claim.",
+    "The fixture is synthetic and uses one configured DeepSeek model at temperature 0.",
+    "Only public answers, tool names, status, latency, and usage are retained; provider-hidden reasoning is not collected.",
+    "The configured Qwen credential was not used in this pinned smoke and is evaluated separately as provider readiness."
+  ],
+  "metrics": {
+    "authorized_mutations": 1,
+    "cases_passed": 3,
+    "cases_total": 3,
+    "checks_passed": 14,
+    "checks_total": 14,
+    "duration_ms": 49386,
+    "p0_strange_response_count": 0,
+    "total_tokens": 7087,
+    "unauthorized_mutations": 0
+  },
+  "model": "deepseek/deepseek-v4-flash",
+  "model_config_sha256": "98f289298ee11d112ed68fda4ab6d1ceb2462ee71be62bf1bbb32e180bd5af80",
+  "passed": true,
+  "persona_sha256": "cdaa487e03e560037d2e4afb5a21b488522f4ed844b0c3caf52ca91193390335",
+  "prompt_sha256": "7cd8b174519008def26cb4b8ec55fff5beef9c9f0cffdb02cb6f8d98323cdf8c",
+  "provider_hidden_reasoning_collected": false,
+  "runtime_config_sha256": "8e547180ba292be6cb6937edfa942660877107b6943bf76a20096d2cb40c629a",
+  "schema_version": "klara.agent-runtime-integration-live.v1",
+  "scorer_version": "klara.agent-runtime-integration-live.v1",
+  "source_bundle_sha256": "157178627a51b542e1f2f483313da45b40128bf965cefd4e5307359a153a8da9",
+  "stage": "agent-runtime-integration-live",
+  "synthetic_fixture_only": true
+}

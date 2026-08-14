@@ -29,6 +29,7 @@ Chat models live in `config/models.toml`:
 
 ```text
 qwen/qwen-flash
+qwen/qwen3.7-flash
 qwen/qwen3.7-plus
 qwen/qwen3.7-max
 qwen/qwen3.6-plus
@@ -38,10 +39,12 @@ deepseek/deepseek-v4-pro
 
 These are the models that `/api/models` returns to the frontend.
 
-The default `agent` profile is `qwen/qwen-flash`, shown in the UI as
-Qwen 3.7 Flash. Qwen 3.7 Plus, Qwen 3.7 Max, Qwen 3.6 Plus, and DeepSeek
-models remain available as fallbacks or frontend choices. Qwen 3.7 Plus remains
-the configured vision-capable chat model.
+The default `agent` profile is `qwen/qwen3.7-flash`. The older
+`qwen/qwen-flash` route remains available as an explicitly labelled legacy
+fallback; it must not be reported as Qwen 3.7 Flash. Qwen 3.7 Plus, Qwen 3.7
+Max, Qwen 3.6 Plus, and DeepSeek models remain available as fallbacks or
+frontend choices. Qwen 3.7 Plus remains the configured vision-capable chat
+model.
 
 ## Image Tool Model
 

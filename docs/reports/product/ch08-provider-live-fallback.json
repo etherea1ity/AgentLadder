@@ -1,0 +1,205 @@
+{
+  "checks": {
+    "deepseek_fallback_completed": true,
+    "fallback_event_order_is_public": true,
+    "fallback_tool_call_is_exact": true,
+    "qwen_auth_failure_is_typed": true,
+    "qwen_is_frozen_primary": true,
+    "qwen_siblings_are_skipped_after_auth_failure": true,
+    "usage_is_reported": true
+  },
+  "duration_ms": 14434,
+  "evaluated_at": "2026-08-14T07:09:06.462453+00:00",
+  "limitations": [
+    "The configured Qwen credential was rejected with HTTP 401.",
+    "This proves live fallback behavior, not Qwen availability or Qwen quality.",
+    "DeepSeek cannot independently judge a DeepSeek candidate run."
+  ],
+  "model_used": "deepseek/deepseek-v4-flash",
+  "passed": true,
+  "requested_model": "qwen/qwen3.7-flash",
+  "runtime_events": [
+    {
+      "payload": {
+        "candidate_count": 7,
+        "candidate_index": 0,
+        "candidate_model": "qwen/qwen3.7-flash",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.candidate_started"
+    },
+    {
+      "payload": {
+        "attempt": 1,
+        "max_attempts": 1,
+        "model": "qwen/qwen3.7-flash",
+        "provider": "qwen",
+        "timeout_seconds": 60
+      },
+      "type": "provider.attempt_started"
+    },
+    {
+      "payload": {
+        "attempt": 1,
+        "error_code": "provider_authentication_failed",
+        "model": "qwen/qwen3.7-flash",
+        "provider": "qwen",
+        "retryable": false,
+        "status_code": 401
+      },
+      "type": "provider.attempt_failed"
+    },
+    {
+      "payload": {
+        "candidate_index": 0,
+        "candidate_model": "qwen/qwen3.7-flash",
+        "error_code": "provider_authentication_failed",
+        "requested_model": "qwen/qwen3.7-flash",
+        "retryable": false,
+        "status_code": 401
+      },
+      "type": "model_route.candidate_failed"
+    },
+    {
+      "payload": {
+        "failed_model": "qwen/qwen3.7-flash",
+        "fallback_model": "qwen/qwen3.7-plus",
+        "reason": "provider_authentication_failed",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.fallback_started"
+    },
+    {
+      "payload": {
+        "candidate_index": 1,
+        "candidate_model": "qwen/qwen3.7-plus",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.candidate_skipped"
+    },
+    {
+      "payload": {
+        "failed_model": "qwen/qwen3.7-plus",
+        "fallback_model": "qwen/qwen3.6-plus",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.fallback_started"
+    },
+    {
+      "payload": {
+        "candidate_index": 2,
+        "candidate_model": "qwen/qwen3.6-plus",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.candidate_skipped"
+    },
+    {
+      "payload": {
+        "failed_model": "qwen/qwen3.6-plus",
+        "fallback_model": "qwen/qwen3.7-max",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.fallback_started"
+    },
+    {
+      "payload": {
+        "candidate_index": 3,
+        "candidate_model": "qwen/qwen3.7-max",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.candidate_skipped"
+    },
+    {
+      "payload": {
+        "failed_model": "qwen/qwen3.7-max",
+        "fallback_model": "qwen/qwen-flash",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.fallback_started"
+    },
+    {
+      "payload": {
+        "candidate_index": 4,
+        "candidate_model": "qwen/qwen-flash",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.candidate_skipped"
+    },
+    {
+      "payload": {
+        "failed_model": "qwen/qwen-flash",
+        "fallback_model": "deepseek/deepseek-v4-flash",
+        "reason": "provider_authentication_circuit_open",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.fallback_started"
+    },
+    {
+      "payload": {
+        "candidate_count": 7,
+        "candidate_index": 5,
+        "candidate_model": "deepseek/deepseek-v4-flash",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.candidate_started"
+    },
+    {
+      "payload": {
+        "attempt": 1,
+        "max_attempts": 1,
+        "model": "deepseek/deepseek-v4-flash",
+        "provider": "deepseek",
+        "timeout_seconds": 60
+      },
+      "type": "provider.attempt_started"
+    },
+    {
+      "payload": {
+        "attempt": 1,
+        "model": "deepseek/deepseek-v4-flash",
+        "provider": "deepseek"
+      },
+      "type": "provider.attempt_completed"
+    },
+    {
+      "payload": {
+        "candidate_index": 5,
+        "fallback_used": true,
+        "model_used": "deepseek/deepseek-v4-flash",
+        "requested_model": "qwen/qwen3.7-flash"
+      },
+      "type": "model_route.candidate_completed"
+    }
+  ],
+  "schema_version": "klara.agent-product-provider-fallback-live.v1",
+  "stage": "ch08-provider-live-fallback",
+  "tool_calls": [
+    {
+      "arguments": {
+        "nonce": "klara-live-backtest-v1"
+      },
+      "id": "call_00_p1K7UbB1b4x8lW5pPk5F6484",
+      "name": "backtest_probe"
+    }
+  ],
+  "usage": {
+    "completion_tokens": 77,
+    "completion_tokens_details": {
+      "reasoning_tokens": 23
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 413,
+    "prompt_tokens": 413,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 490
+  }
+}

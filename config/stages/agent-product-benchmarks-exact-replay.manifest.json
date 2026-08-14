@@ -1,0 +1,33 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-product-benchmarks-exact-replay",
+  "branch": "codex/agent-product-benchmarks",
+  "source_commit": "1642ae6f7313db735cf7aecd607364a6c097bf5a",
+  "mode": "paid-exact-commit-live-replay",
+  "authorized_at": "2026-08-14T00:00:00+08:00",
+  "authorization": "Inherits the repository owner's explicit DeepSeek live-backtest authorization and the stricter USD 10 provider cap from agent-product-live-backtest.manifest.json.",
+  "model_roles": {
+    "candidate": "deepseek/deepseek-v4-flash"
+  },
+  "budgets": {
+    "paid_api_usd": 0.1,
+    "maximum_requests": 41,
+    "stop_before_exceeding_any_limit": true
+  },
+  "thresholds": {
+    "critical_deterministic_rate": 1.0,
+    "normal_task_success_rate": 0.95,
+    "maximum_reference_gap": 0.05,
+    "judge_equivalent_or_better_rate": 0.9,
+    "human_acceptability_rate": 0.95,
+    "maximum_p0_count": 0,
+    "maximum_severe_answer_mismatch_rate": 0.01,
+    "critical_repetitions": 5,
+    "ordinary_repetitions": 3
+  },
+  "exclusions": [
+    "No Qwen calls",
+    "No independent judge or fabricated human labels",
+    "No training, HKU, hidden reasoning, or external side effects"
+  ]
+}

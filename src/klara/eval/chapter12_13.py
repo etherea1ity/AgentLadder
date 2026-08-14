@@ -42,7 +42,18 @@ class _EventCollector:
 
 
 class _FetchedFixtureTool(BaseTool):
-    spec = ToolSpec(name="web_fetch", description="fixture fetch", input_schema={"type": "object"})
+    spec = ToolSpec(
+        name="web_fetch",
+        description=(
+            "Fetch the only available Version 4 release-note source. "
+            "Call with an empty object."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+    )
     metadata = ToolMetadata(label="Fixture fetch", category="test")
 
     def run(self, arguments: JsonObject) -> ToolResult:

@@ -1,0 +1,25 @@
+{
+  "schema_version": "klara.agent-product-live-backtest-plan.v1",
+  "status": "in_progress",
+  "parent_commit": "1642ae6c53b43181f090f9235fc712a2cc32d826",
+  "manifest": "config/stages/agent-product-live-backtest.manifest.json",
+  "truth_before_run": {
+    "frozen_product_stages_with_mainly_deterministic_or_scripted_behavior_evidence": 15,
+    "previous_real_api_cases": 3,
+    "previous_real_api_model": "deepseek/deepseek-v4-flash",
+    "current_klara_bench_v2_cases": 11,
+    "current_klara_bench_v2_observations": 41,
+    "current_klara_bench_v2_is_scripted_calibration": true,
+    "qwen_route_defect": "config label said Qwen 3.7 Flash while model id was qwen-flash"
+  },
+  "phases": [
+    {"order": 1, "name": "provider_smoke", "gate": "both configured providers authenticate and return the requested exact model id"},
+    {"order": 2, "name": "cross_chapter_fixture", "gate": "every frozen capability has direct, mutation, failure, adversarial, and answer-quality cases where applicable"},
+    {"order": 3, "name": "real_candidate_runs", "gate": "DeepSeek and Qwen execute every observation through the real cumulative Harness under identical case contracts"},
+    {"order": 4, "name": "gpt_reference_comparison", "gate": "public GPT/Codex answer and action references are fact-checked and candidate gap is at most five points"},
+    {"order": 5, "name": "cross_provider_judging", "gate": "exact coverage and at least 90 percent equivalent-or-better without self-provider-only judging"},
+    {"order": 6, "name": "bug_repair_and_rerun", "gate": "zero P0 and mandatory deterministic gates pass without lowering thresholds"},
+    {"order": 7, "name": "human_blind_review", "gate": "independent blind acceptability is at least 95 percent"},
+    {"order": 8, "name": "agent_product_freeze", "gate": "all local, live, public benchmark, human, security, UI, replay, latency, token, and cost gates are green"}
+  ]
+}

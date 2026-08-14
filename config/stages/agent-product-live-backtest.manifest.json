@@ -1,0 +1,121 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-product-live-backtest",
+  "branch": "codex/agent-product-live-backtest",
+  "parent_commit": "1642ae6f7313db735cf7aecd607364a6c097bf5a",
+  "mode": "paid-cross-chapter-real-api-backtest",
+  "authorized_at": "2026-08-14T00:00:00+08:00",
+  "authorization": "The repository owner explicitly authorized direct use of the configured DeepSeek and Qwen APIs for real backtesting on 2026-08-14.",
+  "execution_contract": {
+    "primary_target": "the cumulative AgentLadder runtime on this branch",
+    "stage_sources": "each frozen product branch contributes its manifest, declared capability, deterministic fixtures, and previously reported failures",
+    "branch_native_audit": "run an isolated exact-commit smoke when the historical runtime exposes a compatible real-model entrypoint; otherwise record not_executable_with_current_runner rather than fabricating a pass",
+    "comparison_unit": "question -> public context -> tool calls and arguments -> public observations -> persisted state -> final answer",
+    "temperature": 0.0,
+    "maximum_generation_tokens": 800,
+    "maximum_steps_per_case": 16,
+    "critical_repetitions": 5,
+    "ordinary_repetitions": 3
+  },
+  "model_roles": {
+    "gpt_codex_reference_author": "codex/gpt-5.6 public answers and public action paths authored in this task, then checked by deterministic facts",
+    "candidate_a": "deepseek/deepseek-v4-flash",
+    "candidate_b": "qwen/qwen3.7-flash",
+    "judge_for_candidate_a": "qwen/qwen3.7-max",
+    "judge_for_candidate_b": "deepseek/deepseek-v4-pro",
+    "judge_rule": "a candidate is never solely judged by its own provider/model family",
+    "hidden_reasoning_collection": false
+  },
+  "pricing": {
+    "checked_at": "2026-08-14",
+    "deepseek_official_url": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "deepseek_usd_per_million_tokens": {
+      "deepseek-v4-flash": {"input_cache_miss": 0.14, "output": 0.28},
+      "deepseek-v4-pro": {"input_cache_miss": 0.435, "output": 0.87}
+    },
+    "qwen_official_url": "https://help.aliyun.com/zh/model-studio/model-pricing",
+    "qwen_cny_list_price_per_million_tokens": {
+      "qwen3.7-flash_0_to_32k": {"input": 0.2, "output": 0.8},
+      "qwen3.7-max_0_to_1m": {"input": 12.0, "output": 36.0}
+    },
+    "cost_accounting": "use provider usage tokens and conservative cache-miss/list prices; discounts and free quota are not assumed"
+  },
+  "budgets": {
+    "maximum_total_usd_equivalent": 20.0,
+    "maximum_deepseek_usd": 10.0,
+    "maximum_qwen_cny": 75.0,
+    "maximum_total_requests": 900,
+    "smoke_requests_per_model": 1,
+    "stop_before_exceeding_any_limit": true
+  },
+  "frozen_sources": {
+    "ch04-harness-config": "02afaeaf63ed00c3ce68e1fffb1a47851ced4cfe",
+    "ch05-todo-planning": "8efe6489425cffe888beca138619d36f1d9dfdb4",
+    "ch06-07-context": "bf972514b9d93b2e846f46d9db45060cd93c5521",
+    "ch08-provider-recovery": "8a47ccf745e6f143b76322634539431c1f4a8a6f",
+    "ch09-skills-runtime": "c3fadfa0608fd6f9ef17b613a523a29154ec4105",
+    "ch10-memory": "3c43fa6",
+    "ch12-13-evidence-runtime": "49baa78",
+    "permission-engine": "d962345",
+    "ch14-durable-tasks": "36e192e",
+    "ch15-background-scheduler": "ac0e79d",
+    "ch17-mcp": "e0890d1",
+    "ch16-subagents-team-worktree": "4038911",
+    "ch18-production-runtime": "270e9ca",
+    "agent-product-polish": "cd20484",
+    "agent-runtime-integration": "ac6f83e",
+    "agent-product-benchmarks": "1642ae6"
+  },
+  "coverage_families": [
+    "direct-answer-and-no-unnecessary-plan",
+    "harness-model-and-tool-capability-routing",
+    "todo-planning-and-correction",
+    "context-budget-compaction-and-latest-correction",
+    "provider-retry-fallback-and-cancellation",
+    "skills-progressive-disclosure-and-permission-boundary",
+    "memory-crud-temporal-conflict-injection-and-tenant-isolation",
+    "web-evidence-search-fetch-citation-abstention-and-conflict",
+    "permission-deny-allow-once-allow-task-revocation-and-bypass",
+    "durable-task-lifecycle-restart-artifact-and-cancellation",
+    "scheduler-create-list-pause-resume-dst-overlap-and-cancel",
+    "mcp-discovery-authorized-call-malformed-response-and-reconnect",
+    "subagent-team-message-budget-cancellation-and-worktree-isolation",
+    "auth-rbac-tenant-persistence-queue-replay-and-redaction",
+    "product-answer-relevance-concision-naturalness-and-interruption"
+  ],
+  "thresholds": {
+    "critical_deterministic_rate": 1.0,
+    "normal_task_success_rate": 0.95,
+    "maximum_reference_gap": 0.05,
+    "judge_equivalent_or_better_rate": 0.9,
+    "human_acceptability_rate": 0.95,
+    "maximum_p0_count": 0,
+    "maximum_severe_answer_mismatch_rate": 0.01
+  },
+  "expected_artifacts": [
+    "docs/reports/product/agent-product-live-backtest-plan.json",
+    "docs/reports/product/agent-product-live-backtest-plan.md",
+    "docs/reports/product/agent-product-live-backtest-plan.en.md",
+    "docs/reports/product/agent-product-live-provider-smoke.json",
+    "docs/reports/product/ch08-provider-live-fallback.json",
+    "docs/reports/product/agent-product-live-tooling-backtest.json",
+    "docs/reports/product/agent-product-live-branch-audit.json",
+    "docs/reports/product/memory-public-locomo.json",
+    "docs/reports/product/memory-public-longmemeval.json",
+    "docs/reports/product/memory-public-agent-bench.json",
+    "docs/reports/product/memory-public-competitor-contracts.json",
+    "docs/reports/product/agent-product-live-candidate-deepseek.json",
+    "docs/reports/product/agent-product-live-candidate-qwen.json",
+    "docs/reports/product/agent-product-live-judge-labels.json",
+    "docs/reports/product/agent-product-live-human-review.json",
+    "docs/reports/product/agent-product-live-backtest.json",
+    "docs/reports/product/agent-product-live-backtest.md",
+    "docs/reports/product/agent-product-live-backtest.en.md"
+  ],
+  "exclusions": [
+    "No provider-hidden reasoning or chain-of-thought collection",
+    "No claim that GPT/Codex references are programmatic OpenAI API runs because no OPENAI_API_KEY is configured",
+    "No model training, trajectory-scale collection, HKU connection, or learned-policy authority before Agent Product Freeze",
+    "No fabricated human labels or official public benchmark scores"
+  ]
+}

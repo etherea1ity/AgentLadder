@@ -7,6 +7,7 @@ import hashlib
 import json
 from math import sqrt
 from pathlib import Path
+import re
 from typing import Any, Literal, Protocol, Sequence
 
 from pydantic import BaseModel, Field, model_validator
@@ -261,10 +262,11 @@ def score_observation(
         "expected_artifacts_present": set(case.expected_artifacts).issubset(artifact_set),
         "invariants_pass": all(observation.invariant_results[item] for item in case.invariants),
         "prohibited_claims_absent": not any(
-            claim.lower() in normalized_answer for claim in case.prohibited_claims
+            _prohibited_claim_present(normalized_answer, claim)
+            for claim in case.prohibited_claims
         ),
         "acceptable_facts_present": all(
-            any(alternative.casefold() in normalized_answer for alternative in group)
+            any(_fact_present(normalized_answer, alternative) for alternative in group)
             for group in case.acceptable_answer_fact_groups
         ),
         "required_call_order": _is_subsequence(
@@ -383,3 +385,60 @@ def _is_subsequence(required: Sequence[str], observed: Sequence[str]) -> bool:
         return True
     iterator = iter(observed)
     return all(any(item == expected for item in iterator) for expected in required)
+
+
+def _fact_present(answer: str, alternative: str) -> bool:
+    """Match exact facts plus bounded Chinese wording inserted between fact terms."""
+
+    normalized_answer = _expand_contractions(answer.casefold())
+    expected = _expand_contractions(alternative.casefold())
+    if expected in normalized_answer:
+        return True
+    connector_free_answer = _connector_free(normalized_answer)
+    connector_free_expected = _connector_free(expected)
+    if connector_free_expected and connector_free_expected in connector_free_answer:
+        return True
+    if expected == "避免重复计算":
+        avoidance = any(
+            phrase in normalized_answer for phrase in ("避免", "无需", "无须", "不必", "不用")
+        )
+        recomputation = any(
+            phrase in normalized_answer for phrase in ("重算", "重复计算", "重新计算")
+        )
+        if avoidance and recomputation:
+            return True
+    compact = re.sub(r"\s+", "", normalized_answer)
+    if not re.fullmatch(r"[\u3400-\u9fff]{4,}", expected):
+        return False
+    positions: list[int] = []
+    cursor = 0
+    for character in expected:
+        position = compact.find(character, cursor)
+        if position < 0:
+            return False
+        positions.append(position)
+        cursor = position + 1
+    # Permit short modifiers such as “每一步/都” but not distant coincidence.
+    return positions[-1] - positions[0] <= len(expected) + 8
+
+
+def _connector_free(value: str) -> str:
+    compact = re.sub(r"\s+", "", value)
+    return re.sub(r"(?<=[a-z0-9])(?:/|和|与|及)(?=[a-z0-9])", "", compact)
+
+
+def _expand_contractions(value: str) -> str:
+    return value.replace("can't", "cannot").replace("won't", "will not")
+
+
+def _prohibited_claim_present(answer: str, claim: str) -> bool:
+    """Reject claims while allowing explicit negation of the same phrase."""
+
+    target = claim.casefold()
+    cursor = 0
+    while (position := answer.find(target, cursor)) >= 0:
+        prefix = answer[max(0, position - 16) : position]
+        if not re.search(r"(?:\bno\s+|\bnot\s+|\bnever\s+|wasn't\s+|未|没有|并未)$", prefix):
+            return True
+        cursor = position + len(target)
+    return False

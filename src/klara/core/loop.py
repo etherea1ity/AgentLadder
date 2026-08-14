@@ -134,6 +134,8 @@ class _RunMetrics:
 
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    reasoning_tokens: int = 0
+    public_completion_tokens: int = 0
     total_tokens: int = 0
     has_reported_tokens: bool = False
 
@@ -144,6 +146,10 @@ class _RunMetrics:
             self.has_reported_tokens = True
         self.prompt_tokens += _int_token(metrics.get("prompt_tokens"))
         self.completion_tokens += _int_token(metrics.get("completion_tokens"))
+        self.reasoning_tokens += _int_token(metrics.get("reasoning_tokens"))
+        self.public_completion_tokens += _int_token(
+            metrics.get("public_completion_tokens")
+        )
         self.total_tokens += _int_token(metrics.get("total_tokens"))
 
     def to_public_dict(self, *, duration_ms: int) -> dict[str, object]:
@@ -153,6 +159,8 @@ class _RunMetrics:
             "duration_ms": duration_ms,
             "prompt_tokens": self.prompt_tokens,
             "completion_tokens": self.completion_tokens,
+            "reasoning_tokens": self.reasoning_tokens,
+            "public_completion_tokens": self.public_completion_tokens,
             "total_tokens": self.total_tokens,
             "token_source": "reported" if self.has_reported_tokens else "unknown",
         }
@@ -560,7 +568,7 @@ class KlaraLoop:
                             role="tool",
                             name=result.name,
                             tool_call_id=result.tool_call_id,
-                            content=result.content if result.ok else result.error or "",
+                            content=self.tool_executor.model_visible_content(result),
                         )
                     )
 
@@ -1386,7 +1394,7 @@ def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def _normalize_usage(usage: dict[str, int] | None) -> dict[str, int | None]:
+def _normalize_usage(usage: dict[str, Any] | None) -> dict[str, int | None]:
     """Normalize common provider usage field names."""
 
     source = usage or {}
@@ -1395,11 +1403,24 @@ def _normalize_usage(usage: dict[str, int] | None) -> dict[str, int | None]:
         _first_present(source, "completion_tokens", "output_tokens")
     )
     total = _int_or_none(_first_present(source, "total_tokens"))
+    details = source.get("completion_tokens_details")
+    reasoning = _int_or_none(
+        details.get("reasoning_tokens")
+        if isinstance(details, dict)
+        else source.get("reasoning_tokens")
+    )
+    public_completion = (
+        max(0, completion - (reasoning or 0))
+        if completion is not None
+        else None
+    )
     if total is None and (prompt is not None or completion is not None):
         total = (prompt or 0) + (completion or 0)
     return {
         "prompt_tokens": prompt,
         "completion_tokens": completion,
+        "reasoning_tokens": reasoning,
+        "public_completion_tokens": public_completion,
         "total_tokens": total,
     }
 
@@ -1419,6 +1440,8 @@ def _llm_metrics(
         "duration_ms": duration_ms,
         "prompt_tokens": usage.get("prompt_tokens"),
         "completion_tokens": usage.get("completion_tokens"),
+        "reasoning_tokens": usage.get("reasoning_tokens"),
+        "public_completion_tokens": usage.get("public_completion_tokens"),
         "total_tokens": usage.get("total_tokens"),
         "token_source": token_source,
     }
@@ -1541,7 +1564,7 @@ def _model_visible_tool_specs(specs: tuple[ToolSpec, ...]) -> tuple[ToolSpec, ..
     """Return external specs plus the internal public-activity control tool."""
 
     if not specs:
-        return specs
+        return (_ACTIVITY_TOOL_SPEC,)
     if any(spec.name == _ACTIVITY_TOOL_NAME for spec in specs):
         return specs
     return (*specs, _ACTIVITY_TOOL_SPEC)
@@ -1812,7 +1835,9 @@ def _blocked_tool_result(call: ToolCall, reason: str) -> ToolResult:
     if public_reason == "permission_approval_required":
         public_error = (
             "Tool blocked: explicit user approval is required. Do not retry this "
-            "action unless the user grants its exact scope."
+            "action, ask for confirmation, or invite a retry. In one sentence, say "
+            "the requested action did not happen because approval is required; the "
+            "approval surface owns the next step."
         )
     elif public_reason.startswith("permission_"):
         public_error = f"Tool blocked by permission policy: {public_reason}"

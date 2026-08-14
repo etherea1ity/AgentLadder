@@ -407,12 +407,14 @@ class WebResearchController:
         *,
         user_timezone: str = "local",
         policy: WebResearchPolicy | None = None,
-        available_tools: tuple[str, ...] = (),
+        available_tools: tuple[str, ...] | None = None,
     ) -> None:
         """Create an empty controller for one run."""
 
         self.user_timezone = user_timezone
-        self.available_tools = frozenset(available_tools)
+        self.available_tools = (
+            None if available_tools is None else frozenset(available_tools)
+        )
         self.state = WebResearchState(user_timezone=user_timezone)
         self.ledger = EvidenceLedger()
         self.policy = policy or WebResearchPolicy()
@@ -788,12 +790,15 @@ def _no_viable_action_feedback(decision: ResearchDecision) -> str:
 def _classify_mode(
     user_input: str,
     *,
-    available_tools: frozenset[str] = frozenset(),
+    available_tools: frozenset[str] | None = None,
 ) -> ResearchMode:
     compact = _strip_timestamp_envelope(user_input).lower()
     if _is_exact_time_request(compact):
         return "off"
-    if _is_local_state_request(compact, available_tools=available_tools):
+    if _is_local_state_request(
+        compact,
+        available_tools=available_tools or frozenset(),
+    ):
         return "off"
     deep_terms = (
         "research",
@@ -870,6 +875,19 @@ def _is_local_state_request(
             "我的日程",
             "定时任务状态",
         ),
+        "schedule_create": (
+            "create a schedule",
+            "create the schedule",
+            "weekly schedule",
+            "schedule a recurring",
+            "schedule this recurring",
+        ),
+        "schedule_control": (
+            "pause schedule",
+            "resume schedule",
+            "cancel schedule",
+            "delete schedule",
+        ),
         "memory_search": (
             "do i prefer",
             "my preference",
@@ -877,6 +895,20 @@ def _is_local_state_request(
             "我的偏好",
             "我喜欢",
             "记得我",
+        ),
+        "todo_write": (
+            "todo list",
+            "todo plan",
+            "write the todo",
+            "plan the audit",
+            "create the plan",
+            "multi-step",
+            "multistep",
+        ),
+        "task_control": (
+            "cancel durable task",
+            "pause durable task",
+            "resume durable task",
         ),
         "skills_list": (
             "available skill",

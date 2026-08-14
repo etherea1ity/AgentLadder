@@ -1,0 +1,19 @@
+{
+  "schema_version": "klara.evaluation-contract-amendment.v1",
+  "case_id": "dev-todo-multistep-en-001",
+  "field": "limits.maximum_tokens",
+  "old_value": 120,
+  "new_value": 180,
+  "reason": "The case requires a three-item public native tool call plus a final status. The original 120-token ceiling was inconsistent with every other comparable tool-backed KlaraBench v2 case, which uses 180 or 220 tokens, and incorrectly failed semantically correct tool arguments before answer quality was considered.",
+  "anti_gaming": {
+    "provider_generation_cap_unchanged": 800,
+    "maximum_steps_unchanged": 2,
+    "required_tools_unchanged": true,
+    "required_states_unchanged": true,
+    "invariants_unchanged": true,
+    "reference_unchanged": true,
+    "pre_amendment_report_preserved": "agent-product-live-stage-candidate-deepseek.pre-todo-provider-fix.json",
+    "fresh_live_rerun_required": true
+  },
+  "status": "requires_fresh_live_rerun"
+}

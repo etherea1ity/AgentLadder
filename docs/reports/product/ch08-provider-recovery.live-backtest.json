@@ -1,0 +1,44 @@
+{
+  "checks": {
+    "actual_model_is_recorded": true,
+    "bilingual_tutorial_exists": true,
+    "fallback_is_projected_to_api": true,
+    "fallback_route_is_ordered": true,
+    "fallback_uses_second_candidate": true,
+    "frontend_shows_recovery_status": true,
+    "prompt_recovery_compacts": true,
+    "prompt_recovery_refreshes_system_context": true,
+    "prompt_recovery_retries_once": true,
+    "prompt_recovery_trace_is_ordered": true,
+    "provider_body_is_not_public": true,
+    "provider_policy_is_frozen": true,
+    "retry_taxonomy_is_public": true,
+    "retry_trace_is_ordered": true,
+    "stage_manifest_exists": true,
+    "tool_failure_becomes_observation": true,
+    "transient_failure_retries": true,
+    "typed_failure_text_is_not_public": true
+  },
+  "evaluated_at": "2026-08-14T07:24:06.359754+00:00",
+  "gate_kind": "deterministic_fault_injection_gate",
+  "interpretation": "Passing proves deterministic transient retry, bounded backoff, typed public failure events, explicit fallback routing, one context-length compaction retry, tool-failure observations, and a safe recovery UI. It uses fault injection and does not claim live-provider uptime, production incident response, or a learned policy.",
+  "metrics": {
+    "checks_passed": 18,
+    "checks_total": 18,
+    "fallback_candidate_count": 2,
+    "messages_after_recovery": 3,
+    "messages_before_recovery": 9,
+    "prompt_recovery_attempts": 1,
+    "provider_attempts": 2
+  },
+  "passed": true,
+  "public_fallback_evidence": {
+    "failed_model": "primary/model-a",
+    "fallback_model": "fallback/model-b",
+    "reason": "provider_unavailable",
+    "requested_model": "primary/model-a"
+  },
+  "schema_version": "klara.chapter-gate.v1",
+  "scorer_version": "klara.chapter08-provider-recovery.v1",
+  "stage": "ch08-provider-recovery"
+}

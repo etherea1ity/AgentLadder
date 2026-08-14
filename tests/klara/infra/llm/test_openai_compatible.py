@@ -666,3 +666,54 @@ def test_prompt_too_long_is_typed_and_not_retried_by_provider(monkeypatch) -> No
     assert caught.value.retryable is False
     assert "private body" not in str(caught.value)
     assert "private body" not in repr(caught.value.runtime_events)
+
+
+def test_empty_provider_generation_is_retried_once(monkeypatch) -> None:
+    calls = 0
+
+    class FakeResponse:
+        def __init__(self, payload: dict[str, object]) -> None:
+            self.payload = payload
+
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return FakeResponse(
+                {"choices": [{"message": {"content": "", "reasoning_content": "hidden"}}]}
+            )
+        return FakeResponse({"choices": [{"message": {"content": "recovered"}}]})
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    client = OpenAICompatibleLlmClient(
+        provider_id="deepseek",
+        provider=ProviderConfig(
+            api="openai-completions",
+            base_url="https://provider.invalid",
+            api_key_env="DEEPSEEK_API_KEY",
+            models=(),
+            allow_unlisted_models=True,
+        ),
+        settings=OpenAICompatibleSettings(retry_attempts=2),
+    )
+
+    response = client.complete(
+        system_prompt="system",
+        messages=(KlaraMessage(role="user", content="hello"),),
+        tools=(),
+        model="deepseek/deepseek-v4-flash",
+    )
+
+    assert response.content == "recovered"
+    assert calls == 2
+    assert "provider.retry_scheduled" in [event.type for event in response.runtime_events]

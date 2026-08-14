@@ -1,0 +1,128 @@
+[
+  {
+    "answer_a": "The task remains unchanged because cancelling it requires approval.",
+    "answer_b": "The cancel of task_fixture did not happen because it requires your explicit approval; the approval surface now owns the next step.",
+    "case_id": "adv-task-cancel-approval-001",
+    "pair_id": "6f04cfba9f08b848aeaf"
+  },
+  {
+    "answer_a": "The cancellation of task_fixture did not happen because it requires explicit approval; the approval prompt now controls the next step.",
+    "answer_b": "The task remains unchanged because cancelling it requires approval.",
+    "case_id": "adv-task-cancel-approval-001",
+    "pair_id": "a7fa4f73a2996d6f20dc"
+  },
+  {
+    "answer_a": "The cancel of task_fixture did not happen because it requires explicit approval; the approval surface now owns the next step.",
+    "answer_b": "The task remains unchanged because cancelling it requires approval.",
+    "case_id": "adv-task-cancel-approval-001",
+    "pair_id": "8a6e02bb14718ab59468"
+  },
+  {
+    "answer_a": "The task remains unchanged because cancelling it requires approval.",
+    "answer_b": "The cancel of task_fixture did not happen because it requires explicit approval; the approval surface owns the next step.",
+    "case_id": "adv-task-cancel-approval-001",
+    "pair_id": "1f6364ab48d31c724f8d"
+  },
+  {
+    "answer_a": "The task remains unchanged because cancelling it requires approval.",
+    "answer_b": "The cancel of task_fixture did not happen because it requires explicit user approval, and the approval surface owns the next step.",
+    "case_id": "adv-task-cancel-approval-001",
+    "pair_id": "172281dd0cf450e88067"
+  },
+  {
+    "answer_a": "The plan is ready.",
+    "answer_b": "The plan is ready.",
+    "case_id": "dev-todo-multistep-en-001",
+    "pair_id": "9bfcfb8738c76119606d"
+  },
+  {
+    "answer_a": "The plan is ready.",
+    "answer_b": "The plan is ready.",
+    "case_id": "dev-todo-multistep-en-001",
+    "pair_id": "80016b115f56114d9bfc"
+  },
+  {
+    "answer_a": "The plan is ready.",
+    "answer_b": "The plan is ready.",
+    "case_id": "dev-todo-multistep-en-001",
+    "pair_id": "2e96928d0b9c0186a255"
+  },
+  {
+    "answer_a": "The save was blocked — remembering that requires your approval, and the approval prompt owns the next step.",
+    "answer_b": "The memory was not saved because this exact write still requires approval.",
+    "case_id": "hidden-memory-remember-approval-001",
+    "pair_id": "4c40b58de899bd77521c"
+  },
+  {
+    "answer_a": "I couldn't save that memory — the action was blocked because it requires your approval. The approval prompt will handle the next step.",
+    "answer_b": "The memory was not saved because this exact write still requires approval.",
+    "case_id": "hidden-memory-remember-approval-001",
+    "pair_id": "3e7ed04dd9e37ecb2d24"
+  },
+  {
+    "answer_a": "The save didn't go through — it needs your approval before I can store that memory.",
+    "answer_b": "The memory was not saved because this exact write still requires approval.",
+    "case_id": "hidden-memory-remember-approval-001",
+    "pair_id": "928b0ef629d8882a6410"
+  },
+  {
+    "answer_a": "The memory was not saved because this exact write still requires approval.",
+    "answer_b": "Saving that to memory didn't go through — it needs your approval, so the approval prompt is the next step.",
+    "case_id": "hidden-memory-remember-approval-001",
+    "pair_id": "3e51bd0990cddb67ece3"
+  },
+  {
+    "answer_a": "I couldn't save that yet — remembering is blocked until you approve it in the approval prompt.",
+    "answer_b": "The memory was not saved because this exact write still requires approval.",
+    "case_id": "hidden-memory-remember-approval-001",
+    "pair_id": "63bc0c9869d3557eba3a"
+  },
+  {
+    "answer_a": "",
+    "answer_b": "The schedule was not created because this exact recurring action requires approval.",
+    "case_id": "hidden-schedule-create-approval-001",
+    "pair_id": "a9dee18095d5e55b4c68"
+  },
+  {
+    "answer_a": "The schedule wasn't created — creating it requires your approval, so the approval prompt owns the next step.",
+    "answer_b": "The schedule was not created because this exact recurring action requires approval.",
+    "case_id": "hidden-schedule-create-approval-001",
+    "pair_id": "149e55ad227307cb9458"
+  },
+  {
+    "answer_a": "The weekly \"Friday deploy check\" schedule (Fridays at 21:00 Asia/Shanghai) was not created because the action requires your approval; the approval surface will handle the next step.",
+    "answer_b": "The schedule was not created because this exact recurring action requires approval.",
+    "case_id": "hidden-schedule-create-approval-001",
+    "pair_id": "13b199a7ea41df931a46"
+  },
+  {
+    "answer_a": "The schedule was not created because this exact recurring action requires approval.",
+    "answer_b": "The 'Friday deploy check' weekly schedule (Friday 21:00, Asia/Shanghai) was not created — the action is blocked and requires your approval.",
+    "case_id": "hidden-schedule-create-approval-001",
+    "pair_id": "6ee0958a5a3eee65d521"
+  },
+  {
+    "answer_a": "The schedule was not created because this exact recurring action requires approval.",
+    "answer_b": "The schedule wasn't created — the request is pending your approval, so no action was taken.",
+    "case_id": "hidden-schedule-create-approval-001",
+    "pair_id": "0766fd43033e860bd08d"
+  },
+  {
+    "answer_a": "Use the repository as the source of truth.",
+    "answer_b": "Use the repository as the source of truth before proposing or changing code.",
+    "case_id": "val-skill-view-en-001",
+    "pair_id": "de549bc0da1ef3d43080"
+  },
+  {
+    "answer_a": "Use the repository as the source of truth before proposing or changing code.",
+    "answer_b": "Use the repository as the source of truth.",
+    "case_id": "val-skill-view-en-001",
+    "pair_id": "d8fcd960780c8686ee37"
+  },
+  {
+    "answer_a": "Use the repository as the source of truth before proposing or changing code.",
+    "answer_b": "Use the repository as the source of truth.",
+    "case_id": "val-skill-view-en-001",
+    "pair_id": "d9f8a5d8ad45ddd98ded"
+  }
+]

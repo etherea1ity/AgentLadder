@@ -17,9 +17,13 @@ def test_load_models_config_reads_deepseek_and_qwen() -> None:
     assert models.providers["deepseek"].base_url == "https://api.deepseek.com/v1"
     assert models.providers["deepseek"].api_key_env == "DEEPSEEK_API_KEY"
     assert models.providers["qwen"].base_url == "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    qwen_flash = models.providers["qwen"].models[0]
+    qwen_legacy = models.providers["qwen"].models[0]
+    qwen_flash = models.providers["qwen"].model_entry("qwen3.7-flash")
     qwen_plus = models.providers["qwen"].model_entry("qwen3.7-plus")
-    assert qwen_flash.id == "qwen-flash"
+    assert qwen_legacy.id == "qwen-flash"
+    assert qwen_legacy.label == "Qwen Flash (legacy)"
+    assert qwen_flash is not None
+    assert qwen_flash.id == "qwen3.7-flash"
     assert qwen_flash.label == "Qwen 3.7 Flash"
     assert qwen_flash.supports_tools is True
     assert qwen_flash.supports_vision is False
@@ -34,7 +38,7 @@ def test_load_models_config_reads_deepseek_and_qwen() -> None:
     assert deepseek_pro.label == "DeepSeek V4 Pro"
     assert deepseek_pro.supports_thinking is True
     assert deepseek_pro.default_thinking is True
-    assert models.profile("agent").primary == "qwen/qwen-flash"
+    assert models.profile("agent").primary == "qwen/qwen3.7-flash"
 
 
 def test_load_images_config_reads_verified_qwen_image_model() -> None:

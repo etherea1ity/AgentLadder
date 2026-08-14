@@ -70,6 +70,21 @@ def test_stable_chat_leaves_web_research_off() -> None:
     assert controller.drain_events() == ()
 
 
+def test_research_word_does_not_block_local_run_without_web_tools() -> None:
+    controller = WebResearchController(available_tools=("todo_write",))
+
+    controller.on_run_start(
+        user_input=(
+            "We need to audit all branches, fix failing tests, and publish a "
+            "verified report. This is multi-step: create the plan first."
+        ),
+        run_id="run-local-todo",
+    )
+
+    assert controller.state.active is False
+    assert controller.before_final_answer(content="The todo list was created.").allowed
+
+
 def test_owner_schedule_status_uses_local_tool_without_web_research() -> None:
     controller = WebResearchController(
         user_timezone="Asia/Shanghai",
@@ -83,6 +98,17 @@ def test_owner_schedule_status_uses_local_tool_without_web_research() -> None:
 
     assert controller.state.active is False
     assert controller.before_final_answer(content="Weekly evidence review — active。").allowed
+
+
+def test_schedule_mutation_uses_local_tool_without_web_research() -> None:
+    controller = WebResearchController(available_tools=("schedule_create",))
+
+    controller.on_run_start(
+        user_input="Create a schedule for the recurring Friday deployment check.",
+        run_id="run-local-schedule-create",
+    )
+
+    assert controller.state.active is False
 
 
 def test_owner_memory_preference_does_not_treat_release_report_as_web_research() -> None:

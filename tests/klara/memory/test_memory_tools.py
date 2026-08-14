@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from klara.core.messages import ModelResponse
-from klara.core.tools import ToolCall
+from klara.core.tools import ToolCall, ToolOutputTrust
 from klara.memory import MemoryScope, MemoryService, SQLiteMemoryRepository
 from klara.memory.tools import MemoryRememberTool, MemorySearchTool
 
@@ -13,6 +13,8 @@ def test_memory_search_keeps_content_out_of_public_trace(tmp_path) -> None:
     scope = MemoryScope("tenant-a", "user-a")
     remember = MemoryRememberTool(service, scope)
     search = MemorySearchTool(service, scope)
+
+    assert search.metadata.output_trust is ToolOutputTrust.UNTRUSTED
 
     created = remember.execute(
         {"tool_call_id": "remember-1", "content": "private preference phrase", "kind": "user_preference"}

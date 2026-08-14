@@ -1,0 +1,201 @@
+{
+  "agent_product_freeze": false,
+  "artifacts": {
+    "branch_audit": "agent-product-live-branch-audit.json",
+    "candidate": "agent-product-live-candidate-deepseek.json",
+    "exact_runtime_integration": "agent-runtime-integration.exact-commit-live.json",
+    "human_review_queue": "agent-product-live-human-review.json",
+    "live_provider_fallback": "ch08-provider-live-fallback.json",
+    "live_tooling": "agent-product-live-tooling-backtest.json",
+    "memory_agent_bench": "memory-public-agent-bench.json",
+    "memory_competitor_contracts": "memory-public-competitor-contracts.json",
+    "memory_locomo": "memory-public-locomo.json",
+    "memory_longmemeval": "memory-public-longmemeval.json",
+    "provider_smoke": "agent-product-live-provider-smoke.json",
+    "qwen_availability": "agent-product-live-qwen-availability.json",
+    "reference_calibration": "agent-product-live-reference-runtime-calibration.json",
+    "todo_repair": "agent-product-live-todo-repair-deepseek.json"
+  },
+  "blockers": [
+    "Both locally discovered Qwen credential candidates returned HTTP 401, so candidate B and the cross-provider judge could not run.",
+    "The 41-item blind human review queue is generated, but no human labels have been supplied; labels were not fabricated.",
+    "AgentBench and tau2 source contracts are pinned, but their official comparable graders have not run.",
+    "LoCoMo retrieval and the LongMemEval/MemoryAgentBench data contracts pass, but the same-answer-model memory matrix and official Mem0, MEM1, and BEAM scores have not run."
+  ],
+  "checks": {
+    "agentbench_tau2_pinned_source_contracts": true,
+    "all_16_frozen_branches_audited": true,
+    "blind_human_review_41_of_41": false,
+    "deepseek_live_all_repeat_stability": true,
+    "deepseek_live_critical_20_of_20": true,
+    "deepseek_live_observation_coverage_41_of_41": true,
+    "deepseek_live_overall_deterministic_41_of_41": true,
+    "deepseek_live_p0_zero": true,
+    "deepseek_live_provider_errors_zero": true,
+    "independent_cross_provider_judge_41_of_41": false,
+    "live_evidence_mcp_team_tool_decisions_3_of_3": true,
+    "live_qwen_auth_to_deepseek_fallback": true,
+    "locomo_retrieval_gate": true,
+    "longmemeval_oracle_contract": true,
+    "mem0_mem1_beam_pinned_source_contracts": true,
+    "memory_agent_bench_all_split_contracts": true,
+    "memory_same_model_answer_quality_matrix": false,
+    "official_agentbench_comparable_score": false,
+    "official_beam_score": false,
+    "official_mem0_comparable_score": false,
+    "official_mem1_gpu_score": false,
+    "official_tau2_comparable_score": false,
+    "qwen_candidate_available": false,
+    "reference_runtime_calibration_41_of_41": true,
+    "stage_critical_15_of_15": true,
+    "todo_repair_live_3_of_3": true
+  },
+  "codex_public_reference_comparison": {
+    "boundary": "The Codex-authored public answers and action paths were replayed through the real Harness. This is an auditable public-reference comparison, not a claim that an OpenAI API reference model was called.",
+    "candidate_deterministic_rate": 1.0,
+    "candidate_observations": 41,
+    "comparison_unit": "question -> public context -> tool calls and arguments -> public observations -> persisted state -> final answer",
+    "fixture_source": "repository-authored-by-codex-gpt-5.6",
+    "hidden_reasoning_collected": false,
+    "kind": "codex_gpt_5_6_authored_public_reference_not_openai_api_run",
+    "reference_observations": 41,
+    "reference_runtime_contract_passed": true
+  },
+  "deterministic_product_gate_passed": true,
+  "external_gate_passed": false,
+  "manifest_sha256": "9de7a54a47103555e9237a8adcdf4676d810e3cee8d52400815b7ce63da4bd5c",
+  "metrics": {
+    "human_scored": 0,
+    "judge_scored": 0,
+    "live_tooling_cases": 3,
+    "live_tooling_tokens": 7468,
+    "locomo_hybrid_hit_at_5": 0.68,
+    "locomo_hybrid_recall_at_5": 0.630588,
+    "longmemeval_contract_questions": 60,
+    "main_critical_rate": 1.0,
+    "main_deterministic_rate": 1.0,
+    "main_estimated_cost_usd": 0.015431499999999999,
+    "main_observations": 41,
+    "main_p0_count": 0,
+    "main_provider_error_count": 0,
+    "memory_agent_bench_rows": 146,
+    "stage_deterministic_rate_before_todo_repair": 0.9523809523809523,
+    "stage_observations": 21,
+    "todo_repair_rate": 1.0
+  },
+  "model": "deepseek/deepseek-v4-flash",
+  "passed": false,
+  "provider_availability": {
+    "deepseek": {
+      "duration_ms": 6850,
+      "error": null,
+      "model_used": "deepseek/deepseek-v4-flash",
+      "native_cost": {
+        "amount": 7.994e-05,
+        "currency": "USD"
+      },
+      "provider_hidden_reasoning_collected": false,
+      "public_content": "",
+      "requested_model": "deepseek/deepseek-v4-flash",
+      "status": "completed",
+      "tool_call_valid": true,
+      "tool_calls": [
+        {
+          "argument_keys": [
+            "nonce"
+          ],
+          "arguments": {
+            "nonce": "klara-live-backtest-v1"
+          },
+          "arguments_exposed": true,
+          "id": "call_00_dQDSdjbAiURE75Uib10A6770",
+          "name": "backtest_probe"
+        }
+      ],
+      "usage": {
+        "completion_tokens": 71,
+        "prompt_tokens": 429,
+        "total_tokens": 500
+      }
+    },
+    "qwen": {
+      "available": false,
+      "billable_successful_requests": 0,
+      "checked_at": "2026-08-14",
+      "credential_candidates": 2,
+      "credential_sources": [
+        "C:/Users/jsj31/Desktop/AgentLadder/.env",
+        "C:/Users/jsj31/Desktop/backup/HKU Agent/.env"
+      ],
+      "credential_values_exposed": false,
+      "endpoints_checked": [
+        "DashScope mainland OpenAI-compatible endpoint",
+        "DashScope international OpenAI-compatible endpoint",
+        "DashScope US OpenAI-compatible endpoint"
+      ],
+      "http_status": 401,
+      "impact": [
+        "qwen/qwen3.7-flash candidate B was not run",
+        "qwen/qwen3.7-max independent judge for DeepSeek was not run"
+      ],
+      "provider": "qwen",
+      "result": "all_credentials_rejected",
+      "schema_version": "klara.provider-availability.v1"
+    }
+  },
+  "regression_history": [
+    {
+      "critical_deterministic_rate": 0.1,
+      "name": "initial_live_baseline",
+      "overall_task_success_rate": 0.34146341463414637,
+      "p0_count": 24
+    },
+    {
+      "critical_deterministic_rate": 0.25,
+      "name": "post_initial_repairs",
+      "overall_task_success_rate": 0.4146341463414634,
+      "p0_count": 10
+    },
+    {
+      "critical_deterministic_rate": 0.85,
+      "name": "pre_response_contract",
+      "overall_task_success_rate": 0.8048780487804879,
+      "p0_count": 3
+    },
+    {
+      "critical_deterministic_rate": 1.0,
+      "name": "pre_clarification_state_fix",
+      "overall_task_success_rate": 0.975609756097561,
+      "p0_count": 0
+    },
+    {
+      "critical_deterministic_rate": 1.0,
+      "name": "final_runner_v6",
+      "overall_task_success_rate": 1.0,
+      "p0_count": 0
+    }
+  ],
+  "runner_version": "klara.behavior-live-runner.v6",
+  "schema_version": "klara.agent-product-live-backtest.v1",
+  "stage": "agent-product-live-backtest",
+  "status": "blocked_external_gates",
+  "strange_response_audit": {
+    "final_p0_count": 0,
+    "fixed_classes": [
+      "provider empty responses no longer abort the batch",
+      "untrusted memory is model-visible as untrusted data",
+      "exact-field requests no longer leak extra tool metadata",
+      "approval answers no longer invite confirmation or retry",
+      "destructive home-directory requests receive a bounded scope refusal",
+      "latest explicit correction is resolved from transcript context",
+      "natural Chinese paraphrases are not misgraded as answer mismatch"
+    ],
+    "initial_p0_count": 24,
+    "remaining_p0_classes": []
+  },
+  "training_gate": {
+    "hku_started": false,
+    "reason": "Agent Product Freeze remains false until the independent judge, blind human review, official public-agent scores, and comparable memory-system matrix are complete.",
+    "training_started": false
+  }
+}

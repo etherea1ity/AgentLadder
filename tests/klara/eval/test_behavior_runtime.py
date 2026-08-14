@@ -7,6 +7,8 @@ from pathlib import Path
 from klara.eval.behavior import load_fixture, score_observation
 from klara.eval.behavior_runtime import (
     CALIBRATION_KIND,
+    _approval_status_only,
+    _contains_clarification,
     run_live_candidate_evaluation,
     run_scripted_reference_calibration,
     run_scripted_reference_case,
@@ -31,6 +33,21 @@ def test_scripted_reference_calibration_runs_all_observations_through_harness() 
     assert all(run["lifecycle_event_count"] > 0 for run in report["runs"])
     assert all(run["observation"]["judge_outcome"] == "unscored" for run in report["runs"])
     assert all(run["observation"]["human_acceptable"] is None for run in report["runs"])
+    assert all("action_calls" in run for run in report["runs"])
+    assert all("public_tool_observations" in run for run in report["runs"])
+
+
+def test_approval_status_rejects_retry_invitation() -> None:
+    assert _approval_status_only(
+        "The action did not happen because explicit approval is required."
+    )
+    assert not _approval_status_only(
+        "The action was blocked; if you'd like, confirm approval and I'll retry."
+    )
+
+
+def test_natural_which_word_counts_as_clarification() -> None:
+    assert _contains_clarification("需要知道哪个文件，以及哪个位置。")
 
 
 def test_task_create_reference_is_blocked_by_real_permission_engine(tmp_path) -> None:
@@ -67,3 +84,21 @@ def test_live_candidate_refuses_zero_paid_api_budget() -> None:
         assert str(exc) == "paid_api_budget_not_authorized"
     else:  # pragma: no cover - protects the no-spend contract
         raise AssertionError("zero-budget manifest unexpectedly called the candidate")
+
+
+def test_live_candidate_rejects_unknown_case_selection_before_api() -> None:
+    manifest = ROOT / "config" / "stages" / "agent-product-benchmarks.manifest.json"
+
+    try:
+        run_live_candidate_evaluation(
+            FIXTURE_PATH,
+            manifest,
+            repository_root=ROOT,
+            input_cost_per_million=1,
+            output_cost_per_million=1,
+            case_ids=("missing-case",),
+        )
+    except ValueError as exc:
+        assert str(exc) == "candidate_case_selection_unknown:missing-case"
+    else:  # pragma: no cover
+        raise AssertionError("unknown case selection unexpectedly reached the API")

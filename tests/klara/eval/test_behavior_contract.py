@@ -17,6 +17,7 @@ from klara.eval.behavior import (
     load_fixture,
     score_observation,
     wilson_interval,
+    _fact_present,
 )
 from klara.eval.behavior_cli import run_contract_gate
 
@@ -121,6 +122,59 @@ def test_answer_fact_groups_and_required_order_are_enforced() -> None:
 
     assert score.checks["acceptable_facts_present"] is False
     assert score.task_success is False
+
+
+def test_chinese_fact_match_allows_short_natural_modifier() -> None:
+    payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))["cases"][0]
+    payload["schema_version"] = "klara.behavior-case.v2"
+    payload["acceptable_answer_fact_groups"] = [["避免重复计算"]]
+    case = KlaraBehaviorCase.model_validate(payload)
+    observation = BehaviorObservation(
+        case_id=case.case_id,
+        repetition=1,
+        final_answer="缓存可以避免每一步都重复计算历史 token。",
+        actions=list(case.reference.actions),
+        states=case.expected_states,
+        invariant_results={item: True for item in case.invariants},
+        latency_ms=1,
+        tokens=1,
+        cost_usd=0,
+    )
+
+    score = score_observation(case, observation)
+
+    assert score.checks["acceptable_facts_present"] is True
+
+
+def test_prohibited_claim_match_allows_explicit_negation() -> None:
+    payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))["cases"][0]
+    payload["schema_version"] = "klara.behavior-case.v2"
+    payload["prohibited_claims"] = ["task was created"]
+    case = KlaraBehaviorCase.model_validate(payload)
+    observation = BehaviorObservation(
+        case_id=case.case_id,
+        repetition=1,
+        final_answer="No task was created because approval is required.",
+        actions=list(case.reference.actions),
+        states=case.expected_states,
+        invariant_results={item: True for item in case.invariants},
+        latency_ms=1,
+        tokens=1,
+        cost_usd=0,
+    )
+
+    score = score_observation(case, observation)
+
+    assert score.checks["prohibited_claims_absent"] is True
+
+
+def test_fact_matcher_accepts_kv_connector_and_recompute_paraphrase() -> None:
+    answer = "KV Cache 缓存已计算过的 Key 和 Value，从而避免每个新 token 都重算历史。"
+
+    assert _fact_present(answer, "key/value")
+    assert _fact_present(answer, "避免重复计算")
+    assert _fact_present("避免每次都重新计算历史 token", "避免重复计算")
+    assert _fact_present("后续生成无需重复计算全部历史", "避免重复计算")
 
 
 def test_human_queue_does_not_reveal_candidate_slot() -> None:
