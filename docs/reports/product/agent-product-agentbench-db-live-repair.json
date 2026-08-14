@@ -1,0 +1,103 @@
+{
+  "schema_version": "klara.agentbench-fc-dbbench-live.v1",
+  "stage": "agent-product-external-benchmarks",
+  "evaluated_at": "2026-08-14T09:02:43.714362+00:00",
+  "benchmark": {
+    "name": "AgentBench FC",
+    "task": "dbbench-std",
+    "repository": "https://github.com/THUDM/AgentBench",
+    "commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+    "agentrl_commit": "6a73409d31ba695d383b978a8ad3ef400d90c054",
+    "indexes": [
+      20
+    ],
+    "selection": [
+      "counting"
+    ],
+    "official_reward": true,
+    "full_leaderboard_claim": false
+  },
+  "candidate": {
+    "model": "deepseek/deepseek-v4-flash",
+    "boundary": [
+      "Klara frozen persona",
+      "AgentLadder provider adapter and response normalization",
+      "official AgentBench tool schemas",
+      "official AgentRL controller and DBBench worker",
+      "official MySQL task environments and rewards"
+    ]
+  },
+  "metrics": {
+    "task_success_rate": 1.0,
+    "tasks_passed": 1,
+    "tasks_total": 1,
+    "tool_calls": 2,
+    "invalid_tool_call_ratio": 0.0,
+    "average_interaction_rounds": 2,
+    "average_output_tokens": 250,
+    "average_total_tokens": 2867,
+    "p50_model_latency_ms": 8009.5,
+    "p95_model_latency_ms": 8233.0,
+    "average_task_duration_ms": 16223,
+    "estimated_cost_usd": 0.00043638,
+    "strange_response_p0_count": 0
+  },
+  "cases": [
+    {
+      "index": 20,
+      "question": "Additional table information about the question: The name of this table is contestants, and the headers of this table are Represents,Contestant,Age,Height (cm),Height (ft),Hometown.\nQuestion: Name the total number of represents for clary sermina delgado cid\n",
+      "turns": 2,
+      "reward": 1,
+      "status": "completed",
+      "passed": true,
+      "tool_calls": [
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT COUNT(Represents) AS total FROM contestants WHERE Contestant = 'Clary Sermina Delgado Cid'"
+          },
+          "valid": true,
+          "invalid_reason": null
+        },
+        {
+          "name": "commit_final_answer",
+          "arguments": {
+            "answers": [
+              "1"
+            ]
+          },
+          "valid": true,
+          "invalid_reason": null
+        }
+      ],
+      "invalid_tool_call_count": 0,
+      "prompt_tokens": 2617,
+      "completion_tokens": 250,
+      "total_tokens": 2867,
+      "estimated_cost_usd": 0.00043638,
+      "model_latency_ms": [
+        7786,
+        8233
+      ],
+      "duration_ms": 16223,
+      "error": null
+    }
+  ],
+  "checks": {
+    "official_source_is_pinned": true,
+    "all_declared_indexes_executed": true,
+    "official_reward_present": true,
+    "all_samples_completed": true,
+    "all_samples_passed": true,
+    "no_invalid_tool_calls": true,
+    "no_provider_hidden_reasoning_collected": true,
+    "not_mislabeled_as_full_leaderboard": true
+  },
+  "passed": true,
+  "limitations": [
+    "This is a declared five-sample read-only subset, not the 300-sample DBBench standard score or AgentBench leaderboard score.",
+    "The subset excludes database mutations so a failure cannot alter persistent user data; each sample still uses an isolated official MySQL environment.",
+    "Qwen comparison and cross-provider judging remain blocked by two distinct credentials returning HTTP 401.",
+    "No model training or local GPU execution occurred during this evaluation."
+  ]
+}

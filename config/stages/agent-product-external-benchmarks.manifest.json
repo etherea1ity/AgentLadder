@@ -1,0 +1,89 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-product-external-benchmarks",
+  "branch": "codex/agent-product-external-benchmarks",
+  "parent_commit": "d9f6b11",
+  "mode": "paid-official-public-benchmark-adapters",
+  "authorized_at": "2026-08-14T00:00:00+08:00",
+  "candidate_model": "deepseek/deepseek-v4-flash",
+  "qwen_status": "two distinct locally configured credentials each returned HTTP 401 during a real provider call",
+  "benchmarks": {
+    "tau2": {
+      "repository": "https://github.com/sierra-research/tau2-bench",
+      "commit": "79975ac5741e23fbb1d2ac44262d62398a6d87bd",
+      "first_gate": "official mock domain, all 10 tasks, one trial",
+      "leaderboard_claim": false
+    },
+    "agentbench": {
+      "repository": "https://github.com/THUDM/AgentBench",
+      "commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+      "agentrl_commit": "6a73409d31ba695d383b978a8ad3ef400d90c054",
+      "gate": "official executable subset with exact environment images",
+      "indexes": [0, 20, 40, 60, 80],
+      "image_digests": {
+        "controller": "sha256:8d271c890fde9fd6b5035e736b8015c45035fb9ba72fbb49f26a7c31bd1dc9b7",
+        "dbbench_worker": "sha256:c2e3182bb7fce657bdf299ecebe84297ff93e85e2720d003eedc0c67524e9ae7",
+        "mysql_8": "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+        "redis_7": "sha256:e9b2e45ecd47fbb69b877cf8d045d5cccaaaed52524b6e098b4abe8212994f73"
+      },
+      "cleanup": "benchmark-only containers and network removed; pre-existing Mongo container remained healthy"
+    },
+    "locomo_same_answer_model": {
+      "repository": "https://github.com/snap-research/locomo",
+      "commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+      "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+      "systems": ["full_context", "recent", "lexical", "vector", "semantic_recency", "hybrid"],
+      "questions": 100,
+      "top_k": 20,
+      "selected_context_order": "chronological",
+      "answer_model": "deepseek/deepseek-v4-flash",
+      "maximum_generation_tokens": 1400,
+      "maximum_concurrency": 8,
+      "gate": "hybrid F1 >= recent, hybrid within 0.10 F1 of full context, hybrid evidence Recall@20 >= 0.70",
+      "calibration_amendment": "The 10-question pre-freeze smoke preserved Recall@5 but showed a 0.218723 full-context F1 gap at five atomic turns, so the context implementation budget was raised to 20 turns without weakening score thresholds. The first 100-question run at max_tokens=700 produced three repeatably empty full-context responses and one truncated public answer; the final fair matrix raises the same generation cap for all 600 pairs to 1400."
+    }
+  },
+  "budgets": {
+    "maximum_deepseek_usd": 5.0,
+    "maximum_tau2_tasks": 10,
+    "maximum_trials": 1,
+    "maximum_steps_per_task": 20,
+    "maximum_candidate_tokens_per_turn": 700,
+    "maximum_user_tokens_per_turn": 500,
+    "maximum_concurrency": 1
+  },
+  "acceptance": {
+    "pinned_official_source": true,
+    "official_reward_is_not_reimplemented": true,
+    "candidate_uses_agentladder_provider_boundary": true,
+    "adapter_boundary_is_disclosed": true,
+    "zero_provider_hidden_reasoning_collection": true,
+    "no_leaderboard_claim_from_mock_domain": true,
+    "no_model_training_before_agent_product_freeze": true
+  },
+  "expected_artifacts": [
+    "docs/reports/product/qwen-local-credential-audit.json",
+    "docs/reports/product/qwen-local-credential-audit.md",
+    "docs/reports/product/qwen-local-credential-audit.en.md",
+    "docs/reports/product/agent-product-tau2-mock-live.raw.json",
+    "docs/reports/product/agent-product-tau2-mock-live.json",
+    "docs/reports/product/agent-product-tau2-mock-live.md",
+    "docs/reports/product/agent-product-tau2-mock-live.en.md",
+    "docs/reports/product/agent-product-agentbench-db-live.json",
+    "docs/reports/product/agent-product-agentbench-db-live.md",
+    "docs/reports/product/agent-product-agentbench-db-live.en.md",
+    "docs/reports/product/agent-product-agentbench-db-live-count-stability.json",
+    "docs/reports/product/agent-product-agentbench-db-live-count-stability.md",
+    "docs/reports/product/agent-product-agentbench-db-live-count-stability.en.md",
+    "docs/reports/product/agent-product-memory-locomo-same-model.json",
+    "docs/reports/product/agent-product-memory-locomo-same-model.md",
+    "docs/reports/product/agent-product-memory-locomo-same-model.en.md",
+    "docs/reports/product/agent-product-memory-competitor-preflight.json",
+    "docs/reports/product/agent-product-memory-competitor-preflight.md",
+    "docs/reports/product/agent-product-memory-competitor-preflight.en.md",
+    "docs/reports/product/agent-product-external-benchmarks-verification.json",
+    "docs/reports/product/agent-product-external-benchmarks.json",
+    "docs/reports/product/agent-product-external-benchmarks.md",
+    "docs/reports/product/agent-product-external-benchmarks.en.md"
+  ]
+}

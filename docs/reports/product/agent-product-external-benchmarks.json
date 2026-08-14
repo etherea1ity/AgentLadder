@@ -1,0 +1,110 @@
+{
+  "schema_version": "klara.agent-product-external-benchmarks.v1",
+  "evaluated_at": "2026-08-14T10:46:46.136116+00:00",
+  "stage": "agent-product-external-benchmarks",
+  "branch": "codex/agent-product-external-benchmarks",
+  "parent_commit": "d9f6b11",
+  "status": "stage_passed_product_freeze_blocked",
+  "stage_checks": {
+    "qwen_credentials_exhaustively_probed_without_secret_persistence": true,
+    "deepseek_fallback_available": true,
+    "tau2_official_adapter_integrity": true,
+    "tau2_candidate_tool_action_accuracy_1_0": true,
+    "tau2_zero_candidate_or_unclassified_failures": true,
+    "agentbench_candidate_controllable_success_1_0": true,
+    "agentbench_zero_invalid_tool_calls": true,
+    "agentbench_counting_repeat_stability_3_of_3": true,
+    "locomo_same_answer_model_matrix": true,
+    "memory_competitor_blockers_preflighted": true,
+    "zero_public_benchmark_p0": true,
+    "no_model_training_before_product_freeze": true,
+    "full_python_regression_passed": true,
+    "frontend_regression_passed": true,
+    "production_build_passed": true,
+    "benchmark_resources_cleaned_up": true
+  },
+  "product_freeze_checks": {
+    "qwen_reference_provider_available": false,
+    "blind_human_acceptability_at_least_0_95": false,
+    "official_mem0_same_model_score": false,
+    "official_mem1_gpu_score": false,
+    "official_beam_score": false
+  },
+  "metrics": {
+    "qwen_distinct_credentials_probed": 2,
+    "qwen_usable_credentials": 0,
+    "tau2_official_success_rate": 0.8,
+    "tau2_candidate_tool_action_accuracy": 1.0,
+    "tau2_benchmark_artifacts": 2,
+    "agentbench_official_success_rate": 0.8,
+    "agentbench_candidate_controllable_success_rate": 1.0,
+    "agentbench_benchmark_artifacts": 1,
+    "agentbench_counting_repeat_pass_rate": 1.0,
+    "locomo_full_context_f1": 0.543081,
+    "locomo_hybrid_f1": 0.461914,
+    "locomo_hybrid_recall_at_20": 0.73402,
+    "locomo_hybrid_token_reduction": 0.956272,
+    "locomo_final_pairs": 600,
+    "estimated_live_api_cost_usd": 0.60001308,
+    "strange_response_p0_count": 0,
+    "python_tests_passed": 478,
+    "python_tests_skipped": 2,
+    "frontend_tests_passed": 71
+  },
+  "artifacts": {
+    "manifest": {
+      "path": "config/stages/agent-product-external-benchmarks.manifest.json",
+      "sha256": "8366f2e6231ba7a1aa53edc10474e6385c26986b6173fcae5fdc7a316b432d21"
+    },
+    "qwen_credential_audit": {
+      "path": "docs/reports/product/qwen-local-credential-audit.json",
+      "sha256": "40222ca39d7ecca61fbdca454b07c46e9481024f0033b8ca87dea78053005ebb"
+    },
+    "tau2": {
+      "path": "docs/reports/product/agent-product-tau2-mock-live.json",
+      "sha256": "e14720bdfa18cb56c24359591be646cb10c9a8d53f807c9eda2e4812541a7b6c"
+    },
+    "agentbench": {
+      "path": "docs/reports/product/agent-product-agentbench-db-live.json",
+      "sha256": "10111782e62904f6c8c316c1d6ce87af8594666b8858759ee182ae126e8e3dc8"
+    },
+    "agentbench_stability": {
+      "path": "docs/reports/product/agent-product-agentbench-db-live-count-stability.json",
+      "sha256": "66e8fbd422c6af00fc5d5fd6d7ae4a33be70ae2b399a07573fc63c6e37751b73"
+    },
+    "locomo_same_model": {
+      "path": "docs/reports/product/agent-product-memory-locomo-same-model.json",
+      "sha256": "79737ef8a97e33eb382d9a20259052d0ee81576447c75666dce126b6911b736a"
+    },
+    "memory_competitor_preflight": {
+      "path": "docs/reports/product/agent-product-memory-competitor-preflight.json",
+      "sha256": "958f71fb8ba27f0a683bde17b9e346d0854dd005a126e46dd06c7b4ec1e1626f"
+    },
+    "stage_verification": {
+      "path": "docs/reports/product/agent-product-external-benchmarks-verification.json",
+      "sha256": "c34ae1bd9d41484776293b4fce8d8f8f8e408a3776981e1f42214561b82d535f"
+    }
+  },
+  "blockers": [
+    {
+      "id": "qwen-authentication",
+      "detail": "Two distinct configured Qwen credentials returned typed HTTP 401 results; no usable Qwen comparison provider exists."
+    },
+    {
+      "id": "blind-human-labels",
+      "detail": "The required blind acceptability sample has no independent human labels and cannot be self-certified by the candidate system."
+    },
+    {
+      "id": "official-memory-competitors",
+      "detail": "Mem0 lacks a configured comparable embedding stack, MEM1 requires the pinned 7B HKU GPU rollout, and BEAM lacks a licensed hashed dataset snapshot."
+    }
+  ],
+  "stage_passed": true,
+  "agent_product_freeze_allowed": false,
+  "model_training_allowed": false,
+  "limitations": [
+    "Official tau2 and AgentBench rewards remain 0.8 because pinned evaluator/label artifacts are preserved rather than rewritten; candidate-controllable action metrics are reported separately.",
+    "The LoCoMo result is a frozen 100-question single run under one DeepSeek model; it is not a claim of general memory-system superiority.",
+    "No general ChatGPT equivalence, Qwen parity, Mem0/MEM1/BEAM parity, or full public leaderboard score is claimed."
+  ]
+}

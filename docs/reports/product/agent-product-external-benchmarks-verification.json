@@ -1,0 +1,39 @@
+{
+  "schema_version": "klara.stage-verification.v1",
+  "stage": "agent-product-external-benchmarks",
+  "verified_at": "2026-08-14T18:46:24.5241820+08:00",
+  "source_commit_before_stage": "d9f6b11c263064b4850c9c3c16899bd828d9222b",
+  "python": {
+    "command": "python -m pytest -q",
+    "collected": 480,
+    "passed": 478,
+    "skipped": 2,
+    "failed": 0,
+    "result": "passed"
+  },
+  "frontend": {
+    "command": "npm --prefix apps/web test -- --run",
+    "files_passed": 20,
+    "tests_passed": 71,
+    "failed": 0,
+    "result": "passed"
+  },
+  "production_build": {
+    "command": "npm --prefix apps/web run build",
+    "typescript": "passed",
+    "vite": "passed",
+    "modules_transformed": 2064
+  },
+  "repository_checks": {
+    "git_diff_check": "passed",
+    "benchmark_containers_removed": true,
+    "benchmark_network_removed": true,
+    "preexisting_mongo_preserved_healthy": true,
+    "hku_connection_started": false,
+    "model_training_started": false
+  },
+  "limitations": [
+    "The two skipped Python tests are the repository's documented environment-conditional tests.",
+    "This artifact records commands run against the uncommitted stage worktree; the final stage report and Git commit bind the verified paths after diff and secret review."
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "schema_version": "klara.agentbench-fc-dbbench-live.v1",
+  "stage": "agent-product-external-benchmarks",
+  "evaluated_at": "2026-08-14T09:10:38.669696+00:00",
+  "benchmark": {
+    "name": "AgentBench FC",
+    "task": "dbbench-std",
+    "repository": "https://github.com/THUDM/AgentBench",
+    "commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+    "agentrl_commit": "6a73409d31ba695d383b978a8ad3ef400d90c054",
+    "indexes": [
+      20
+    ],
+    "selection": [
+      "counting"
+    ],
+    "official_reward": true,
+    "full_leaderboard_claim": false
+  },
+  "candidate": {
+    "model": "deepseek/deepseek-v4-flash",
+    "boundary": [
+      "Klara frozen persona",
+      "AgentLadder provider adapter and response normalization",
+      "official AgentBench tool schemas",
+      "official AgentRL controller and DBBench worker",
+      "official MySQL task environments and rewards"
+    ]
+  },
+  "metrics": {
+    "task_success_rate": 1.0,
+    "tasks_passed": 1,
+    "tasks_total": 1,
+    "tool_calls": 2,
+    "invalid_tool_call_ratio": 0.0,
+    "average_interaction_rounds": 2,
+    "average_model_decision_attempts": 2,
+    "semantic_preflight_rejections": 0,
+    "benchmark_artifact_count": 0,
+    "candidate_controllable_failures": 0,
+    "candidate_controllable_success_rate": 1.0,
+    "average_output_tokens": 242,
+    "average_total_tokens": 2856,
+    "p50_model_latency_ms": 8668.0,
+    "p95_model_latency_ms": 9923.0,
+    "average_task_duration_ms": 17511,
+    "estimated_cost_usd": 0.00043372,
+    "strange_response_p0_count": 0
+  },
+  "cases": [
+    {
+      "index": 20,
+      "question": "Additional table information about the question: The name of this table is contestants, and the headers of this table are Represents,Contestant,Age,Height (cm),Height (ft),Hometown.\nQuestion: Name the total number of represents for clary sermina delgado cid\n",
+      "turns": 2,
+      "model_decision_attempts": 2,
+      "reward": 1,
+      "status": "completed",
+      "passed": true,
+      "tool_calls": [
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT COUNT(*) FROM contestants WHERE Contestant = 'clary sermina delgado cid'"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "commit_final_answer",
+          "arguments": {
+            "answers": [
+              "1"
+            ]
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        }
+      ],
+      "invalid_tool_call_count": 0,
+      "semantic_preflight_rejections": 0,
+      "prompt_tokens": 2614,
+      "completion_tokens": 242,
+      "total_tokens": 2856,
+      "estimated_cost_usd": 0.00043372,
+      "model_latency_ms": [
+        9923,
+        7413
+      ],
+      "duration_ms": 17511,
+      "error": null,
+      "failure_classification": "none"
+    }
+  ],
+  "checks": {
+    "official_source_is_pinned": true,
+    "all_declared_indexes_executed": true,
+    "official_reward_present": true,
+    "all_samples_completed": true,
+    "all_samples_passed": true,
+    "no_invalid_tool_calls": true,
+    "no_provider_hidden_reasoning_collected": true,
+    "not_mislabeled_as_full_leaderboard": true
+  },
+  "passed": true,
+  "limitations": [
+    "This is a declared five-sample read-only subset, not the 300-sample DBBench standard score or AgentBench leaderboard score.",
+    "The subset excludes database mutations so a failure cannot alter persistent user data; each sample still uses an isolated official MySQL environment.",
+    "At pinned index 40, the official label omits Ecuador even though the official standard SQL and table rows return both United States and Ecuador; the official zero is preserved.",
+    "Qwen comparison and cross-provider judging remain blocked by two distinct credentials returning HTTP 401.",
+    "No model training or local GPU execution occurred during this evaluation."
+  ]
+}

@@ -20,6 +20,9 @@ training = [
 production-postgres = [
     "psycopg[binary]>=3.2,<4.0",
 ]
+benchmarks = [
+    "nltk>=3.8,<4.0",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]

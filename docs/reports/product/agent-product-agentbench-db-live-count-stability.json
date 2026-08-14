@@ -1,0 +1,65 @@
+{
+  "schema_version": "klara.agentbench-stability.v1",
+  "evaluated_at": "2026-08-14T10:44:06.545765+00:00",
+  "candidate_model": "deepseek/deepseek-v4-flash",
+  "indexes": [
+    20
+  ],
+  "metrics": {
+    "repetitions": 3,
+    "pass_rate": 1.0,
+    "total_semantic_preflight_rejections": 3,
+    "average_model_decision_attempts": 3.0,
+    "average_total_tokens": 4497.333333333333,
+    "estimated_cost_usd": 0.00202412
+  },
+  "runs": [
+    {
+      "path": "docs/reports/product/agent-product-agentbench-db-live-count-stability-r1.json",
+      "sha256": "8908c20982eb7c2649e579a6cc8365c13d782e1189b75326b5f8eac9c1934916",
+      "passed": true,
+      "official_rewards": [
+        1
+      ],
+      "semantic_preflight_rejections": 1,
+      "model_decision_attempts": 3.0,
+      "total_tokens": 4395.0,
+      "estimated_cost_usd": 0.00065506
+    },
+    {
+      "path": "docs/reports/product/agent-product-agentbench-db-live-count-stability-r2.json",
+      "sha256": "f97410dbce40905487e1eefffe166d6f1947e7b8c81f5529e8325e15e5fede76",
+      "passed": true,
+      "official_rewards": [
+        1
+      ],
+      "semantic_preflight_rejections": 0,
+      "model_decision_attempts": 2.0,
+      "total_tokens": 2856.0,
+      "estimated_cost_usd": 0.00043372
+    },
+    {
+      "path": "docs/reports/product/agent-product-agentbench-db-live-count-stability-r3.json",
+      "sha256": "80f517701bb070f9833c66328cb434870eaf0e4676af1024a23fa3d640af33b2",
+      "passed": true,
+      "official_rewards": [
+        1
+      ],
+      "semantic_preflight_rejections": 2,
+      "model_decision_attempts": 4.0,
+      "total_tokens": 6241.0,
+      "estimated_cost_usd": 0.00093534
+    }
+  ],
+  "checks": {
+    "minimum_three_repetitions": true,
+    "same_candidate_model": true,
+    "same_declared_indexes": true,
+    "all_repetitions_passed": true
+  },
+  "passed": true,
+  "limitations": [
+    "This stability result covers only the declared counting sample and is not a full AgentBench score.",
+    "Semantic preflight is a general count-intent invariant; it contains no benchmark fixture values or expected answers."
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "authoritative_parent": "40389110a1d41328e83fe19a06a12ef86fe200bf",
-  "current_stage": "agent-product-benchmarks",
+  "current_stage": "agent-product-freeze",
   "mode": "full-end-to-end",
   "objectives": [
     {
@@ -961,10 +961,24 @@
         "docs/reports/product/agent-product-benchmarks-longmemeval.json",
         "docs/reports/product/agent-product-benchmarks-memory-agent-bench.json",
         "docs/reports/product/agent-product-benchmarks-public-agent-contracts.json",
-        "docs/reports/product/agent-product-benchmarks-memory-competitors.json"
+        "docs/reports/product/agent-product-benchmarks-memory-competitors.json",
+        "config/stages/agent-product-external-benchmarks.manifest.json",
+        "docs/reports/product/agent-product-tau2-mock-live.json",
+        "docs/reports/product/agent-product-agentbench-db-live.json",
+        "docs/reports/product/agent-product-agentbench-db-live-count-stability.json",
+        "docs/reports/product/agent-product-memory-locomo-same-model.json",
+        "docs/reports/product/agent-product-memory-competitor-preflight.json",
+        "docs/reports/product/qwen-local-credential-audit.json",
+        "docs/reports/product/agent-product-external-benchmarks-verification.json",
+        "docs/reports/product/agent-product-external-benchmarks.json",
+        "docs/reports/product/agent-product-external-benchmarks.md",
+        "docs/reports/product/agent-product-external-benchmarks.en.md"
       ],
-      "branch": "codex/agent-product-benchmarks",
+      "branch": "codex/agent-product-external-benchmarks",
       "commands": [
+        "official tau2 mock-domain live runner (10 tasks)",
+        "official AgentBench DBBench Docker runner (fixed 5-task slice plus 3-run counting stability)",
+        "same-answer-model LoCoMo matrix (6 systems / 600 pairs)",
         "python -m pytest -q",
         "npm --prefix apps/web test -- --run",
         "npm --prefix apps/web run build",
@@ -976,23 +990,35 @@
         "LoCoMo official categories 1-4: 100-question deterministic slice",
         "LongMemEval cleaned oracle: 60-question deterministic contract slice",
         "MemoryAgentBench: 146 rows / 3671 questions",
-        "AgentBench and tau2 official source/task contracts",
-        "Mem0, MEM1, and BEAM official implementation contracts"
+        "tau2 official mock-domain tasks at commit 79975ac5741e23fbb1d2ac44262d62398a6d87bd",
+        "AgentBench DBBench at commit d1e4a10db08c87075c78972e48ecc182be03e2d5",
+        "Mem0, MEM1, and BEAM official implementation preflight contracts"
       ],
       "evaluator_versions": [
         "klara.behavior-live-runner.v1",
         "klara.behavior-scorer.v2",
         "klara.behavior-label-merger.v1",
         "klara.memory-public-adapter.v1",
-        "klara.product-benchmarks.v1"
+        "klara.product-benchmarks.v1",
+        "klara.tau2-adapter.v1",
+        "klara.agentbench-live.v1",
+        "klara.public-memory-live.v1",
+        "klara.agent-product-external-benchmarks.v1"
       ],
       "evidence": {
         "agent_product_freeze_allowed": false,
         "frontend_build": "passed",
         "frontend_tests": "71 passed",
         "local_pre_freeze_ready": true,
-        "python_regression": "443 passed, 2 documented skips",
+        "python_regression": "478 passed, 2 documented skips",
         "runtime_calibration": "41/41 (contract calibration, not a model score)",
+        "tau2_official_success_rate": 0.8,
+        "tau2_candidate_tool_action_accuracy": 1.0,
+        "agentbench_official_success_rate": 0.8,
+        "agentbench_candidate_controllable_success_rate": 1.0,
+        "locomo_same_model_pairs": 600,
+        "qwen_distinct_credentials_probed": 2,
+        "qwen_usable_credentials": 0,
         "training_allowed": false
       },
       "id": "agent-product-benchmarks",
@@ -1000,16 +1026,20 @@
         "locomo_evidence_hit_at_5": 0.68,
         "locomo_evidence_mrr": 0.439,
         "locomo_evidence_recall_at_5": 0.630588,
-        "official_competitor_scores_claimed": 0,
+        "locomo_full_context_official_f1": 0.543081,
+        "locomo_hybrid_official_f1": 0.461914,
+        "locomo_hybrid_evidence_recall_at_20": 0.73402,
+        "locomo_hybrid_total_token_reduction": 0.956272,
+        "official_mem0_mem1_beam_scores_claimed": 0,
+        "strange_response_p0_count": 0,
         "public_secret_leaks": 0
       },
       "remaining_failures": [
-        "No authorized paid budget for exact-coverage live candidate, reference, and independent-judge runs",
         "No complete independent blind-human review with at least 95% acceptability",
-        "Official comparable AgentBench and tau2 runs are not executed",
-        "Official comparable Mem0, MEM1, and BEAM runs are not executed"
+        "Two configured Qwen credentials returned HTTP 401, so no Qwen reference comparison is claimed",
+        "Official comparable Mem0, MEM1, and BEAM scores are not executed"
       ],
-      "status": "pending"
+      "status": "passed"
     },
     {
       "artifacts": [],
@@ -1078,5 +1108,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-14T03:23:00+08:00"
+  "updated_at": "2026-08-14T18:46:24.5241820+08:00"
 }

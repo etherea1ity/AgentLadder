@@ -1,0 +1,369 @@
+{
+  "schema_version": "klara.tau2-mock-live.v1",
+  "stage": "agent-product-external-benchmarks",
+  "evaluated_at": "2026-08-14T08:04:40.133118+00:00",
+  "benchmark": {
+    "name": "tau2-bench",
+    "domain": "mock",
+    "repository": "https://github.com/sierra-research/tau2-bench",
+    "commit": "79975ac5741e23fbb1d2ac44262d62398a6d87bd",
+    "official_reward": true
+  },
+  "adapter": {
+    "name": "klara_agentladder",
+    "candidate_model": "deepseek/deepseek-v4-flash",
+    "candidate_boundary": [
+      "Klara frozen persona",
+      "AgentLadder OpenAI-compatible provider client",
+      "AgentLadder response normalization and protocol guard",
+      "exact tau2 tool schemas"
+    ],
+    "tau2_owned_boundary": [
+      "user simulator",
+      "tool execution",
+      "conversation orchestration",
+      "official reward calculation"
+    ],
+    "full_agentladder_product_runtime": false,
+    "persona_sha256": "cb1bade02ae9a0dbc8c6677643a37f359ae2d13cfa22d3eb6b39e74388364f31",
+    "prompt_template_sha256": "bc4ed4d163a4b679ffe4395695b903bdcaee382ebc166e2e478bc9fcbbfb030b"
+  },
+  "metrics": {
+    "avg_reward": 0.8,
+    "pass_hat_ks": {
+      "1": 0.8
+    },
+    "avg_agent_cost": 0.0005207125000000002,
+    "total_simulations": 10,
+    "total_tasks": 10,
+    "infra_error_count": 0,
+    "total_read_actions": 0,
+    "correct_read_actions": 0,
+    "total_write_actions": 7,
+    "correct_write_actions": 7,
+    "db_match_count": 8,
+    "db_mismatch_count": 2,
+    "db_not_checked": 0,
+    "auth_succeeded": 0,
+    "auth_failed": 0,
+    "auth_not_needed": 0,
+    "auth_not_checked": 10,
+    "termination_user_stop": 10,
+    "termination_agent_stop": 0,
+    "termination_max_steps": 0,
+    "termination_error": 0,
+    "termination_infrastructure_error": 0,
+    "sims_with_unresponsive_period": 0,
+    "sims_with_responsiveness_info": 0,
+    "agent_errors_by_severity": {},
+    "user_errors_by_severity": {},
+    "sims_by_max_agent_severity": {},
+    "sims_by_max_user_severity": {},
+    "sims_by_first_critical_source": {},
+    "agent_error_tags_by_severity": {},
+    "user_error_tags_by_severity": {}
+  },
+  "cases": [
+    {
+      "task_id": "create_task_1",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 19.618,
+      "agent_cost_usd": 0.00059234,
+      "tool_names": [
+        "get_users",
+        "create_task"
+      ],
+      "final_answer": "Done! Task \"Important Meeting\" has been created for user_1 (task ID: task_2).",
+      "reward_breakdown": {
+        "DB": 1.0,
+        "COMMUNICATE": 1.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "create_task_1_with_env_assertions",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 12.047,
+      "agent_cost_usd": 0.0005969600000000001,
+      "tool_names": [
+        "get_users",
+        "create_task"
+      ],
+      "final_answer": "Done! The task \"Important Meeting\" has been created for user_1.",
+      "reward_breakdown": {
+        "DB": 1.0,
+        "ENV_ASSERTION": 1.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "create_task_1_nl_eval",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 21.654,
+      "agent_cost_usd": 0.0007995400000000001,
+      "tool_names": [
+        "get_users",
+        "create_task"
+      ],
+      "final_answer": "Of course! You're doing a great job staying organized and on top of things. Keep it up!",
+      "reward_breakdown": {
+        "COMMUNICATE": 1.0
+      },
+      "action_checks": {
+        "correct": 0,
+        "total": 0,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "update_task_1",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 11.501,
+      "agent_cost_usd": 0.00037898,
+      "tool_names": [
+        "update_task_status"
+      ],
+      "final_answer": "Done! Task \"Test task\" is now marked as completed.",
+      "reward_breakdown": {
+        "DB": 1.0,
+        "COMMUNICATE": 1.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "update_task_with_message_history",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 11.631,
+      "agent_cost_usd": null,
+      "tool_names": [
+        "create_task",
+        "update_task_status"
+      ],
+      "final_answer": "Task 'Project Review' has been marked as completed.",
+      "reward_breakdown": {
+        "DB": 1.0,
+        "COMMUNICATE": 1.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "update_task_with_initialization_data",
+      "reward": 0.0,
+      "passed": false,
+      "termination_reason": "user_stop",
+      "duration_seconds": 12.501,
+      "agent_cost_usd": 0.00038150000000000006,
+      "tool_names": [
+        "update_task_status"
+      ],
+      "final_answer": "Task \"Project Review\" (task_2) is now marked as completed.",
+      "reward_breakdown": {
+        "DB": 1.0,
+        "COMMUNICATE": 0.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [
+        {
+          "info": "The agent acknowledged the previous context",
+          "met": false
+        },
+        {
+          "info": "The agent confirmed the task status was updated successfully",
+          "met": false
+        }
+      ],
+      "failure_classification": "benchmark_communicate_exact_substring_artifact",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "update_task_with_initialization_actions",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 10.262,
+      "agent_cost_usd": 0.00038038000000000004,
+      "tool_names": [
+        "update_task_status"
+      ],
+      "final_answer": "Done! Task \"Project Review\" is now marked as completed.",
+      "reward_breakdown": {
+        "DB": 1.0,
+        "COMMUNICATE": 1.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "update_task_with_history_and_env_assertions",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 10.77,
+      "agent_cost_usd": null,
+      "tool_names": [
+        "create_task",
+        "update_task_status"
+      ],
+      "final_answer": "Task_2 'Project Review' has been marked as completed.",
+      "reward_breakdown": {
+        "ENV_ASSERTION": 1.0
+      },
+      "action_checks": {
+        "correct": 0,
+        "total": 0,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": false,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    },
+    {
+      "task_id": "update_task_with_user_tools",
+      "reward": 0.0,
+      "passed": false,
+      "termination_reason": "user_stop",
+      "duration_seconds": 19.004,
+      "agent_cost_usd": 0.00059164,
+      "tool_names": [
+        "update_task_status"
+      ],
+      "final_answer": "You're welcome! Let me know if you need anything else.",
+      "reward_breakdown": {
+        "DB": 0.0,
+        "ENV_ASSERTION": 1.0,
+        "ACTION": 1.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": false,
+      "communicate_checks": [],
+      "failure_classification": "benchmark_gold_db_user_action_mismatch",
+      "generic_invitation_style_issue": true
+    },
+    {
+      "task_id": "impossible_task_1",
+      "reward": 1.0,
+      "passed": true,
+      "termination_reason": "user_stop",
+      "duration_seconds": 16.414,
+      "agent_cost_usd": 0.0004443600000000001,
+      "tool_names": [
+        "transfer_to_human_agents"
+      ],
+      "final_answer": "I've transferred you to a human agent who can help with deleting your tasks, since I'm not able to delete tasks myself.",
+      "reward_breakdown": {
+        "DB": 1.0,
+        "ACTION": 1.0
+      },
+      "action_checks": {
+        "correct": 1,
+        "total": 1,
+        "all_exact": true
+      },
+      "environment_assertions_exact": true,
+      "database_exact": true,
+      "communicate_checks": [],
+      "failure_classification": "none",
+      "generic_invitation_style_issue": false
+    }
+  ],
+  "raw_results_sha256": "d920d82d842fc39b621762a6b16686936adc134cc73559c470c047974390bb98",
+  "checks": {
+    "pinned_official_source": true,
+    "official_reward_present_for_every_case": true,
+    "no_infrastructure_errors": true,
+    "all_cases_terminated": true,
+    "candidate_is_real_deepseek": true,
+    "not_mislabeled_as_full_product_runtime": true,
+    "no_provider_hidden_reasoning_collected": true
+  },
+  "passed": false,
+  "limitations": [
+    "The mock domain is an official adapter smoke, not a comparable published tau2 leaderboard domain.",
+    "DeepSeek also drives the official user simulator; deterministic rewards, not that model, decide success.",
+    "This adapter does not exercise AgentLadder persistence, permissions, memory, scheduler, MCP, or team services.",
+    "Qwen remains unavailable because the configured credential returns HTTP 401.",
+    "Two mock failures are classified from public reward details as benchmark/evaluator artifacts; the official 0.8 score is preserved unchanged."
+  ],
+  "diagnostics": {
+    "candidate_tool_action_accuracy": 1.0,
+    "candidate_tool_actions_correct": 8,
+    "candidate_tool_actions_total": 8,
+    "candidate_or_unclassified_failures": 0,
+    "benchmark_or_evaluator_artifacts": 2,
+    "generic_invitation_style_issues": 1,
+    "strange_response_p0_count": 0
+  },
+  "adapter_integrity_passed": true
+}

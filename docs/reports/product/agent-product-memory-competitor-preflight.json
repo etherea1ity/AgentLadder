@@ -1,0 +1,61 @@
+{
+  "schema_version": "klara.memory-competitor-execution-preflight.v1",
+  "evaluated_at": "2026-08-14T10:26:20.380293+00:00",
+  "status": "external_execution_blocked",
+  "systems": {
+    "mem0": {
+      "source_contract_passed": true,
+      "deepseek_answerer_configured": true,
+      "official_default_openai_stack_configured": false,
+      "local_ollama_embedder_available": false,
+      "cloud_mem0_configured": false,
+      "execution_ready": false,
+      "execution_status": "blocked_external_dependencies",
+      "blockers": [
+        "The official default OSS stack requires an OpenAI extraction and embedding credential, which is not configured.",
+        "DeepSeek can supply the common answerer/extraction model through an OpenAI-compatible endpoint but does not supply the required embedding endpoint.",
+        "The official Ollama alternative and nomic embedding runtime are not installed; starting a sustained local embedding workload is outside the thermal-safe pre-HKU boundary."
+      ],
+      "score_status": "not_claimed"
+    },
+    "mem1": {
+      "source_contract_passed": true,
+      "official_checkpoint_cached": false,
+      "gpu_runtime_available": false,
+      "execution_ready": false,
+      "execution_status": "hku_gpu_rollout_pending",
+      "blockers": [
+        "The official 7B checkpoint is not cached in the repository workspace.",
+        "The pinned vLLM/retriever rollout is an HKU GPU evaluation task and has not started before Agent Product Freeze."
+      ],
+      "score_status": "not_claimed"
+    },
+    "beam": {
+      "source_contract_passed": true,
+      "official_dataset_snapshot_available": true,
+      "execution_ready": true,
+      "execution_status": "ready",
+      "blockers": [],
+      "score_status": "not_claimed"
+    }
+  },
+  "sanitized_runtime_facts": {
+    "deepseek_api_key_configured": true,
+    "openai_api_key_configured": false,
+    "mem0_api_key_configured": false,
+    "ollama_available": false,
+    "mem1_checkpoint_cached": false,
+    "gpu_runtime_available": false,
+    "beam_dataset_snapshot_available": true
+  },
+  "checks": {
+    "all_official_sources_pinned": true,
+    "runtime_facts_are_boolean": true,
+    "no_unexecuted_score_claimed": true,
+    "blocked_systems_name_exact_dependencies": true
+  },
+  "preflight_passed": true,
+  "scores_ready": false,
+  "model_training_started": false,
+  "hku_connection_started_by_this_preflight": false
+}

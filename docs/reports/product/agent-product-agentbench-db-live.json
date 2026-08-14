@@ -1,0 +1,332 @@
+{
+  "schema_version": "klara.agentbench-fc-dbbench-live.v1",
+  "stage": "agent-product-external-benchmarks",
+  "evaluated_at": "2026-08-14T09:12:49.415800+00:00",
+  "benchmark": {
+    "name": "AgentBench FC",
+    "task": "dbbench-std",
+    "repository": "https://github.com/THUDM/AgentBench",
+    "commit": "d1e4a10db08c87075c78972e48ecc182be03e2d5",
+    "agentrl_commit": "6a73409d31ba695d383b978a8ad3ef400d90c054",
+    "indexes": [
+      0,
+      20,
+      40,
+      60,
+      80
+    ],
+    "selection": [
+      "other",
+      "counting",
+      "comparison",
+      "ranking",
+      "aggregation-MIN"
+    ],
+    "official_reward": true,
+    "full_leaderboard_claim": false
+  },
+  "candidate": {
+    "model": "deepseek/deepseek-v4-flash",
+    "boundary": [
+      "Klara frozen persona",
+      "AgentLadder provider adapter and response normalization",
+      "official AgentBench tool schemas",
+      "official AgentRL controller and DBBench worker",
+      "official MySQL task environments and rewards"
+    ]
+  },
+  "metrics": {
+    "task_success_rate": 0.8,
+    "tasks_passed": 4,
+    "tasks_total": 5,
+    "tool_calls": 12,
+    "invalid_tool_call_ratio": 0.0,
+    "average_interaction_rounds": 2.4,
+    "average_model_decision_attempts": 2.4,
+    "semantic_preflight_rejections": 0,
+    "benchmark_artifact_count": 1,
+    "candidate_controllable_failures": 0,
+    "candidate_controllable_success_rate": 1.0,
+    "average_output_tokens": 288,
+    "average_total_tokens": 3570.4,
+    "p50_model_latency_ms": 7340.0,
+    "p95_model_latency_ms": 9399.0,
+    "average_task_duration_ms": 18611,
+    "estimated_cost_usd": 0.00270088,
+    "strange_response_p0_count": 0
+  },
+  "cases": [
+    {
+      "index": 0,
+      "question": "Additional table information about the question: The name of this table is Jiu-Jitsu Championships Results, and the headers of this table are Result,Opponent,Method,Event,Notes.\nQuestion: What are the Notes when the Method is decision?\n",
+      "turns": 2,
+      "model_decision_attempts": 2,
+      "reward": 1,
+      "status": "completed",
+      "passed": true,
+      "tool_calls": [
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT Notes FROM `Jiu-Jitsu Championships Results` WHERE Method = 'decision'"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "commit_final_answer",
+          "arguments": {
+            "answers": [
+              "Women +60kg Bronze"
+            ]
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        }
+      ],
+      "invalid_tool_call_count": 0,
+      "semantic_preflight_rejections": 0,
+      "prompt_tokens": 2553,
+      "completion_tokens": 192,
+      "total_tokens": 2745,
+      "estimated_cost_usd": 0.00041118,
+      "model_latency_ms": [
+        7301,
+        7062
+      ],
+      "duration_ms": 14525,
+      "error": null,
+      "failure_classification": "none"
+    },
+    {
+      "index": 20,
+      "question": "Additional table information about the question: The name of this table is contestants, and the headers of this table are Represents,Contestant,Age,Height (cm),Height (ft),Hometown.\nQuestion: Name the total number of represents for clary sermina delgado cid\n",
+      "turns": 2,
+      "model_decision_attempts": 2,
+      "reward": 1,
+      "status": "completed",
+      "passed": true,
+      "tool_calls": [
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT COUNT(Represents) FROM contestants WHERE Contestant = 'Clary Sermina Delgado Cid';"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "commit_final_answer",
+          "arguments": {
+            "answers": [
+              "1"
+            ]
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        }
+      ],
+      "invalid_tool_call_count": 0,
+      "semantic_preflight_rejections": 0,
+      "prompt_tokens": 2586,
+      "completion_tokens": 214,
+      "total_tokens": 2800,
+      "estimated_cost_usd": 0.00042196,
+      "model_latency_ms": [
+        7211,
+        7379
+      ],
+      "duration_ms": 14768,
+      "error": null,
+      "failure_classification": "none"
+    },
+    {
+      "index": 40,
+      "question": "Additional table information about the question: The name of this table is Olympic Medals, and the headers of this table are Rank,Nation,Gold,Silver,Bronze,Total.\nQuestion: which nation won gold but did not win silver?\n",
+      "turns": 3,
+      "model_decision_attempts": 3,
+      "reward": 0,
+      "status": "completed",
+      "passed": false,
+      "tool_calls": [
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT Nation FROM `Olympic Medals` WHERE Gold > 0 AND Silver = 0"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT Nation, Gold, Silver, Bronze, Total FROM `Olympic Medals` WHERE Gold > 0 AND Silver = 0"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "commit_final_answer",
+          "arguments": {
+            "answers": [
+              "United States",
+              "Ecuador"
+            ]
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        }
+      ],
+      "invalid_tool_call_count": 0,
+      "semantic_preflight_rejections": 0,
+      "prompt_tokens": 4108,
+      "completion_tokens": 410,
+      "total_tokens": 4518,
+      "estimated_cost_usd": 0.00068992,
+      "model_latency_ms": [
+        9399,
+        7466,
+        7138
+      ],
+      "duration_ms": 24179,
+      "error": null,
+      "failure_classification": "benchmark_ground_truth_omits_valid_second_row"
+    },
+    {
+      "index": 60,
+      "question": "Additional table information about the question: The name of this table is Squash Players Ranking, and the headers of this table are Rank,Player Name,No. of Titles,Runner-up,Final Appearances.\nQuestion: which player has the highest number of titles?\n",
+      "turns": 2,
+      "model_decision_attempts": 2,
+      "reward": 1,
+      "status": "completed",
+      "passed": true,
+      "tool_calls": [
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT `Player Name`, `No. of Titles` FROM `Squash Players Ranking` ORDER BY `No. of Titles` DESC LIMIT 1"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "commit_final_answer",
+          "arguments": {
+            "answers": [
+              "Jansher Khan"
+            ]
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        }
+      ],
+      "invalid_tool_call_count": 0,
+      "semantic_preflight_rejections": 0,
+      "prompt_tokens": 2589,
+      "completion_tokens": 211,
+      "total_tokens": 2800,
+      "estimated_cost_usd": 0.00042154,
+      "model_latency_ms": [
+        7605,
+        6759
+      ],
+      "duration_ms": 14528,
+      "error": null,
+      "failure_classification": "none"
+    },
+    {
+      "index": 80,
+      "question": "Additional table information about the question: The name of this table is football_matches, and the headers of this table are Home team,Home team score,Away team,Away team score,Venue,Crowd,Date.\nQuestion: What is the smallest crowd number for a team that has an Away team score of 15.11 (101)?\n",
+      "turns": 3,
+      "model_decision_attempts": 3,
+      "reward": 1,
+      "status": "completed",
+      "passed": true,
+      "tool_calls": [
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT * FROM football_matches LIMIT 5"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "execute_sql",
+          "arguments": {
+            "query": "SELECT `Away team`, `Away team score`, `Crowd` FROM football_matches WHERE `Away team score` = '15.11 (101)' ORDER BY CAST(REPLACE(`Crowd`, ',', '') AS UNSIGNED) ASC"
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        },
+        {
+          "name": "commit_final_answer",
+          "arguments": {
+            "answers": [
+              "16000"
+            ]
+          },
+          "valid": true,
+          "invalid_reason": null,
+          "executed": true,
+          "semantic_preflight_rejection": null
+        }
+      ],
+      "invalid_tool_call_count": 0,
+      "semantic_preflight_rejections": 0,
+      "prompt_tokens": 4576,
+      "completion_tokens": 413,
+      "total_tokens": 4989,
+      "estimated_cost_usd": 0.00075628,
+      "model_latency_ms": [
+        6986,
+        9753,
+        8148
+      ],
+      "duration_ms": 25055,
+      "error": null,
+      "failure_classification": "none"
+    }
+  ],
+  "checks": {
+    "official_source_is_pinned": true,
+    "all_declared_indexes_executed": true,
+    "official_reward_present": true,
+    "all_samples_completed": true,
+    "all_samples_passed": false,
+    "no_invalid_tool_calls": true,
+    "no_provider_hidden_reasoning_collected": true,
+    "not_mislabeled_as_full_leaderboard": true,
+    "no_candidate_controllable_failures": true
+  },
+  "passed": false,
+  "limitations": [
+    "This is a declared five-sample read-only subset, not the 300-sample DBBench standard score or AgentBench leaderboard score.",
+    "The subset excludes database mutations so a failure cannot alter persistent user data; each sample still uses an isolated official MySQL environment.",
+    "At pinned index 40, the official label omits Ecuador even though the official standard SQL and table rows return both United States and Ecuador; the official zero is preserved.",
+    "Qwen comparison and cross-provider judging remain blocked by two distinct credentials returning HTTP 401.",
+    "No model training or local GPU execution occurred during this evaluation."
+  ]
+}
