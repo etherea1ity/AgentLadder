@@ -1,0 +1,94 @@
+{
+  "agent_product_freeze_passed": false,
+  "artifacts": {
+    "behavior": "docs/reports/product/prompt-context-recovery-behavior-deepseek.json",
+    "memory_agent": "docs/reports/product/prompt-context-recovery-memory-agent-formal.json",
+    "memory_baseline": "docs/reports/product/prompt-context-recovery-memory-baseline-formal.json",
+    "provider_smoke": "docs/reports/product/prompt-context-recovery-provider-smoke.json"
+  },
+  "behavior": {
+    "blind_human_review": "unscored",
+    "critical_deterministic_rate": 1.0,
+    "estimated_cost_usd": 0.012854800000000003,
+    "independent_judge": "unscored",
+    "model": "deepseek/deepseek-v4-flash",
+    "normal_task_success_rate": 1.0,
+    "p0_count": 0
+  },
+  "blockers": [
+    "Qwen independent-judge credential returned HTTP 401 during the frozen live smoke.",
+    "Blind human comparison labels have not been produced; model output cannot be relabeled as human review."
+  ],
+  "branch": "codex/prompt-context-recovery-hardening",
+  "counts": {
+    "behavior_observations": 41,
+    "chapter_gates_passed": 12,
+    "chapter_gates_total": 12,
+    "python_tests_collected": 510,
+    "python_tests_skipped": 2,
+    "web_test_files": 20,
+    "web_tests": 71
+  },
+  "evaluated_at": "2026-08-14T16:17:11.138524+00:00",
+  "hku": {
+    "connected": false,
+    "reason": "Agent Product Freeze remains red on independent judge and blind-human gates.",
+    "training_started": false,
+    "uploaded": false
+  },
+  "local_checks": {
+    "all_chapter_gates_pass": true,
+    "behavior_critical_rate_passes": true,
+    "behavior_normal_rate_passes": true,
+    "behavior_p0_and_severe_mismatch_pass": true,
+    "behavior_repeat_stability_passes": true,
+    "deepseek_real_tool_smoke_passes": true,
+    "fresh_agent_memory_gate_passes": true,
+    "fresh_direct_memory_baseline_passes": true,
+    "full_python_suite_passes": true,
+    "web_tests_and_build_pass": true
+  },
+  "local_pre_hku_code_and_api_passed": true,
+  "memory": {
+    "agent_f1": 0.437246,
+    "agent_f1_delta": -0.018108,
+    "agent_recall_at_20": 0.782417,
+    "benchmark": "LoCoMo",
+    "direct_hybrid_f1": 0.455354,
+    "direct_recall_at_20": 0.767917,
+    "max_output_tokens": 512,
+    "questions": 100,
+    "selection_offset": 10,
+    "strange_response_p0": 0,
+    "tool_call_rate": 1.0,
+    "valid_tool_arguments_rate": 1.0
+  },
+  "product_freeze_checks": {
+    "all_chapter_gates_pass": true,
+    "behavior_critical_rate_passes": true,
+    "behavior_normal_rate_passes": true,
+    "behavior_p0_and_severe_mismatch_pass": true,
+    "behavior_repeat_stability_passes": true,
+    "blind_human_review_complete": false,
+    "deepseek_real_tool_smoke_passes": true,
+    "fresh_agent_memory_gate_passes": true,
+    "fresh_direct_memory_baseline_passes": true,
+    "full_python_suite_passes": true,
+    "independent_qwen_judge_available": false,
+    "web_tests_and_build_pass": true
+  },
+  "provider": {
+    "deepseek": {
+      "status": "completed",
+      "tool_call_valid": true
+    },
+    "qwen": {
+      "error_code": "provider_authentication_failed",
+      "status": "failed",
+      "status_code": 401
+    }
+  },
+  "schema_version": "klara.prompt-context-recovery-hardening.v1",
+  "stage": "prompt-context-recovery-hardening",
+  "status": "blocked_external_validation"
+}

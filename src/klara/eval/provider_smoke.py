@@ -242,15 +242,21 @@ def _within_budget(cases: list[dict[str, Any]], manifest: dict[str, Any]) -> boo
     )
 
 
-def render_provider_smoke_markdown(report: dict[str, Any], *, language: str = "zh") -> str:
+def render_provider_smoke_markdown(
+    report: dict[str, Any],
+    *,
+    language: str = "zh",
+    chinese_name: str = "agent-product-live-provider-smoke.md",
+    english_name: str = "agent-product-live-provider-smoke.en.md",
+) -> str:
     """Render the exact JSON smoke object as a compact bilingual report."""
 
     zh = language == "zh"
     title = "Agent 产品真实 Provider 冒烟" if zh else "Agent Product Live Provider Smoke"
     language_line = (
-        "语言：中文 | [English](./agent-product-live-provider-smoke.en.md)"
+        f"语言：中文 | [English](./{english_name})"
         if zh
-        else "Language: [Chinese](./agent-product-live-provider-smoke.md) | English"
+        else f"Language: [Chinese](./{chinese_name}) | English"
     )
     verdict = "通过" if report["passed"] and zh else "PASS" if report["passed"] else "未通过" if zh else "FAIL"
     lines = [

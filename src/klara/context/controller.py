@@ -89,7 +89,9 @@ class ContextController:
                     "transcript_budget_tokens": self.policy.transcript_budget_tokens,
                     "message_count": len(messages),
                     "over_budget": estimated > self.policy.transcript_budget_tokens,
-                    "estimator": f"chars/{self.policy.chars_per_token}",
+                    "estimator": (
+                        f"ascii_chars/{self.policy.chars_per_token}+non_ascii_chars"
+                    ),
                 },
             )
         )
@@ -168,3 +170,23 @@ class ContextController:
         events = tuple(self._events)
         self._events.clear()
         return events
+
+    def private_checkpoint(self) -> dict[str, object]:
+        """Persist private compaction state that tool-observation replay cannot rebuild."""
+
+        return {
+            "schema_version": "klara.context-controller-checkpoint.v1",
+            "session_summary": self.session_summary,
+        }
+
+    def restore_private_checkpoint(self, value: dict[str, object]) -> None:
+        """Restore the exact private summary before the resumed model call."""
+
+        if value.get("schema_version") != "klara.context-controller-checkpoint.v1":
+            raise ValueError("context_controller_checkpoint_schema_unsupported")
+        summary = value.get("session_summary")
+        if not isinstance(summary, str):
+            raise ValueError("context_controller_checkpoint_summary_invalid")
+        if len(summary) > self.policy.summary_max_chars:
+            raise ValueError("context_controller_checkpoint_summary_oversized")
+        self.session_summary = summary

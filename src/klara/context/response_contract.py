@@ -73,7 +73,6 @@ class ResponseContractController:
                 )
 
     def before_final_answer(self, *, content: str) -> FinalAnswerDecision:
-        del content
         if self._projection is not None:
             return FinalAnswerDecision(
                 allowed=True,
@@ -92,6 +91,19 @@ class ResponseContractController:
                 allowed=True,
                 reason="destructive_scope_refusal",
                 replacement_content=replacement,
+            )
+        if _looks_incomplete_final_answer(
+            content,
+            short_rule_answer=self._followup_rule_request,
+        ):
+            return FinalAnswerDecision(
+                allowed=False,
+                reason="incomplete_final_answer",
+                feedback=(
+                    "The previous response ended as an unfinished heading or block. "
+                    "Complete the answer now and include the requested facts. Do not "
+                    "repeat an empty heading."
+                ),
             )
         return FinalAnswerDecision(allowed=True, reason="response_contract_ready")
 
@@ -130,3 +142,20 @@ def _project_exact_fields(result: ToolResult) -> str:
 
 def _has_han(value: str) -> bool:
     return any("\u3400" <= character <= "\u9fff" for character in value)
+
+
+def _looks_incomplete_final_answer(
+    content: str,
+    *,
+    short_rule_answer: bool = False,
+) -> bool:
+    """Reject visibly dangling headings and unclosed fenced blocks."""
+
+    stripped = content.strip()
+    if not stripped:
+        return True
+    if stripped.count("```") % 2:
+        return True
+    if stripped.endswith((":", "：")):
+        return True
+    return short_rule_answer and len(stripped) < 6

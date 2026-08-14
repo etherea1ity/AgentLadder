@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from klara.app.user_context import UserContext
+from klara.context.controller import ContextController
+from klara.context.policy import ContextPolicy
 from klara.core.events import KlaraEvent
 from klara.core.hooks import HookManager
 from klara.core.loop import FinalAnswerDecision, KlaraLoop, KlaraRunCheckpoint
@@ -93,6 +96,18 @@ class FinishAfterControllerReplayLlm:
         return ModelResponse(content="controller restored")
 
 
+class CrashBeforeFirstModelTurn:
+    def complete(self, **_):
+        raise ModelCallError("simulated process death", code="worker_lost")
+
+
+class FinishWithRestoredContextSummary:
+    def complete(self, *, system_prompt: str, messages: tuple[KlaraMessage, ...], **_):
+        assert "old durable correction" in system_prompt
+        assert all("old durable correction" not in message.content for message in messages)
+        return ModelResponse(content="summary restored")
+
+
 def test_loop_checkpoint_resumes_after_tool_without_repeating_effect() -> None:
     tool = EchoTool()
     checkpoints: list[KlaraRunCheckpoint] = []
@@ -169,3 +184,77 @@ def test_resume_replays_observations_into_fresh_controller_state() -> None:
     assert result.final_answer == "controller restored"
     assert controller.results == ["durable"]
     assert tool.calls == 1
+
+
+def test_resume_restores_private_context_summary_not_recoverable_from_messages(
+    tmp_path,
+) -> None:
+    policy = ContextPolicy(
+        max_input_tokens=800,
+        reserved_system_tokens=100,
+        reserved_output_tokens=100,
+        recent_messages=4,
+        minimum_recent_messages=2,
+        summary_max_chars=600,
+        tool_result_max_chars=160,
+    )
+    prior_messages = tuple(
+        KlaraMessage(
+            role="user" if index % 2 == 0 else "assistant",
+            content=(
+                "old durable correction " + "x" * 500
+                if index == 0
+                else f"old turn {index} " + "x" * 500
+            ),
+        )
+        for index in range(10)
+    )
+    checkpoints: list[KlaraRunCheckpoint] = []
+    first_controller = ContextController(
+        policy=policy,
+        user_context=UserContext.local_default(),
+        capabilities=(),
+        workspace_root=tmp_path,
+    )
+    first = KlaraLoop(
+        llm=CrashBeforeFirstModelTurn(),
+        tool_executor=ToolExecutor([]),
+        controllers=(first_controller,),
+        model="test-model",
+        system_prompt="stable",
+    )
+
+    try:
+        first.run(
+            "continue",
+            run_id="run-context-summary",
+            prior_messages=prior_messages,
+            checkpoint_sink=checkpoints.append,
+        )
+    except ModelCallError:
+        pass
+
+    checkpoint = KlaraRunCheckpoint.from_private_dict(
+        checkpoints[-1].to_private_dict()
+    )
+    assert checkpoint.schema_version == "klara.loop-checkpoint.v2"
+    assert checkpoint.controller_states
+    restored_controller = ContextController(
+        policy=policy,
+        user_context=UserContext.local_default(),
+        capabilities=(),
+        workspace_root=tmp_path,
+    )
+    result = KlaraLoop(
+        llm=FinishWithRestoredContextSummary(),
+        tool_executor=ToolExecutor([]),
+        controllers=(restored_controller,),
+        model="test-model",
+        system_prompt="stable",
+    ).run(
+        "continue",
+        run_id="run-context-summary",
+        checkpoint=checkpoint,
+    )
+
+    assert result.final_answer == "summary restored"

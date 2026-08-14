@@ -580,7 +580,7 @@ def test_transient_provider_failure_retries_with_safe_public_events(monkeypatch)
                 "https://provider.invalid",
                 503,
                 "unavailable",
-                {},
+                {"Retry-After": "0.02"},
                 io.BytesIO(b"secret upstream incident body"),
             )
         return FakeResponse()
@@ -600,6 +600,7 @@ def test_transient_provider_failure_retries_with_safe_public_events(monkeypatch)
         settings=OpenAICompatibleSettings(
             retry_attempts=2,
             retry_base_delay_seconds=0.01,
+            retry_jitter_ratio=0,
         ),
     )
 
@@ -612,7 +613,7 @@ def test_transient_provider_failure_retries_with_safe_public_events(monkeypatch)
 
     assert response.content == "recovered"
     assert calls == 2
-    assert sleeps == [0.01]
+    assert sleeps == [0.02]
     assert [event.type for event in response.runtime_events] == [
         "provider.attempt_started",
         "provider.attempt_failed",
@@ -621,6 +622,8 @@ def test_transient_provider_failure_retries_with_safe_public_events(monkeypatch)
         "provider.attempt_completed",
     ]
     assert "secret upstream" not in repr(response.runtime_events)
+    retry_event = response.runtime_events[2]
+    assert retry_event.payload["retry_after_honored"] is True
 
 
 def test_prompt_too_long_is_typed_and_not_retried_by_provider(monkeypatch) -> None:
@@ -670,6 +673,7 @@ def test_prompt_too_long_is_typed_and_not_retried_by_provider(monkeypatch) -> No
 
 def test_empty_provider_generation_is_retried_once(monkeypatch) -> None:
     calls = 0
+    requests: list[dict[str, object]] = []
 
     class FakeResponse:
         def __init__(self, payload: dict[str, object]) -> None:
@@ -687,6 +691,7 @@ def test_empty_provider_generation_is_retried_once(monkeypatch) -> None:
     def fake_urlopen(*args, **kwargs):
         nonlocal calls
         calls += 1
+        requests.append(json.loads(args[0].data.decode("utf-8")))
         if calls == 1:
             return FakeResponse(
                 {"choices": [{"message": {"content": "", "reasoning_content": "hidden"}}]}
@@ -717,3 +722,11 @@ def test_empty_provider_generation_is_retried_once(monkeypatch) -> None:
     assert response.content == "recovered"
     assert calls == 2
     assert "provider.retry_scheduled" in [event.type for event in response.runtime_events]
+    assert requests[1]["messages"][-1]["role"] == "system"
+    assert "never return an empty" in requests[1]["messages"][-1]["content"]
+    retry_event = next(
+        event
+        for event in response.runtime_events
+        if event.type == "provider.retry_scheduled"
+    )
+    assert retry_event.payload["recovery_prompt_added"] is True

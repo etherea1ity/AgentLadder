@@ -15,19 +15,21 @@ from klara.core.messages import KlaraMessage
 def estimate_message_tokens(
     messages: Iterable[KlaraMessage], *, chars_per_token: int = 4
 ) -> int:
-    """Estimate model input tokens with a documented character heuristic."""
+    """Conservatively estimate serialized tokens across Latin and CJK text."""
 
-    characters = sum(
-        len(json.dumps(message.to_public_dict(), ensure_ascii=False, sort_keys=True))
+    return sum(
+        _estimate_serialized_tokens(
+            json.dumps(message.to_public_dict(), ensure_ascii=False, sort_keys=True),
+            chars_per_token=chars_per_token,
+        )
         for message in messages
     )
-    return ceil(characters / chars_per_token) if characters else 0
 
 
 def estimate_text_tokens(text: str, *, chars_per_token: int = 4) -> int:
-    """Estimate tokens for one prompt section."""
+    """Estimate tokens without under-counting CJK and other non-ASCII text."""
 
-    return ceil(len(text) / chars_per_token) if text else 0
+    return _estimate_serialized_tokens(text, chars_per_token=chars_per_token)
 
 
 def compact_tool_message(message: KlaraMessage, *, max_chars: int) -> KlaraMessage:
@@ -56,24 +58,51 @@ def build_extractive_summary(
 ) -> str:
     """Build a bounded role-labelled summary without an extra model call."""
 
-    lines: list[str] = []
+    lines: list[tuple[str, bool]] = []
     if previous_summary.strip():
+        digest = hashlib.sha256(previous_summary.encode("utf-8")).hexdigest()[:12]
         lines.append(
-            "Previous compacted context: "
-            f"{_compact_text(previous_summary, max_chars=max_chars // 2)}"
+            (
+                "PreviousSummary: "
+                f"{_compact_text(previous_summary, max_chars=max_chars // 2)} "
+                f"[source={digest}]",
+                False,
+            )
         )
     for message in messages:
         label = message.role.capitalize()
         if message.role == "tool" and message.name:
             label = f"Tool {message.name}"
-        content = _compact_text(message.content, max_chars=360)
+        content = _summary_content(message.content, max_chars=360)
         if content:
-            lines.append(f"{label}: {content}")
-    summary = "\n".join(lines)
+            digest = hashlib.sha256(message.content.encode("utf-8")).hexdigest()[:12]
+            priority = _is_user_correction_or_constraint(message)
+            instruction_anchor = (
+                " [instruction_anchor="
+                f"{_summary_content(message.content, max_chars=96)}]"
+                if priority
+                else ""
+            )
+            lines.append(
+                (
+                    f"{label}: {content} [source={digest}]{instruction_anchor}",
+                    priority,
+                )
+            )
+    # Put explicit user corrections and constraints at the durable tail. A
+    # bounded head/tail clip then retains both early provenance and the latest
+    # instructions instead of silently keeping only the oldest text.
+    ordinary_lines = [item for item in lines if not item[1]]
+    priority_lines = [item for item in lines if item[1]]
+    summary = "\n".join(text for text, _ in [*ordinary_lines, *priority_lines])
     if len(summary) <= max_chars:
         return summary
     digest = hashlib.sha256(summary.encode("utf-8")).hexdigest()[:12]
-    return f"{summary[: max_chars - 52].rstrip()}\n[summary clipped; sha256={digest}]"
+    marker = f"\n[summary clipped; sha256={digest}]\n"
+    available = max(0, max_chars - len(marker))
+    head = available // 2
+    tail = available - head
+    return f"{summary[:head].rstrip()}{marker}{summary[-tail:].lstrip()}"[:max_chars]
 
 
 def compact_transcript(
@@ -158,12 +187,14 @@ def compact_transcript(
     message_tokens = estimate_message_tokens(
         prepared, chars_per_token=policy.chars_per_token
     )
-    summary_budget_chars = max(
-        0,
-        (policy.transcript_budget_tokens - message_tokens) * policy.chars_per_token,
+    summary_budget_tokens = max(
+        0, policy.transcript_budget_tokens - message_tokens
     )
-    if len(summary) > summary_budget_chars:
-        summary = _compact_text(summary, max_chars=summary_budget_chars)
+    summary = _fit_text_to_budget(
+        summary,
+        budget_tokens=summary_budget_tokens,
+        chars_per_token=policy.chars_per_token,
+    )
     after_tokens = estimate_message_tokens(
         prepared, chars_per_token=policy.chars_per_token
     ) + estimate_text_tokens(summary, chars_per_token=policy.chars_per_token)
@@ -243,6 +274,91 @@ def _fit_message_to_budget(
         else:
             high = middle - 1
     return best
+
+
+def _fit_text_to_budget(
+    text: str,
+    *,
+    budget_tokens: int,
+    chars_per_token: int,
+) -> str:
+    """Binary-search a text bound using the same multilingual estimator."""
+
+    if budget_tokens <= 0 or not text:
+        return ""
+    if estimate_text_tokens(text, chars_per_token=chars_per_token) <= budget_tokens:
+        return text
+    low = 0
+    high = len(text)
+    best = ""
+    while low <= high:
+        middle = (low + high) // 2
+        candidate = _compact_text_head_tail(text, max_chars=middle)
+        if estimate_text_tokens(candidate, chars_per_token=chars_per_token) <= budget_tokens:
+            best = candidate
+            low = middle + 1
+        else:
+            high = middle - 1
+    return best
+
+
+def _estimate_serialized_tokens(text: str, *, chars_per_token: int) -> int:
+    """Use one token per non-ASCII code point and the configured Latin ratio."""
+
+    if not text:
+        return 0
+    ascii_chars = sum(ord(char) < 128 for char in text)
+    non_ascii_chars = len(text) - ascii_chars
+    return ceil(ascii_chars / chars_per_token) + non_ascii_chars
+
+
+def _is_user_correction_or_constraint(message: KlaraMessage) -> bool:
+    """Identify user-authored facts whose loss most often changes intent."""
+
+    if message.role != "user":
+        return False
+    normalized = message.content.casefold()
+    cues = (
+        "actually",
+        "instead",
+        "correction",
+        "must ",
+        "must not",
+        "do not",
+        "don't",
+        "only ",
+        "改成",
+        "更正",
+        "不是",
+        "不要",
+        "必须",
+        "只能",
+    )
+    return any(cue in normalized for cue in cues)
+
+
+def _summary_content(text: str, *, max_chars: int) -> str:
+    """Keep prompt timestamps while placing semantic content before metadata."""
+
+    match = re.match(r"^(\[[A-Za-z]{3} [^\]]+\])\s+(.+)$", text, re.DOTALL)
+    if match is not None:
+        text = f"{match.group(2)} {match.group(1)}"
+    return _compact_text(text, max_chars=max_chars)
+
+
+def _compact_text_head_tail(text: str, *, max_chars: int) -> str:
+    """Bound summary text while retaining both original context and corrections."""
+
+    compact = re.sub(r"\s+", " ", text).strip()
+    if len(compact) <= max_chars:
+        return compact
+    marker = " [context clipped] "
+    if max_chars <= len(marker) + 2:
+        return compact[-max_chars:] if max_chars > 0 else ""
+    available = max_chars - len(marker)
+    head = available // 2
+    tail = available - head
+    return f"{compact[:head].rstrip()}{marker}{compact[-tail:].lstrip()}"
 
 
 def _compact_text(text: str, *, max_chars: int) -> str:

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from klara.context.budget import compact_transcript, estimate_message_tokens
+from klara.context.budget import (
+    compact_transcript,
+    estimate_message_tokens,
+    estimate_text_tokens,
+)
 from klara.context.policy import ContextPolicy
 from klara.core.messages import KlaraMessage
 
@@ -80,3 +84,38 @@ def test_context_policy_rejects_impossible_budget() -> None:
         assert "transcript budget" in str(exc)
     else:  # pragma: no cover
         raise AssertionError("impossible context budget must fail")
+
+
+def test_token_estimator_does_not_treat_cjk_as_four_chars_per_token() -> None:
+    assert estimate_text_tokens("部署模型需要严格验证") == 10
+    assert estimate_text_tokens("abcdefghij") == 3
+
+
+def test_repeated_compaction_retains_latest_user_correction_with_provenance() -> None:
+    first_messages = [
+        KlaraMessage(role="user", content="Initial deployment target is local."),
+        KlaraMessage(role="assistant", content="Acknowledged. " + "x" * 1600),
+        KlaraMessage(role="user", content="Correction: use cloud storage only."),
+        KlaraMessage(role="assistant", content="Updated. " + "y" * 1600),
+        KlaraMessage(role="user", content="Continue with the remaining checks."),
+    ]
+    _, first_summary, _ = compact_transcript(first_messages, policy=policy())
+    second_messages = [
+        KlaraMessage(role="assistant", content="Older status " + "z" * 700),
+        KlaraMessage(role="user", content="Actually, the final target must be HKU."),
+        KlaraMessage(role="assistant", content="Latest status " + "q" * 700),
+        KlaraMessage(role="user", content="Verify it now."),
+    ]
+
+    prepared, second_summary, metrics = compact_transcript(
+        second_messages,
+        policy=policy(),
+        previous_summary=first_summary,
+    )
+
+    visible_context = "\n".join(
+        [second_summary, *(message.content for message in prepared)]
+    )
+    assert "final target must be HKU" in visible_context
+    assert "source=" in first_summary
+    assert metrics["after_estimated_tokens"] <= metrics["budget_tokens"]

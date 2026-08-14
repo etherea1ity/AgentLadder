@@ -210,6 +210,13 @@ def _runtime(data: dict[str, Any], *, env: Mapping[str, str]) -> RuntimeConfig:
             env_name="KLARA_PROVIDER_RETRY_MAX_DELAY_SECONDS",
             default=default_provider.retry_max_delay_seconds,
         ),
+        retry_jitter_ratio=_float_config(
+            raw_provider,
+            "retry_jitter_ratio",
+            env=env,
+            env_name="KLARA_PROVIDER_RETRY_JITTER_RATIO",
+            default=default_provider.retry_jitter_ratio,
+        ),
     )
     raw_harness = raw_runtime.get("harness", {})
     raw_profiles = raw_runtime.get("capability_profiles", {})

@@ -197,9 +197,13 @@ def select_locomo_questions(
     questions: list[LocomoQuestion],
     *,
     per_conversation: int = 10,
+    selection_offset: int = 0,
     scored_categories: frozenset[str] = frozenset({"1", "2", "3", "4"}),
 ) -> list[LocomoQuestion]:
     """Freeze a balanced subset using LoCoMo's official scored categories."""
+
+    if selection_offset < 0:
+        raise ValueError("locomo_selection_offset_must_be_non_negative")
 
     grouped: dict[int, list[LocomoQuestion]] = {}
     for question in questions:
@@ -215,7 +219,9 @@ def select_locomo_questions(
                 item.case_id,
             ),
         )
-        selected.extend(candidates[:per_conversation])
+        selected.extend(
+            candidates[selection_offset : selection_offset + per_conversation]
+        )
     return sorted(selected, key=lambda item: item.case_id)
 
 

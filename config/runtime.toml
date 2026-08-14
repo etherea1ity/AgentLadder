@@ -32,6 +32,8 @@ chars_per_token = 4
 retry_attempts = 3
 retry_base_delay_seconds = 0.5
 retry_max_delay_seconds = 8.0
+# Bounded jitter prevents synchronized clients from retrying in lockstep.
+retry_jitter_ratio = 0.2
 
 [runtime.harness]
 # Product entrypoints select one named capability profile before loop assembly.

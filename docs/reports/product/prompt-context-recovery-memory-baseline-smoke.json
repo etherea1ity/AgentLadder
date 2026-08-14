@@ -1,0 +1,257 @@
+{
+  "schema_version": "klara.locomo-same-answer-model.v1",
+  "stage": "agent-product-external-benchmarks",
+  "evaluated_at": "2026-08-14T15:21:43.580301+00:00",
+  "benchmark": "LoCoMo",
+  "task": "same_answer_model_conversational_qa",
+  "source": {
+    "repository": "https://github.com/snap-research/locomo",
+    "commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+    "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "license": "CC-BY-NC-4.0"
+  },
+  "selection": {
+    "per_conversation": 1,
+    "selection_offset": 10,
+    "selected_questions": 10,
+    "selected_case_ids_sha256": "9b24909ca09f5fd2522c4d229105932783d3219775f1db7892bc58f3fe9464d7"
+  },
+  "controls": {
+    "schema_version": "klara.locomo-same-answer-model.v1",
+    "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "selected_case_ids_sha256": "9b24909ca09f5fd2522c4d229105932783d3219775f1db7892bc58f3fe9464d7",
+    "selection_offset": 10,
+    "systems": [
+      "hybrid"
+    ],
+    "model": "deepseek/deepseek-v4-flash",
+    "prompt_sha256": "868bb3a04b09eda6dae629b58b9435e4f70ada7f20a8e0d09fa7ca4d158e8966",
+    "top_k": 20,
+    "selected_context_order": "chronological",
+    "max_output_tokens": 256,
+    "temperature": 0.0
+  },
+  "config_sha256": "0cc9a8b2efd12c20748011656a784db9453ffc682d8fc8bf733dddc5ed5fb11d",
+  "dataset": {
+    "conversations": 10,
+    "turns": 5882,
+    "eligible_questions": 1973,
+    "category_counts": {
+      "1": 278,
+      "2": 320,
+      "3": 89,
+      "4": 840,
+      "5": 446
+    }
+  },
+  "systems": {
+    "hybrid": {
+      "cases": 10,
+      "completed": 10,
+      "official_f1": 0.463722,
+      "exact_match": 0.2,
+      "evidence_recall_at_k": 0.75,
+      "category_f1": {
+        "1": 0.333333,
+        "2": 0.385495,
+        "4": 0.552381
+      },
+      "average_context_items": 20.0,
+      "prompt_tokens": 13179,
+      "completion_tokens": 1253,
+      "average_total_tokens": 1443.2,
+      "p50_latency_ms": 11941.0,
+      "p95_latency_ms": 17861.0,
+      "estimated_cost_usd": 0.0021959
+    }
+  },
+  "comparison": {
+    "total_estimated_cost_usd": 0.0021959
+  },
+  "rows": [
+    {
+      "run_key": "hybrid:locomo-00-029",
+      "system": "hybrid",
+      "case_id": "locomo-00-029",
+      "category": "2",
+      "official_f1": 0.315789,
+      "exact_match": false,
+      "evidence_recall_at_k": 1.0,
+      "context_items": 20,
+      "answer_sha256": "52dae3f8b50a2f7b546d919f8268936e0ad6c83750afe16956cbd6ee02669eef",
+      "latency_ms": 12481,
+      "prompt_tokens": 1344,
+      "completion_tokens": 113,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-01-049",
+      "system": "hybrid",
+      "case_id": "locomo-01-049",
+      "category": "4",
+      "official_f1": 0.133333,
+      "exact_match": false,
+      "evidence_recall_at_k": 1.0,
+      "context_items": 20,
+      "answer_sha256": "ac0320c292b7ae6b85d9e6f3a67ae26262c957f6f4e862c065bf01e88489b874",
+      "latency_ms": 12447,
+      "prompt_tokens": 1426,
+      "completion_tokens": 97,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-02-066",
+      "system": "hybrid",
+      "case_id": "locomo-02-066",
+      "category": "4",
+      "official_f1": 0.628571,
+      "exact_match": false,
+      "evidence_recall_at_k": 1.0,
+      "context_items": 20,
+      "answer_sha256": "d457bc125b57c6d046b4d37cefb32e293eafd0cf2411ffe8799dd6c18d46ecd2",
+      "latency_ms": 12351,
+      "prompt_tokens": 1347,
+      "completion_tokens": 80,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-03-016",
+      "system": "hybrid",
+      "case_id": "locomo-03-016",
+      "category": "2",
+      "official_f1": 0.75,
+      "exact_match": false,
+      "evidence_recall_at_k": 0.5,
+      "context_items": 20,
+      "answer_sha256": "6bd449216ba9d8675afc059e6131dd841bc1b2b951f07354f52692139ec41f4b",
+      "latency_ms": 12397,
+      "prompt_tokens": 1034,
+      "completion_tokens": 158,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-04-143",
+      "system": "hybrid",
+      "case_id": "locomo-04-143",
+      "category": "4",
+      "official_f1": 1.0,
+      "exact_match": true,
+      "evidence_recall_at_k": 1.0,
+      "context_items": 20,
+      "answer_sha256": "b49d7e8de3c7f289515cc19aa5b576a48ecea44fc934edd59f359003ebd3c16c",
+      "latency_ms": 10214,
+      "prompt_tokens": 1397,
+      "completion_tokens": 156,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-05-038",
+      "system": "hybrid",
+      "case_id": "locomo-05-038",
+      "category": "2",
+      "official_f1": 0.47619,
+      "exact_match": false,
+      "evidence_recall_at_k": 1.0,
+      "context_items": 20,
+      "answer_sha256": "4efd26db7a3a4bc44c977f23f293aba94d096ad8e80d8b3c43c40613fb15e643",
+      "latency_ms": 17861,
+      "prompt_tokens": 1626,
+      "completion_tokens": 178,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-06-022",
+      "system": "hybrid",
+      "case_id": "locomo-06-022",
+      "category": "1",
+      "official_f1": 0.333333,
+      "exact_match": false,
+      "evidence_recall_at_k": 0.0,
+      "context_items": 20,
+      "answer_sha256": "3c4118754be55cca6015b17985e9ea3d2dd1515bdd6848667d51f40763dc5bef",
+      "latency_ms": 11531,
+      "prompt_tokens": 1417,
+      "completion_tokens": 161,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-07-051",
+      "system": "hybrid",
+      "case_id": "locomo-07-051",
+      "category": "2",
+      "official_f1": 0.0,
+      "exact_match": false,
+      "evidence_recall_at_k": 1.0,
+      "context_items": 20,
+      "answer_sha256": "eb8a9c94c600308a764b72ea79f7773026c2cb606a1c1593b46434532bff637f",
+      "latency_ms": 9738,
+      "prompt_tokens": 1097,
+      "completion_tokens": 106,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-08-110",
+      "system": "hybrid",
+      "case_id": "locomo-08-110",
+      "category": "4",
+      "official_f1": 0.0,
+      "exact_match": false,
+      "evidence_recall_at_k": 0.0,
+      "context_items": 20,
+      "answer_sha256": "fcc38e69f67c04b0877c88bbb257e21f5711fe31d261e197a67c154baa6bfa2d",
+      "latency_ms": 9212,
+      "prompt_tokens": 1158,
+      "completion_tokens": 90,
+      "error": null
+    },
+    {
+      "run_key": "hybrid:locomo-09-127",
+      "system": "hybrid",
+      "case_id": "locomo-09-127",
+      "category": "4",
+      "official_f1": 1.0,
+      "exact_match": true,
+      "evidence_recall_at_k": 1.0,
+      "context_items": 20,
+      "answer_sha256": "b3e2b8ad49037c8b3ad84fb7f68de15fd92514f325c0e89cea8b9cbf85771a2d",
+      "latency_ms": 8414,
+      "prompt_tokens": 1333,
+      "completion_tokens": 114,
+      "error": null
+    }
+  ],
+  "checkpoint": {
+    "path": ".tmp/prompt-context-recovery/locomo-baseline-smoke-offset10.jsonl",
+    "contains_public_dataset_text": true,
+    "tracked_in_git": false,
+    "sha256": "213dabf68ed590b34558882973fb781d3e6603e5fcea2fbdba16de1fbc5a5319",
+    "attempt_count": 10,
+    "unique_successful_pair_count": 10,
+    "failed_attempt_count": 0,
+    "failed_attempt_codes": {},
+    "maximum_successful_completion_tokens": 178
+  },
+  "report_generation_duration_ms": 33172,
+  "aggregate_successful_model_latency_ms": 116646,
+  "checks": {
+    "official_dataset_hash": true,
+    "balanced_ten_by_ten_subset": true,
+    "all_system_case_pairs_completed": true,
+    "same_answer_model": true,
+    "same_prompt_and_generation_budget": true,
+    "all_final_case_results_successful": true,
+    "generation_cap_not_reached_by_successful_answer": true,
+    "hybrid_evidence_recall_at_20_at_least_0_70": true,
+    "zero_strange_response_p0": true
+  },
+  "passed": true,
+  "limitations": [
+    "The official LoCoMo token F1 is deterministic and uses the pinned category rules; no LLM judge is substituted for it.",
+    "The committed report omits question, ground-truth, context text, and prediction text; those public-dataset-derived fields stay in the ignored local checkpoint.",
+    "The live matrix uses top_k=20 after a pre-freeze 10-question calibration showed that five atomic turns could not preserve the preregistered full-context F1 gap; the earlier Recall@5 artifact remains preserved.",
+    "The vector signal is Klara's dependency-free hashed character-ngram representation, not a learned embedding model.",
+    "semantic_recency is a local ablation and is not labeled as Mem0; the official Mem0 pipeline is a separate result.",
+    "DeepSeek temperature=0 remained API-nondeterministic across calibration reruns; the frozen score is the single declared 100-question run, not a claim of exact repeatability to six decimals.",
+    "No model training or local GPU execution occurs in this evaluation."
+  ]
+}

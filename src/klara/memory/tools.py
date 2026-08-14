@@ -148,11 +148,24 @@ class MemorySearchTool(BaseTool):
             )
         except ValueError as exc:
             return self.failure(arguments, str(exc))
+        ranked_hits = list(enumerate(hits, start=1))
+        timeline_hits = sorted(
+            ranked_hits,
+            key=lambda item: (
+                item[1].record.valid_from or item[1].record.created_at,
+                item[0],
+            ),
+        )
         content = {
             "schema_version": "klara.memory-search.v1",
             "query": query,
             "result_count": len(hits),
-            "results": [hit.to_model_dict() for hit in hits],
+            "selection_order": "top_k_by_retrieval_score",
+            "presentation_order": "chronological_after_selection",
+            "results": [
+                {**hit.to_model_dict(), "retrieval_rank": retrieval_rank}
+                for retrieval_rank, hit in timeline_hits
+            ],
         }
         return ToolResult(
             tool_call_id=self.call_id(arguments),

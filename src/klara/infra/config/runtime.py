@@ -16,6 +16,7 @@ class ProviderRecoveryPolicy:
     retry_attempts: int = 3
     retry_base_delay_seconds: float = 0.5
     retry_max_delay_seconds: float = 8.0
+    retry_jitter_ratio: float = 0.2
 
     def __post_init__(self) -> None:
         if self.timeout_seconds is not None and self.timeout_seconds < 1:
@@ -26,6 +27,8 @@ class ProviderRecoveryPolicy:
             raise ValueError("provider retry delays must be non-negative")
         if self.retry_max_delay_seconds < self.retry_base_delay_seconds:
             raise ValueError("provider retry max delay must cover the base delay")
+        if not 0 <= self.retry_jitter_ratio <= 1:
+            raise ValueError("provider retry jitter ratio must be between 0 and 1")
 
     def to_public_dict(self) -> dict[str, int | float | None]:
         return {
@@ -33,6 +36,7 @@ class ProviderRecoveryPolicy:
             "retry_attempts": self.retry_attempts,
             "retry_base_delay_seconds": self.retry_base_delay_seconds,
             "retry_max_delay_seconds": self.retry_max_delay_seconds,
+            "retry_jitter_ratio": self.retry_jitter_ratio,
         }
 
 

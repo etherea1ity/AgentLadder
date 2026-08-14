@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import random
 import re
 import time
 import urllib.error
@@ -44,6 +45,8 @@ class OpenAICompatibleSettings:
     retry_base_delay_seconds: float = 0.5
     # Maximum delay bounds exponential backoff.
     retry_max_delay_seconds: float = 8.0
+    # Symmetric bounded jitter prevents a retry herd after shared outages.
+    retry_jitter_ratio: float = 0.2
 
     def __post_init__(self) -> None:
         if self.max_tokens is not None and self.max_tokens < 1:
@@ -56,6 +59,8 @@ class OpenAICompatibleSettings:
             raise ValueError("retry_base_delay_seconds must be non-negative")
         if self.retry_max_delay_seconds < self.retry_base_delay_seconds:
             raise ValueError("retry_max_delay_seconds must cover the base delay")
+        if not 0 <= self.retry_jitter_ratio <= 1:
+            raise ValueError("retry_jitter_ratio must be between 0 and 1")
 
 
 class OpenAICompatibleLlmClient:
@@ -151,6 +156,7 @@ class OpenAICompatibleLlmClient:
                 attempts=self.settings.retry_attempts,
                 retry_base_delay_seconds=self.settings.retry_base_delay_seconds,
                 retry_max_delay_seconds=self.settings.retry_max_delay_seconds,
+                retry_jitter_ratio=self.settings.retry_jitter_ratio,
             )
             all_runtime_events.extend(runtime_events)
             try:
@@ -180,9 +186,11 @@ class OpenAICompatibleLlmClient:
                                 "model": model,
                                 "reason": exc.code,
                                 "response_attempt": response_attempt,
+                                "recovery_prompt_added": True,
                             },
                         )
                     )
+                    payload = _empty_response_recovery_payload(payload)
                     continue
                 exc.runtime_events = tuple(all_runtime_events)
                 raise
@@ -236,6 +244,28 @@ class OpenAICompatibleLlmClient:
             },
             method="POST",
         )
+
+
+def _empty_response_recovery_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Add a public-output reminder after a reasoning-only or empty generation."""
+
+    messages = payload.get("messages")
+    if not isinstance(messages, list):
+        return payload
+    return {
+        **payload,
+        "messages": [
+            *messages,
+            {
+                "role": "system",
+                "content": (
+                    "The previous provider generation had no public content or "
+                    "tool call. Produce the required public answer or structured "
+                    "tool call now; never return an empty or reasoning-only response."
+                ),
+            },
+        ],
+    }
 
 
 def build_chat_completion_payload(
@@ -708,6 +738,7 @@ def _urlopen_with_retries(
     attempts: int,
     retry_base_delay_seconds: float,
     retry_max_delay_seconds: float,
+    retry_jitter_ratio: float,
 ) -> tuple[str, tuple[LlmRuntimeEvent, ...]]:
     """POST to an OpenAI-compatible provider with short transient retries."""
 
@@ -718,6 +749,7 @@ def _urlopen_with_retries(
     # Retry only around transport/provider overload failures.
     for attempt in range(attempts):
         attempt_number = attempt + 1
+        retry_after_seconds: float | None = None
         events.append(
             LlmRuntimeEvent(
                 type="provider.attempt_started",
@@ -754,6 +786,7 @@ def _urlopen_with_retries(
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
             code, retryable = _classify_http_error(exc.code, body)
+            retry_after_seconds = _retry_after_seconds(exc)
             error = LlmProviderError(
                 f"provider HTTP {exc.code} ({code})",
                 code=code,
@@ -794,10 +827,20 @@ def _urlopen_with_retries(
                 )
             )
         if attempt + 1 < attempts:
-            delay_seconds = min(
+            base_delay_seconds = min(
                 retry_max_delay_seconds,
                 retry_base_delay_seconds * (2**attempt),
             )
+            delay_seconds = min(
+                retry_max_delay_seconds,
+                base_delay_seconds
+                * random.uniform(1 - retry_jitter_ratio, 1 + retry_jitter_ratio),
+            )
+            if retry_after_seconds is not None:
+                delay_seconds = min(
+                    retry_max_delay_seconds,
+                    max(delay_seconds, retry_after_seconds),
+                )
             events.append(
                 LlmRuntimeEvent(
                     type="provider.retry_scheduled",
@@ -807,6 +850,7 @@ def _urlopen_with_retries(
                         "attempt": attempt_number,
                         "next_attempt": attempt_number + 1,
                         "delay_ms": int(delay_seconds * 1000),
+                        "retry_after_honored": retry_after_seconds is not None,
                         "reason": last_error.code if last_error else "provider_error",
                     },
                 )
@@ -815,6 +859,20 @@ def _urlopen_with_retries(
     assert last_error is not None
     last_error.runtime_events = tuple(events)
     raise last_error
+
+
+def _retry_after_seconds(error: urllib.error.HTTPError) -> float | None:
+    """Return a bounded-compatible numeric Retry-After hint when supplied."""
+
+    headers = getattr(error, "headers", None)
+    raw = headers.get("Retry-After") if headers is not None else None
+    if raw is None:
+        return None
+    try:
+        value = float(str(raw).strip())
+    except ValueError:
+        return None
+    return max(0.0, value)
 
 
 def _classify_http_error(status_code: int, body: str) -> tuple[str, bool]:

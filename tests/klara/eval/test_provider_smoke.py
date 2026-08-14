@@ -5,7 +5,12 @@ from pathlib import Path
 
 from klara.core.messages import ModelResponse
 from klara.core.tools import ToolCall
-from klara.eval.provider_smoke import PROBE_NAME, PROBE_NONCE, evaluate_provider_smoke
+from klara.eval.provider_smoke import (
+    PROBE_NAME,
+    PROBE_NONCE,
+    evaluate_provider_smoke,
+    render_provider_smoke_markdown,
+)
 
 
 def test_provider_smoke_requires_exact_models_tools_usage_and_budget(tmp_path: Path) -> None:
@@ -98,3 +103,26 @@ def test_provider_smoke_rejects_fallback_identity(tmp_path: Path) -> None:
 
     assert report["passed"] is False
     assert report["checks"]["all_exact_models_completed"] is False
+
+
+def test_provider_smoke_renderer_uses_requested_bilingual_names() -> None:
+    report = {
+        "passed": True,
+        "request_count": 0,
+        "native_costs": {},
+        "cases": [],
+        "limitations": [],
+    }
+
+    zh = render_provider_smoke_markdown(
+        report, chinese_name="custom.md", english_name="custom.en.md"
+    )
+    en = render_provider_smoke_markdown(
+        report,
+        language="en",
+        chinese_name="custom.md",
+        english_name="custom.en.md",
+    )
+
+    assert "(./custom.en.md)" in zh
+    assert "(./custom.md)" in en

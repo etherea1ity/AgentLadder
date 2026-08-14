@@ -517,6 +517,13 @@ def _load_live_checkpoint(
         observation_key = (observation.case_id, observation.repetition)
         if observation_key in seen:
             raise ValueError("live_checkpoint_duplicate_observation")
+        # A transport/provider failure is not a completed benchmark observation.
+        # Keep the checkpoint resumable so the exact case can be retried without
+        # silently converting a transient outage into a permanent model score.
+        if item.get("provider_error") is not None or _observation_answer_incomplete(
+            observation
+        ):
+            continue
         seen.add(observation_key)
         results.append(
             RuntimeCaseResult(
@@ -533,6 +540,21 @@ def _load_live_checkpoint(
             )
         )
     return results
+
+
+def _observation_answer_incomplete(observation: BehaviorObservation) -> bool:
+    """Allow resume to replace empty or visibly dangling provider output."""
+
+    answer = observation.final_answer.strip()
+    dangling_rule = len(answer) < 4 and (
+        "final" in answer.casefold() or "最终" in answer
+    )
+    return (
+        not answer
+        or answer.endswith((":", "："))
+        or answer.count("```") % 2 == 1
+        or dangling_rule
+    )
 
 
 def _write_live_checkpoint(

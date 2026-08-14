@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import json
 import hashlib
+import hmac
+import json
 import re
 import threading
 from dataclasses import replace
@@ -150,6 +151,8 @@ class RunService:
         self._threads: dict[str, threading.Thread] = {}
         self._task_leases: dict[str, str] = {}
         self._restored_loop_checkpoints: dict[str, KlaraRunCheckpoint] = {}
+        self._restored_run_profile_sha256: dict[str, str] = {}
+        self._restored_checkpoint_errors: dict[str, str] = {}
         self._heartbeat_stops: dict[str, threading.Event] = {}
         self._heartbeat_threads: dict[str, threading.Thread] = {}
         self._terminal_lock = threading.RLock()
@@ -509,6 +512,15 @@ class RunService:
                 models=self.models_config,
                 hooks=(RunProjectionHook(self, run_id, projector),),
             )
+            checkpoint_error = self._restored_checkpoint_errors.get(run_id)
+            if checkpoint_error is not None:
+                raise RuntimeError(checkpoint_error)
+            restored_profile_sha256 = self._restored_run_profile_sha256.get(run_id)
+            if restored_profile_sha256 is not None and not hmac.compare_digest(
+                restored_profile_sha256,
+                harness.run_profile.profile_sha256,
+            ):
+                raise RuntimeError("agent_run_profile_mismatch")
             self._emit(
                 run_id,
                 "run_profile_frozen",
@@ -776,6 +788,8 @@ class RunService:
         self._threads.pop(run_id, None)
         self._task_leases.pop(run_id, None)
         self._restored_loop_checkpoints.pop(run_id, None)
+        self._restored_run_profile_sha256.pop(run_id, None)
+        self._restored_checkpoint_errors.pop(run_id, None)
 
     def _scheduled_retry_is_ready(self, run_id: str) -> bool:
         """Allow a failed scheduler run to restart only after an explicit task retry."""
@@ -820,10 +834,25 @@ class RunService:
             payload = self.task_service.repository.checkpoint_payload(
                 self.task_scope, claim.restored_checkpoint.checkpoint_id
             )
-            if isinstance(payload, dict) and isinstance(payload.get("agent_loop"), dict):
+            try:
+                if not isinstance(payload, dict):
+                    raise ValueError("agent_checkpoint_payload_invalid")
+                if payload.get("schema_version") != "klara.agent-run-checkpoint.v1":
+                    raise ValueError("agent_checkpoint_schema_invalid")
+                profile_sha256 = payload.get("run_profile_sha256")
+                if not isinstance(profile_sha256, str) or not re.fullmatch(
+                    r"[0-9a-f]{64}", profile_sha256
+                ):
+                    raise ValueError("agent_checkpoint_profile_hash_invalid")
+                agent_loop = payload.get("agent_loop")
+                if not isinstance(agent_loop, dict):
+                    raise ValueError("agent_checkpoint_loop_invalid")
+                self._restored_run_profile_sha256[run_id] = profile_sha256
                 self._restored_loop_checkpoints[run_id] = (
-                    KlaraRunCheckpoint.from_private_dict(payload["agent_loop"])
+                    KlaraRunCheckpoint.from_private_dict(agent_loop)
                 )
+            except (KeyError, TypeError, ValueError) as exc:
+                self._restored_checkpoint_errors[run_id] = str(exc)
         return True
 
     def _heartbeat_durable_task(

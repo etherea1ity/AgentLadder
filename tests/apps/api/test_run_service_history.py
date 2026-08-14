@@ -133,6 +133,51 @@ def test_restart_recovers_persisted_queued_run_through_durable_task(tmp_path) ->
     assert tasks.get(scope=scope, task_id=run.run_id).state is TaskState.COMPLETED
 
 
+def test_recovery_fails_closed_when_run_profile_changed(tmp_path) -> None:
+    store = JsonlAppStore(tmp_path / "app")
+    session = store.create_session()
+    user = MessageRecord(
+        message_id="msg_profile_user",
+        session_id=session.session_id,
+        role="user",
+        content="Resume with the original runtime only",
+        status="completed",
+    )
+    assistant = MessageRecord(
+        message_id="msg_profile_assistant",
+        session_id=session.session_id,
+        role="assistant",
+        content="",
+        run_id="run_profile_mismatch",
+        status="running",
+    )
+    run = RunRecord(
+        run_id="run_profile_mismatch",
+        session_id=session.session_id,
+        user_message_id=user.message_id,
+        assistant_message_id=assistant.message_id,
+        status="queued",
+    )
+    store.save_message(user)
+    store.save_message(assistant)
+    store.save_run(run)
+    service = RunService(
+        store=store,
+        bus=SSEBus(),
+        llm_client=FinalLlm(),
+        answer_chunk_delay_ms=0,
+    )
+    service._restored_run_profile_sha256[run.run_id] = "0" * 64
+
+    service._run_thread(run.run_id)
+
+    failed = store.get_run(run.run_id)
+    assert failed is not None and failed.status == "failed"
+    assert failed.error is not None
+    assert failed.error.message == "agent_run_profile_mismatch"
+    assert store.get_message(assistant.message_id).status == "failed"
+
+
 def test_run_service_projects_chat_run_into_durable_task_and_cancellation_wins(tmp_path) -> None:
     store = JsonlAppStore(tmp_path / "app")
     session = store.create_session()

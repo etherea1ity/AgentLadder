@@ -62,3 +62,27 @@ def test_followup_rule_request_adds_transcript_resolution_contract() -> None:
     )
 
     assert "latest explicit user correction" in controller.system_prompt_suffix()
+
+
+def test_dangling_heading_is_not_accepted_as_a_final_answer() -> None:
+    controller = ResponseContractController()
+    controller.on_run_start(user_input="State the final rule.", run_id="run-incomplete")
+
+    decision = controller.before_final_answer(content="Final rule:")
+
+    assert decision.allowed is False
+    assert decision.reason == "incomplete_final_answer"
+    assert "Complete the answer" in decision.feedback
+
+
+def test_followup_rule_rejects_a_fragment_without_the_rule() -> None:
+    controller = ResponseContractController()
+    controller.on_run_start(
+        user_input="继续，只说最终规则。",
+        run_id="run-short-rule",
+    )
+
+    decision = controller.before_final_answer(content="最终")
+
+    assert decision.allowed is False
+    assert decision.reason == "incomplete_final_answer"

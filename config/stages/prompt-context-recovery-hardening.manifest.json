@@ -1,0 +1,59 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "prompt-context-recovery-hardening",
+  "branch": "codex/prompt-context-recovery-hardening",
+  "parent_commit": "47cade80d7f4a71f1452ddde0bb2be23f42f1831",
+  "mode": "local-pre-hku-real-provider",
+  "authorized_at": "2026-08-14T22:30:00+08:00",
+  "objective": "Close durable controller-state, frozen-run-profile, capability-scoped prompt, multilingual context-budget, and memory answer-packing defects before Agent Product Freeze.",
+  "architecture_references": [
+    "https://openai.github.io/openai-agents-python/context/",
+    "https://openai.github.io/openai-agents-python/sessions/",
+    "https://docs.langchain.com/oss/python/langgraph/persistence",
+    "https://docs.langchain.com/oss/python/langgraph/interrupts",
+    "https://docs.mem0.ai/platform/features/graph-memory",
+    "https://docs.letta.com/guides/core-concepts/memory/context-hierarchy"
+  ],
+  "models": {
+    "candidate": "deepseek/deepseek-v4-flash",
+    "independent_judge": "qwen/qwen3.7-plus",
+    "temperature": 0.0,
+    "provider_hidden_reasoning_collected": false
+  },
+  "datasets": {
+    "behavior_fixture": "tests/fixtures/behavior/agent_behavior_cases.v2.json",
+    "locomo_commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+    "locomo_dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "memory_repair_split": "existing first-10-per-conversation replay; diagnostic only",
+    "memory_validation_split": "next hash-ranked questions per conversation; frozen before post-repair live execution"
+  },
+  "budgets": {
+    "maximum_paid_api_usd": 2.0,
+    "maximum_candidate_question_runs": 120,
+    "maximum_judge_pairs": 60,
+    "maximum_agent_turns_per_question": 3,
+    "local_gpu_training": false,
+    "hku_connection": false
+  },
+  "acceptance": {
+    "checkpoint_restores_private_controller_state": true,
+    "restored_run_profile_mismatch_fails_closed": true,
+    "write_control_effects_never_repeat_after_uncertain_outcome": true,
+    "prompt_rules_are_emitted_only_for_visible_capabilities": true,
+    "multilingual_context_budget_is_conservative": true,
+    "latest_corrections_and_summary_provenance_survive_multiple_compactions": true,
+    "cached_behavior_critical_deterministic_rate": 1.0,
+    "normal_behavior_task_success_at_least": 0.95,
+    "p0_strange_response_count": 0,
+    "fresh_memory_agent_f1_drop_vs_same_model_baseline_at_most": 0.03,
+    "fresh_memory_evidence_recall_at_20_at_least": 0.70,
+    "no_human_score_claim_without_blind_human_labels": true,
+    "no_hku_or_model_training_before_agent_product_freeze": true
+  },
+  "exclusions": [
+    "Chapter 11 general-purpose RAG remains deferred by user scope.",
+    "The previously observed LoCoMo 100-question repair split cannot become the new hidden validation split.",
+    "Model-judge output cannot be labeled as blind human review.",
+    "No VPN, SSH, upload, Slurm, or sustained local training is allowed in this stage."
+  ]
+}

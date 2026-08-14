@@ -40,3 +40,17 @@ def test_system_prompt_appends_runtime_context_to_persona() -> None:
     assert prompt.startswith("You are Klara.")
     assert "<runtime_context>" in prompt
     assert "Conversation date: Thursday, June 18, 2026" in prompt
+
+
+def test_runtime_context_only_mentions_tools_available_to_the_model() -> None:
+    prompt = build_runtime_context_prompt(
+        timezone_name="UTC",
+        now=datetime(2026, 6, 18, tzinfo=UTC),
+        capabilities=("memory_search",),
+    )
+
+    assert "Conversation date: Thursday, June 18, 2026" in prompt
+    assert "web_search" not in prompt
+    assert "web_fetch" not in prompt
+    assert "todo_write" not in prompt
+    assert "current_time" not in prompt

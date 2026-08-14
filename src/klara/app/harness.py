@@ -352,6 +352,7 @@ class KlaraHarness:
             persona=self.config.persona_path.read_text(encoding="utf-8"),
             timezone_name=self.config.user_context.timezone,
             now=now,
+            capabilities=self._visible_tool_names(),
         )
 
     def _select_tools(self) -> tuple[Any, ...]:

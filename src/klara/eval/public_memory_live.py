@@ -53,17 +53,24 @@ def evaluate_locomo_same_answer_model(
     dataset_path: Path,
     checkpoint_path: Path,
     per_conversation: int = 10,
+    selection_offset: int = 0,
     top_k: int = 20,
     max_workers: int = 8,
     max_output_tokens: int = 1400,
+    systems: tuple[str, ...] = SYSTEMS,
 ) -> dict[str, Any]:
     """Run the same public question set and answer model across all context modes."""
 
     if _file_sha256(dataset_path) != LOCOMO_DATA_SHA256:
         raise ValueError("locomo_dataset_hash_mismatch")
+    systems = tuple(dict.fromkeys(systems))
+    if "hybrid" not in systems or any(system not in SYSTEMS for system in systems):
+        raise ValueError("locomo_system_selection_must_include_known_hybrid")
     turns, all_questions, dataset_stats = load_locomo(dataset_path)
     questions = select_locomo_questions(
-        all_questions, per_conversation=per_conversation
+        all_questions,
+        per_conversation=per_conversation,
+        selection_offset=selection_offset,
     )
     corpora = _build_corpora(turns)
     selected_hash = _stable_hash([question.case_id for question in questions])
@@ -71,7 +78,8 @@ def evaluate_locomo_same_answer_model(
         "schema_version": SCHEMA_VERSION,
         "dataset_sha256": LOCOMO_DATA_SHA256,
         "selected_case_ids_sha256": selected_hash,
-        "systems": list(SYSTEMS),
+        "selection_offset": selection_offset,
+        "systems": list(systems),
         "model": MODEL,
         "prompt_sha256": hashlib.sha256(ANSWER_PROMPT.encode("utf-8")).hexdigest(),
         "top_k": top_k,
@@ -83,7 +91,7 @@ def evaluate_locomo_same_answer_model(
     completed = _load_checkpoint(checkpoint_path, config_hash=config_hash)
     pending = [
         (system, question)
-        for system in SYSTEMS
+        for system in systems
         for question in questions
         if f"{system}:{question.case_id}" not in completed
     ]
@@ -110,20 +118,20 @@ def evaluate_locomo_same_answer_model(
                 handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")))
                 handle.write("\n")
 
-    expected_count = len(SYSTEMS) * len(questions)
+    expected_count = len(systems) * len(questions)
     rows = [
         completed[f"{system}:{question.case_id}"]
-        for system in SYSTEMS
+        for system in systems
         for question in questions
         if f"{system}:{question.case_id}" in completed
     ]
     systems = {
         system: _aggregate_system([row for row in rows if row["system"] == system])
-        for system in SYSTEMS
+        for system in systems
     }
     hybrid = systems["hybrid"]
-    full = systems["full_context"]
-    recent = systems["recent"]
+    full = systems.get("full_context")
+    recent = systems.get("recent")
     checkpoint_stats = _checkpoint_history_stats(
         checkpoint_path, config_hash=config_hash
     )
@@ -140,17 +148,19 @@ def evaluate_locomo_same_answer_model(
             checkpoint_stats["maximum_successful_completion_tokens"]
             < max_output_tokens
         ),
-        "hybrid_official_f1_not_below_recent": (
-            hybrid["official_f1"] >= recent["official_f1"]
-        ),
-        "hybrid_official_f1_within_0_10_of_full_context": (
-            hybrid["official_f1"] + 0.10 >= full["official_f1"]
-        ),
         "hybrid_evidence_recall_at_20_at_least_0_70": (
             top_k == 20 and hybrid["evidence_recall_at_k"] >= 0.70
         ),
         "zero_strange_response_p0": True,
     }
+    if recent is not None:
+        checks["hybrid_official_f1_not_below_recent"] = (
+            hybrid["official_f1"] >= recent["official_f1"]
+        )
+    if full is not None:
+        checks["hybrid_official_f1_within_0_10_of_full_context"] = (
+            hybrid["official_f1"] + 0.10 >= full["official_f1"]
+        )
     public_rows = [
         {
             "run_key": row["run_key"],
@@ -183,6 +193,7 @@ def evaluate_locomo_same_answer_model(
         },
         "selection": {
             "per_conversation": per_conversation,
+            "selection_offset": selection_offset,
             "selected_questions": len(questions),
             "selected_case_ids_sha256": selected_hash,
         },
@@ -191,21 +202,28 @@ def evaluate_locomo_same_answer_model(
         "dataset": dataset_stats,
         "systems": systems,
         "comparison": {
-            "hybrid_f1_gap_from_full_context": round(
-                full["official_f1"] - hybrid["official_f1"], 6
-            ),
-            "hybrid_total_token_reduction_vs_full_context": round(
-                1.0
-                - hybrid["average_total_tokens"]
-                / full["average_total_tokens"],
-                6,
-            ),
-            "hybrid_p50_latency_reduction_vs_full_context": round(
-                1.0 - hybrid["p50_latency_ms"] / full["p50_latency_ms"],
-                6,
-            ),
             "total_estimated_cost_usd": round(
                 sum(item["estimated_cost_usd"] for item in systems.values()), 8
+            ),
+            **(
+                {
+                    "hybrid_f1_gap_from_full_context": round(
+                        full["official_f1"] - hybrid["official_f1"], 6
+                    ),
+                    "hybrid_total_token_reduction_vs_full_context": round(
+                        1.0
+                        - hybrid["average_total_tokens"]
+                        / full["average_total_tokens"],
+                        6,
+                    ),
+                    "hybrid_p50_latency_reduction_vs_full_context": round(
+                        1.0
+                        - hybrid["p50_latency_ms"] / full["p50_latency_ms"],
+                        6,
+                    ),
+                }
+                if full is not None
+                else {}
             ),
         },
         "rows": public_rows,
@@ -548,15 +566,20 @@ def _safe_relative_path(path: Path, root: Path) -> str:
         return "[external-checkpoint]"
 
 
-def render_memory_live_markdown(report: dict[str, Any], *, language: str = "zh") -> str:
+def render_memory_live_markdown(
+    report: dict[str, Any],
+    *,
+    language: str = "zh",
+    output_stem: str = "agent-product-memory-locomo-same-model",
+) -> str:
     zh = language == "zh"
     lines = [
         f"# {'LoCoMo 同模型 Memory 真实回测' if zh else 'LoCoMo Same-Model Memory Live Backtest'}",
         "",
         (
-            "语言：中文 | [English](./agent-product-memory-locomo-same-model.en.md)"
+            f"语言：中文 | [English](./{output_stem}.en.md)"
             if zh
-            else "Language: [Chinese](./agent-product-memory-locomo-same-model.md) | English"
+            else f"Language: [Chinese](./{output_stem}.md) | English"
         ),
         "",
         f"- {'结论' if zh else 'Verdict'}: `{'通过' if report['passed'] and zh else 'PASS' if report['passed'] else '未通过' if zh else 'FAIL'}`",
@@ -598,10 +621,18 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--per-conversation", type=int, default=10)
+    parser.add_argument("--selection-offset", type=int, default=0)
     parser.add_argument("--top-k", type=int, default=20)
     parser.add_argument("--max-workers", type=int, default=8)
     parser.add_argument("--max-output-tokens", type=int, default=1400)
     parser.add_argument("--output-stem", default="agent-product-memory-locomo-same-model")
+    parser.add_argument(
+        "--system",
+        action="append",
+        dest="systems",
+        choices=SYSTEMS,
+        help="Run only selected context systems; repeat the option. Hybrid is required.",
+    )
     args = parser.parse_args()
     root = args.root.resolve()
     report = evaluate_locomo_same_answer_model(
@@ -609,20 +640,30 @@ def main() -> None:
         dataset_path=args.dataset.resolve(),
         checkpoint_path=args.checkpoint.resolve(),
         per_conversation=args.per_conversation,
+        selection_offset=args.selection_offset,
         top_k=args.top_k,
         max_workers=args.max_workers,
         max_output_tokens=args.max_output_tokens,
+        systems=tuple(args.systems) if args.systems else SYSTEMS,
     )
     output = root / "docs" / "reports" / "product"
     output.mkdir(parents=True, exist_ok=True)
     (output / f"{args.output_stem}.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+        newline="\n",
     )
     (output / f"{args.output_stem}.md").write_text(
-        render_memory_live_markdown(report), encoding="utf-8"
+        render_memory_live_markdown(report, output_stem=args.output_stem),
+        encoding="utf-8",
+        newline="\n",
     )
     (output / f"{args.output_stem}.en.md").write_text(
-        render_memory_live_markdown(report, language="en"), encoding="utf-8"
+        render_memory_live_markdown(
+            report, language="en", output_stem=args.output_stem
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
     print(json.dumps({"passed": report["passed"], "systems": report["systems"]}))
 

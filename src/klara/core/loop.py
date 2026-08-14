@@ -146,6 +146,7 @@ class KlaraRunCheckpoint:
     final_block_signatures: dict[str, int]
     public_activity_updates: tuple[str, ...]
     metrics: dict[str, int | bool]
+    controller_states: dict[str, dict[str, object]] = field(default_factory=dict)
 
     def to_private_dict(self) -> dict[str, object]:
         """Serialize full transcript state for an owner-scoped private store."""
@@ -168,20 +169,27 @@ class KlaraRunCheckpoint:
             "final_block_signatures": dict(self.final_block_signatures),
             "public_activity_updates": list(self.public_activity_updates),
             "metrics": dict(self.metrics),
+            "controller_states": json.loads(
+                json.dumps(self.controller_states, ensure_ascii=False)
+            ),
         }
 
     @classmethod
     def from_private_dict(cls, value: dict[str, object]) -> "KlaraRunCheckpoint":
         """Validate and restore a checkpoint from the private task repository."""
 
-        if value.get("schema_version") != "klara.loop-checkpoint.v1":
+        schema_version = value.get("schema_version")
+        if schema_version not in {
+            "klara.loop-checkpoint.v1",
+            "klara.loop-checkpoint.v2",
+        }:
             raise ValueError("loop_checkpoint_schema_unsupported")
         messages = value.get("messages")
         tool_results = value.get("observed_tool_results")
         if not isinstance(messages, list) or not isinstance(tool_results, list):
             raise ValueError("loop_checkpoint_messages_invalid")
         return cls(
-            schema_version="klara.loop-checkpoint.v1",
+            schema_version=str(schema_version),
             run_id=str(value["run_id"]),
             model=str(value["model"]),
             system_prompt_sha256=str(value["system_prompt_sha256"]),
@@ -208,6 +216,11 @@ class KlaraRunCheckpoint:
                 str(key): item
                 for key, item in dict(value.get("metrics", {})).items()
                 if isinstance(item, (int, bool))
+            },
+            controller_states={
+                str(key): dict(state)
+                for key, state in dict(value.get("controller_states", {})).items()
+                if isinstance(state, dict)
             },
         )
 
@@ -401,7 +414,7 @@ class KlaraLoop:
             failures.
         """
 
-        expected_prompt_hash = hashlib.sha256(
+        expected_base_prompt_hash = hashlib.sha256(
             self.system_prompt.encode("utf-8")
         ).hexdigest()
         resumed = checkpoint is not None
@@ -412,7 +425,10 @@ class KlaraLoop:
                 raise ValueError("loop_checkpoint_user_input_mismatch")
             if checkpoint.model != self.model:
                 raise ValueError("loop_checkpoint_model_mismatch")
-            if checkpoint.system_prompt_sha256 != expected_prompt_hash:
+            if (
+                checkpoint.schema_version == "klara.loop-checkpoint.v1"
+                and checkpoint.system_prompt_sha256 != expected_base_prompt_hash
+            ):
                 raise ValueError("loop_checkpoint_system_prompt_mismatch")
             active_run_id = checkpoint.run_id
             sequencer = EventSequencer(checkpoint.next_event_sequence)
@@ -445,12 +461,31 @@ class KlaraLoop:
         for controller in self.controllers:
             controller.on_run_start(user_input=user_input, run_id=active_run_id)
         if resumed:
+            restored_controller_keys: set[str] = set()
+            for index, controller in enumerate(self.controllers):
+                key = _controller_checkpoint_key(controller, index)
+                state = checkpoint.controller_states.get(key)
+                restore = getattr(controller, "restore_private_checkpoint", None)
+                if state is None or not callable(restore):
+                    continue
+                restore(state)
+                restored_controller_keys.add(key)
             for result in observed_tool_results:
-                for controller in self.controllers:
+                for index, controller in enumerate(self.controllers):
+                    if _controller_checkpoint_key(controller, index) in restored_controller_keys:
+                        continue
                     controller.on_tool_results(results=(result,))
             # Reconstructed controller events describe already-persisted history.
             for controller in self.controllers:
                 controller.drain_events()
+            if checkpoint.schema_version != "klara.loop-checkpoint.v1":
+                expected_prompt_hash = hashlib.sha256(
+                    self._system_prompt_for_turn(public_activity_updates).encode(
+                        "utf-8"
+                    )
+                ).hexdigest()
+                if checkpoint.system_prompt_sha256 != expected_prompt_hash:
+                    raise ValueError("loop_checkpoint_system_prompt_mismatch")
             self._emit(
                 sequencer,
                 active_run_id,
@@ -459,6 +494,7 @@ class KlaraLoop:
                     "model": self.model,
                     "next_turn_index": first_turn_index,
                     "checkpoint_schema": checkpoint.schema_version,
+                    "restored_controller_state_count": len(restored_controller_keys),
                 },
             )
         else:
@@ -845,11 +881,11 @@ class KlaraLoop:
             return
         sink(
             KlaraRunCheckpoint(
-                schema_version="klara.loop-checkpoint.v1",
+                schema_version="klara.loop-checkpoint.v2",
                 run_id=run_id,
                 model=self.model,
                 system_prompt_sha256=hashlib.sha256(
-                    self.system_prompt.encode("utf-8")
+                    self._system_prompt_for_turn(public_activity_updates).encode("utf-8")
                 ).hexdigest(),
                 user_input=user_input,
                 messages=tuple(messages),
@@ -861,6 +897,7 @@ class KlaraLoop:
                 final_block_signatures=dict(final_block_signatures),
                 public_activity_updates=tuple(public_activity_updates),
                 metrics=run_metrics.to_checkpoint(),
+                controller_states=_controller_checkpoint_states(self.controllers),
             )
         )
 
@@ -2016,6 +2053,34 @@ def _int_token(value: object) -> int:
 
     parsed = _int_or_none(value)
     return parsed if parsed is not None else 0
+
+
+def _controller_checkpoint_key(controller: LoopController, index: int) -> str:
+    """Return a stable private-state key without requiring product imports."""
+
+    controller_type = type(controller)
+    return f"{controller_type.__module__}.{controller_type.__qualname__}#{index}"
+
+
+def _controller_checkpoint_states(
+    controllers: tuple[LoopController, ...],
+) -> dict[str, dict[str, object]]:
+    """Collect optional JSON-safe controller state at the same loop boundary."""
+
+    states: dict[str, dict[str, object]] = {}
+    for index, controller in enumerate(controllers):
+        export = getattr(controller, "private_checkpoint", None)
+        if not callable(export):
+            continue
+        state = export()
+        if not isinstance(state, dict):
+            raise ValueError("loop_controller_checkpoint_must_be_object")
+        try:
+            serialized = json.dumps(state, ensure_ascii=False, sort_keys=True)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("loop_controller_checkpoint_not_json_safe") from exc
+        states[_controller_checkpoint_key(controller, index)] = json.loads(serialized)
+    return states
 
 
 def _checkpoint_message(message: KlaraMessage) -> dict[str, object]:

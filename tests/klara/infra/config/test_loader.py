@@ -75,6 +75,7 @@ def test_load_runtime_config_reads_loop_policy() -> None:
     assert runtime.provider_recovery_policy.retry_attempts == 3
     assert runtime.provider_recovery_policy.retry_base_delay_seconds == 0.5
     assert runtime.provider_recovery_policy.retry_max_delay_seconds == 8.0
+    assert runtime.provider_recovery_policy.retry_jitter_ratio == 0.2
     profile = runtime.profile()
     assert profile.id == "agent"
     assert profile.required_model_capabilities == ("tools",)
@@ -142,6 +143,7 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
                 "retry_attempts = 2",
                 "retry_base_delay_seconds = 0.25",
                 "retry_max_delay_seconds = 3.0",
+                "retry_jitter_ratio = 0.1",
             ]
         ),
         encoding="utf-8",
@@ -158,6 +160,7 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
             "KLARA_PROVIDER_RETRY_ATTEMPTS": "4",
             "KLARA_PROVIDER_RETRY_BASE_DELAY_SECONDS": "0.75",
             "KLARA_PROVIDER_RETRY_MAX_DELAY_SECONDS": "6.0",
+            "KLARA_PROVIDER_RETRY_JITTER_RATIO": "0.4",
         },
     )
 
@@ -169,6 +172,7 @@ def test_load_runtime_config_env_overrides_toml(tmp_path) -> None:
     assert runtime.provider_recovery_policy.retry_attempts == 4
     assert runtime.provider_recovery_policy.retry_base_delay_seconds == 0.75
     assert runtime.provider_recovery_policy.retry_max_delay_seconds == 6.0
+    assert runtime.provider_recovery_policy.retry_jitter_ratio == 0.4
 
 
 def test_get_env_secret_can_read_one_key_from_dotenv_without_exporting_all(tmp_path, monkeypatch) -> None:

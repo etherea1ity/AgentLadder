@@ -49,11 +49,12 @@ from klara.memory import SentenceTransformerEmbeddingProvider
 from klara.tools.registry import ToolRegistry
 
 
-SCHEMA_VERSION = "klara.locomo-memory-agent.v1"
+SCHEMA_VERSION = "klara.locomo-memory-agent.v2"
 BENCHMARK_INSTRUCTION = (
     "This question concerns the user's durable conversation history. Use the "
-    "memory_search tool before answering. Search with the question's important "
-    "names, events, and time cues, request exactly 20 results, and use hybrid mode. "
+    "memory_search tool before answering. Put the complete question in query so "
+    "names, events, negations, and time cues are preserved; request exactly 20 "
+    "results, and use hybrid mode. "
     "Keep event dates in the query; do not use at_time, which is only for a "
     "historical snapshot of what memory knew at an exact ISO timestamp. "
     "Then answer only from the returned memories. Return only the concise answer, "
@@ -80,6 +81,7 @@ def evaluate_locomo_memory_agent(
     storage_root: Path,
     baseline_report_path: Path,
     per_conversation: int = 10,
+    selection_offset: int = 0,
     top_k: int = 20,
     max_workers: int = 8,
     max_output_tokens: int = 1400,
@@ -93,7 +95,9 @@ def evaluate_locomo_memory_agent(
         raise ValueError("memory_agent_frozen_top_k_must_be_20")
     turns, all_questions, dataset_stats = load_locomo(dataset_path)
     questions = select_locomo_questions(
-        all_questions, per_conversation=per_conversation
+        all_questions,
+        per_conversation=per_conversation,
+        selection_offset=selection_offset,
     )
     selected_hash = _stable_hash([question.case_id for question in questions])
     baseline = json.loads(baseline_report_path.read_text(encoding="utf-8"))
@@ -102,6 +106,7 @@ def evaluate_locomo_memory_agent(
         "schema_version": SCHEMA_VERSION,
         "dataset_sha256": LOCOMO_DATA_SHA256,
         "selected_case_ids_sha256": selected_hash,
+        "selection_offset": selection_offset,
         "model": MODEL,
         "instruction_sha256": hashlib.sha256(
             BENCHMARK_INSTRUCTION.encode("utf-8")
@@ -201,6 +206,7 @@ def evaluate_locomo_memory_agent(
         },
         "selection": {
             "per_conversation": per_conversation,
+            "selection_offset": selection_offset,
             "selected_questions": len(questions),
             "selected_case_ids_sha256": selected_hash,
         },
@@ -618,7 +624,12 @@ def _live_client(root: Path, *, max_output_tokens: int) -> OpenAICompatibleLlmCl
     )
 
 
-def render_markdown(report: dict[str, Any], *, language: str = "zh") -> str:
+def render_markdown(
+    report: dict[str, Any],
+    *,
+    language: str = "zh",
+    output_stem: str = "memory-architecture-agent-live",
+) -> str:
     zh = language == "zh"
     title = "# Memory Agent 架构实测" if zh else "# Memory Agent Architecture Evaluation"
     agent = report["agent"]
@@ -627,9 +638,9 @@ def render_markdown(report: dict[str, Any], *, language: str = "zh") -> str:
         title,
         "",
         (
-            "语言：中文 | [English](./memory-architecture-agent-live.en.md)"
+            f"语言：中文 | [English](./{output_stem}.en.md)"
             if zh
-            else "Language: [Chinese](./memory-architecture-agent-live.md) | English"
+            else f"Language: [Chinese](./{output_stem}.md) | English"
         ),
         "",
         ("## 结论" if zh else "## Result"),
@@ -673,6 +684,7 @@ def main() -> None:
         default=Path("docs/reports/product/agent-product-memory-locomo-same-model.json"),
     )
     parser.add_argument("--per-conversation", type=int, default=10)
+    parser.add_argument("--selection-offset", type=int, default=0)
     parser.add_argument("--top-k", type=int, default=20)
     parser.add_argument("--max-workers", type=int, default=8)
     parser.add_argument("--max-output-tokens", type=int, default=1400)
@@ -680,6 +692,7 @@ def main() -> None:
         "--embedding-model",
         default="sentence-transformers/all-MiniLM-L6-v2",
     )
+    parser.add_argument("--output-stem", default="memory-architecture-agent-live")
     args = parser.parse_args()
     root = args.root.resolve()
     baseline = args.baseline_report
@@ -692,6 +705,7 @@ def main() -> None:
         storage_root=args.storage_root.resolve(),
         baseline_report_path=baseline.resolve(),
         per_conversation=args.per_conversation,
+        selection_offset=args.selection_offset,
         top_k=args.top_k,
         max_workers=args.max_workers,
         max_output_tokens=args.max_output_tokens,
@@ -699,17 +713,19 @@ def main() -> None:
     )
     output = root / "docs" / "reports" / "product"
     output.mkdir(parents=True, exist_ok=True)
-    stem = "memory-architecture-agent-live"
+    stem = args.output_stem
     (output / f"{stem}.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2),
         encoding="utf-8",
         newline="\n",
     )
     (output / f"{stem}.md").write_text(
-        render_markdown(report), encoding="utf-8", newline="\n"
+        render_markdown(report, output_stem=stem), encoding="utf-8", newline="\n"
     )
     (output / f"{stem}.en.md").write_text(
-        render_markdown(report, language="en"), encoding="utf-8", newline="\n"
+        render_markdown(report, language="en", output_stem=stem),
+        encoding="utf-8",
+        newline="\n",
     )
     print(json.dumps({"passed": report["passed"], "agent": report["agent"]}))
 

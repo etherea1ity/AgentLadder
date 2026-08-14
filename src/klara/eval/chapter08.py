@@ -123,6 +123,7 @@ def evaluate_chapter08(root: Path) -> dict[str, Any]:
             attempts=2,
             retry_base_delay_seconds=0.01,
             retry_max_delay_seconds=0.02,
+            retry_jitter_ratio=0,
         )
 
     route_calls: list[str] = []
