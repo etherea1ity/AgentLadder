@@ -111,7 +111,15 @@ class MemorySearchTool(BaseTool):
                     "enum": ["hybrid", "lexical", "vector", "recent", "full_context", "semantic_recency", "mem0_compatible"],
                     "description": "Use semantic_recency for the local vector-plus-recency ablation. mem0_compatible is a deprecated compatibility alias and is not official Mem0.",
                 },
-                "at_time": {"type": "string"},
+                "at_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": (
+                        "Optional exact ISO-8601 snapshot time for questions about what "
+                        "memory knew then. Do not use it merely because the event being "
+                        "searched has a date; keep event dates in query instead."
+                    ),
+                },
                 "limit": {"type": "integer", "minimum": 1, "maximum": 20},
             },
             "required": ["query"],
@@ -144,7 +152,7 @@ class MemorySearchTool(BaseTool):
             "schema_version": "klara.memory-search.v1",
             "query": query,
             "result_count": len(hits),
-            "results": [hit.to_owner_dict() for hit in hits],
+            "results": [hit.to_model_dict() for hit in hits],
         }
         return ToolResult(
             tool_call_id=self.call_id(arguments),

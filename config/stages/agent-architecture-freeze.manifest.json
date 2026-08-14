@@ -1,0 +1,32 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-architecture-freeze",
+  "branch": "codex/memory-architecture-benchmarks",
+  "mode": "local-runtime-architecture-freeze",
+  "reference_architectures": [
+    "OpenAI Agents SDK loop, tools, handoffs, guardrails, sessions and trace",
+    "LangGraph checkpoint, resume, idempotent task and cross-thread store contracts",
+    "AutoGen serializable agent/team state",
+    "Mem0 single-pass ADD-only formation and hybrid/entity/temporal retrieval",
+    "OpenHands separation of UI, Agent Server, sandbox and automation"
+  ],
+  "acceptance": {
+    "all_remote_branches_executed_in_isolated_worktrees": true,
+    "all_latest_chapter_gates_pass": true,
+    "full_python_and_web_suites_pass": true,
+    "production_web_build_passes": true,
+    "step_checkpoint_and_controller_rehydration": true,
+    "durable_mutating_tool_receipts": true,
+    "owner_namespaced_memory": true,
+    "learned_embedding_boundary": true,
+    "single_pass_add_only_memory_formation": true,
+    "no_live_benchmark_before_architecture_pass": true
+  },
+  "exclusions": [
+    "Agent Product Freeze",
+    "live-model quality or GPT parity",
+    "public benchmark pass",
+    "model training",
+    "HKU GPU execution"
+  ]
+}

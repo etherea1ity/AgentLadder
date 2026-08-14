@@ -1,0 +1,88 @@
+{
+  "schema_version": "klara.memory-benchmark-summary.v1",
+  "evaluated_at": "2026-08-14T21:58:59+08:00",
+  "stage": "memory-architecture-benchmarks",
+  "status": "blocked_on_answer_synthesis_quality",
+  "passed": false,
+  "architecture": {
+    "freeze_passed": true,
+    "chapter_gates_passed": 12,
+    "chapter_gates_total": 12,
+    "python_tests_collected": 498,
+    "python_tests_skipped": 2,
+    "web_test_files": 20,
+    "web_tests": 71,
+    "remote_branches_audited": 34,
+    "remote_branches_with_passing_historical_tests": 33,
+    "historical_branches_architecturally_complete_under_current_contract": 0
+  },
+  "live_deepseek_runtime": {
+    "runtime_integration_cases_passed": 3,
+    "runtime_integration_cases_total": 3,
+    "runtime_integration_checks_passed": 14,
+    "runtime_integration_checks_total": 14,
+    "unauthorized_mutations": 0,
+    "authorized_mutations": 1,
+    "tooling_cases_passed": 3,
+    "tooling_cases_total": 3,
+    "p0_strange_responses": 0
+  },
+  "live_deepseek_behavior": {
+    "cases": 11,
+    "repetitions": 41,
+    "deterministic_successes": 40,
+    "deterministic_success_rate": 0.975609756097561,
+    "normal_task_success_rate": 1.0,
+    "critical_deterministic_rate": 0.95,
+    "p0_count": 0,
+    "severe_answer_mismatch_rate": 0.0,
+    "independent_judge_scored": 0,
+    "blind_human_scored": 0,
+    "gate_passed": false,
+    "interpretation": "The real Harness replay is strong but cannot pass the product gate until independent judge, reference, and blind-human labels exist. The only deterministic miss was a semantically correct Chinese refusal rejected by a frozen lexical matcher; the fixture was not edited after observation."
+  },
+  "locomo_memory_agent": {
+    "questions": 100,
+    "completed": 100,
+    "agent_official_f1": 0.390983,
+    "direct_hybrid_same_model_f1": 0.461914,
+    "f1_delta": -0.070931,
+    "maximum_allowed_f1_drop": 0.03,
+    "agent_exact_match": 0.11,
+    "direct_hybrid_same_model_exact_match": 0.25,
+    "agent_evidence_recall_at_20": 0.740176,
+    "direct_hybrid_same_model_evidence_recall_at_20": 0.73402,
+    "memory_search_call_rate": 1.0,
+    "valid_memory_search_arguments_rate": 1.0,
+    "p0_strange_responses": 0,
+    "gate_passed": false,
+    "failure_boundary": "retrieval and tool protocol pass; answer synthesis through the general agent prompt remains below the same-model direct QA baseline"
+  },
+  "mem0": {
+    "official_score_claimed": false,
+    "status": "blocked_upstream_runtime_defect",
+    "official_benchmark_commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
+    "defect": "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline",
+    "decision": "No score is reported until a provenance-preserving official execution is reproducible."
+  },
+  "fixed_architecture_defects": [
+    "owner-scoped composite memory primary keys prevent cross-tenant overwrite",
+    "memory requests no longer enter Web Research routing",
+    "wrapped untrusted JSON evidence is decoded for bounded scoring",
+    "learned dense and sparse character-IDF retrieval use reciprocal-rank fusion",
+    "durable runs checkpoint private transcripts and rehydrate controller state",
+    "write/control tool effects use private replay receipts and never repeat an uncertain mutation"
+  ],
+  "release_gates": {
+    "agent_architecture_freeze": true,
+    "agent_product_freeze": false,
+    "hku_model_training_authorized": false
+  },
+  "next_required_work": [
+    "repair memory answer synthesis without changing the frozen repair-replay fixture",
+    "evaluate on a fresh hidden LoCoMo split",
+    "import independent judge, reference, and blind-human labels for behavior replay",
+    "reproduce Mem0 only from a corrected provenance-pinned official runtime",
+    "rerun Agent Product Freeze before any HKU training"
+  ]
+}

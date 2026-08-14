@@ -16,7 +16,13 @@ from klara.context.controller import ContextController
 from klara.context.policy import ContextPolicy
 from klara.context.response_contract import ResponseContractController
 from klara.core.hooks import HookManager, JsonlTraceHook, KlaraHook
-from klara.core.loop import KlaraLoop, KlaraRunResult, LlmClient, LoopController
+from klara.core.loop import (
+    KlaraLoop,
+    KlaraRunCheckpoint,
+    KlaraRunResult,
+    LlmClient,
+    LoopController,
+)
 from klara.core.messages import KlaraMessage
 from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig
@@ -100,6 +106,9 @@ class KlaraHarnessConfig:
     team_scope: Any | None = None
     team_permission_scope: Any | None = None
     allow_unconfigured_runtime_tools: bool = False
+    durable_task_id: str | None = None
+    durable_task_lease_token: str | None = None
+    memory_embedding_provider: Any | None = None
 
     # Legacy property access stays stable for the Chapter 1 tutorial while the
     # canonical policy is now one immutable object.
@@ -194,7 +203,10 @@ class KlaraHarness:
         self.extra_hooks = tuple(hooks)
         self.controllers = controllers
         self.memory_repository = SQLiteMemoryRepository(self.config.memory_path)
-        self.memory_service = MemoryService(self.memory_repository)
+        self.memory_service = MemoryService(
+            self.memory_repository,
+            embedding_provider=self.config.memory_embedding_provider,
+        )
         self.memory_scope = MemoryScope(
             tenant_id=self.config.user_context.tenant_id,
             user_id=self.config.user_context.user_id,
@@ -284,9 +296,27 @@ class KlaraHarness:
                 EvidenceRuntimeController(web_research),
                 SkillRuntimeController(self.skill_catalog),
             )
+        executor: ToolExecutor
+        if (
+            self.config.task_service is not None
+            and self.config.task_scope is not None
+            and self.config.durable_task_id
+            and self.config.durable_task_lease_token
+        ):
+            from klara.tasks.tool_executor import DurableToolExecutor
+
+            executor = DurableToolExecutor(
+                list(self._selected_tools),
+                task_service=self.config.task_service,
+                scope=self.config.task_scope,
+                task_id=self.config.durable_task_id,
+                lease_token=self.config.durable_task_lease_token,
+            )
+        else:
+            executor = ToolExecutor(list(self._selected_tools))
         return KlaraLoop(
             llm=OutputContractLlmClient(self.llm),
-            tool_executor=ToolExecutor(list(self._selected_tools)),
+            tool_executor=executor,
             hooks=hooks,
             policy=self.config.loop_policy,
             controllers=controllers,
@@ -302,6 +332,8 @@ class KlaraHarness:
         run_id: str | None = None,
         prior_messages: tuple[KlaraMessage, ...] = (),
         now: datetime | None = None,
+        checkpoint: KlaraRunCheckpoint | None = None,
+        checkpoint_sink: Any | None = None,
     ) -> KlaraRunResult:
         """Execute one run through the frozen assembly profile."""
 
@@ -309,6 +341,8 @@ class KlaraHarness:
             user_input,
             run_id=run_id,
             prior_messages=prior_messages,
+            checkpoint=checkpoint,
+            checkpoint_sink=checkpoint_sink,
         )
 
     def system_prompt(self, *, now: datetime | None = None) -> str:

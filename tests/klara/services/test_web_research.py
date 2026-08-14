@@ -122,6 +122,18 @@ def test_owner_memory_preference_does_not_treat_release_report_as_web_research()
     assert controller.state.active is False
 
 
+def test_explicit_memory_search_instruction_never_activates_web_gate() -> None:
+    controller = WebResearchController(available_tools=("memory_search",))
+
+    controller.on_run_start(
+        user_input="Use memory_search to search durable conversation history.",
+        run_id="run-local-memory-search",
+    )
+
+    assert controller.state.active is False
+    assert controller.before_final_answer(content="answer").allowed
+
+
 def test_public_schedule_still_requires_web_when_only_local_schedule_tool_exists() -> None:
     controller = WebResearchController(available_tools=("schedule_list",))
 

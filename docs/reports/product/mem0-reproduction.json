@@ -1,0 +1,10 @@
+{
+  "schema_version": "klara.mem0-reproduction.v1",
+  "status": "blocked_upstream_runtime_defect",
+  "score_claimed": false,
+  "official_benchmark_commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
+  "official_sdk_commit": "ef6f51d97710a79efaae2af6806c9d060716584a",
+  "defect": "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline",
+  "decision": "Do not invent a Mem0 score or label a compatibility adapter as byte-identical official execution.",
+  "next_reproducible_path": "Pin a corrected upstream image or vendor the exact deleted implementation with provenance, then run the identical LoCoMo subset, answer model, generation budget, and scorer."
+}

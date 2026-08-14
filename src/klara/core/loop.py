@@ -128,6 +128,90 @@ class KlaraRunResult:
     hook_failures: tuple[tuple[str, str], ...] = field(default_factory=tuple)
 
 
+@dataclass(frozen=True)
+class KlaraRunCheckpoint:
+    """Private serializable loop state saved only at safe step boundaries."""
+
+    schema_version: str
+    run_id: str
+    model: str
+    system_prompt_sha256: str
+    user_input: str
+    messages: tuple[KlaraMessage, ...]
+    observed_tool_results: tuple[ToolResult, ...]
+    next_turn_index: int
+    next_event_sequence: int
+    tool_call_count: int
+    tool_call_signatures: dict[str, int]
+    final_block_signatures: dict[str, int]
+    public_activity_updates: tuple[str, ...]
+    metrics: dict[str, int | bool]
+
+    def to_private_dict(self) -> dict[str, object]:
+        """Serialize full transcript state for an owner-scoped private store."""
+
+        return {
+            "schema_version": self.schema_version,
+            "run_id": self.run_id,
+            "model": self.model,
+            "system_prompt_sha256": self.system_prompt_sha256,
+            "user_input": self.user_input,
+            "messages": [_checkpoint_message(message) for message in self.messages],
+            "observed_tool_results": [
+                _checkpoint_tool_result(result)
+                for result in self.observed_tool_results
+            ],
+            "next_turn_index": self.next_turn_index,
+            "next_event_sequence": self.next_event_sequence,
+            "tool_call_count": self.tool_call_count,
+            "tool_call_signatures": dict(self.tool_call_signatures),
+            "final_block_signatures": dict(self.final_block_signatures),
+            "public_activity_updates": list(self.public_activity_updates),
+            "metrics": dict(self.metrics),
+        }
+
+    @classmethod
+    def from_private_dict(cls, value: dict[str, object]) -> "KlaraRunCheckpoint":
+        """Validate and restore a checkpoint from the private task repository."""
+
+        if value.get("schema_version") != "klara.loop-checkpoint.v1":
+            raise ValueError("loop_checkpoint_schema_unsupported")
+        messages = value.get("messages")
+        tool_results = value.get("observed_tool_results")
+        if not isinstance(messages, list) or not isinstance(tool_results, list):
+            raise ValueError("loop_checkpoint_messages_invalid")
+        return cls(
+            schema_version="klara.loop-checkpoint.v1",
+            run_id=str(value["run_id"]),
+            model=str(value["model"]),
+            system_prompt_sha256=str(value["system_prompt_sha256"]),
+            user_input=str(value["user_input"]),
+            messages=tuple(_message_from_checkpoint(item) for item in messages),
+            observed_tool_results=tuple(
+                _tool_result_from_checkpoint(item) for item in tool_results
+            ),
+            next_turn_index=int(value["next_turn_index"]),
+            next_event_sequence=int(value["next_event_sequence"]),
+            tool_call_count=int(value["tool_call_count"]),
+            tool_call_signatures={
+                str(key): int(count)
+                for key, count in dict(value.get("tool_call_signatures", {})).items()
+            },
+            final_block_signatures={
+                str(key): int(count)
+                for key, count in dict(value.get("final_block_signatures", {})).items()
+            },
+            public_activity_updates=tuple(
+                str(item) for item in value.get("public_activity_updates", [])
+            ),
+            metrics={
+                str(key): item
+                for key, item in dict(value.get("metrics", {})).items()
+                if isinstance(item, (int, bool))
+            },
+        )
+
+
 @dataclass
 class _RunMetrics:
     """Accumulate public run-level metrics from lifecycle events."""
@@ -138,6 +222,31 @@ class _RunMetrics:
     public_completion_tokens: int = 0
     total_tokens: int = 0
     has_reported_tokens: bool = False
+
+    @classmethod
+    def from_checkpoint(cls, value: dict[str, int | bool]) -> "_RunMetrics":
+        """Restore accumulated usage without accepting arbitrary fields."""
+
+        return cls(
+            prompt_tokens=int(value.get("prompt_tokens", 0)),
+            completion_tokens=int(value.get("completion_tokens", 0)),
+            reasoning_tokens=int(value.get("reasoning_tokens", 0)),
+            public_completion_tokens=int(value.get("public_completion_tokens", 0)),
+            total_tokens=int(value.get("total_tokens", 0)),
+            has_reported_tokens=bool(value.get("has_reported_tokens", False)),
+        )
+
+    def to_checkpoint(self) -> dict[str, int | bool]:
+        """Return the exact private usage accumulator for resume."""
+
+        return {
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "reasoning_tokens": self.reasoning_tokens,
+            "public_completion_tokens": self.public_completion_tokens,
+            "total_tokens": self.total_tokens,
+            "has_reported_tokens": self.has_reported_tokens,
+        }
 
     def add_llm_metrics(self, metrics: dict[str, object]) -> None:
         """Accumulate one LLM metrics payload."""
@@ -277,6 +386,8 @@ class KlaraLoop:
         *,
         run_id: str | None = None,
         prior_messages: tuple[KlaraMessage, ...] = (),
+        checkpoint: KlaraRunCheckpoint | None = None,
+        checkpoint_sink: Callable[[KlaraRunCheckpoint], None] | None = None,
     ) -> KlaraRunResult:
         """Run the loop until final answer, max turns, or unexpected failure.
 
@@ -290,54 +401,115 @@ class KlaraLoop:
             failures.
         """
 
-        # Active run id is the trace join key across all lifecycle events.
-        active_run_id = run_id or str(uuid4())
-        # Sequence numbers are scoped to this run for deterministic replay order.
-        sequencer = EventSequencer()
-        # Messages begin with optional app-provided history, then this user turn.
-        messages: list[KlaraMessage] = [
-            *prior_messages,
-            KlaraMessage(role="user", content=user_input),
-        ]
-        tool_call_count = 0
-        tool_call_signatures: dict[str, int] = {}
-        final_block_signatures: dict[str, int] = {}
-        public_activity_updates: list[str] = []
+        expected_prompt_hash = hashlib.sha256(
+            self.system_prompt.encode("utf-8")
+        ).hexdigest()
+        resumed = checkpoint is not None
+        if checkpoint is not None:
+            if run_id is not None and run_id != checkpoint.run_id:
+                raise ValueError("loop_checkpoint_run_id_mismatch")
+            if checkpoint.user_input != user_input:
+                raise ValueError("loop_checkpoint_user_input_mismatch")
+            if checkpoint.model != self.model:
+                raise ValueError("loop_checkpoint_model_mismatch")
+            if checkpoint.system_prompt_sha256 != expected_prompt_hash:
+                raise ValueError("loop_checkpoint_system_prompt_mismatch")
+            active_run_id = checkpoint.run_id
+            sequencer = EventSequencer(checkpoint.next_event_sequence)
+            messages = list(checkpoint.messages)
+            tool_call_count = checkpoint.tool_call_count
+            tool_call_signatures = dict(checkpoint.tool_call_signatures)
+            final_block_signatures = dict(checkpoint.final_block_signatures)
+            public_activity_updates = list(checkpoint.public_activity_updates)
+            observed_tool_results = list(checkpoint.observed_tool_results)
+            run_metrics = _RunMetrics.from_checkpoint(checkpoint.metrics)
+            first_turn_index = checkpoint.next_turn_index
+        else:
+            # Active run id is the trace join key across all lifecycle events.
+            active_run_id = run_id or str(uuid4())
+            # Sequence numbers are scoped to this run for deterministic replay order.
+            sequencer = EventSequencer()
+            # Messages begin with optional app-provided history, then this user turn.
+            messages = [
+                *prior_messages,
+                KlaraMessage(role="user", content=user_input),
+            ]
+            tool_call_count = 0
+            tool_call_signatures = {}
+            final_block_signatures = {}
+            public_activity_updates = []
+            observed_tool_results = []
+            run_metrics = _RunMetrics()
+            first_turn_index = 1
         run_started = perf_counter()
-        run_metrics = _RunMetrics()
-        self._emit(sequencer, active_run_id, EventKind.RUN_STARTED, {"model": self.model})
         for controller in self.controllers:
             controller.on_run_start(user_input=user_input, run_id=active_run_id)
-        self._emit_controller_events(sequencer, active_run_id)
-        self._emit(
-            sequencer,
-            active_run_id,
-            EventKind.USER_PROMPT_SUBMIT_STARTED,
-            {"input_length": len(user_input)},
-        )
-        user_prompt_decision = self.hooks.user_prompt_submit(
-            UserPromptSubmitContext(run_id=active_run_id, user_input=user_input)
-        )
-        self._emit(
-            sequencer,
-            active_run_id,
-            EventKind.USER_PROMPT_SUBMIT_COMPLETED,
-            _decision_payload(user_prompt_decision),
-        )
+        if resumed:
+            for result in observed_tool_results:
+                for controller in self.controllers:
+                    controller.on_tool_results(results=(result,))
+            # Reconstructed controller events describe already-persisted history.
+            for controller in self.controllers:
+                controller.drain_events()
+            self._emit(
+                sequencer,
+                active_run_id,
+                EventKind.RUN_RESUMED,
+                {
+                    "model": self.model,
+                    "next_turn_index": first_turn_index,
+                    "checkpoint_schema": checkpoint.schema_version,
+                },
+            )
+        else:
+            self._emit(
+                sequencer, active_run_id, EventKind.RUN_STARTED, {"model": self.model}
+            )
+            self._emit_controller_events(sequencer, active_run_id)
+            self._emit(
+                sequencer,
+                active_run_id,
+                EventKind.USER_PROMPT_SUBMIT_STARTED,
+                {"input_length": len(user_input)},
+            )
+            user_prompt_decision = self.hooks.user_prompt_submit(
+                UserPromptSubmitContext(run_id=active_run_id, user_input=user_input)
+            )
+            self._emit(
+                sequencer,
+                active_run_id,
+                EventKind.USER_PROMPT_SUBMIT_COMPLETED,
+                _decision_payload(user_prompt_decision),
+            )
         try:
             # Budget imported history before the first model call. Keeping this
             # inside the run boundary also traces controller or hook failures.
-            messages = self._prepare_messages(
-                sequencer,
-                active_run_id,
-                messages,
-                turn_index=1,
-                phase="initial_context",
-            )
-            self._emit_controller_events(sequencer, active_run_id)
+            if not resumed:
+                messages = self._prepare_messages(
+                    sequencer,
+                    active_run_id,
+                    messages,
+                    turn_index=1,
+                    phase="initial_context",
+                )
+                self._emit_controller_events(sequencer, active_run_id)
+                self._persist_checkpoint(
+                    checkpoint_sink,
+                    sequencer=sequencer,
+                    run_id=active_run_id,
+                    user_input=user_input,
+                    messages=messages,
+                    observed_tool_results=observed_tool_results,
+                    next_turn_index=1,
+                    tool_call_count=tool_call_count,
+                    tool_call_signatures=tool_call_signatures,
+                    final_block_signatures=final_block_signatures,
+                    public_activity_updates=public_activity_updates,
+                    run_metrics=run_metrics,
+                )
 
             # Iterate through bounded turns so a model cannot request tools forever.
-            for turn_index in range(1, self.policy.max_turns + 1):
+            for turn_index in range(first_turn_index, self.policy.max_turns + 1):
                 self._emit(sequencer, active_run_id, EventKind.TURN_STARTED, {"turn_index": turn_index})
                 model_tools = _model_visible_tool_specs(self.tool_executor.specs)
                 # Ask the injected model using only the prompt, transcript, and specs.
@@ -483,6 +655,20 @@ class KlaraLoop:
                             EventKind.PREPARE_NEXT_TURN_COMPLETED,
                             {"turn_index": turn_index, "message_count": len(messages)},
                         )
+                        self._persist_checkpoint(
+                            checkpoint_sink,
+                            sequencer=sequencer,
+                            run_id=active_run_id,
+                            user_input=user_input,
+                            messages=messages,
+                            observed_tool_results=observed_tool_results,
+                            next_turn_index=turn_index + 1,
+                            tool_call_count=tool_call_count,
+                            tool_call_signatures=tool_call_signatures,
+                            final_block_signatures=final_block_signatures,
+                            public_activity_updates=public_activity_updates,
+                            run_metrics=run_metrics,
+                        )
                         continue
                     if self.controllers:
                         self._emit(
@@ -555,6 +741,7 @@ class KlaraLoop:
                 )
                 for controller in self.controllers:
                     controller.on_tool_results(results=tool_results)
+                observed_tool_results.extend(tool_results)
                 self._emit_controller_events(sequencer, active_run_id)
                 tool_call_count += len(prepared_calls.external_calls)
                 for call in prepared_calls.external_calls:
@@ -594,6 +781,20 @@ class KlaraLoop:
                     {"turn_index": turn_index, "message_count": len(messages)},
                 )
                 self._emit(sequencer, active_run_id, EventKind.TURN_COMPLETED, {"turn_index": turn_index})
+                self._persist_checkpoint(
+                    checkpoint_sink,
+                    sequencer=sequencer,
+                    run_id=active_run_id,
+                    user_input=user_input,
+                    messages=messages,
+                    observed_tool_results=observed_tool_results,
+                    next_turn_index=turn_index + 1,
+                    tool_call_count=tool_call_count,
+                    tool_call_signatures=tool_call_signatures,
+                    final_block_signatures=final_block_signatures,
+                    public_activity_updates=public_activity_updates,
+                    run_metrics=run_metrics,
+                )
 
             # At max turns, stop exposing tools and ask for one final answer.
             return self._finalize_after_max_turns(
@@ -621,6 +822,47 @@ class KlaraLoop:
                 failure_payload,
             )
             raise
+
+    def _persist_checkpoint(
+        self,
+        sink: Callable[[KlaraRunCheckpoint], None] | None,
+        *,
+        sequencer: EventSequencer,
+        run_id: str,
+        user_input: str,
+        messages: list[KlaraMessage],
+        observed_tool_results: list[ToolResult],
+        next_turn_index: int,
+        tool_call_count: int,
+        tool_call_signatures: dict[str, int],
+        final_block_signatures: dict[str, int],
+        public_activity_updates: list[str],
+        run_metrics: _RunMetrics,
+    ) -> None:
+        """Save replayable private state only after a completed loop boundary."""
+
+        if sink is None:
+            return
+        sink(
+            KlaraRunCheckpoint(
+                schema_version="klara.loop-checkpoint.v1",
+                run_id=run_id,
+                model=self.model,
+                system_prompt_sha256=hashlib.sha256(
+                    self.system_prompt.encode("utf-8")
+                ).hexdigest(),
+                user_input=user_input,
+                messages=tuple(messages),
+                observed_tool_results=tuple(observed_tool_results),
+                next_turn_index=next_turn_index,
+                next_event_sequence=sequencer.next_value,
+                tool_call_count=tool_call_count,
+                tool_call_signatures=dict(tool_call_signatures),
+                final_block_signatures=dict(final_block_signatures),
+                public_activity_updates=tuple(public_activity_updates),
+                metrics=run_metrics.to_checkpoint(),
+            )
+        )
 
     def _complete_model_call(
         self,
@@ -1774,6 +2016,76 @@ def _int_token(value: object) -> int:
 
     parsed = _int_or_none(value)
     return parsed if parsed is not None else 0
+
+
+def _checkpoint_message(message: KlaraMessage) -> dict[str, object]:
+    """Serialize private transcript content including exact tool arguments."""
+
+    return {
+        "role": message.role,
+        "content": message.content,
+        "name": message.name,
+        "tool_call_id": message.tool_call_id,
+        "tool_calls": [
+            {"id": call.id, "name": call.name, "arguments": call.arguments}
+            for call in message.tool_calls
+        ],
+    }
+
+
+def _message_from_checkpoint(value: object) -> KlaraMessage:
+    if not isinstance(value, dict):
+        raise ValueError("loop_checkpoint_message_invalid")
+    calls = value.get("tool_calls", [])
+    if not isinstance(calls, list):
+        raise ValueError("loop_checkpoint_tool_calls_invalid")
+    return KlaraMessage(
+        role=str(value["role"]),  # type: ignore[arg-type]
+        content=str(value.get("content", "")),
+        name=str(value["name"]) if value.get("name") is not None else None,
+        tool_call_id=(
+            str(value["tool_call_id"])
+            if value.get("tool_call_id") is not None
+            else None
+        ),
+        tool_calls=tuple(
+            ToolCall(
+                id=str(item["id"]),
+                name=str(item["name"]),
+                arguments=dict(item.get("arguments", {})),
+            )
+            for item in calls
+            if isinstance(item, dict)
+        ),
+    )
+
+
+def _checkpoint_tool_result(result: ToolResult) -> dict[str, object]:
+    return {
+        "tool_call_id": result.tool_call_id,
+        "name": result.name,
+        "content": result.content,
+        "ok": result.ok,
+        "error": result.error,
+        "public_content": result.public_content,
+    }
+
+
+def _tool_result_from_checkpoint(value: object) -> ToolResult:
+    if not isinstance(value, dict):
+        raise ValueError("loop_checkpoint_tool_result_invalid")
+    return ToolResult(
+        tool_call_id=str(value["tool_call_id"]),
+        name=str(value["name"]),
+        content=str(value.get("content", "")),
+        ok=bool(value.get("ok", True)),
+        error=str(value["error"]) if value.get("error") is not None else None,
+        public_content=(
+            str(value["public_content"])
+            if value.get("public_content") is not None
+            else None
+        ),
+    )
 
 
 def _tool_call_signature(call: ToolCall) -> str:

@@ -301,22 +301,22 @@ class SQLiteTaskRepository:
         idempotency_key: str,
         attempt_id: str,
         created_at: str,
-    ) -> tuple[str, str, str | None, bool]:
+    ) -> tuple[str, str, str | None, dict[str, object] | None, bool]:
         """Atomically reserve an external effect or return its existing receipt."""
 
         with self._lock, self._connection() as connection:
             row = connection.execute(
-                """SELECT attempt_id, status, result_sha256 FROM task_effects
+                """SELECT attempt_id, status, result_sha256, result_payload FROM task_effects
                    WHERE task_id=? AND tenant_id=? AND owner_id=? AND idempotency_key=?""",
                 (task_id, scope.tenant_id, scope.owner_id, idempotency_key),
             ).fetchone()
             if row is not None:
-                return row[0], row[1], row[2], False
+                return row[0], row[1], row[2], json.loads(row[3]) if row[3] else None, False
             connection.execute(
                 """INSERT INTO task_effects
                    (task_id, tenant_id, owner_id, idempotency_key, attempt_id, status,
-                    result_sha256, created_at, committed_at)
-                   VALUES (?, ?, ?, ?, ?, 'reserved', NULL, ?, NULL)""",
+                    result_sha256, result_payload, created_at, committed_at)
+                   VALUES (?, ?, ?, ?, ?, 'reserved', NULL, NULL, ?, NULL)""",
                 (
                     task_id,
                     scope.tenant_id,
@@ -326,7 +326,7 @@ class SQLiteTaskRepository:
                     created_at,
                 ),
             )
-        return attempt_id, "reserved", None, True
+        return attempt_id, "reserved", None, None, True
 
     def commit_effect(
         self,
@@ -336,15 +336,17 @@ class SQLiteTaskRepository:
         idempotency_key: str,
         attempt_id: str,
         result_sha256: str,
+        result_payload: dict[str, object] | None,
         committed_at: str,
     ) -> bool:
         with self._lock, self._connection() as connection:
             cursor = connection.execute(
-                """UPDATE task_effects SET status='committed', result_sha256=?, committed_at=?
+                """UPDATE task_effects SET status='committed', result_sha256=?, result_payload=?, committed_at=?
                    WHERE task_id=? AND tenant_id=? AND owner_id=? AND idempotency_key=?
                    AND attempt_id=? AND status='reserved'""",
                 (
                     result_sha256,
+                    _dump(result_payload) if result_payload is not None else None,
                     committed_at,
                     task_id,
                     scope.tenant_id,
@@ -437,6 +439,7 @@ class SQLiteTaskRepository:
                   attempt_id TEXT NOT NULL,
                   status TEXT NOT NULL,
                   result_sha256 TEXT,
+                  result_payload TEXT,
                   created_at TEXT NOT NULL,
                   committed_at TEXT,
                   PRIMARY KEY(task_id, tenant_id, owner_id, idempotency_key)
@@ -452,6 +455,12 @@ class SQLiteTaskRepository:
                 );
                 """
             )
+            effect_columns = {
+                str(row[1])
+                for row in connection.execute("PRAGMA table_info(task_effects)").fetchall()
+            }
+            if "result_payload" not in effect_columns:
+                connection.execute("ALTER TABLE task_effects ADD COLUMN result_payload TEXT")
             connection.execute(
                 "INSERT OR IGNORE INTO task_schema(version) VALUES (?)",
                 (self.SCHEMA_VERSION,),

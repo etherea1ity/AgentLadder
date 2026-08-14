@@ -1,0 +1,89 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "memory-architecture-benchmarks",
+  "branch": "codex/memory-architecture-benchmarks",
+  "parent_commit": "78e157071c61fc1ed918ab3a4298a1c15627c81e",
+  "mode": "paid-live-agent-and-official-competitor-adapter",
+  "authorized_at": "2026-08-14T00:00:00+08:00",
+  "candidate_model": "deepseek/deepseek-v4-flash",
+  "objective": "Replace the retrieval-only LoCoMo claim with a real KlaraLoop memory-agent score, diagnose architectural failures, and execute the closest reproducible Mem0 comparison without concealing upstream defects.",
+  "sources": {
+    "locomo": {
+      "repository": "https://github.com/snap-research/locomo",
+      "commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+      "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4"
+    },
+    "mem0_benchmarks": {
+      "repository": "https://github.com/mem0ai/memory-benchmarks",
+      "commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
+      "upstream_runtime_defect": "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline"
+    },
+    "mem0_sdk_adapter": {
+      "repository": "https://github.com/mem0ai/mem0",
+      "commit": "ef6f51d97710a79efaae2af6806c9d060716584a",
+      "status": "frozen compatibility adapter; not claimed as byte-identical execution of the broken benchmark Dockerfile"
+    }
+  },
+  "evaluation": {
+    "questions": 100,
+    "per_conversation": 10,
+    "top_k": 20,
+    "answer_model": "deepseek/deepseek-v4-flash",
+    "maximum_generation_tokens": 1400,
+    "temperature": 0.0,
+    "primary_metric": "official LoCoMo deterministic token F1",
+    "secondary_metrics": [
+      "exact match",
+      "evidence Recall@20",
+      "tool selection accuracy",
+      "tool argument validity",
+      "average interaction turns",
+      "P50/P95 latency",
+      "reported tokens",
+      "estimated API cost"
+    ],
+    "systems": [
+      "full_context_direct_baseline",
+      "hybrid_direct_baseline",
+      "klara_loop_memory_agent",
+      "mem0_official_or_frozen_sdk_adapter"
+    ]
+  },
+  "budgets": {
+    "maximum_deepseek_usd": 5.0,
+    "maximum_question_runs": 100,
+    "maximum_agent_turns_per_question": 3,
+    "maximum_concurrency": 8,
+    "local_gpu_training": false,
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "embedding_cache": "shared per benchmark process; every unique memory text encoded once",
+    "dense_sparse_fusion": "reciprocal-rank fusion (k=60) over learned-dense and sparse character-IDF channels"
+  },
+  "acceptance": {
+    "all_agent_cases_execute_through_klara_harness": true,
+    "all_agent_cases_expose_only_memory_search": true,
+    "all_agent_cases_complete_without_provider_or_tool_error": true,
+    "memory_search_call_rate_at_least": 0.98,
+    "valid_memory_search_arguments_at_least": 0.99,
+    "agent_official_f1_not_below_direct_hybrid_by_more_than": 0.03,
+    "agent_evidence_recall_at_20_at_least": 0.70,
+    "zero_strange_response_p0": true,
+    "external_harness_deviations_disclosed": true,
+    "no_mem0_score_claim_without_executed_raw_results": true,
+    "no_model_training_before_agent_product_freeze": true
+  },
+  "expected_artifacts": [
+    "docs/reports/product/memory-architecture-agent-live.json",
+    "docs/reports/product/memory-architecture-agent-live.md",
+    "docs/reports/product/memory-architecture-agent-live.en.md",
+    "docs/reports/product/memory-architecture-failure-analysis.json",
+    "docs/reports/product/memory-architecture-failure-analysis.md",
+    "docs/reports/product/memory-architecture-failure-analysis.en.md",
+    "docs/reports/product/mem0-reproduction.json",
+    "docs/reports/product/mem0-reproduction.md",
+    "docs/reports/product/mem0-reproduction.en.md",
+    "docs/reports/product/memory-benchmark-summary.json",
+    "docs/reports/product/memory-benchmark-summary.md",
+    "docs/reports/product/memory-benchmark-summary.en.md"
+  ]
+}

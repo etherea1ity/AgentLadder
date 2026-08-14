@@ -1,6 +1,14 @@
 """Public long-term-memory contracts."""
 
 from klara.memory.controller import MemoryRuntimeController
+from klara.memory.formation import (
+    ExtractedMemoryFact,
+    LlmMemoryFactExtractor,
+    MemoryFactExtractor,
+    MemoryFormationMode,
+    MemoryFormationResult,
+    MemoryFormationService,
+)
 from klara.memory.models import (
     MemoryCandidate,
     MemoryKind,
@@ -13,11 +21,19 @@ from klara.memory.models import (
 )
 from klara.memory.repository import SQLiteMemoryRepository
 from klara.memory.service import MemoryNotFoundError, MemoryService, MemoryValidationError
+from klara.memory.semantic import EmbeddingProvider, SentenceTransformerEmbeddingProvider
 from klara.memory.tools import memory_tools
 
 __all__ = [
     "MemoryCandidate",
+    "EmbeddingProvider",
+    "ExtractedMemoryFact",
+    "LlmMemoryFactExtractor",
     "MemoryKind",
+    "MemoryFactExtractor",
+    "MemoryFormationMode",
+    "MemoryFormationResult",
+    "MemoryFormationService",
     "MemoryNotFoundError",
     "MemoryProvenance",
     "MemoryRecord",
@@ -29,5 +45,6 @@ __all__ = [
     "MemoryStatus",
     "MemoryValidationError",
     "SQLiteMemoryRepository",
+    "SentenceTransformerEmbeddingProvider",
     "memory_tools",
 ]

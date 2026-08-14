@@ -372,7 +372,7 @@ class DurableTaskService:
         key = idempotency_key.strip()[:240]
         if not key:
             raise TaskTransitionError("task_idempotency_key_required")
-        owner_attempt, status, result_sha256, created = self.repository.reserve_effect(
+        owner_attempt, status, result_sha256, result_payload, created = self.repository.reserve_effect(
             scope=scope,
             task_id=task.task_id,
             idempotency_key=key,
@@ -386,6 +386,7 @@ class DurableTaskService:
             status=status,
             should_execute=created,
             result_sha256=result_sha256,
+            result_payload=result_payload,
         )
 
     def commit_effect(
@@ -396,16 +397,31 @@ class DurableTaskService:
         lease_token: str,
         idempotency_key: str,
         result_sha256: str,
+        result_payload: dict[str, object] | None = None,
     ) -> EffectReservation:
         task, attempt = self._require_lease(scope, task_id, lease_token)
         if not _is_sha256(result_sha256):
             raise TaskTransitionError("task_effect_result_sha256_required")
+        if result_payload is not None:
+            try:
+                encoded = json.dumps(
+                    result_payload,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                )
+            except (TypeError, ValueError) as exc:
+                raise TaskTransitionError("task_effect_payload_not_json") from exc
+            if len(encoded.encode("utf-8")) > 128 * 1024:
+                raise TaskTransitionError("task_effect_payload_too_large")
         committed = self.repository.commit_effect(
             scope=scope,
             task_id=task.task_id,
             idempotency_key=idempotency_key,
             attempt_id=attempt.attempt_id,
             result_sha256=result_sha256.lower(),
+            result_payload=result_payload,
             committed_at=self._now(),
         )
         if not committed:
@@ -425,6 +441,7 @@ class DurableTaskService:
             status="committed",
             should_execute=False,
             result_sha256=result_sha256.lower(),
+            result_payload=result_payload,
         )
 
     def pause(self, *, scope: TaskScope, task_id: str, lease_token: str) -> DurableTask:

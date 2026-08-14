@@ -37,7 +37,7 @@ class SQLiteMemoryRepository:
                 """INSERT INTO memory_records
                    (memory_id, tenant_id, user_id, status, updated_at, payload)
                    VALUES (?, ?, ?, ?, ?, ?)
-                   ON CONFLICT(memory_id) DO UPDATE SET
+                   ON CONFLICT(tenant_id, user_id, memory_id) DO UPDATE SET
                      tenant_id=excluded.tenant_id,
                      user_id=excluded.user_id,
                      status=excluded.status,
@@ -85,7 +85,7 @@ class SQLiteMemoryRepository:
                 """INSERT INTO memory_candidates
                    (candidate_id, tenant_id, user_id, status, created_at, payload)
                    VALUES (?, ?, ?, ?, ?, ?)
-                   ON CONFLICT(candidate_id) DO UPDATE SET
+                   ON CONFLICT(tenant_id, user_id, candidate_id) DO UPDATE SET
                      status=excluded.status, payload=excluded.payload""",
                 (
                     candidate.candidate_id,
@@ -170,33 +170,47 @@ class SQLiteMemoryRepository:
                 """
                 PRAGMA journal_mode=WAL;
                 CREATE TABLE IF NOT EXISTS memory_records (
-                  memory_id TEXT PRIMARY KEY,
+                  memory_id TEXT NOT NULL,
                   tenant_id TEXT NOT NULL,
                   user_id TEXT NOT NULL,
                   status TEXT NOT NULL,
                   updated_at TEXT NOT NULL,
-                  payload TEXT NOT NULL
+                  payload TEXT NOT NULL,
+                  PRIMARY KEY(tenant_id, user_id, memory_id)
                 );
                 CREATE INDEX IF NOT EXISTS idx_memory_owner
                   ON memory_records(tenant_id, user_id, status, updated_at);
                 CREATE TABLE IF NOT EXISTS memory_candidates (
-                  candidate_id TEXT PRIMARY KEY,
+                  candidate_id TEXT NOT NULL,
                   tenant_id TEXT NOT NULL,
                   user_id TEXT NOT NULL,
                   status TEXT NOT NULL,
                   created_at TEXT NOT NULL,
-                  payload TEXT NOT NULL
+                  payload TEXT NOT NULL,
+                  PRIMARY KEY(tenant_id, user_id, candidate_id)
                 );
                 CREATE INDEX IF NOT EXISTS idx_memory_candidate_owner
                   ON memory_candidates(tenant_id, user_id, status, created_at);
                 CREATE TABLE IF NOT EXISTS memory_audit (
-                  audit_id TEXT PRIMARY KEY,
+                  audit_id TEXT NOT NULL,
                   tenant_id TEXT NOT NULL,
                   user_id TEXT NOT NULL,
                   record_id TEXT NOT NULL,
                   occurred_at TEXT NOT NULL,
-                  payload TEXT NOT NULL
+                  payload TEXT NOT NULL,
+                  PRIMARY KEY(tenant_id, user_id, audit_id)
                 );
+                CREATE INDEX IF NOT EXISTS idx_memory_audit_owner
+                  ON memory_audit(tenant_id, user_id, occurred_at);
+                """
+            )
+            _migrate_owner_primary_keys(connection)
+            connection.executescript(
+                """
+                CREATE INDEX IF NOT EXISTS idx_memory_owner
+                  ON memory_records(tenant_id, user_id, status, updated_at);
+                CREATE INDEX IF NOT EXISTS idx_memory_candidate_owner
+                  ON memory_candidates(tenant_id, user_id, status, created_at);
                 CREATE INDEX IF NOT EXISTS idx_memory_audit_owner
                   ON memory_audit(tenant_id, user_id, occurred_at);
                 """
@@ -248,3 +262,68 @@ def _candidate_from_json(payload: str) -> MemoryCandidate:
     value["sensitivity"] = MemorySensitivity(value["sensitivity"])
     value["status"] = CandidateStatus(value["status"])
     return MemoryCandidate(**value)
+
+
+def _migrate_owner_primary_keys(connection: sqlite3.Connection) -> None:
+    """Upgrade legacy global IDs to owner-scoped composite primary keys."""
+
+    migrations = {
+        "memory_records": {
+            "id": "memory_id",
+            "columns": "memory_id, tenant_id, user_id, status, updated_at, payload",
+            "definition": """
+                memory_id TEXT NOT NULL,
+                tenant_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                PRIMARY KEY(tenant_id, user_id, memory_id)
+            """,
+        },
+        "memory_candidates": {
+            "id": "candidate_id",
+            "columns": "candidate_id, tenant_id, user_id, status, created_at, payload",
+            "definition": """
+                candidate_id TEXT NOT NULL,
+                tenant_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                PRIMARY KEY(tenant_id, user_id, candidate_id)
+            """,
+        },
+        "memory_audit": {
+            "id": "audit_id",
+            "columns": "audit_id, tenant_id, user_id, record_id, occurred_at, payload",
+            "definition": """
+                audit_id TEXT NOT NULL,
+                tenant_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                record_id TEXT NOT NULL,
+                occurred_at TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                PRIMARY KEY(tenant_id, user_id, audit_id)
+            """,
+        },
+    }
+    for table, spec in migrations.items():
+        info = connection.execute(f"PRAGMA table_info({table})").fetchall()
+        primary_key = [
+            row[1]
+            for row in sorted(info, key=lambda item: item[5])
+            if row[5]
+        ]
+        expected = ["tenant_id", "user_id", str(spec["id"])]
+        if primary_key == expected:
+            continue
+        temporary = f"{table}_owner_v2"
+        connection.execute(f"DROP TABLE IF EXISTS {temporary}")
+        connection.execute(f"CREATE TABLE {temporary} ({spec['definition']})")
+        connection.execute(
+            f"INSERT INTO {temporary} ({spec['columns']}) "
+            f"SELECT {spec['columns']} FROM {table}"
+        )
+        connection.execute(f"DROP TABLE {table}")
+        connection.execute(f"ALTER TABLE {temporary} RENAME TO {table}")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from klara.memory import (
     MemoryService,
     MemoryStatus,
     SQLiteMemoryRepository,
+    SentenceTransformerEmbeddingProvider,
 )
 
 
@@ -159,3 +161,85 @@ def test_forget_ttl_export_and_exact_duplicate_consolidation(tmp_path: Path) -> 
         expired.memory_id,
     }
     assert all("content" not in event["details"] for event in exported["audit"])
+
+
+def test_repository_primary_key_is_owner_scoped(tmp_path: Path) -> None:
+    repository = SQLiteMemoryRepository(tmp_path / "memory.sqlite3")
+    memory = MemoryService(repository)
+    first_scope = MemoryScope("tenant-a", "user-a")
+    second_scope = MemoryScope("tenant-b", "user-b")
+    first = memory.remember(
+        scope=first_scope,
+        content="first owner fact",
+        kind=MemoryKind.STABLE_FACT,
+        provenance=provenance(),
+    )
+    repository.save_record(
+        replace(first, scope=second_scope, content="second owner fact")
+    )
+
+    assert repository.get_record(first_scope, first.memory_id).content == "first owner fact"
+    assert repository.get_record(second_scope, first.memory_id).content == "second owner fact"
+
+
+def test_learned_embedding_provider_controls_semantic_signal(tmp_path: Path) -> None:
+    class FakeEmbeddings:
+        provider_id = "fixture"
+        model_id = "fixture-embedding"
+        learned = True
+
+        def embed_batch(self, texts):
+            vectors = {
+                "unrelated wording": [1.0, 0.0],
+                "first fact": [0.0, 1.0],
+                "second fact": [1.0, 0.0],
+            }
+            return [vectors[text] for text in texts]
+
+    memory = MemoryService(
+        SQLiteMemoryRepository(tmp_path / "semantic.sqlite3"),
+        embedding_provider=FakeEmbeddings(),
+    )
+    scope = MemoryScope("tenant-a", "user-a")
+    memory.remember(
+        scope=scope,
+        content="first fact",
+        kind=MemoryKind.STABLE_FACT,
+        provenance=provenance(),
+    )
+    second = memory.remember(
+        scope=scope,
+        content="second fact",
+        kind=MemoryKind.STABLE_FACT,
+        provenance=provenance(),
+    )
+
+    assert memory.search(
+        scope=scope, query="unrelated wording", mode="vector", limit=1
+    )[0].record.memory_id == second.memory_id
+
+
+def test_sentence_transformer_provider_caches_unique_texts() -> None:
+    class _Values:
+        def __init__(self, values):
+            self._values = values
+
+        def tolist(self):
+            return self._values
+
+    class _Model:
+        def __init__(self) -> None:
+            self.calls: list[list[str]] = []
+
+        def encode(self, texts, *, convert_to_numpy):
+            assert convert_to_numpy
+            self.calls.append(list(texts))
+            return _Values([[float(len(text)), 1.0] for text in texts])
+
+    provider = SentenceTransformerEmbeddingProvider(model_id="fixture")
+    model = _Model()
+    provider._model = model
+
+    assert provider.embed_batch(["alpha", "beta", "alpha"])[0] == [5.0, 1.0]
+    assert provider.embed_batch(["beta", "gamma"])[1] == [5.0, 1.0]
+    assert model.calls == [["alpha", "beta"], ["gamma"]]

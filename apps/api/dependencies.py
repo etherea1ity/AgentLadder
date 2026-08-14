@@ -14,7 +14,13 @@ from klara.infra.config.loader import load_models_config, load_runtime_config
 from klara.infra.config.models import ModelsConfig, ProviderModel
 from klara.infra.llm.routed_client import RoutedLlmClient
 from klara.infra.llm.openai_compatible import OpenAICompatibleSettings
-from klara.memory import MemoryScope, MemoryService, SQLiteMemoryRepository
+from klara.memory import (
+    MemoryFormationMode,
+    MemoryScope,
+    MemoryService,
+    SentenceTransformerEmbeddingProvider,
+    SQLiteMemoryRepository,
+)
 from klara.permissions import PermissionScope, PermissionService, SQLitePermissionRepository
 from klara.skills import SkillCatalog
 from klara.tasks import DurableTaskService, SQLiteTaskRepository, TaskScope
@@ -105,7 +111,22 @@ _skill_catalog = SkillCatalog.discover(
     allowed_tools=set(_runtime.profile().visible_tools),
 )
 _memory_repository = SQLiteMemoryRepository(_store.root / "memory.sqlite3")
-_memory_service = MemoryService(_memory_repository)
+_memory_embedding_model = os.getenv("KLARA_MEMORY_EMBEDDING_MODEL", "").strip()
+_memory_embedding_provider = (
+    SentenceTransformerEmbeddingProvider(model_id=_memory_embedding_model)
+    if _memory_embedding_model
+    else None
+)
+_memory_service = MemoryService(
+    _memory_repository,
+    embedding_provider=_memory_embedding_provider,
+)
+try:
+    _memory_formation_mode = MemoryFormationMode(
+        os.getenv("KLARA_MEMORY_FORMATION_MODE", "review").strip().lower()
+    )
+except ValueError as exc:
+    raise RuntimeError("KLARA_MEMORY_FORMATION_MODE must be disabled, review, or auto_safe") from exc
 _memory_scope = MemoryScope(
     tenant_id="local-tenant",
     user_id="local-user",
@@ -180,6 +201,8 @@ _run_service = RunService(
     team_service=_team_service,
     team_scope=_team_scope,
     permission_scope=_permission_scope,
+    memory_embedding_provider=_memory_embedding_provider,
+    memory_formation_mode=_memory_formation_mode,
 )
 _scheduler_runner = SchedulerRunner(
     service=_scheduler_service,

@@ -13,6 +13,7 @@ class EventKind(StrEnum):
     """Stable public lifecycle event names emitted by Klara core."""
 
     RUN_STARTED = "run.started"
+    RUN_RESUMED = "run.resumed"
     USER_PROMPT_SUBMIT_STARTED = "user_prompt_submit.started"
     USER_PROMPT_SUBMIT_COMPLETED = "user_prompt_submit.completed"
     TURN_STARTED = "turn.started"
@@ -43,10 +44,12 @@ class EventKind(StrEnum):
 class EventSequencer:
     """Assign monotonic sequence numbers within one Klara run."""
 
-    def __init__(self) -> None:
-        """Create a sequencer whose first emitted value is one."""
+    def __init__(self, start: int = 1) -> None:
+        """Create a sequencer at one or at a persisted resume position."""
 
-        self._next_value = 1
+        if start < 1:
+            raise ValueError("event_sequence_start_must_be_positive")
+        self._next_value = start
 
     def next(self) -> int:
         """Return the next sequence number for a run-local event.
@@ -58,6 +61,12 @@ class EventSequencer:
         value = self._next_value
         self._next_value += 1
         return value
+
+    @property
+    def next_value(self) -> int:
+        """Return the next sequence without consuming it."""
+
+        return self._next_value
 
 
 @dataclass(frozen=True)

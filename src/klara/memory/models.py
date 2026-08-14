@@ -184,6 +184,19 @@ class MemorySearchHit:
             },
         }
 
+    def to_model_dict(self) -> dict[str, Any]:
+        """Return the minimum evidence shape needed by the answering model."""
+
+        return {
+            "memory_id": self.record.memory_id,
+            "content": self.record.content,
+            "kind": self.record.kind.value,
+            "confidence": self.record.confidence,
+            "occurred_at": self.record.valid_from or self.record.created_at,
+            "score": round(self.score, 6),
+            "source_type": self.record.provenance.source_type,
+        }
+
 
 def new_memory_id() -> str:
     return f"mem_{uuid4().hex}"

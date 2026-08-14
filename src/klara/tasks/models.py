@@ -186,9 +186,19 @@ class EffectReservation:
     status: str
     should_execute: bool
     result_sha256: str | None = None
+    # Private replay payload. It is deliberately excluded from public traces.
+    result_payload: dict[str, Any] | None = None
 
     def to_public_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "task_id": self.task_id,
+            "idempotency_key": self.idempotency_key,
+            "attempt_id": self.attempt_id,
+            "status": self.status,
+            "should_execute": self.should_execute,
+            "result_sha256": self.result_sha256,
+            "result_available": self.result_payload is not None,
+        }
 
 
 def new_task_id() -> str:

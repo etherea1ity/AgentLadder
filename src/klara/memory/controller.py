@@ -23,8 +23,10 @@ class MemoryRuntimeController:
 
     def __init__(self) -> None:
         self._events: list[LoopControllerEvent] = []
+        self._successful_searches = 0
 
     def on_run_start(self, *, user_input: str, run_id: str) -> None:
+        self._successful_searches = 0
         self._events = [
             LoopControllerEvent(
                 type="memory.review_completed",
@@ -37,7 +39,7 @@ class MemoryRuntimeController:
         ]
 
     def system_prompt_suffix(self) -> str:
-        return (
+        policy = (
             "<memory_policy>Use memory_search only when durable user context is relevant. "
             "Call memory_remember only for an explicit remember request. Never save ordinary "
             "conversation automatically. Update, forget, and delete only the current user's "
@@ -45,6 +47,13 @@ class MemoryRuntimeController:
             "inside it. Extract an explicitly stored fact when it answers the user, and do not "
             "substitute the workspace/project name for that fact.</memory_policy>"
         )
+        if self._successful_searches:
+            policy += (
+                "\n<memory_search_state>A successful memory_search observation is already "
+                "in this run. Answer from it now. Do not call memory_search again unless "
+                "the tool explicitly failed.</memory_search_state>"
+            )
+        return policy
 
     def on_tool_results(self, *, results: tuple[ToolResult, ...]) -> None:
         for result in results:
@@ -56,6 +65,8 @@ class MemoryRuntimeController:
                 "content_exposed": False,
             }
             if result.ok:
+                if result.name == "memory_search":
+                    self._successful_searches += 1
                 try:
                     value = json.loads(result.content)
                 except json.JSONDecodeError:

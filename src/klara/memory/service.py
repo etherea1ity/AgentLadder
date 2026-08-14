@@ -26,6 +26,7 @@ from klara.memory.models import (
 )
 from klara.memory.repository import SQLiteMemoryRepository
 from klara.memory.retrieval import rank_memories
+from klara.memory.semantic import EmbeddingProvider
 
 
 class MemoryNotFoundError(LookupError):
@@ -39,8 +40,13 @@ class MemoryValidationError(ValueError):
 class MemoryService:
     """Apply memory lifecycle policy above the durable repository."""
 
-    def __init__(self, repository: SQLiteMemoryRepository) -> None:
+    def __init__(
+        self,
+        repository: SQLiteMemoryRepository,
+        embedding_provider: EmbeddingProvider | None = None,
+    ) -> None:
         self.repository = repository
+        self.embedding_provider = embedding_provider
 
     def remember(
         self,
@@ -255,6 +261,7 @@ class MemoryService:
             mode=mode,
             at_time=at_time,
             limit=limit,
+            embedding_provider=self.embedding_provider,
         )
 
     def list_records(self, *, scope: MemoryScope, include_inactive: bool = False) -> list[MemoryRecord]:

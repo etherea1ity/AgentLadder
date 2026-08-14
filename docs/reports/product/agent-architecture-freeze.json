@@ -1,0 +1,96 @@
+{
+  "schema_version": "klara.agent-architecture-freeze.v1",
+  "evaluated_at": "2026-08-14T13:53:36.229864+00:00",
+  "stage": "agent-architecture-freeze",
+  "gate_kind": "latest_branch_full_architecture_and_recovery_gate",
+  "passed": true,
+  "status": "architecture_frozen_live_behavior_pending",
+  "checks": {
+    "all_chapter_architecture_gates_pass": true,
+    "full_python_suite_passed": true,
+    "frontend_suite_and_production_build_passed": true,
+    "step_checkpoint_contains_private_transcript": true,
+    "resume_rehydrates_controllers_and_event_sequence": true,
+    "ordinary_api_runs_are_recoverable_and_non_daemon": true,
+    "mutating_tool_effects_have_private_replay_receipts": true,
+    "memory_ids_are_owner_namespaced": true,
+    "memory_has_learned_embedding_boundary": true,
+    "memory_has_single_pass_add_only_formation": true,
+    "ordinary_chat_memory_defaults_to_review_not_auto_commit": true,
+    "historical_branch_execution_is_complete_and_honest": true
+  },
+  "counts": {
+    "chapter_gates_passed": 12,
+    "chapter_gates_total": 12,
+    "python_tests_collected": 498,
+    "python_tests_skipped": 2,
+    "web_test_files": 20,
+    "web_tests": 71,
+    "remote_branches_audited": 34,
+    "remote_branches_with_passing_historical_tests": 33
+  },
+  "chapter_gates": {
+    "chapter04": {
+      "passed": true,
+      "gate_kind": "deterministic_product_gate"
+    },
+    "chapter05": {
+      "passed": true,
+      "gate_kind": "deterministic_product_gate"
+    },
+    "chapter06_07": {
+      "passed": true,
+      "gate_kind": "deterministic_product_gate"
+    },
+    "chapter08": {
+      "passed": true,
+      "gate_kind": "deterministic_fault_injection_gate"
+    },
+    "chapter09": {
+      "passed": true,
+      "gate_kind": "deterministic_progressive_disclosure_gate"
+    },
+    "chapter10": {
+      "passed": true,
+      "gate_kind": "deterministic_memory_lifecycle_and_retrieval_gate"
+    },
+    "chapter12_13": {
+      "passed": true,
+      "gate_kind": "real_loop_evidence_control_and_deterministic_gold_gate"
+    },
+    "chapter14": {
+      "passed": true,
+      "gate_kind": "deterministic_state_crash_recovery_and_isolation_gate"
+    },
+    "chapter15": {
+      "passed": true,
+      "gate_kind": "deterministic_time_restart_idempotency_and_ui_contract_gate"
+    },
+    "chapter16": {
+      "passed": true,
+      "gate_kind": "deterministic_context_permission_mailbox_task_and_real_git_worktree_gate"
+    },
+    "chapter17": {
+      "passed": true,
+      "gate_kind": "protocol_permission_redaction_shutdown_and_real_ui_contract_gate"
+    },
+    "chapter18": {
+      "passed": true,
+      "gate_kind": "auth_tenant_migration_lease_queue_outbox_trajectory_and_regression_gate"
+    }
+  },
+  "architecture_contract": {
+    "agent_loop": "bounded model/tool loop plus step checkpoint and deterministic controller rehydration",
+    "durability": "lease-backed task recovery and private write/control effect receipts",
+    "memory": "owner-scoped records, optional learned embeddings, temporal/hybrid retrieval, single-pass ADD-only formation",
+    "production": "auth/RBAC, tenant isolation, migrations, SQLite/PostgreSQL lease queue, outbox, audit, redacted trajectory export",
+    "ui": "tested product surfaces for planning, trace, memory, permissions, tasks, scheduler, teams, MCP, and evaluation"
+  },
+  "limits": [
+    "This is an architecture/runtime freeze, not Agent Product Freeze.",
+    "Live DeepSeek question-answer/tool replay, public memory benchmarks, and external judging remain required.",
+    "Historical chapter branches remain immutable learning snapshots; repairs are integrated only on the latest reliable branch.",
+    "No model training is permitted by this report."
+  ],
+  "next_gate": "live DeepSeek behavior and tool replay on the exact frozen runtime"
+}

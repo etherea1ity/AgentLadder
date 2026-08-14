@@ -889,6 +889,9 @@ def _is_local_state_request(
             "delete schedule",
         ),
         "memory_search": (
+            "memory_search",
+            "durable conversation history",
+            "durable memory",
             "do i prefer",
             "my preference",
             "remember about me",

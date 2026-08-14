@@ -5,7 +5,7 @@ import hashlib
 import re
 import threading
 from dataclasses import replace
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter, sleep
 from typing import Any
@@ -34,7 +34,7 @@ from klara.context.policy import ContextPolicy
 from klara.app.harness import KlaraHarness, KlaraHarnessConfig
 from klara.context.timestamps import parse_prompt_datetime, stamp_user_message_content
 from klara.core.events import KlaraEvent
-from klara.core.loop import LlmClient
+from klara.core.loop import KlaraRunCheckpoint, LlmClient
 from klara.core.messages import KlaraMessage, ModelCallError
 from klara.core.policies import LoopPolicy
 from klara.infra.config.models import ModelsConfig
@@ -52,6 +52,12 @@ from klara.tasks import (
     TaskWriteConflict,
 )
 from klara.mcp import McpService
+from klara.memory import (
+    EmbeddingProvider,
+    LlmMemoryFactExtractor,
+    MemoryFormationMode,
+    MemoryFormationService,
+)
 from klara.permissions import PermissionScope
 from klara.scheduler import SchedulerService
 from klara.teams import TeamScope, TeamService
@@ -89,6 +95,8 @@ class RunService:
         team_service: TeamService | None = None,
         team_scope: TeamScope | None = None,
         permission_scope: PermissionScope | None = None,
+        memory_embedding_provider: EmbeddingProvider | None = None,
+        memory_formation_mode: MemoryFormationMode = MemoryFormationMode.DISABLED,
     ) -> None:
         """Create the local run service.
 
@@ -136,9 +144,14 @@ class RunService:
         self.team_service = team_service
         self.team_scope = team_scope
         self.permission_scope = permission_scope
+        self.memory_embedding_provider = memory_embedding_provider
+        self.memory_formation_mode = memory_formation_mode
         self._cancel_requested: set[str] = set()
         self._threads: dict[str, threading.Thread] = {}
         self._task_leases: dict[str, str] = {}
+        self._restored_loop_checkpoints: dict[str, KlaraRunCheckpoint] = {}
+        self._heartbeat_stops: dict[str, threading.Event] = {}
+        self._heartbeat_threads: dict[str, threading.Thread] = {}
         self._terminal_lock = threading.RLock()
 
     def create_run(
@@ -212,7 +225,12 @@ class RunService:
             },
         )
 
-        thread = threading.Thread(target=self._run_thread, args=(run.run_id,), daemon=True)
+        thread = threading.Thread(
+            target=self._run_thread,
+            args=(run.run_id,),
+            daemon=False,
+            name=f"klara-run-{run.run_id[:12]}",
+        )
         self._threads[run.run_id] = thread
         thread.start()
 
@@ -303,11 +321,55 @@ class RunService:
                 {"session_id": session_id, "scheduled": True},
             )
         thread = threading.Thread(
-            target=self._run_thread, args=(run.run_id,), daemon=True
+            target=self._run_thread,
+            args=(run.run_id,),
+            daemon=False,
+            name=f"klara-run-{run.run_id[:12]}",
         )
         self._threads[run.run_id] = thread
         thread.start()
         return self._run_response(run)
+
+    def recover_incomplete_runs(self) -> int:
+        """Resume persisted non-terminal runs after an API process restart."""
+
+        recovered = 0
+        for session in self.store.list_sessions():
+            for run in self.store.list_runs(session.session_id):
+                if run.status not in {"queued", "thinking"} or run.run_id in self._threads:
+                    continue
+                delay = self._durable_claim_delay_seconds(run.run_id)
+                thread = threading.Thread(
+                    target=self._resume_after_delay,
+                    args=(run.run_id, delay),
+                    daemon=False,
+                    name=f"klara-recover-{run.run_id[:12]}",
+                )
+                self._threads[run.run_id] = thread
+                thread.start()
+                recovered += 1
+        return recovered
+
+    def _resume_after_delay(self, run_id: str, delay_seconds: float) -> None:
+        """Respect an unexpired prior lease, then enter the normal worker path."""
+
+        if delay_seconds > 0:
+            sleep(delay_seconds)
+        self._run_thread(run_id)
+
+    def _durable_claim_delay_seconds(self, run_id: str) -> float:
+        if self.task_service is None or self.task_scope is None:
+            return 0.0
+        try:
+            task = self.task_service.get(scope=self.task_scope, task_id=run_id)
+        except TaskNotFoundError:
+            return 0.0
+        if task.state is not TaskState.RUNNING or not task.lease_expires_at:
+            return 0.0
+        expires = datetime.fromisoformat(task.lease_expires_at.replace("Z", "+00:00"))
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=UTC)
+        return max(0.0, (expires - datetime.now(UTC)).total_seconds() + 0.05)
 
     def inject_schedule_notification(
         self, *, notification_id: str, session_id: str | None, message: str
@@ -440,6 +502,9 @@ class RunService:
                     team_service=self.team_service,
                     team_scope=self.team_scope,
                     team_permission_scope=self.permission_scope,
+                    durable_task_id=run_id,
+                    durable_task_lease_token=self._task_leases.get(run_id),
+                    memory_embedding_provider=self.memory_embedding_provider,
                 ),
                 models=self.models_config,
                 hooks=(RunProjectionHook(self, run_id, projector),),
@@ -459,6 +524,12 @@ class RunService:
                     before_message_id=user_message.message_id,
                 ),
                 now=run_now,
+                checkpoint=self._restored_loop_checkpoints.get(run_id),
+                checkpoint_sink=lambda checkpoint: self._checkpoint_agent_run(
+                    run_id,
+                    checkpoint,
+                    run_profile_sha256=harness.run_profile.profile_sha256,
+                ),
             )
             if run_id in self._cancel_requested:
                 return
@@ -476,6 +547,13 @@ class RunService:
                 },
             )
             final_text = result.final_answer
+            self._capture_memory_formation(
+                run_id=run_id,
+                harness=harness,
+                user_content=user_message.content,
+                assistant_content=final_text,
+                model=selected_model,
+            )
             self._emit(run_id, "answer_streaming_started", "Klara is writing the final answer.", {})
             self._stream_answer_chunks(
                 run_id=run_id,
@@ -688,9 +766,16 @@ class RunService:
     def _cleanup_run_runtime(self, run_id: str) -> None:
         """Remove per-run cancellation and thread bookkeeping."""
 
+        stop = self._heartbeat_stops.pop(run_id, None)
+        if stop is not None:
+            stop.set()
+        heartbeat = self._heartbeat_threads.pop(run_id, None)
+        if heartbeat is not None and heartbeat is not threading.current_thread():
+            heartbeat.join(timeout=1)
         self._cancel_requested.discard(run_id)
         self._threads.pop(run_id, None)
         self._task_leases.pop(run_id, None)
+        self._restored_loop_checkpoints.pop(run_id, None)
 
     def _scheduled_retry_is_ready(self, run_id: str) -> bool:
         """Allow a failed scheduler run to restart only after an explicit task retry."""
@@ -711,7 +796,7 @@ class RunService:
                 scope=self.task_scope,
                 task_id=run_id,
                 worker_id=f"api-thread:{threading.get_ident()}",
-                lease_seconds=3600,
+                lease_seconds=90,
             )
         except (
             TaskLeaseError,
@@ -721,7 +806,108 @@ class RunService:
         ):
             return False
         self._task_leases[run_id] = claim.lease_token
+        stop = threading.Event()
+        heartbeat = threading.Thread(
+            target=self._heartbeat_durable_task,
+            args=(run_id, claim.lease_token, stop),
+            daemon=False,
+            name=f"klara-heartbeat-{run_id[:12]}",
+        )
+        self._heartbeat_stops[run_id] = stop
+        self._heartbeat_threads[run_id] = heartbeat
+        heartbeat.start()
+        if claim.restored_checkpoint is not None:
+            payload = self.task_service.repository.checkpoint_payload(
+                self.task_scope, claim.restored_checkpoint.checkpoint_id
+            )
+            if isinstance(payload, dict) and isinstance(payload.get("agent_loop"), dict):
+                self._restored_loop_checkpoints[run_id] = (
+                    KlaraRunCheckpoint.from_private_dict(payload["agent_loop"])
+                )
         return True
+
+    def _heartbeat_durable_task(
+        self, run_id: str, lease_token: str, stop: threading.Event
+    ) -> None:
+        """Renew the worker lease while a blocking model/tool step is in flight."""
+
+        if self.task_service is None or self.task_scope is None:
+            return
+        while not stop.wait(30):
+            try:
+                self.task_service.heartbeat(
+                    scope=self.task_scope,
+                    task_id=run_id,
+                    lease_token=lease_token,
+                    lease_seconds=90,
+                )
+            except (TaskLeaseError, TaskNotFoundError, TaskTransitionError, TaskWriteConflict):
+                return
+
+    def _checkpoint_agent_run(
+        self,
+        run_id: str,
+        checkpoint: KlaraRunCheckpoint,
+        *,
+        run_profile_sha256: str,
+    ) -> None:
+        """Persist one safe loop boundary under the active durable-task lease."""
+
+        if self.task_service is None or self.task_scope is None:
+            return
+        token = self._task_leases.get(run_id)
+        if token is None:
+            return
+        self.task_service.checkpoint(
+            scope=self.task_scope,
+            task_id=run_id,
+            lease_token=token,
+            summary=f"Agent loop ready for turn {checkpoint.next_turn_index}",
+            payload={
+                "schema_version": "klara.agent-run-checkpoint.v1",
+                "run_profile_sha256": run_profile_sha256,
+                "agent_loop": checkpoint.to_private_dict(),
+            },
+        )
+
+    def _capture_memory_formation(
+        self,
+        *,
+        run_id: str,
+        harness: KlaraHarness,
+        user_content: str,
+        assistant_content: str,
+        model: str,
+    ) -> None:
+        """Run one optional ADD-only formation pass without failing the answer."""
+
+        if self.memory_formation_mode is MemoryFormationMode.DISABLED:
+            return
+        try:
+            result = MemoryFormationService(
+                harness.memory_service,
+                LlmMemoryFactExtractor(self.llm_client, model=model),
+                mode=self.memory_formation_mode,
+            ).capture_turn(
+                scope=harness.memory_scope,
+                user_content=user_content,
+                assistant_content=assistant_content,
+                source_id=run_id,
+            )
+        except Exception as exc:
+            self._emit(
+                run_id,
+                "memory_formation_failed",
+                "Memory formation was skipped after a validation or provider failure.",
+                {"error_code": _error_code(exc)},
+            )
+            return
+        self._emit(
+            run_id,
+            "memory_formation_completed",
+            "Memory formation completed.",
+            result.to_public_dict(),
+        )
 
     def _progress_durable_task(self, run_id: str, progress: int, step: str) -> None:
         if self.task_service is None or self.task_scope is None:

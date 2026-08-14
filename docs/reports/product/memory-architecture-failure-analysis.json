@@ -1,0 +1,52 @@
+{
+  "schema_version": "klara.memory-architecture-failure-analysis.v1",
+  "status": "retrieval_repaired_answer_synthesis_gate_failed",
+  "benchmark": "LoCoMo 100-question repair replay",
+  "model": "deepseek/deepseek-v4-flash",
+  "root_causes": [
+    {
+      "defect": "global memory_id primary key",
+      "effect": "repeated LoCoMo dialogue IDs overwrote other owner scopes",
+      "repair": "composite tenant_id,user_id,memory_id primary key plus migration"
+    },
+    {
+      "defect": "web research classified memory-search instructions as public web search",
+      "effect": "correct memory answers ended as no_progress/no_fetched_sources",
+      "repair": "explicit memory_search and durable-history local routing"
+    },
+    {
+      "defect": "evidence scorer parsed raw JSON but runtime wraps untrusted observations",
+      "effect": "reported Recall@20 was falsely zero",
+      "repair": "bounded JSON decoding inside the untrusted wrapper"
+    },
+    {
+      "defect": "learned dense similarity replaced sparse character-IDF similarity",
+      "effect": "Recall@20 fell to 0.652098",
+      "repair": "reciprocal-rank fusion over dense and sparse channels; repair Recall@20 0.740176"
+    }
+  ],
+  "repair_replay": {
+    "cases": 100,
+    "completed": 100,
+    "memory_search_call_rate": 1.0,
+    "valid_memory_search_arguments_rate": 1.0,
+    "evidence_recall_at_20": 0.740176,
+    "official_f1": 0.390983,
+    "exact_match": 0.11,
+    "p0": 0,
+    "estimated_cost_usd": 0.0864969
+  },
+  "direct_hybrid_baseline": {
+    "evidence_recall_at_20": 0.73402,
+    "official_f1": 0.461914,
+    "exact_match": 0.25
+  },
+  "gate": {
+    "retrieval": "PASS",
+    "tool_protocol": "PASS",
+    "answer_synthesis": "FAIL",
+    "agent_product_freeze": "BLOCKED",
+    "model_training": "BLOCKED"
+  },
+  "interpretation": "Architecture repairs recovered evidence retrieval, but the general Agent prompt still synthesizes answers worse than the same-model dedicated QA baseline. The replay is a repair diagnostic on the same set, not a fresh hidden score."
+}

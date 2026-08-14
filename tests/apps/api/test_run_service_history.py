@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import threading
 
-from apps.api.schemas import ClientContext, MessageRecord
+from apps.api.schemas import ClientContext, MessageRecord, RunRecord
 from apps.api.services.app_store import JsonlAppStore
 from apps.api.services.run_service import RunService
 from apps.api.services.sse_bus import SSEBus
@@ -81,6 +81,56 @@ class SharedTaskListLlm:
             )
         self.observation = tool_messages[-1].content
         return ModelResponse(content="The shared durable tasks were observed.")
+
+
+def test_restart_recovers_persisted_queued_run_through_durable_task(tmp_path) -> None:
+    app_root = tmp_path / "app"
+    store = JsonlAppStore(app_root)
+    session = store.create_session()
+    user = MessageRecord(
+        message_id="msg_recovery_user",
+        session_id=session.session_id,
+        role="user",
+        content="Recover this run",
+        status="completed",
+    )
+    assistant = MessageRecord(
+        message_id="msg_recovery_assistant",
+        session_id=session.session_id,
+        role="assistant",
+        content="",
+        run_id="run_recovery",
+        status="running",
+    )
+    run = RunRecord(
+        run_id="run_recovery",
+        session_id=session.session_id,
+        user_message_id=user.message_id,
+        assistant_message_id=assistant.message_id,
+        status="queued",
+    )
+    store.save_message(user)
+    store.save_message(assistant)
+    store.save_run(run)
+    scope = TaskScope("tenant-test", "owner-test", "klara")
+    tasks = DurableTaskService(SQLiteTaskRepository(app_root / "tasks.sqlite3"))
+    tasks.create(scope=scope, task_id=run.run_id, title="Recover run")
+
+    restarted = RunService(
+        store=JsonlAppStore(app_root),
+        bus=SSEBus(),
+        llm_client=FinalLlm(),
+        task_service=tasks,
+        task_scope=scope,
+        answer_chunk_delay_ms=0,
+    )
+
+    assert restarted.recover_incomplete_runs() == 1
+    restarted._threads[run.run_id].join(timeout=5)
+
+    assert restarted.store.get_run(run.run_id).status == "completed"
+    assert restarted.store.get_message(assistant.message_id).content == "ok"
+    assert tasks.get(scope=scope, task_id=run.run_id).state is TaskState.COMPLETED
 
 
 def test_run_service_projects_chat_run_into_durable_task_and_cancellation_wins(tmp_path) -> None:

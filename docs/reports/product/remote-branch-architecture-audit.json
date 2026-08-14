@@ -1,0 +1,1631 @@
+{
+  "schema_version": "klara.remote-branch-architecture-report.v1",
+  "generated_at": "2026-08-14T13:53:35.948770+00:00",
+  "source_audit_evaluated_at": "2026-08-14T12:21:15.030423+00:00",
+  "remote": "https://github.com/etherea1ity/AgentLadder.git",
+  "branch_count": 34,
+  "unique_commit_count": 32,
+  "summary": {
+    "compile_passed": 34,
+    "pytest_passed": 33,
+    "architecturally_complete": 0
+  },
+  "interpretation": {
+    "historical_snapshot": true,
+    "live_provider_calls": false,
+    "latest_branch_live_gate_required_separately": true,
+    "architecturally_complete_means_all_static_hard_requirements_present": true
+  },
+  "reference_architectures": {
+    "OpenAI Agents SDK": "https://openai.github.io/openai-agents-python/",
+    "LangGraph persistence": "https://docs.langchain.com/oss/python/langgraph/persistence",
+    "LangGraph functional API": "https://docs.langchain.com/oss/python/langgraph/functional-api",
+    "AutoGen state": "https://microsoft.github.io/autogen/dev/user-guide/agentchat-user-guide/tutorial/state.html",
+    "Mem0": "https://github.com/mem0ai/mem0",
+    "OpenHands architecture": "https://github.com/OpenHands/OpenHands/blob/main/docs/architecture.md"
+  },
+  "branches": [
+    {
+      "branch": "origin/chapter-1-minimal-loop",
+      "commit": "799c5dc591fc1522f0135222db774c7c43983097",
+      "shared_commit_branches": [
+        "origin/chapter-1-minimal-loop"
+      ],
+      "tree_file_count": 110,
+      "compile": {
+        "passed": true,
+        "duration_ms": 320
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 1283,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": false,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/chapter-2-tool-calling",
+      "commit": "bd3c13d805e96e2ef84b2a819e6fa2269bda665e",
+      "shared_commit_branches": [
+        "origin/chapter-2-tool-calling"
+      ],
+      "tree_file_count": 161,
+      "compile": {
+        "passed": true,
+        "duration_ms": 329
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 1670,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/chapter-3-hooks-and-trace",
+      "commit": "c12530f033d23a94639943879ee738d7b3bef54c",
+      "shared_commit_branches": [
+        "origin/chapter-3-hooks-and-trace"
+      ],
+      "tree_file_count": 180,
+      "compile": {
+        "passed": true,
+        "duration_ms": 494
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 4033,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/agent-eval-contract",
+      "commit": "7c075ad79ad2e9b4e5abed2c1e52ce0163ab9eb4",
+      "shared_commit_branches": [
+        "origin/codex/agent-eval-contract"
+      ],
+      "tree_file_count": 309,
+      "compile": {
+        "passed": true,
+        "duration_ms": 794
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 9155,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/agent-product-baseline",
+      "commit": "3266fea1f7cd4f340ae34dceeb74f86c455af009",
+      "shared_commit_branches": [
+        "origin/codex/agent-product-baseline"
+      ],
+      "tree_file_count": 287,
+      "compile": {
+        "passed": true,
+        "duration_ms": 674
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8854,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/agent-product-benchmarks",
+      "commit": "1642ae6f7313db735cf7aecd607364a6c097bf5a",
+      "shared_commit_branches": [
+        "origin/codex/agent-product-benchmarks"
+      ],
+      "tree_file_count": 651,
+      "compile": {
+        "passed": true,
+        "duration_ms": 2026
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 56894,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": true,
+          "mcp": true,
+          "production_queue": true,
+          "behavior_eval": true,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": true,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/agent-product-external-benchmarks",
+      "commit": "78e157071c61fc1ed918ab3a4298a1c15627c81e",
+      "shared_commit_branches": [
+        "origin/codex/agent-product-external-benchmarks"
+      ],
+      "tree_file_count": 783,
+      "compile": {
+        "passed": true,
+        "duration_ms": 2001
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 57512,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": true,
+          "mcp": true,
+          "production_queue": true,
+          "behavior_eval": true,
+          "external_benchmarks": true
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": true,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/agent-product-live-backtest",
+      "commit": "d9f6b11c263064b4850c9c3c16899bd828d9222b",
+      "shared_commit_branches": [
+        "origin/codex/agent-product-live-backtest"
+      ],
+      "tree_file_count": 741,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1805
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 62811,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": true,
+          "mcp": true,
+          "production_queue": true,
+          "behavior_eval": true,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": true,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/agent-product-polish",
+      "commit": "cd2048438b25fdac6b2c0f1afa603dfc56fd4dd7",
+      "shared_commit_branches": [
+        "origin/codex/agent-product-polish"
+      ],
+      "tree_file_count": 606,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1706
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 49561,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": true,
+          "mcp": true,
+          "production_queue": true,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": true,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/agent-runtime-integration",
+      "commit": "ac6f83eb0cb469f91c1caf8bcdb59e6ebc04aad8",
+      "shared_commit_branches": [
+        "origin/codex/agent-runtime-integration"
+      ],
+      "tree_file_count": 618,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1655
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 55228,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": true,
+          "mcp": true,
+          "production_queue": true,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": true,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/algorithm-suite-freeze",
+      "commit": "b440df32c71df56c892b4657c392e37f9ea53e9a",
+      "shared_commit_branches": [
+        "origin/codex/algorithm-suite-freeze"
+      ],
+      "tree_file_count": 279,
+      "compile": {
+        "passed": true,
+        "duration_ms": 779
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8766,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch03-algorithm-roadmap",
+      "commit": "65ca523c99c8fe03c6ef438a7e914c836a32709a",
+      "shared_commit_branches": [
+        "origin/codex/ch03-algorithm-roadmap"
+      ],
+      "tree_file_count": 181,
+      "compile": {
+        "passed": true,
+        "duration_ms": 370
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 3967,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch04-harness-config",
+      "commit": "02afaeaf63ed00c3ce68e1fffb1a47851ced4cfe",
+      "shared_commit_branches": [
+        "origin/codex/ch04-harness-config"
+      ],
+      "tree_file_count": 323,
+      "compile": {
+        "passed": true,
+        "duration_ms": 791
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 9265,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch05-todo-planning",
+      "commit": "8efe6489425cffe888beca138619d36f1d9dfdb4",
+      "shared_commit_branches": [
+        "origin/codex/ch05-todo-planning"
+      ],
+      "tree_file_count": 341,
+      "compile": {
+        "passed": true,
+        "duration_ms": 738
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 9805,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch06-07-context",
+      "commit": "bf972514b9d93b2e846f46d9db45060cd93c5521",
+      "shared_commit_branches": [
+        "origin/codex/ch06-07-context"
+      ],
+      "tree_file_count": 363,
+      "compile": {
+        "passed": true,
+        "duration_ms": 856
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 10558,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch08-provider-recovery",
+      "commit": "8a47ccf745e6f143b76322634539431c1f4a8a6f",
+      "shared_commit_branches": [
+        "origin/codex/ch08-provider-recovery"
+      ],
+      "tree_file_count": 375,
+      "compile": {
+        "passed": true,
+        "duration_ms": 831
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 10702,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch09-skills-runtime",
+      "commit": "c3fadfa0608fd6f9ef17b613a523a29154ec4105",
+      "shared_commit_branches": [
+        "origin/codex/ch09-skills-runtime"
+      ],
+      "tree_file_count": 398,
+      "compile": {
+        "passed": true,
+        "duration_ms": 842
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 10983,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch10-memory",
+      "commit": "3c43fa695c2da0f9f2b917bfcdeb32e134075854",
+      "shared_commit_branches": [
+        "origin/codex/ch10-memory"
+      ],
+      "tree_file_count": 426,
+      "compile": {
+        "passed": true,
+        "duration_ms": 904
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 15362,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch12-13-evidence-runtime",
+      "commit": "49baa785ed7b3f8336802dee2ad0c9f8f2c80073",
+      "shared_commit_branches": [
+        "origin/codex/ch12-13-evidence-runtime"
+      ],
+      "tree_file_count": 446,
+      "compile": {
+        "passed": true,
+        "duration_ms": 983
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 27470,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch14-durable-tasks",
+      "commit": "36e192ef9fdbe27d0bf685184539d504d6c922b0",
+      "shared_commit_branches": [
+        "origin/codex/ch14-durable-tasks"
+      ],
+      "tree_file_count": 489,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1160
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 31678,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch15-background-scheduler",
+      "commit": "ac0e79de8997d5b2755838210e660aa4c89cd0d7",
+      "shared_commit_branches": [
+        "origin/codex/ch15-background-scheduler"
+      ],
+      "tree_file_count": 511,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1395
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 38561,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch16-subagents-team-worktree",
+      "commit": "40389110a1d41328e83fe19a06a12ef86fe200bf",
+      "shared_commit_branches": [
+        "origin/codex/ch16-subagents-team-worktree"
+      ],
+      "tree_file_count": 557,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1340
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 42679,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": true,
+          "mcp": true,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch17-mcp",
+      "commit": "e0890d1431991b5cd3157e2a8abd61ff76e58c4b",
+      "shared_commit_branches": [
+        "origin/codex/ch17-mcp"
+      ],
+      "tree_file_count": 535,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1324
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 38315,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": false,
+          "mcp": true,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/ch18-production-runtime",
+      "commit": "270e9ca2343fef3af24c64020d89163a4a417e15",
+      "shared_commit_branches": [
+        "origin/codex/ch18-production-runtime"
+      ],
+      "tree_file_count": 590,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1432
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 53166,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": true,
+          "background_scheduler": true,
+          "subagent_team_worktree": true,
+          "mcp": true,
+          "production_queue": true,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": true,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/lab-a-evidence-eval",
+      "commit": "445fad2ba6b3284478276ee0f4e815946218221e",
+      "shared_commit_branches": [
+        "origin/codex/lab-a-evidence-eval"
+      ],
+      "tree_file_count": 201,
+      "compile": {
+        "passed": true,
+        "duration_ms": 552
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 4326,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/lab-b-tiny-pretrain",
+      "commit": "cf16dbbf29366669019a0528935f6fba268e3bab",
+      "shared_commit_branches": [
+        "origin/codex/lab-b-tiny-pretrain"
+      ],
+      "tree_file_count": 226,
+      "compile": {
+        "passed": true,
+        "duration_ms": 540
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8175,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/lab-c-trajectory-distillation",
+      "commit": "dd1c52f6c847fe136f6f877ca803fcc7fff6d216",
+      "shared_commit_branches": [
+        "origin/codex/lab-c-trajectory-distillation"
+      ],
+      "tree_file_count": 239,
+      "compile": {
+        "passed": true,
+        "duration_ms": 566
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8370,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/lab-d-tiny-moe",
+      "commit": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "shared_commit_branches": [
+        "origin/codex/lab-d-tiny-moe",
+        "origin/codex/lab-e-tiny-sparse-moe"
+      ],
+      "tree_file_count": 251,
+      "compile": {
+        "passed": true,
+        "duration_ms": 592
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8952,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/lab-e-fp16-fp4",
+      "commit": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "shared_commit_branches": [
+        "origin/codex/lab-e-fp16-fp4",
+        "origin/codex/lab-h-fp16-fp4"
+      ],
+      "tree_file_count": 263,
+      "compile": {
+        "passed": true,
+        "duration_ms": 596
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8852,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/lab-e-tiny-sparse-moe",
+      "commit": "e2084efe8eb32a13bb95305b97d894aadb4166ff",
+      "shared_commit_branches": [
+        "origin/codex/lab-d-tiny-moe",
+        "origin/codex/lab-e-tiny-sparse-moe"
+      ],
+      "tree_file_count": 251,
+      "compile": {
+        "passed": true,
+        "duration_ms": 592
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8952,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/lab-h-fp16-fp4",
+      "commit": "573aecf5d5fbb0008af2f99eb4d82b4dd9cabb20",
+      "shared_commit_branches": [
+        "origin/codex/lab-e-fp16-fp4",
+        "origin/codex/lab-h-fp16-fp4"
+      ],
+      "tree_file_count": 263,
+      "compile": {
+        "passed": true,
+        "duration_ms": 596
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 8852,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/codex/permission-engine",
+      "commit": "d96234538dd725645354f5bf0159215cb914316e",
+      "shared_commit_branches": [
+        "origin/codex/permission-engine"
+      ],
+      "tree_file_count": 468,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1068
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 29349,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": true,
+          "provider_recovery": true,
+          "skills_runtime": true,
+          "long_term_memory": true,
+          "permission_engine": true,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": true
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/main",
+      "commit": "aa19ae8d314184d31ef11eed69a785ef748596b6",
+      "shared_commit_branches": [
+        "origin/main"
+      ],
+      "tree_file_count": 161,
+      "compile": {
+        "passed": true,
+        "duration_ms": 457
+      },
+      "pytest": {
+        "passed": true,
+        "duration_ms": 1714,
+        "failure_summary": ""
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": true,
+          "tool_runtime": true,
+          "hooks_trace": true,
+          "harness_config": true,
+          "context_budget": false,
+          "provider_recovery": true,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    },
+    {
+      "branch": "origin/rag",
+      "commit": "ecd70e715d68ced576837f7bf6581b335b5aae3b",
+      "shared_commit_branches": [
+        "origin/rag"
+      ],
+      "tree_file_count": 1025,
+      "compile": {
+        "passed": true,
+        "duration_ms": 1067
+      },
+      "pytest": {
+        "passed": false,
+        "duration_ms": 43798,
+        "failure_summary": "FAILED tests/integration/test_agentic_rag_api_real_runtime.py::test_main_chat_api_does_not_return_mock_answer\nFAILED tests/integration/test_agentic_rag_api_visual_assets.py::test_main_chat_visual_assets_are_available_when_image_path_exists\nFAILED tests/integration/test_agentic_rag_api_visual_assets.py::test_visual_text_placeholder_is_not_image_route\nFAILED tests/test_api_sse.py::test_api_run_lifecycle_events_trace_and_delete\nFAILED tests/test_api_sse.py::test_api_uses_unified_runtime_when_provider_would_omit_usage\nFAILED tests/test_api_sse.py::test_api_insufficient_info_and_cleans_runtime\nFAILED tests/unit/test_paper_corpus_validation.py::test_fixture_and_real_corpus_validate\n9 failed, 47 passed, 1 warning in 42.68s"
+      },
+      "architecture": {
+        "capabilities": {
+          "minimal_loop": false,
+          "tool_runtime": false,
+          "hooks_trace": false,
+          "harness_config": false,
+          "context_budget": false,
+          "provider_recovery": false,
+          "skills_runtime": false,
+          "long_term_memory": false,
+          "permission_engine": false,
+          "durable_tasks": false,
+          "background_scheduler": false,
+          "subagent_team_worktree": false,
+          "mcp": false,
+          "production_queue": false,
+          "behavior_eval": false,
+          "external_benchmarks": false
+        },
+        "hard_requirements": {
+          "step_checkpoint_and_resume": false,
+          "ordinary_runs_not_daemon_thread_only": false,
+          "memory_primary_key_is_owner_namespaced": false,
+          "memory_has_learned_embedding_boundary": false,
+          "memory_has_formation_pipeline": false,
+          "production_queue_present": false,
+          "permission_engine_present": false
+        },
+        "hard_requirements_passed": false
+      }
+    }
+  ]
+}

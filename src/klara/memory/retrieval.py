@@ -11,6 +11,7 @@ import math
 import re
 
 from klara.memory.models import MemoryRecord, MemorySearchHit
+from klara.memory.semantic import EmbeddingProvider, cosine_similarity
 
 
 _WORD_RE = re.compile(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]")
@@ -38,6 +39,7 @@ def rank_memories(
     limit: int = 8,
     now: str | None = None,
     weights: RetrievalWeights = RetrievalWeights(),
+    embedding_provider: EmbeddingProvider | None = None,
 ) -> list[MemorySearchHit]:
     """Rank records with one named ablation strategy."""
 
@@ -61,12 +63,29 @@ def rank_memories(
     )
     hits: list[MemorySearchHit] = []
     # Score each already-authorized candidate; this function never widens scope.
-    components: list[tuple[MemoryRecord, float, float, float, float, float, float]] = []
-    for record, term_counts, weighted_document_vector in zip(
+    learned_semantic: list[float] | None = None
+    if embedding_provider is not None and records:
+        vectors = embedding_provider.embed_batch(
+            [query, *(record.content for record in records)]
+        )
+        if len(vectors) != len(records) + 1:
+            raise ValueError("memory_embedding_batch_size_mismatch")
+        learned_semantic = [
+            cosine_similarity(vectors[0], vector) for vector in vectors[1:]
+        ]
+    components: list[
+        tuple[MemoryRecord, float, float, float | None, float, float, float, float]
+    ] = []
+    for index, (record, term_counts, weighted_document_vector) in enumerate(zip(
         records, corpus_terms, weighted_document_vectors, strict=True
-    ):
+    )):
         lexical = _jaccard(query_terms, _terms(record.content))
-        semantic = _weighted_cosine(weighted_query_vector, weighted_document_vector)
+        sparse_semantic = _weighted_cosine(
+            weighted_query_vector, weighted_document_vector
+        )
+        dense_semantic = (
+            learned_semantic[index] if learned_semantic is not None else None
+        )
         entity = _jaccard(query_entities, _entities(record.content))
         recency = _recency(record.updated_at, evaluated_now)
         temporal = _temporal_fit(record, at_time)
@@ -77,13 +96,26 @@ def rank_memories(
             document_count=len(records),
             average_document_length=average_document_length,
         )
-        components.append((record, lexical, semantic, entity, recency, temporal, bm25))
+        components.append(
+            (
+                record,
+                lexical,
+                sparse_semantic,
+                dense_semantic,
+                entity,
+                recency,
+                temporal,
+                bm25,
+            )
+        )
+    fused_semantic = _dense_sparse_rank_fusion(components)
     turn_scores = {
-        _turn_index(record): semantic
-        for record, _, semantic, _, _, _, _ in components
+        _turn_index(record): fused_semantic[record.memory_id]
+        for record, *_ in components
         if _turn_index(record) is not None
     }
-    for record, lexical, semantic, entity, recency, temporal, bm25 in components:
+    for record, lexical, sparse, dense, entity, recency, temporal, bm25 in components:
+        semantic = dense if mode == "vector" and dense is not None else fused_semantic[record.memory_id]
         previous_turn_similarity = max(
             (
                 turn_scores.get((_turn_index(record) or 0) - offset, 0.0)
@@ -115,6 +147,37 @@ def rank_memories(
         )
     hits.sort(key=lambda hit: (-hit.score, hit.record.memory_id))
     return hits[:limit]
+
+
+def _dense_sparse_rank_fusion(
+    components: list[
+        tuple[MemoryRecord, float, float, float | None, float, float, float, float]
+    ],
+    *,
+    rrf_k: int = 60,
+) -> dict[str, float]:
+    """Fuse incomparable dense and sparse scores by reciprocal rank."""
+
+    if not components:
+        return {}
+    if all(item[3] is None for item in components):
+        return {item[0].memory_id: item[2] for item in components}
+    sparse_order = sorted(components, key=lambda item: (-item[2], item[0].memory_id))
+    dense_order = sorted(
+        components,
+        key=lambda item: (-(item[3] if item[3] is not None else -1.0), item[0].memory_id),
+    )
+    sparse_rank = {item[0].memory_id: rank for rank, item in enumerate(sparse_order, 1)}
+    dense_rank = {item[0].memory_id: rank for rank, item in enumerate(dense_order, 1)}
+    maximum = 2.0 / (rrf_k + 1)
+    return {
+        item[0].memory_id: (
+            1.0 / (rrf_k + sparse_rank[item[0].memory_id])
+            + 1.0 / (rrf_k + dense_rank[item[0].memory_id])
+        )
+        / maximum
+        for item in components
+    }
 
 
 def _mode_score(

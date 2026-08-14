@@ -20,12 +20,19 @@ from apps.api.routes.scheduler import router as scheduler_router
 from apps.api.routes.mcp import router as mcp_router
 from apps.api.routes.teams import router as teams_router
 from apps.api.routes.production import router as production_router
-from apps.api.dependencies import get_mcp_service, get_production_metrics, get_scheduler_runner, get_team_service
+from apps.api.dependencies import (
+    get_mcp_service,
+    get_production_metrics,
+    get_run_service,
+    get_scheduler_runner,
+    get_team_service,
+)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     runner = get_scheduler_runner()
+    get_run_service().recover_incomplete_runs()
     runner.start()
     try:
         yield
