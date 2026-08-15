@@ -10,13 +10,16 @@
   "branch": "codex/agent-product-freeze-readiness",
   "claims": {
     "external_memory_competitor_superiority": false,
+    "frozen_same_control_agent_outperforms_mem0_on_f1": true,
+    "frozen_same_control_agent_outperforms_mem0_on_recall": false,
+    "frozen_same_control_mem0_comparison_complete": true,
     "general_agent_framework_superiority": false,
     "general_chatgpt_equivalence": false,
     "internal_direct_baseline_beaten_on_f1": false,
     "internal_direct_baseline_beaten_on_recall": true,
     "interpretation": "Klara improves retrieval recall over its same-model direct baseline on the frozen fresh split, but answer F1 remains lower; no external-system superiority is established."
   },
-  "evaluated_at": "2026-08-15T04:23:30.103864+00:00",
+  "evaluated_at": "2026-08-15T16:31:04.925557+00:00",
   "expansion_gaps": [
     {
       "detail": "The pinned MEM1 7B rollout requires a comparable GPU evaluation run.",
@@ -32,6 +35,16 @@
       "detail": "A frozen publicly permitted GAIA subset has not yet been executed through the current runtime.",
       "id": "gaia-public-subset",
       "status": "pending"
+    }
+  ],
+  "followup_evidence": [
+    {
+      "artifact": "docs/reports/product/mem0-comparable-reproduction.json",
+      "branch": "codex/mem0-comparable-reproduction",
+      "passed": true,
+      "schema_version": "klara.mem0-comparable-reproduction.v2",
+      "source_commit": "3b93e9b91e83b48e405e21a932d1d1b3702ef7f1",
+      "stage": "mem0-comparable-reproduction"
     }
   ],
   "hku": {
@@ -59,11 +72,6 @@
       "detail": "No independent blind-human labels exist for the frozen comparison queue.",
       "id": "blind-human-review",
       "status": "blocked_external"
-    },
-    {
-      "detail": "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline",
-      "id": "official-mem0-comparison",
-      "status": "blocked_external"
     }
   ],
   "manifest": "config/stages/agent-product-freeze-readiness.manifest.json",
@@ -86,6 +94,14 @@
       "direct_f1": 0.461914,
       "preserved": true
     },
+    "mem0_same_control": {
+      "agent_f1_delta": 0.095474,
+      "agent_recall_delta": -0.069416,
+      "artifact": "docs/reports/product/mem0-comparable-reproduction.json",
+      "evidence_recall_at_20": 0.851833,
+      "general_superiority_claimed": false,
+      "official_f1": 0.341772
+    },
     "questions": 100,
     "tool_call_rate": 1.0,
     "valid_tool_arguments_rate": 1.0
@@ -97,7 +113,7 @@
     "fresh_memory_non_inferiority_gate_green": true,
     "independent_model_judge_green": false,
     "local_code_api_gate_green": true,
-    "official_mem0_same_control_comparison_green": false
+    "official_mem0_same_control_comparison_green": true
   },
   "public_agent_subsets": {
     "agentbench_official_success_rate": 0.8,
@@ -122,7 +138,7 @@
   },
   "stage_passed": true,
   "stage_verification": {
-    "python_tests_collected": 513,
+    "python_tests_collected": 519,
     "python_tests_skipped": 2,
     "web_build_passed": true,
     "web_test_files": 20,

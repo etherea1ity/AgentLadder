@@ -1,0 +1,7 @@
+fastapi==0.116.1
+uvicorn==0.35.0
+pydantic==2.10.6
+qdrant-client==1.13.3
+spacy==3.8.7
+fastembed==0.6.1
+mem0ai @ git+https://github.com/mem0ai/mem0.git@5e941e24c2cb260f73cc6d31113a92bb1ce62d46

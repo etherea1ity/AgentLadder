@@ -13,7 +13,7 @@
 - LoCoMo F1: direct `0.455354`, Agent `0.437246`, delta `-0.018108`.
 - LoCoMo Recall@20: direct `0.767917`, Agent `0.782417`, delta `0.0145`.
 - AgentBench subset: `0.8`; tau2 subset: `0.8`.
-- 本阶段验证: Python `513` collected / `2` skipped; web `71` tests in `20` files; build `true`.
+- 本阶段验证: Python `519` collected / `2` skipped; web `71` tests in `20` files; build `true`.
 
 ## 解释边界
 
@@ -24,7 +24,6 @@
 
 - `independent-model-judge`: The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.
 - `blind-human-review`: No independent blind-human labels exist for the frozen comparison queue.
-- `official-mem0-comparison`: docker/mem0/Dockerfile references deleted branch feat/v3-pipeline
 
 ## 资源扩展项
 

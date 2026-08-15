@@ -4,7 +4,7 @@ Language: [Chinese](./completion-ledger.md) | English
 
 - Current stage: `agent-product-freeze`
 - Mode: `full-end-to-end`
-- Updated at: `2026-08-15T04:23:30.103864+00:00`
+- Updated at: `2026-08-15T16:31:04.925557+00:00`
 
 ## Objective Status
 
@@ -30,6 +30,7 @@ Language: [Chinese](./completion-ledger.md) | English
 | `agent-runtime-integration` | `passed` | `codex/agent-runtime-integration` |
 | `agent-product-benchmarks` | `passed` | `codex/agent-product-external-benchmarks` |
 | `agent-product-freeze-readiness` | `passed` | `codex/agent-product-freeze-readiness` |
+| `mem0-comparable-reproduction` | `passed` | `codex/mem0-comparable-reproduction` |
 | `agent-product-freeze` | `blocked_external` | `codex/agent-product-freeze` |
 | `model-kv-cache` | `pending` | `codex/model-kv-cache` |
 | `real-trajectory-collector` | `pending` | `codex/real-trajectory-collector` |
@@ -49,7 +50,6 @@ Language: [Chinese](./completion-ledger.md) | English
 
 - The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.
 - No independent blind-human labels exist for the frozen comparison queue.
-- docker/mem0/Dockerfile references deleted branch feat/v3-pipeline
 - The pinned MEM1 7B rollout requires a comparable GPU evaluation run.
 - No licensed, hashed BEAM snapshot is available for a comparable scale run.
 - A frozen publicly permitted GAIA subset has not yet been executed through the current runtime.
@@ -58,4 +58,3 @@ Language: [Chinese](./completion-ledger.md) | English
 
 - The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.
 - No independent blind-human labels exist for the frozen comparison queue.
-- docker/mem0/Dockerfile references deleted branch feat/v3-pipeline

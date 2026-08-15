@@ -80,6 +80,20 @@ def build_report(
     historical_memory = reports["memory-architecture-agent-live.json"]
     historical_summary = reports["memory-benchmark-summary.json"]
     mem0 = reports["mem0-reproduction.json"]
+    mem0_followup_path = (
+        root / "docs/reports/product/mem0-comparable-reproduction.json"
+    )
+    mem0_followup = _read(mem0_followup_path) if mem0_followup_path.is_file() else None
+    mem0_followup_green = bool(
+        mem0_followup
+        and mem0_followup.get("passed") is True
+        and mem0_followup.get("selection", {}).get("selected_case_ids_sha256")
+        == memory_agent["selection"]["selected_case_ids_sha256"]
+        and mem0_followup.get("source", {})
+        .get("mem0", {})
+        .get("pull_request_head")
+        == "5e941e24c2cb260f73cc6d31113a92bb1ce62d46"
+    )
     ledger = _read(root / "docs/reports/product/completion-ledger.json")
 
     _require(ledger["schema_version"] == LEDGER_SCHEMA_VERSION, "ledger schema drift")
@@ -128,12 +142,15 @@ def build_report(
             "status": "blocked_external",
             "detail": "No independent blind-human labels exist for the frozen comparison queue.",
         },
-        {
-            "id": "official-mem0-comparison",
-            "status": "blocked_external",
-            "detail": str(mem0["defect"]),
-        },
     ]
+    if not mem0_followup_green:
+        mandatory_blockers.append(
+            {
+                "id": "official-mem0-comparison",
+                "status": "blocked_external",
+                "detail": str(mem0["defect"]),
+            }
+        )
     expansion_gaps = [
         {
             "id": "official-mem1-gpu-comparison",
@@ -190,7 +207,7 @@ def build_report(
         "fresh_memory_non_inferiority_gate_green": memory_agent["passed"] is True,
         "independent_model_judge_green": False,
         "blind_human_review_green": False,
-        "official_mem0_same_control_comparison_green": False,
+        "official_mem0_same_control_comparison_green": mem0_followup_green,
     }
     stage_passed = all(stage_checks.values())
     agent_product_freeze_allowed = all(product_freeze_checks.values())
@@ -275,6 +292,28 @@ def build_report(
                 ],
                 "preserved": True,
             },
+            **(
+                {
+                    "mem0_same_control": {
+                        "artifact": "docs/reports/product/mem0-comparable-reproduction.json",
+                        "official_f1": mem0_followup["systems"][
+                            "mem0_v3_pr4805"
+                        ]["official_f1"],
+                        "evidence_recall_at_20": mem0_followup["systems"][
+                            "mem0_v3_pr4805"
+                        ]["evidence_recall_at_k"],
+                        "agent_f1_delta": mem0_followup["comparison"][
+                            "agent_f1_delta_vs_mem0"
+                        ],
+                        "agent_recall_delta": mem0_followup["comparison"][
+                            "agent_recall_delta_vs_mem0"
+                        ],
+                        "general_superiority_claimed": False,
+                    }
+                }
+                if mem0_followup_green and mem0_followup is not None
+                else {}
+            ),
         },
         "public_agent_subsets": {
             "tau2_official_success_rate": external["metrics"][
@@ -291,6 +330,19 @@ def build_report(
             "external_memory_competitor_superiority": False,
             "general_agent_framework_superiority": False,
             "general_chatgpt_equivalence": False,
+            "frozen_same_control_mem0_comparison_complete": mem0_followup_green,
+            "frozen_same_control_agent_outperforms_mem0_on_f1": bool(
+                mem0_followup_green
+                and mem0_followup["comparison"][
+                    "frozen_same_control_agent_outperforms_mem0_on_f1"
+                ]
+            ),
+            "frozen_same_control_agent_outperforms_mem0_on_recall": bool(
+                mem0_followup_green
+                and mem0_followup["comparison"][
+                    "frozen_same_control_agent_outperforms_mem0_on_recall"
+                ]
+            ),
             "interpretation": "Klara improves retrieval recall over its same-model direct baseline on the frozen fresh split, but answer F1 remains lower; no external-system superiority is established.",
         },
         "mandatory_blockers": mandatory_blockers,
@@ -301,6 +353,19 @@ def build_report(
             "training_started": False,
             "reason": "Agent Product Freeze is blocked; model work cannot start.",
         },
+        "followup_evidence": (
+            [
+                {
+                    "stage": "mem0-comparable-reproduction",
+                    "artifact": "docs/reports/product/mem0-comparable-reproduction.json",
+                    "schema_version": mem0_followup["schema_version"],
+                    "sha256": _sha256(mem0_followup_path),
+                    "passed": True,
+                }
+            ]
+            if mem0_followup_green and mem0_followup is not None
+            else []
+        ),
     }
     _require(stage_passed, "readiness reconciliation checks failed")
     updated_ledger = update_completion_ledger(

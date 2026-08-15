@@ -1,0 +1,109 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "mem0-comparable-reproduction",
+  "branch": "codex/mem0-comparable-reproduction",
+  "parent_commit": "3b93e9b91e83b48e405e21a932d1d1b3702ef7f1",
+  "mode": "local-pre-hku-real-provider",
+  "authorized_at": "2026-08-15T00:00:00+08:00",
+  "objective": "Replace the stale deleted-branch blocker with a provenance-pinned execution of the exact final official Mem0 v3 pull-request head, then compare Mem0 formation and retrieval on the already frozen 100-question LoCoMo validation split under the same answer model, embedding model, generation budget, and deterministic scorer used by AgentLadder.",
+  "sources": {
+    "memory_benchmarks": {
+      "repository": "https://github.com/mem0ai/memory-benchmarks",
+      "commit": "4b61c5d31b9c668a12b4f5e78064248a02c82d2b",
+      "requirements_sha256": "0cd93935c9fe6aeac6cd361cc3fa084bbe02a809fc238e3ecb223a3ba5838080",
+      "stale_reference": "mem0ai @ git+https://github.com/mem0ai/mem0.git@feat/v3-pipeline",
+      "upstream_issue": "https://github.com/mem0ai/memory-benchmarks/issues/6"
+    },
+    "mem0_v3": {
+      "repository": "https://github.com/mem0ai/mem0",
+      "pull_request": "https://github.com/mem0ai/mem0/pull/4805",
+      "pull_request_head": "5e941e24c2cb260f73cc6d31113a92bb1ce62d46",
+      "merge_commit": "a488e19044e4de9322a4e82be8d49ee67a322151",
+      "resolution": "refs/pull/4805/head resolves to the exact final deleted feat/v3-pipeline head"
+    },
+    "qdrant": {
+      "image": "qdrant/qdrant:v1.13.4",
+      "digest": "sha256:318c11b72aaab96b36e9662ad244de3cabd0653a1b942d4e8191f18296c81af0"
+    },
+    "locomo": {
+      "repository": "https://github.com/snap-research/locomo",
+      "commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+      "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+      "license": "CC-BY-NC-4.0"
+    },
+    "frozen_agent_report": {
+      "path": "docs/reports/product/prompt-context-recovery-memory-agent-formal.json",
+      "sha256": "f5b34b9045e4c4f31aa39f76c40b66e5c5f0ec92fa6311e3668f38d494a9b643"
+    },
+    "frozen_direct_baseline_report": {
+      "path": "docs/reports/product/prompt-context-recovery-memory-baseline-formal.json",
+      "sha256": "6c58b7f0a4e32b13fabd77afc4117dcf866940075794266eef8115781b9b3e19"
+    },
+    "historical_blocker_report": {
+      "path": "docs/reports/product/mem0-reproduction.json",
+      "sha256": "da03e6650b2d6aab3b243c6fa50956625a0bc62180aba54dab05a15495b49645"
+    }
+  },
+  "controls": {
+    "questions": 100,
+    "per_conversation": 10,
+    "selection_offset": 10,
+    "selected_case_ids_sha256": "8b80b91c5730abb9343ae9095799e60d255b3572a11c62bfdc3508fb0d263e12",
+    "answer_and_extraction_model": "deepseek/deepseek-v4-flash",
+    "extraction_maximum_generation_tokens": 2400,
+    "extraction_invalid_json_max_attempts": 3,
+    "embedding_provider": "official Mem0 OpenAI-compatible embedding adapter backed by a host-cached sentence-transformers service",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "top_k": 20,
+    "maximum_generation_tokens": 512,
+    "answer_temperature": 0.0,
+    "answer_prompt": "reuse the frozen AgentLadder same-answer-model prompt exactly",
+    "scorer": "official LoCoMo deterministic token F1 plus exact match and evidence Recall@20",
+    "mem0_ingestion": "official memory-benchmarks one-turn chunks with original session timestamps",
+    "mem0_retrieval": "official v3 single-pass additive extraction, hybrid BM25/vector/entity retrieval through Qdrant"
+  },
+  "budgets": {
+    "maximum_deepseek_usd": 25.0,
+    "maximum_question_runs": 100,
+    "maximum_ingestion_conversations": 10,
+    "local_gpu_training": false,
+    "hku_connection": false,
+    "run_smoke_before_full": true,
+    "thermal_safe_serial_or_bounded_execution": true
+  },
+  "acceptance": {
+    "all_source_hashes_and_commits_match": true,
+    "deleted_branch_resolves_to_exact_pr_head": true,
+    "no_unpinned_latest_mem0_dependency": true,
+    "same_100_case_ids_as_frozen_agent_and_direct_baseline": true,
+    "same_answer_model_top_k_generation_budget_temperature_and_scorer": true,
+    "mem0_and_direct_baseline_use_the_same_answer_only_prompt": true,
+    "all_100_cases_complete_without_provider_or_retrieval_error": true,
+    "no_unrecovered_extraction_json_error": true,
+    "official_mem0_formation_and_retrieval_are_executed": true,
+    "raw_rows_are_kept_ignored_and_public_report_is_sanitized": true,
+    "every_harness_deviation_is_disclosed": true,
+    "no_mem0_superiority_claim_without_observed_score": true,
+    "no_agent_product_freeze_if_other_mandatory_evidence_is_red": true,
+    "no_hku_or_model_training_before_agent_product_freeze": true
+  },
+  "expected_artifacts": [
+    "src/klara/eval/mem0_comparable_live.py",
+    "src/klara/eval/local_embedding_server.py",
+    "tests/klara/eval/test_mem0_comparable_live.py",
+    "docs/labs/mem0-comparable-reproduction.md",
+    "docs/labs/mem0-comparable-reproduction.en.md",
+    "docs/reports/product/mem0-comparable-reproduction.json",
+    "docs/reports/product/mem0-comparable-reproduction.md",
+    "docs/reports/product/mem0-comparable-reproduction.en.md",
+    "docs/reports/product/agent-product-freeze-readiness.json",
+    "docs/reports/product/completion-ledger.json"
+  ],
+  "exclusions": [
+    "The comparison is not a Mem0 Platform v3 cloud score.",
+    "The AgentLadder same-control answer prompt and deterministic F1 scorer replace the official benchmark answerer and LLM judge so memory systems remain comparable.",
+    "The exact PR head replaces only the deleted branch name; no current main-branch behavior may silently enter the run.",
+    "MEM1, BEAM, independent model judging, and blind-human labels are not fabricated by this stage.",
+    "No VPN, SSH, upload, Slurm, model training, SFT, RL, or quantization is allowed in this stage."
+  ]
+}

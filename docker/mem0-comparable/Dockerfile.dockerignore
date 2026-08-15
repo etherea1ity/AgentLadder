@@ -1,0 +1,8 @@
+**
+!docker
+!docker/mem0-comparable
+!docker/mem0-comparable/requirements.txt
+!src
+!src/klara
+!src/klara/eval
+!src/klara/eval/mem0_comparable_server.py

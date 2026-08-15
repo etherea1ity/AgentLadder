@@ -1112,6 +1112,7 @@
       },
       "id": "agent-product-benchmarks",
       "metrics": {
+        "agent_f1_delta_vs_mem0": 0.095474,
         "fresh_locomo_agent_f1": 0.437246,
         "fresh_locomo_agent_f1_delta": -0.018108,
         "fresh_locomo_agent_recall_at_20": 0.782417,
@@ -1124,6 +1125,8 @@
         "locomo_hybrid_evidence_recall_at_20": 0.73402,
         "locomo_hybrid_official_f1": 0.461914,
         "locomo_hybrid_total_token_reduction": 0.956272,
+        "mem0_f1": 0.341772,
+        "mem0_recall_at_20": 0.851833,
         "official_mem0_mem1_beam_scores_claimed": 0,
         "public_secret_leaks": 0,
         "strange_response_p0_count": 0
@@ -1131,7 +1134,6 @@
       "remaining_failures": [
         "The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.",
         "No independent blind-human labels exist for the frozen comparison queue.",
-        "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline",
         "The pinned MEM1 7B rollout requires a comparable GPU evaluation run.",
         "No licensed, hashed BEAM snapshot is available for a comparable scale run.",
         "A frozen publicly permitted GAIA subset has not yet been executed through the current runtime."
@@ -1189,6 +1191,44 @@
     },
     {
       "artifacts": [
+        "config/stages/mem0-comparable-reproduction.manifest.json",
+        "docs/labs/mem0-comparable-reproduction.md",
+        "docs/labs/mem0-comparable-reproduction.en.md",
+        "docs/reports/product/mem0-comparable-reproduction.json",
+        "docs/reports/product/mem0-comparable-reproduction.md",
+        "docs/reports/product/mem0-comparable-reproduction.en.md"
+      ],
+      "branch": "codex/mem0-comparable-reproduction",
+      "commands": [
+        "docker compose --env-file .env -f docker/mem0-comparable/compose.yaml up -d --build",
+        "python -m klara.eval.mem0_comparable_live --smoke ...",
+        "python -m klara.eval.mem0_comparable_live ...",
+        "python -m pytest -q"
+      ],
+      "commit": "3b93e9b91e83b48e405e21a932d1d1b3702ef7f1",
+      "datasets": [
+        "LoCoMo pinned offset-10 100-question validation split",
+        "Mem0 official v3 PR #4805 final head"
+      ],
+      "evaluator_versions": [
+        "klara.mem0-comparable-reproduction.v2"
+      ],
+      "evidence": {
+        "cases": 100,
+        "official_mem0_pr_head": "5e941e24c2cb260f73cc6d31113a92bb1ce62d46",
+        "passed": true
+      },
+      "id": "mem0-comparable-reproduction",
+      "metrics": {
+        "agent_f1_delta_vs_mem0": 0.095474,
+        "mem0_f1": 0.341772,
+        "mem0_recall_at_20": 0.851833
+      },
+      "remaining_failures": [],
+      "status": "passed"
+    },
+    {
+      "artifacts": [
         "docs/reports/product/agent-product-freeze-readiness.json"
       ],
       "branch": "codex/agent-product-freeze",
@@ -1207,8 +1247,7 @@
       "metrics": {},
       "remaining_failures": [
         "The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.",
-        "No independent blind-human labels exist for the frozen comparison queue.",
-        "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline"
+        "No independent blind-human labels exist for the frozen comparison queue."
       ],
       "status": "blocked_external"
     },
@@ -1357,5 +1396,5 @@
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-15T04:23:30.103864+00:00"
+  "updated_at": "2026-08-15T16:31:04.925557+00:00"
 }
