@@ -57,34 +57,34 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
+        "bilingual_document_pairs": {
+          "checked": 8,
+          "passed": 8
+        },
         "contract_gate": "passed",
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 45
+        },
         "gate_kind": "contract_control_probe",
+        "hidden_case_fields_exposed": false,
         "python_tests": {
           "collected": 245,
           "passed": 244,
           "skipped": 1
         },
-        "frontend_tests": {
-          "passed": 45
-        },
-        "frontend_build": "passed",
-        "bilingual_document_pairs": {
-          "checked": 8,
-          "passed": 8
-        },
         "ui_viewports": [
           "1280x720",
           "390x844"
-        ],
-        "hidden_case_fields_exposed": false
+        ]
       },
       "id": "phase-0b-agent-eval-contract",
       "metrics": {
         "critical_deterministic_rate": 1.0,
-        "normal_task_success_rate": 1.0,
-        "reference_gap": 0.0,
         "human_acceptability_rate": 1.0,
-        "p0_count": 0
+        "normal_task_success_rate": 1.0,
+        "p0_count": 0,
+        "reference_gap": 0.0
       },
       "remaining_failures": [],
       "status": "passed"
@@ -116,23 +116,23 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
+        "behavior_contract": "passed",
+        "bilingual_document_pairs": {
+          "checked": 10,
+          "passed": 10
+        },
         "chapter_gate": {
           "passed": 11,
           "total": 11
+        },
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 45
         },
         "python_tests": {
           "collected": 255,
           "passed": 254,
           "skipped": 1
-        },
-        "frontend_tests": {
-          "passed": 45
-        },
-        "frontend_build": "passed",
-        "behavior_contract": "passed",
-        "bilingual_document_pairs": {
-          "checked": 10,
-          "passed": 10
         },
         "ui_viewports": [
           "1280x720",
@@ -142,8 +142,8 @@
       "id": "ch04-harness-config",
       "metrics": {
         "configured_models": 6,
-        "visible_tools": 5,
-        "run_profile_hash": "de55caea7d51be41d9ea32db5896086ea20e4f3c0b12fa69872d1aed2fe49401"
+        "run_profile_hash": "de55caea7d51be41d9ea32db5896086ea20e4f3c0b12fa69872d1aed2fe49401",
+        "visible_tools": 5
       },
       "remaining_failures": [],
       "status": "passed"
@@ -175,35 +175,35 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
-        "chapter_gate": {
-          "passed": 14,
-          "total": 14
-        },
-        "python_tests": {
-          "passed": 267,
-          "skipped": 1
-        },
-        "frontend_tests": {
-          "passed": 47
-        },
-        "frontend_build": "passed",
         "behavior_contract": "passed",
         "bilingual_document_pairs": {
           "checked": 12,
           "passed": 12
         },
+        "chapter_gate": {
+          "passed": 14,
+          "total": 14
+        },
+        "console_error_count": 0,
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 47
+        },
+        "horizontal_overflow": false,
+        "python_tests": {
+          "passed": 267,
+          "skipped": 1
+        },
         "ui_viewports": [
           "1280x720",
           "390x844"
-        ],
-        "horizontal_overflow": false,
-        "console_error_count": 0
+        ]
       },
       "id": "ch05-todo-planning",
       "metrics": {
         "chapter_gate_checks": "14/14",
-        "plan_trace_events": 1,
-        "plan_sse_events": 1
+        "plan_sse_events": 1,
+        "plan_trace_events": 1
       },
       "remaining_failures": [],
       "status": "passed"
@@ -238,35 +238,35 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
-        "chapter_gate": {
-          "passed": 15,
-          "total": 15
-        },
-        "python_tests": {
-          "collected": 280,
-          "passed": 279,
-          "skipped": 1
-        },
-        "frontend_tests": {
-          "passed": 49
-        },
-        "frontend_build": "passed",
         "behavior_contract": "passed",
         "bilingual_document_pairs": {
           "checked": 15,
           "passed": 15
         },
+        "chapter_gate": {
+          "passed": 15,
+          "total": 15
+        },
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 49
+        },
+        "public_summary_content_exposed": false,
+        "python_tests": {
+          "collected": 280,
+          "passed": 279,
+          "skipped": 1
+        },
         "ui_viewports": [
           "1280x720",
           "390x844"
-        ],
-        "public_summary_content_exposed": false
+        ]
       },
       "id": "ch06-07-context",
       "metrics": {
         "history_messages_before_current": 10,
-        "model_messages_after_compaction": 4,
         "messages_summarized": 8,
+        "model_messages_after_compaction": 4,
         "precompact_projected_events": 2,
         "tool_results_micro_compacted": 1
       },
@@ -301,34 +301,34 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
+        "behavior_contract": "passed",
         "chapter_gate": {
           "passed": 18,
           "total": 18
         },
+        "console_error_count": 0,
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 52
+        },
+        "horizontal_overflow": false,
+        "provider_response_body_visible": false,
         "python_tests": {
           "collected": 289,
           "passed": 288,
           "skipped": 1
         },
-        "frontend_tests": {
-          "passed": 52
-        },
-        "frontend_build": "passed",
-        "behavior_contract": "passed",
         "ui_viewports": [
           "1280x720",
           "390x844"
-        ],
-        "horizontal_overflow": false,
-        "console_error_count": 0,
-        "provider_response_body_visible": false
+        ]
       },
       "id": "ch08-provider-recovery",
       "metrics": {
         "chapter_gate_checks": "18/18",
-        "provider_attempts": 2,
+        "fallback_candidate_count": 2,
         "prompt_recovery_attempts": 1,
-        "fallback_candidate_count": 2
+        "provider_attempts": 2
       },
       "remaining_failures": [],
       "status": "passed"
@@ -361,38 +361,38 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
+        "behavior_contract": {
+          "observations": 24,
+          "status": "passed"
+        },
         "chapter_gate": {
           "passed": 14,
           "total": 14
         },
+        "console_error_count": 0,
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 54
+        },
+        "horizontal_overflow": false,
+        "public_skill_body_visible": false,
         "python_tests": {
           "collected": 296,
           "passed": 295,
           "skipped": 1
         },
-        "frontend_tests": {
-          "passed": 54
-        },
-        "frontend_build": "passed",
-        "behavior_contract": {
-          "observations": 24,
-          "status": "passed"
-        },
         "ui_viewports": [
           "1280x720",
           "390x844"
-        ],
-        "horizontal_overflow": false,
-        "console_error_count": 0,
-        "public_skill_body_visible": false
+        ]
       },
       "id": "ch09-skills-runtime",
       "metrics": {
         "chapter_gate_checks": "14/14",
-        "resolved_skill_count": 2,
-        "shadowed_definition_count": 2,
         "loaded_skill_count": 1,
-        "public_body_leak_count": 0
+        "public_body_leak_count": 0,
+        "resolved_skill_count": 2,
+        "shadowed_definition_count": 2
       },
       "remaining_failures": [],
       "status": "passed"
@@ -428,16 +428,16 @@
           "passed": 16,
           "total": 16
         },
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 56
+        },
+        "public_benchmarks": "not_executed_and_not_claimed",
         "python_tests": {
           "collected": 306,
           "passed": 305,
           "skipped": 1
-        },
-        "frontend_tests": {
-          "passed": 56
-        },
-        "frontend_build": "passed",
-        "public_benchmarks": "not_executed_and_not_claimed"
+        }
       },
       "id": "ch10-memory",
       "metrics": {},
@@ -486,20 +486,20 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
+        "bounded_public_smoke": "passed",
         "chapter_gate": {
           "passed": 15,
           "total": 15
+        },
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 58
         },
         "python_tests": {
           "collected": 315,
           "passed": 314,
           "skipped": 1
-        },
-        "frontend_tests": {
-          "passed": 58
-        },
-        "frontend_build": "passed",
-        "bounded_public_smoke": "passed"
+        }
       },
       "id": "ch12-13-evidence-runtime",
       "metrics": {},
@@ -535,27 +535,27 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
+        "behavior_contract": {
+          "observations": 24,
+          "status": "passed"
+        },
         "chapter_gate": {
           "passed": 25,
           "total": 25
         },
+        "critical_isolation_and_bypass_rate": 1.0,
+        "desktop_browser": "passed",
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 60
+        },
+        "mobile": "passed_by_component_and_responsive_css_tests",
         "python_tests": {
           "collected": 326,
           "passed": 325,
           "skipped": 1
         },
-        "frontend_tests": {
-          "passed": 60
-        },
-        "frontend_build": "passed",
-        "behavior_contract": {
-          "observations": 24,
-          "status": "passed"
-        },
-        "critical_isolation_and_bypass_rate": 1.0,
-        "raw_argument_leak_count": 0,
-        "desktop_browser": "passed",
-        "mobile": "passed_by_component_and_responsive_css_tests"
+        "raw_argument_leak_count": 0
       },
       "id": "permission-engine",
       "metrics": {},
@@ -592,28 +592,28 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
+        "behavior_contract": {
+          "gate_kind": "contract_control_probe",
+          "observations": 24,
+          "status": "passed"
+        },
         "chapter_gate": {
           "passed": 21,
           "total": 21
         },
+        "critical_recovery_isolation_idempotency_rate": 1.0,
+        "desktop_browser": "passed",
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 62
+        },
+        "mobile": "passed_by_component_and_responsive_css_tests",
+        "public_secret_leak_count": 0,
         "python_tests": {
           "collected": 340,
           "passed": 341,
           "skipped": 1
-        },
-        "frontend_tests": {
-          "passed": 62
-        },
-        "frontend_build": "passed",
-        "behavior_contract": {
-          "observations": 24,
-          "status": "passed",
-          "gate_kind": "contract_control_probe"
-        },
-        "critical_recovery_isolation_idempotency_rate": 1.0,
-        "public_secret_leak_count": 0,
-        "desktop_browser": "passed",
-        "mobile": "passed_by_component_and_responsive_css_tests"
+        }
       },
       "id": "ch14-durable-tasks",
       "metrics": {},
@@ -621,16 +621,16 @@
       "status": "passed"
     },
     {
+      "artifacts": [
+        "docs/chapters/ch15-background-scheduler.md",
+        "docs/chapters/ch15-background-scheduler.en.md",
+        "docs/reports/product/ch15-background-scheduler.json",
+        "docs/reports/product/ch15-background-scheduler.md",
+        "docs/reports/product/ch15-background-scheduler.en.md",
+        "docs/reports/product/ch15-background-scheduler-ui-e2e.json",
+        "docs/reports/product/ch15-background-scheduler-behavior-control.json"
+      ],
       "branch": "codex/ch15-background-scheduler",
-      "id": "ch15-background-scheduler",
-      "metrics": {
-        "chapter_gate_checks": "19/19",
-        "critical_scheduler_rate": 1.0,
-        "public_secret_leak_count": 0
-      },
-      "remaining_failures": [],
-      "status": "passed",
-      "commit": "77e6eb81f906588dacc646bb12835be70804f5d6",
       "commands": [
         "python -m klara.eval.chapter15_cli ...",
         "python -m klara.eval.behavior_cli ...",
@@ -638,6 +638,7 @@
         "npm test -- --run (apps/web)",
         "npm run build (apps/web)"
       ],
+      "commit": "77e6eb81f906588dacc646bb12835be70804f5d6",
       "datasets": [
         "tests/klara/scheduler/test_scheduler.py",
         "tests/fixtures/behavior/agent_behavior_cases.json"
@@ -648,27 +649,42 @@
         "klara.documentation-validator.v1",
         "klara.ui-e2e.v1"
       ],
-      "artifacts": [
-        "docs/chapters/ch15-background-scheduler.md",
-        "docs/chapters/ch15-background-scheduler.en.md",
-        "docs/reports/product/ch15-background-scheduler.json",
-        "docs/reports/product/ch15-background-scheduler.md",
-        "docs/reports/product/ch15-background-scheduler.en.md",
-        "docs/reports/product/ch15-background-scheduler-ui-e2e.json",
-        "docs/reports/product/ch15-background-scheduler-behavior-control.json"
-      ],
       "evidence": {
-        "chapter_gate": {"passed": 19, "total": 19},
-        "python_tests": {"collected": 356, "passed": 355, "skipped": 1},
-        "frontend_tests": {"passed": 64},
-        "frontend_build": "passed",
-        "behavior_contract": {"observations": 24, "status": "passed", "gate_kind": "contract_control_probe"},
-        "bilingual_document_pairs": {"checked": 30, "passed": 30},
+        "behavior_contract": {
+          "gate_kind": "contract_control_probe",
+          "observations": 24,
+          "status": "passed"
+        },
+        "bilingual_document_pairs": {
+          "checked": 30,
+          "passed": 30
+        },
+        "chapter_gate": {
+          "passed": 19,
+          "total": 19
+        },
+        "console_error_or_warning_count": 0,
         "desktop_browser": "passed",
-        "mobile_browser": "passed",
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 64
+        },
         "horizontal_overflow": false,
-        "console_error_or_warning_count": 0
-      }
+        "mobile_browser": "passed",
+        "python_tests": {
+          "collected": 356,
+          "passed": 355,
+          "skipped": 1
+        }
+      },
+      "id": "ch15-background-scheduler",
+      "metrics": {
+        "chapter_gate_checks": "19/19",
+        "critical_scheduler_rate": 1.0,
+        "public_secret_leak_count": 0
+      },
+      "remaining_failures": [],
+      "status": "passed"
     },
     {
       "artifacts": [
@@ -701,23 +717,39 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
-        "chapter_gate": {"passed": 19, "total": 19},
-        "python_tests": {"collected": 372, "passed": 371, "skipped": 1},
-        "frontend_tests": {"passed": 66},
-        "frontend_build": "passed",
-        "behavior_contract": {"observations": 24, "status": "passed", "gate_kind": "contract_control_probe"},
-        "bilingual_document_pairs": {"checked": 32, "passed": 32},
+        "behavior_contract": {
+          "gate_kind": "contract_control_probe",
+          "observations": 24,
+          "status": "passed"
+        },
+        "bilingual_document_pairs": {
+          "checked": 32,
+          "passed": 32
+        },
+        "chapter_gate": {
+          "passed": 19,
+          "total": 19
+        },
+        "console_error_or_warning_count": 0,
         "desktop_browser": "passed",
-        "mobile_browser": "passed",
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 66
+        },
         "horizontal_overflow": false,
-        "console_error_or_warning_count": 0
+        "mobile_browser": "passed",
+        "python_tests": {
+          "collected": 372,
+          "passed": 371,
+          "skipped": 1
+        }
       },
       "id": "ch17-mcp",
       "metrics": {
         "chapter_gate_checks": "19/19",
         "critical_mcp_rate": 1.0,
-        "public_secret_leak_count": 0,
-        "negotiated_tools": 2
+        "negotiated_tools": 2,
+        "public_secret_leak_count": 0
       },
       "remaining_failures": [],
       "status": "passed"
@@ -753,23 +785,39 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
-        "chapter_gate": {"passed": 19, "total": 19},
-        "python_tests": {"collected": 381, "passed": 380, "skipped": 1},
-        "frontend_tests": {"passed": 68},
-        "frontend_build": "passed",
-        "behavior_contract": {"observations": 24, "status": "passed", "gate_kind": "contract_control_probe"},
-        "bilingual_document_pairs": {"checked": 34, "passed": 34},
+        "behavior_contract": {
+          "gate_kind": "contract_control_probe",
+          "observations": 24,
+          "status": "passed"
+        },
+        "bilingual_document_pairs": {
+          "checked": 34,
+          "passed": 34
+        },
+        "chapter_gate": {
+          "passed": 19,
+          "total": 19
+        },
+        "console_error_or_warning_count": 0,
         "desktop_browser": "passed",
-        "mobile_browser": "passed",
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 68
+        },
         "horizontal_overflow": false,
-        "console_error_or_warning_count": 0
+        "mobile_browser": "passed",
+        "python_tests": {
+          "collected": 381,
+          "passed": 380,
+          "skipped": 1
+        }
       },
       "id": "ch16-subagents-team-worktree",
       "metrics": {
         "chapter_gate_checks": "19/19",
         "critical_delegation_isolation_rate": 1.0,
-        "public_secret_leak_count": 0,
-        "delegated_agents_in_gate": 2
+        "delegated_agents_in_gate": 2,
+        "public_secret_leak_count": 0
       },
       "remaining_failures": [],
       "status": "passed"
@@ -807,33 +855,50 @@
         "klara.behavior-scorer.v1"
       ],
       "evidence": {
-        "chapter_gate": {"passed": 25, "total": 25},
-        "python_tests": {"collected": 405, "passed": 403, "skipped": 2},
-        "focused_tests": {"passed": 23, "skipped_without_postgres_dsn": 1},
-        "frontend_tests": {"passed": 68},
-        "frontend_build": "passed",
-        "production_regression_control": "passed",
-        "versioned_migrations": [1, 2, 3, 4],
-        "sqlite_backup_restore_integrity_retention": "passed",
-        "postgres_integration": {
-          "status": "passed",
-          "tests_passed": 1,
-          "image_digest": "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777",
-          "container_removed": true
+        "chapter_gate": {
+          "passed": 25,
+          "total": 25
         },
         "external_oidc_provider_smoke": "not_executed",
+        "focused_tests": {
+          "passed": 23,
+          "skipped_without_postgres_dsn": 1
+        },
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "passed": 68
+        },
         "oidc_rs256_jwks_revocation_adapter_tests": "passed",
-        "tenant_owner_isolation": "passed",
+        "postgres_integration": {
+          "container_removed": true,
+          "image_digest": "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777",
+          "status": "passed",
+          "tests_passed": 1
+        },
+        "production_regression_control": "passed",
+        "python_tests": {
+          "collected": 405,
+          "passed": 403,
+          "skipped": 2
+        },
         "raw_bearer_or_lease_persisted": false,
+        "sqlite_backup_restore_integrity_retention": "passed",
+        "tenant_owner_isolation": "passed",
+        "trajectory_events": 5,
         "trajectory_records": 1,
-        "trajectory_events": 5
+        "versioned_migrations": [
+          1,
+          2,
+          3,
+          4
+        ]
       },
       "id": "ch18-production-runtime",
       "metrics": {
         "chapter_gate_checks": "25/25",
         "critical_contract_rate": 1.0,
-        "public_secret_leak_count": 0,
-        "p0_strange_response_count": 0
+        "p0_strange_response_count": 0,
+        "public_secret_leak_count": 0
       },
       "remaining_failures": [],
       "status": "passed"
@@ -867,25 +932,37 @@
         "klara.ui-e2e.v1"
       ],
       "evidence": {
-        "product_gate": {"passed": 15, "total": 15},
-        "python_tests": {"collected": 418, "passed": 416, "skipped": 2},
-        "focused_tests": {"passed": 64},
-        "frontend_tests": {"files_passed": 20, "passed": 71},
-        "frontend_build": "passed",
-        "desktop_viewport": "1280x720",
-        "mobile_viewport": "390x844",
-        "horizontal_overflow_pixels": 0,
         "browser_console_errors": 0,
-        "raw_provider_reasoning_public": false,
+        "desktop_viewport": "1280x720",
+        "focused_tests": {
+          "passed": 64
+        },
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "files_passed": 20,
+          "passed": 71
+        },
+        "horizontal_overflow_pixels": 0,
+        "mobile_viewport": "390x844",
+        "post_cancel_tail_events_public": false,
+        "product_gate": {
+          "passed": 15,
+          "total": 15
+        },
+        "python_tests": {
+          "collected": 418,
+          "passed": 416,
+          "skipped": 2
+        },
         "raw_jsonl_trace_public": false,
-        "post_cancel_tail_events_public": false
+        "raw_provider_reasoning_public": false
       },
       "id": "agent-product-polish",
       "metrics": {
-        "product_gate_checks": "15/15",
-        "p0_strange_response_count_after_repair": 0,
         "desktop_horizontal_overflow_pixels": 0,
-        "mobile_horizontal_overflow_pixels": 0
+        "mobile_horizontal_overflow_pixels": 0,
+        "p0_strange_response_count_after_repair": 0,
+        "product_gate_checks": "15/15"
       },
       "remaining_failures": [],
       "status": "passed"
@@ -917,27 +994,39 @@
         "klara.agent-runtime-integration-live.v1"
       ],
       "evidence": {
-        "deterministic_gate": {"passed": 14, "total": 14},
+        "authorized_mutations": 1,
+        "deterministic_gate": {
+          "passed": 14,
+          "total": 14
+        },
+        "focused_tests": {
+          "passed": 40
+        },
+        "frontend_build": "passed",
+        "frontend_tests": {
+          "files_passed": 20,
+          "passed": 71
+        },
+        "internal_scope_in_final_answer": false,
         "live_model_smoke": {
-          "model": "deepseek/deepseek-v4-flash",
           "cases_passed": 3,
           "cases_total": 3,
           "checks_passed": 14,
           "checks_total": 14,
-          "temperature": 0.0,
-          "total_tokens": 7100,
           "duration_ms": 41045,
-          "provider_hidden_reasoning_collected": false
+          "model": "deepseek/deepseek-v4-flash",
+          "provider_hidden_reasoning_collected": false,
+          "temperature": 0.0,
+          "total_tokens": 7100
         },
-        "python_tests": {"collected": 426, "passed": 424, "skipped": 2},
-        "focused_tests": {"passed": 40},
-        "frontend_tests": {"files_passed": 20, "passed": 71},
-        "frontend_build": "passed",
-        "unauthorized_mutations": 0,
-        "authorized_mutations": 1,
+        "p0_strange_response_count": 0,
+        "python_tests": {
+          "collected": 426,
+          "passed": 424,
+          "skipped": 2
+        },
         "raw_tool_arguments_public": false,
-        "internal_scope_in_final_answer": false,
-        "p0_strange_response_count": 0
+        "unauthorized_mutations": 0
       },
       "id": "agent-runtime-integration",
       "metrics": {
@@ -1007,52 +1096,121 @@
       ],
       "evidence": {
         "agent_product_freeze_allowed": false,
+        "agentbench_candidate_controllable_success_rate": 1.0,
+        "agentbench_official_success_rate": 0.8,
         "frontend_build": "passed",
         "frontend_tests": "71 passed",
         "local_pre_freeze_ready": true,
-        "python_regression": "478 passed, 2 documented skips",
-        "runtime_calibration": "41/41 (contract calibration, not a model score)",
-        "tau2_official_success_rate": 0.8,
-        "tau2_candidate_tool_action_accuracy": 1.0,
-        "agentbench_official_success_rate": 0.8,
-        "agentbench_candidate_controllable_success_rate": 1.0,
         "locomo_same_model_pairs": 600,
+        "python_regression": "478 passed, 2 documented skips",
         "qwen_distinct_credentials_probed": 2,
         "qwen_usable_credentials": 0,
+        "runtime_calibration": "41/41 (contract calibration, not a model score)",
+        "tau2_candidate_tool_action_accuracy": 1.0,
+        "tau2_official_success_rate": 0.8,
         "training_allowed": false
       },
       "id": "agent-product-benchmarks",
       "metrics": {
+        "fresh_locomo_agent_f1": 0.437246,
+        "fresh_locomo_agent_f1_delta": -0.018108,
+        "fresh_locomo_agent_recall_at_20": 0.782417,
+        "fresh_locomo_direct_f1": 0.455354,
+        "fresh_locomo_direct_recall_at_20": 0.767917,
         "locomo_evidence_hit_at_5": 0.68,
         "locomo_evidence_mrr": 0.439,
         "locomo_evidence_recall_at_5": 0.630588,
         "locomo_full_context_official_f1": 0.543081,
-        "locomo_hybrid_official_f1": 0.461914,
         "locomo_hybrid_evidence_recall_at_20": 0.73402,
+        "locomo_hybrid_official_f1": 0.461914,
         "locomo_hybrid_total_token_reduction": 0.956272,
         "official_mem0_mem1_beam_scores_claimed": 0,
-        "strange_response_p0_count": 0,
-        "public_secret_leaks": 0
+        "public_secret_leaks": 0,
+        "strange_response_p0_count": 0
       },
       "remaining_failures": [
-        "No complete independent blind-human review with at least 95% acceptability",
-        "Two configured Qwen credentials returned HTTP 401, so no Qwen reference comparison is claimed",
-        "Official comparable Mem0, MEM1, and BEAM scores are not executed"
+        "The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.",
+        "No independent blind-human labels exist for the frozen comparison queue.",
+        "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline",
+        "The pinned MEM1 7B rollout requires a comparable GPU evaluation run.",
+        "No licensed, hashed BEAM snapshot is available for a comparable scale run.",
+        "A frozen publicly permitted GAIA subset has not yet been executed through the current runtime."
       ],
       "status": "passed"
     },
     {
-      "artifacts": [],
+      "artifacts": [
+        "config/stages/agent-product-freeze-readiness.manifest.json",
+        "docs/labs/agent-product-freeze-readiness.md",
+        "docs/labs/agent-product-freeze-readiness.en.md",
+        "docs/reports/product/agent-product-freeze-readiness.json",
+        "docs/reports/product/agent-product-freeze-readiness.md",
+        "docs/reports/product/agent-product-freeze-readiness.en.md"
+      ],
+      "branch": "codex/agent-product-freeze-readiness",
+      "commands": [
+        "python -m klara.eval.product_freeze_readiness ...",
+        "python -m pytest tests/klara/eval/test_product_freeze_readiness.py -q",
+        "python -m pytest -q",
+        "npm --prefix apps/web test -- --run",
+        "npm --prefix apps/web run build",
+        "git diff --check"
+      ],
+      "commit": "0d3f3d5b61a2a374f504e0f8407f72de14d49cc7",
+      "datasets": [
+        "LoCoMo pinned official dataset; fresh 100-question offset-10 split",
+        "KlaraBench v2 frozen 41-observation behavior set",
+        "pinned AgentBench DBBench and tau2 mock subsets"
+      ],
+      "evaluator_versions": [
+        "klara.agent-product-freeze-readiness.v1"
+      ],
+      "evidence": {
+        "agent_product_freeze_allowed": false,
+        "historical_memory_failure_preserved": true,
+        "latest_memory_split_offset": 10,
+        "python_tests_collected": 513,
+        "python_tests_skipped": 2,
+        "stage_passed": true,
+        "verified_input_count": 9,
+        "web_build_passed": true,
+        "web_test_files": 20,
+        "web_tests": 71
+      },
+      "id": "agent-product-freeze-readiness",
+      "metrics": {
+        "fresh_memory_agent_f1": 0.437246,
+        "fresh_memory_direct_f1": 0.455354,
+        "fresh_memory_f1_delta": -0.018108,
+        "fresh_memory_recall_delta": 0.0145
+      },
+      "remaining_failures": [],
+      "status": "passed"
+    },
+    {
+      "artifacts": [
+        "docs/reports/product/agent-product-freeze-readiness.json"
+      ],
       "branch": "codex/agent-product-freeze",
       "commands": [],
       "commit": null,
       "datasets": [],
-      "evaluator_versions": [],
-      "evidence": {},
+      "evaluator_versions": [
+        "klara.agent-product-freeze-readiness.v1"
+      ],
+      "evidence": {
+        "architecture_freeze_passed": true,
+        "local_runtime_gate_passed": true,
+        "training_allowed": false
+      },
       "id": "agent-product-freeze",
       "metrics": {},
-      "remaining_failures": [],
-      "status": "pending"
+      "remaining_failures": [
+        "The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.",
+        "No independent blind-human labels exist for the frozen comparison queue.",
+        "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline"
+      ],
+      "status": "blocked_external"
     },
     {
       "artifacts": [],
@@ -1105,8 +1263,99 @@
       "metrics": {},
       "remaining_failures": [],
       "status": "pending"
+    },
+    {
+      "artifacts": [],
+      "branch": "codex/hku-policy-model-baselines",
+      "commands": [],
+      "commit": null,
+      "datasets": [],
+      "evaluator_versions": [],
+      "evidence": {},
+      "id": "hku-policy-model-baselines",
+      "metrics": {},
+      "remaining_failures": [],
+      "status": "pending"
+    },
+    {
+      "artifacts": [],
+      "branch": "codex/hku-policy-distillation",
+      "commands": [],
+      "commit": null,
+      "datasets": [],
+      "evaluator_versions": [],
+      "evidence": {},
+      "id": "hku-policy-distillation",
+      "metrics": {},
+      "remaining_failures": [],
+      "status": "pending"
+    },
+    {
+      "artifacts": [],
+      "branch": "codex/hku-precision-serving",
+      "commands": [],
+      "commit": null,
+      "datasets": [],
+      "evaluator_versions": [],
+      "evidence": {},
+      "id": "hku-precision-serving",
+      "metrics": {},
+      "remaining_failures": [],
+      "status": "pending"
+    },
+    {
+      "artifacts": [],
+      "branch": "codex/learned-policy-shadow",
+      "commands": [],
+      "commit": null,
+      "datasets": [],
+      "evaluator_versions": [],
+      "evidence": {},
+      "id": "learned-policy-shadow",
+      "metrics": {},
+      "remaining_failures": [],
+      "status": "pending"
+    },
+    {
+      "artifacts": [],
+      "branch": "codex/learned-policy-canary",
+      "commands": [],
+      "commit": null,
+      "datasets": [],
+      "evaluator_versions": [],
+      "evidence": {},
+      "id": "learned-policy-canary",
+      "metrics": {},
+      "remaining_failures": [],
+      "status": "pending"
+    },
+    {
+      "artifacts": [],
+      "branch": "codex/learned-policy-integration",
+      "commands": [],
+      "commit": null,
+      "datasets": [],
+      "evaluator_versions": [],
+      "evidence": {},
+      "id": "learned-policy-integration",
+      "metrics": {},
+      "remaining_failures": [],
+      "status": "pending"
+    },
+    {
+      "artifacts": [],
+      "branch": "codex/model-integration-freeze",
+      "commands": [],
+      "commit": null,
+      "datasets": [],
+      "evaluator_versions": [],
+      "evidence": {},
+      "id": "model-integration-freeze",
+      "metrics": {},
+      "remaining_failures": [],
+      "status": "pending"
     }
   ],
   "schema_version": "klara.completion-ledger.v1",
-  "updated_at": "2026-08-14T18:46:24.5241820+08:00"
+  "updated_at": "2026-08-15T04:23:30.103864+00:00"
 }

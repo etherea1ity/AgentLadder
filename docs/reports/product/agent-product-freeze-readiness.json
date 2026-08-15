@@ -1,0 +1,179 @@
+{
+  "agent_product_freeze_allowed": false,
+  "architecture": {
+    "chapter_gates_passed": 12,
+    "chapter_gates_total": 12,
+    "freeze_passed": true,
+    "remote_branches_audited": 34,
+    "unique_remote_commits": 32
+  },
+  "branch": "codex/agent-product-freeze-readiness",
+  "claims": {
+    "external_memory_competitor_superiority": false,
+    "general_agent_framework_superiority": false,
+    "general_chatgpt_equivalence": false,
+    "internal_direct_baseline_beaten_on_f1": false,
+    "internal_direct_baseline_beaten_on_recall": true,
+    "interpretation": "Klara improves retrieval recall over its same-model direct baseline on the frozen fresh split, but answer F1 remains lower; no external-system superiority is established."
+  },
+  "evaluated_at": "2026-08-15T04:23:30.103864+00:00",
+  "expansion_gaps": [
+    {
+      "detail": "The pinned MEM1 7B rollout requires a comparable GPU evaluation run.",
+      "id": "official-mem1-gpu-comparison",
+      "status": "pending"
+    },
+    {
+      "detail": "No licensed, hashed BEAM snapshot is available for a comparable scale run.",
+      "id": "beam-scale-comparison",
+      "status": "pending"
+    },
+    {
+      "detail": "A frozen publicly permitted GAIA subset has not yet been executed through the current runtime.",
+      "id": "gaia-public-subset",
+      "status": "pending"
+    }
+  ],
+  "hku": {
+    "connected": false,
+    "reason": "Agent Product Freeze is blocked; model work cannot start.",
+    "training_started": false,
+    "uploaded": false
+  },
+  "local_runtime": {
+    "behavior_observations": 41,
+    "critical_deterministic_rate": 1.0,
+    "normal_task_success_rate": 1.0,
+    "p0_count": 0,
+    "python_tests_collected": 510,
+    "python_tests_skipped": 2,
+    "web_tests": 71
+  },
+  "mandatory_blockers": [
+    {
+      "detail": "The frozen Qwen judge credential returned HTTP 401; a distinct independent judge has not scored the 41 observations.",
+      "id": "independent-model-judge",
+      "status": "blocked_external"
+    },
+    {
+      "detail": "No independent blind-human labels exist for the frozen comparison queue.",
+      "id": "blind-human-review",
+      "status": "blocked_external"
+    },
+    {
+      "detail": "docker/mem0/Dockerfile references deleted branch feat/v3-pipeline",
+      "id": "official-mem0-comparison",
+      "status": "blocked_external"
+    }
+  ],
+  "manifest": "config/stages/agent-product-freeze-readiness.manifest.json",
+  "manifest_sha256": "f23b358e48f7da61ab1e9c55f15180a7cedb94f175ed3d68974120497d6e76e9",
+  "memory": {
+    "agent_f1": 0.437246,
+    "agent_f1_delta": -0.018108,
+    "agent_recall_at_20": 0.782417,
+    "agent_recall_delta": 0.0145,
+    "answer_model": "deepseek/deepseek-v4-flash",
+    "benchmark": "LoCoMo",
+    "direct_f1": 0.455354,
+    "direct_recall_at_20": 0.767917,
+    "fresh_case_ids_sha256": "8b80b91c5730abb9343ae9095799e60d255b3572a11c62bfdc3508fb0d263e12",
+    "fresh_split_offset": 10,
+    "historical_failed_replay": {
+      "agent_f1": 0.390983,
+      "artifact": "docs/reports/product/memory-architecture-agent-live.json",
+      "delta": -0.070931,
+      "direct_f1": 0.461914,
+      "preserved": true
+    },
+    "questions": 100,
+    "tool_call_rate": 1.0,
+    "valid_tool_arguments_rate": 1.0
+  },
+  "model_training_allowed": false,
+  "product_freeze_checks": {
+    "architecture_freeze_green": true,
+    "blind_human_review_green": false,
+    "fresh_memory_non_inferiority_gate_green": true,
+    "independent_model_judge_green": false,
+    "local_code_api_gate_green": true,
+    "official_mem0_same_control_comparison_green": false
+  },
+  "public_agent_subsets": {
+    "agentbench_official_success_rate": 0.8,
+    "full_leaderboard_claimed": false,
+    "tau2_official_success_rate": 0.8
+  },
+  "schema_version": "klara.agent-product-freeze-readiness.v1",
+  "source_commit": "0d3f3d5b61a2a374f504e0f8407f72de14d49cc7",
+  "stage": "agent-product-freeze-readiness",
+  "stage_checks": {
+    "all_input_hashes_match": true,
+    "architecture_and_product_freeze_separated": true,
+    "architecture_freeze_green": true,
+    "external_superiority_not_claimed": true,
+    "fresh_hidden_memory_split_selected": true,
+    "frontend_production_build_passed": true,
+    "frontend_suite_passed": true,
+    "full_python_suite_passed": true,
+    "historical_failed_replay_preserved": true,
+    "latest_local_code_api_gate_green": true,
+    "remote_branch_audit_present": true
+  },
+  "stage_passed": true,
+  "stage_verification": {
+    "python_tests_collected": 513,
+    "python_tests_skipped": 2,
+    "web_build_passed": true,
+    "web_test_files": 20,
+    "web_tests": 71
+  },
+  "status": "stage_passed_product_freeze_blocked",
+  "verified_inputs": [
+    {
+      "bytes": 53261,
+      "path": "docs/reports/product/remote-branch-architecture-audit.json",
+      "sha256": "e3abdb4f0400569cddca867e8ebe0159dc18554d6754536eba20a926df967981"
+    },
+    {
+      "bytes": 3810,
+      "path": "docs/reports/product/agent-architecture-freeze.json",
+      "sha256": "85076d2cbae03df73278a64b0331ebc44d4044b35bb0e55ca1e2f40d264e05bb"
+    },
+    {
+      "bytes": 4949,
+      "path": "docs/reports/product/agent-product-external-benchmarks.json",
+      "sha256": "104c8a9b6cd33d28a70f04657a4c5c8a0ccd1c067a940d6bbd04523801acc2a1"
+    },
+    {
+      "bytes": 3282,
+      "path": "docs/reports/product/prompt-context-recovery-hardening.json",
+      "sha256": "b3dec6daa0fa56cb6ae26cd523d2dc65001999761adb9885a1f448da5e5b9e2b"
+    },
+    {
+      "bytes": 58265,
+      "path": "docs/reports/product/prompt-context-recovery-memory-agent-formal.json",
+      "sha256": "f5b34b9045e4c4f31aa39f76c40b66e5c5f0ec92fa6311e3668f38d494a9b643"
+    },
+    {
+      "bytes": 49518,
+      "path": "docs/reports/product/prompt-context-recovery-memory-baseline-formal.json",
+      "sha256": "6c58b7f0a4e32b13fabd77afc4117dcf866940075794266eef8115781b9b3e19"
+    },
+    {
+      "bytes": 58330,
+      "path": "docs/reports/product/memory-architecture-agent-live.json",
+      "sha256": "d6fe1df821ffdcc5072cc774e7ab76a03d57445e23faad6fe52b5c653b32fa64"
+    },
+    {
+      "bytes": 3806,
+      "path": "docs/reports/product/memory-benchmark-summary.json",
+      "sha256": "1e21e552fca3e8eb7f1d4980d59bcdf03bcc194349f188fc620b60cc2e3867cf"
+    },
+    {
+      "bytes": 671,
+      "path": "docs/reports/product/mem0-reproduction.json",
+      "sha256": "da03e6650b2d6aab3b243c6fa50956625a0bc62180aba54dab05a15495b49645"
+    }
+  ]
+}

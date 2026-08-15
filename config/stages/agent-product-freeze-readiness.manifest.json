@@ -1,0 +1,81 @@
+{
+  "schema_version": "klara.stage-manifest.v1",
+  "stage": "agent-product-freeze-readiness",
+  "branch": "codex/agent-product-freeze-readiness",
+  "parent_commit": "0d3f3d5b61a2a374f504e0f8407f72de14d49cc7",
+  "purpose": "Reconcile all current architecture, behavior, memory, public benchmark, and external-blocker evidence into one authoritative pre-freeze ledger without changing frozen benchmark labels or scores.",
+  "inputs": [
+    {
+      "path": "docs/reports/product/remote-branch-architecture-audit.json",
+      "sha256": "e3abdb4f0400569cddca867e8ebe0159dc18554d6754536eba20a926df967981"
+    },
+    {
+      "path": "docs/reports/product/agent-architecture-freeze.json",
+      "sha256": "85076d2cbae03df73278a64b0331ebc44d4044b35bb0e55ca1e2f40d264e05bb"
+    },
+    {
+      "path": "docs/reports/product/agent-product-external-benchmarks.json",
+      "sha256": "104c8a9b6cd33d28a70f04657a4c5c8a0ccd1c067a940d6bbd04523801acc2a1"
+    },
+    {
+      "path": "docs/reports/product/prompt-context-recovery-hardening.json",
+      "sha256": "b3dec6daa0fa56cb6ae26cd523d2dc65001999761adb9885a1f448da5e5b9e2b"
+    },
+    {
+      "path": "docs/reports/product/prompt-context-recovery-memory-agent-formal.json",
+      "sha256": "f5b34b9045e4c4f31aa39f76c40b66e5c5f0ec92fa6311e3668f38d494a9b643"
+    },
+    {
+      "path": "docs/reports/product/prompt-context-recovery-memory-baseline-formal.json",
+      "sha256": "6c58b7f0a4e32b13fabd77afc4117dcf866940075794266eef8115781b9b3e19"
+    },
+    {
+      "path": "docs/reports/product/memory-architecture-agent-live.json",
+      "sha256": "d6fe1df821ffdcc5072cc774e7ab76a03d57445e23faad6fe52b5c653b32fa64"
+    },
+    {
+      "path": "docs/reports/product/memory-benchmark-summary.json",
+      "sha256": "1e21e552fca3e8eb7f1d4980d59bcdf03bcc194349f188fc620b60cc2e3867cf"
+    },
+    {
+      "path": "docs/reports/product/mem0-reproduction.json",
+      "sha256": "da03e6650b2d6aab3b243c6fa50956625a0bc62180aba54dab05a15495b49645"
+    }
+  ],
+  "precedence": [
+    "A later fresh hidden split supersedes an older repair replay only for the same metric family; the older failure remains preserved.",
+    "Deterministic failures override model or narrative approval.",
+    "An internal direct baseline is not an external competitor.",
+    "No Mem0, MEM1, BEAM, GPT, Qwen, or general ChatGPT superiority is claimed without a same-control comparable score.",
+    "No self-generated label is accepted as blind-human review."
+  ],
+  "acceptance": {
+    "all_input_hashes_match": true,
+    "latest_fresh_locomo_split_selected": true,
+    "older_failed_replay_preserved": true,
+    "architecture_and_product_freeze_statuses_separated": true,
+    "external_blockers_are_explicit": true,
+    "completion_ledger_is_machine_updated": true,
+    "bilingual_reports_have_claim_parity": true,
+    "minimum_python_tests_collected": 513,
+    "minimum_web_tests": 71,
+    "minimum_web_test_files": 20,
+    "tests_and_documentation_validation_pass": true
+  },
+  "expected_artifacts": [
+    "docs/labs/agent-product-freeze-readiness.md",
+    "docs/labs/agent-product-freeze-readiness.en.md",
+    "docs/reports/product/agent-product-freeze-readiness.json",
+    "docs/reports/product/agent-product-freeze-readiness.md",
+    "docs/reports/product/agent-product-freeze-readiness.en.md",
+    "docs/reports/product/completion-ledger.json",
+    "docs/reports/product/completion-ledger.md",
+    "docs/reports/product/completion-ledger.en.md"
+  ],
+  "exclusions": [
+    "No benchmark answers or labels are edited.",
+    "No paid API calls are made in this reconciliation stage.",
+    "No HKU connection, upload, Slurm job, or model training is performed.",
+    "No Product Freeze pass is claimed while mandatory external gates are red."
+  ]
+}
