@@ -1,38 +1,49 @@
-# Chapter 3: Hooks and Trace
+# Klara / AgentLadder
 
 语言：中文 | [English](./README.en.md)
 
-上一章：[Chapter 2: Tool Calling](./docs/chapters/ch02-tool-calling.md)
+一个从零构建的开源全栈 Agent Harness，并用统一事件流与轨迹评测，从轨迹蒸馏一路做到自训练 Sparse MoE 小模型的完整项目。
 
-下一章：Chapter 4: Harness And Config
+## 这是什么
 
-总路线：[Klara Roadmap](./docs/skills/roadmap.md)
+Klara 不是一个单一 Demo，而是一条**循序渐进的课程线**：每个章节留下一个可运行、可测试、可解释的 Klara 版本。
 
-完整章节：[docs/chapters/ch03-hooks-and-trace.md](./docs/chapters/ch03-hooks-and-trace.md)
+- **Foundation Track（Chapter 1~18）**：从一个最小 LLM Loop 逐步构建工具调用、Hooks/Trace、Harness、Todo、上下文、记忆、RAG、任务系统、Subagent/Team、MCP，直到生产级运行时与评测桥。
+- **Advanced Labs**：证据评测、轨迹蒸馏、Tiny Pretrain、Sparse MoE、FP16/FP4。
+- **Klara MoE**：自训练 4-Expert Top-2 Sparse MoE，并对比 Qwen QLoRA 与 DeepSeek 基线。
 
-算法扩展：[证据控制、蒸馏、MoE 与 FP16/FP4 实验套件](./docs/labs/algorithm-suite.md)
+## 章节导航
 
-最终云端报告：[Algorithm Suite Freeze](./docs/reports/algorithm/algorithm-suite-freeze.md)
+| 章节 | 主题 | 文档 |
+| --- | --- | --- |
+| 1 | 最小 LLM Loop | [ch01-minimal-agent-loop](./docs/chapters/ch01-minimal-agent-loop.md) |
+| 2 | 工具调用 | [ch02-tool-calling](./docs/chapters/ch02-tool-calling.md) |
+| 3 | Hooks 与 Trace | [ch03-hooks-and-trace](./docs/chapters/ch03-hooks-and-trace.md) |
+| 4 | Harness 与配置 | [ch04-harness-and-config](./docs/chapters/ch04-harness-and-config.md) |
+| 5 | Todo 规划 | [ch05-todo-planning](./docs/chapters/ch05-todo-planning.md) |
+| 6 | 系统提示与上下文组装 | [ch06-system-prompt-and-context-assembly](./docs/chapters/ch06-system-prompt-and-context-assembly.md) |
+| 7 | 上下文压缩 | [ch07-context-compression](./docs/chapters/ch07-context-compression.md) |
+| 8 | 错误恢复与回退 | [ch08-error-recovery-and-fallback](./docs/chapters/ch08-error-recovery-and-fallback.md) |
+| 9 | Skills 程序化记忆 | [ch09-skills-procedural-memory](./docs/chapters/ch09-skills-procedural-memory.md) |
+| 10 | 记忆系统 | [ch10-memory-system](./docs/chapters/ch10-memory-system.md) |
+| 12 | 受控 Agentic RAG | [ch12-controlled-agentic-rag](./docs/chapters/ch12-controlled-agentic-rag.md) |
+| 13 | 研究 Agent | [ch13-research-agent](./docs/chapters/ch13-research-agent.md) |
+| 14 | 持久任务 | [ch14-durable-tasks](./docs/chapters/ch14-durable-tasks.md) |
+| 15 | 后台调度 | [ch15-background-scheduler](./docs/chapters/ch15-background-scheduler.md) |
+| 16 | Subagent 与 Team | [ch16-subagents-teams-worktrees](./docs/chapters/ch16-subagents-teams-worktrees.md) |
+| 17 | MCP 与外部工具 | [ch17-mcp-and-external-tools](./docs/chapters/ch17-mcp-and-external-tools.md) |
+| 18 | 生产运行时与评测桥 | [ch18-production-runtime-and-eval-bridge](./docs/chapters/ch18-production-runtime-and-eval-bridge.md) |
+| 附 | 权限引擎 | [permission-engine](./docs/chapters/permission-engine.md) |
 
----
+## Advanced Labs
 
-## 一句话看懂本章
+- [算法套件：证据、蒸馏、MoE 与 FP16/FP4](./docs/labs/algorithm-suite.md)
+- [Agent 产品冻结就绪度](./docs/labs/agent-product-freeze-readiness.md)
+- [Prompt 上下文恢复加固](./docs/labs/prompt-context-recovery-hardening.md)
 
-Klara 不把一次回答藏成黑盒：loop 仍然只负责模型和工具，但每个生命周期点都会发出事件，hooks、JSONL trace、前端 Thinking、右侧活动栏和 Developer Debug 都从同一条 public event stream 投影出来。
+## 快速开始
 
-![Klara Chapter 3 Hooks and Trace](./docs/assets/ch03-hooks-and-trace.svg)
-
-| 看到什么 | Klara 做什么 |
-| --- | --- |
-| `llm.started` | 记录本轮模型输入边界：消息数量、role 分布、prompt hash、工具 schema |
-| `llm.completed` | 记录模型输出边界：正文、工具、公开 thinking、provider reasoning |
-| `tool.*` | 记录真实工具动作、耗时、错误和安全 observation 摘要 |
-| Thinking | 显示主模型公开过程说明或 provider reasoning，不显示假的空 Thought |
-| Developer Debug | 展示工程 trace、tokens、duration、payload，用来教学和排查 |
-
-## 快速体验
-
-启动：
+准备 `.env` 后启动前后端：
 
 ```powershell
 .\scripts\dev.ps1
@@ -44,80 +55,21 @@ Klara 不把一次回答藏成黑盒：loop 仍然只负责模型和工具，但
 http://127.0.0.1:5123
 ```
 
-试一个无工具问题：
+## 总路线
+
+完整课程规划见 [Klara Roadmap](./docs/skills/roadmap.md)。
+
+## 分支
+
+项目按章节循序渐进拆分分支：
 
 ```text
-你好
+main
+ -> chapter-2-tool-calling
+ -> codex/ch03-algorithm-roadmap
+ -> codex/ch04-harness-config
+ -> ...
+ -> codex/ch18-production-runtime
+ -> codex/agent-product-*
+ -> codex/klara-*
 ```
-
-再试一个工具问题：
-
-```text
-现在上海时间几点？
-```
-
-再试一个需要当前信息的问题：
-
-```text
-今天有什么最新新闻？
-```
-
-你应该观察三件事：
-
-1. Thinking 和最终答案是分开的。
-2. 工具调用和失败会进入 Developer Debug。
-3. `llm.started.input_profile` 和 `llm.completed.response_profile` 能帮助判断每轮 LLM 到底看到了什么、返回了什么。
-
-## 本章改了什么
-
-Chapter 2 的核心 loop 不变：
-
-```text
-model tool_calls -> runtime executes tools -> observations return to model
-```
-
-Chapter 3 增加可观察性：
-
-```text
-KlaraLoop
--> KlaraEvent
--> HookManager
--> JsonlTraceHook
--> RunEventProjector
--> Thinking / Activity / Developer Debug
-```
-
-这不是 UI 装饰，而是一条稳定事件契约。它让我们能解释：
-
-- 哪一轮 LLM 调用了哪些工具
-- 哪个工具失败了
-- token 和 latency 花在哪里
-- 模型是否真的返回了正文
-- Thinking 是模型公开 commentary、provider reasoning，还是 runtime 动作 transcript
-
-## 关键源码
-
-```text
-src/klara/core/loop.py
-src/klara/core/hooks.py
-src/klara/core/events.py
-apps/api/services/run_event_projector.py
-apps/api/services/run_service.py
-apps/web/src/components/klara/KlaraThinkingBlock.tsx
-apps/web/src/components/klara/KlaraRunSurface.tsx
-```
-
-## 验证
-
-```powershell
-python -m pytest tests\klara\core\test_loop.py tests\apps\api\test_run_event_projector.py -q
-python -m pytest
-```
-
-当前 trace profile 改造验证结果：
-
-```text
-168 passed
-```
-
-下一章会讲 Harness And Config：一次 Klara run 在进入 loop 前如何组装模型、provider、persona、工具、hooks 和 trace sink。
