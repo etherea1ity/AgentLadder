@@ -19,3 +19,5 @@ src/agent_ladder/
 data/
 artifacts/
 .remote_artifacts_stage/
+
+.env.deepseek-original

@@ -1,0 +1,40 @@
+# HKU Klara MoE pretraining corpus preparation.
+
+[corpus]
+# Hugging Face dataset to stream. FineWeb-Edu is English and quality-filtered.
+dataset_name = "HuggingFaceFW/fineweb-edu"
+split = "train"
+text_column = "text"
+
+# Remote HKU target. Keep this as an absolute Linux path; the script creates
+# any missing parent directories.
+output_path = "/userhome/cs2/u3665453/AgentLadder/data/pretrain/klara_corpus.txt"
+
+# Stop after approximately this many estimated tokens.
+target_tokens = 2_500_000_000
+
+# Each normalized document is written as exactly one line no longer than this
+# many characters. Overlong documents are truncated so downstream line-based
+# loaders never see a huge row.
+max_chars_per_line = 2000
+
+# tokenizers-compatible Hugging Face tokenizer used for the coarse token count.
+# Set to "" to always use the whitespace fallback.
+tokenizer_name = "bert-base-uncased"
+
+# Fallback used when tokenizer_name is empty or cannot be loaded.
+fallback_tokenizer = "whitespace"
+# FineWeb text is English, so a whitespace token count is roughly 1.0 word.
+# Multiplying by 1.3 gives a safer subword-token approximation when the
+# preferred tokenizer is unavailable.
+fallback_token_multiplier = 1.3
+
+# Progress logging frequency in dataset samples.
+log_every_samples = 10000
+
+# Optional explicit datasets cache directory. The default behavior honors
+# HF_HOME / HF_DATASETS_CACHE from the environment.
+# cache_dir = "/userhome/cs2/u3665453/AgentLadder/.cache/huggingface/datasets"
+
+[dry_run]
+max_samples = 200
