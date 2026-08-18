@@ -1,0 +1,20 @@
+# Local/default settings for the Klara inference-optimization lane.
+# The checkpoint field is intentionally empty so the same config works on
+# laptops and HKU Slurm jobs; pass --checkpoint or set KLARA_INFERENCE_CHECKPOINT.
+
+[benchmark]
+checkpoint = ""
+device = "auto"
+input_len = 32
+batch_size = 1
+max_new_tokens = 16
+warmup_runs = 1
+bench_runs = 5
+seed = 20260816
+
+[w4a16]
+enabled = true
+block_size = 64
+
+[output]
+json_path = ""
