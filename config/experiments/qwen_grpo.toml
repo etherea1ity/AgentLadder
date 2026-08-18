@@ -1,0 +1,54 @@
+[experiment]
+name = "qwen-grpo"
+
+[model]
+base_model = "Qwen/Qwen2.5-1.5B-Instruct"
+adapter_path = ""
+max_sequence_length = 1024
+load_in_4bit = true
+bnb_4bit_quant_type = "nf4"
+bnb_4bit_compute_dtype = "bfloat16"
+attn_implementation = "sdpa"
+
+[lora]
+r = 16
+lora_alpha = 32
+lora_dropout = 0.05
+target_modules = [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj",
+]
+
+[data]
+path = "data/trajectories/clean.jsonl"
+max_records = 0
+val_split = 0.05
+
+[reward]
+task_success = 1.0
+tool_selection = 0.5
+valid_arguments = 0.5
+illegal_call = 1.0
+step_over_budget = 0.1
+
+[grpo]
+max_steps = 8
+generations_per_prompt = 4
+batch_size = 2
+max_completion_length = 512
+temperature = 0.7
+learning_rate = 0.00001
+weight_decay = 0.0
+gradient_accumulation_steps = 4
+num_steps = 100
+log_every = 1
+save_every = 0
+output_dir = "artifacts/qwen-grpo"
+use_trl = true
+bf16 = true
+seed = 20260816

@@ -1,0 +1,49 @@
+[experiment]
+name = "qwen-qlora-sft"
+
+[model]
+base_model = "Qwen/Qwen2.5-1.5B-Instruct"
+max_sequence_length = 2048
+load_in_4bit = true
+bnb_4bit_quant_type = "nf4"
+bnb_4bit_compute_dtype = "bfloat16"
+attn_implementation = "sdpa"
+
+[lora]
+r = 16
+lora_alpha = 32
+lora_dropout = 0.05
+target_modules = [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj",
+]
+
+[data]
+path = "/userhome/cs2/u3665453/AgentLadder/data/sft/train_2000.jsonl"
+max_records = 0
+val_split = 0.05
+
+[train]
+seed = 20260816
+output_dir = "artifacts/qwen-qlora-sft"
+num_train_epochs = 3.0
+per_device_train_batch_size = 1
+per_device_eval_batch_size = 1
+gradient_accumulation_steps = 8
+learning_rate = 0.0002
+warmup_ratio = 0.03
+weight_decay = 0.0
+gradient_clipping = 1.0
+logging_steps = 10
+save_steps = 200
+eval_steps = 200
+save_total_limit = 3
+bf16 = true
+gradient_checkpointing = true
+dataloader_num_workers = 0
+resume_from_checkpoint = ""
