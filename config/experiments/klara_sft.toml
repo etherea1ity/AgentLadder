@@ -1,0 +1,54 @@
+[experiment]
+name = "klara-moe-sft"
+
+[execution]
+require_slurm = true
+require_cuda_training = true
+remote_root = "/userhome/cs2/u3665453/AgentLadder"
+
+[model]
+vocab_size = 260
+hidden_size = 600
+num_layers = 8
+num_attention_heads = 10
+num_key_value_heads = 2
+intermediate_size = 1740
+max_sequence_length = 2048
+dropout = 0.0
+rms_norm_epsilon = 0.000001
+rope_theta = 10000.0
+pad_token_id = 0
+bos_token_id = 1
+eos_token_id = 2
+tie_word_embeddings = true
+
+[moe]
+num_experts = 4
+top_k = 2
+auxiliary_loss_weight = 0.01
+z_loss_weight = 0.001
+
+[tokenizer]
+type = "byte"
+target_vocab_size = 28000
+
+[data]
+trajectories_path = "data/trajectories/clean.jsonl"
+
+[train]
+seed = 20260816
+steps = 2000
+batch_size = 4
+gradient_accumulation_steps = 8
+learning_rate = 0.00002
+weight_decay = 0.01
+gradient_clip = 1.0
+precision = "bf16"
+device = "cuda"
+warmup_steps = 100
+cosine_min_lr = 0.0
+val_every = 50
+log_every = 10
+checkpoint_every = 500
+loader_workers = 0
+val_ratio = 0.01
