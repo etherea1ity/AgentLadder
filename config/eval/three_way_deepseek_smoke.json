@@ -1,0 +1,167 @@
+{
+  "schema_version": "klara.frozen-tool-fixture.v1",
+  "name": "deepseek_frozen_tool_smoke",
+  "task_set": "deepseek_frozen_tool_smoke",
+  "system_prompt": "You are Klara under a frozen-tool evaluation. For each user task, call exactly the requested tool with the exact required arguments, then answer the user question using only the returned observation. Do not invent results and do not call extra tools.",
+  "tools": [
+    {
+      "name": "current_time",
+      "description": "Return the current local time as an ISO-8601 timestamp.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "skills_list",
+      "description": "List the names of all available Klara skills.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "skill_view",
+      "description": "Return the public detail of one skill.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "skill_name": {
+            "type": "string"
+          }
+        },
+        "required": ["skill_name"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "web_search",
+      "description": "Search the public web and return a small result list.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "memory_search",
+      "description": "Search the user's local memory for a fact.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "id": "current_time_basic",
+      "user_turn": "Call the current_time tool, then tell me exactly the ISO-8601 timestamp it returned.",
+      "reference_answer": "2026-08-16T12:00:00+08:00",
+      "acceptable_answers": [],
+      "expected_tool_calls": [
+        {"name": "current_time", "arguments": {}}
+      ],
+      "must_call_tools": ["current_time"],
+      "may_call_tools": ["current_time"]
+    },
+    {
+      "id": "skills_list_count",
+      "user_turn": "Call the skills_list tool, then tell me how many skills are listed.",
+      "reference_answer": "3",
+      "acceptable_answers": ["3 skills", "three"],
+      "expected_tool_calls": [
+        {"name": "skills_list", "arguments": {}}
+      ],
+      "must_call_tools": ["skills_list"],
+      "may_call_tools": ["skills_list"]
+    },
+    {
+      "id": "skill_view_status",
+      "user_turn": "Call the skill_view tool for skill_name 'web-research', then tell me its status value.",
+      "reference_answer": "active",
+      "acceptable_answers": [],
+      "expected_tool_calls": [
+        {"name": "skill_view", "arguments": {"skill_name": "web-research"}}
+      ],
+      "must_call_tools": ["skill_view"],
+      "may_call_tools": ["skill_view"]
+    },
+    {
+      "id": "web_search_title",
+      "user_turn": "Call the web_search tool with query 'Klara frozen tool backend', then tell me the title of the first result.",
+      "reference_answer": "Frozen Tool Backend",
+      "acceptable_answers": [],
+      "expected_tool_calls": [
+        {"name": "web_search", "arguments": {"query": "Klara frozen tool backend"}}
+      ],
+      "must_call_tools": ["web_search"],
+      "may_call_tools": ["web_search"]
+    },
+    {
+      "id": "memory_search_deadline",
+      "user_turn": "Call the memory_search tool with query 'project deadline', then tell me the deadline it returned.",
+      "reference_answer": "2026-08-20",
+      "acceptable_answers": [],
+      "expected_tool_calls": [
+        {"name": "memory_search", "arguments": {"query": "project deadline"}}
+      ],
+      "must_call_tools": ["memory_search"],
+      "may_call_tools": ["memory_search"]
+    }
+  ],
+  "entries": [
+    {
+      "tool_name": "current_time",
+      "arguments": {},
+      "result": {
+        "content": "2026-08-16T12:00:00+08:00",
+        "ok": true
+      }
+    },
+    {
+      "tool_name": "skills_list",
+      "arguments": {},
+      "result": {
+        "content": "[\"web-research\", \"evidence-review\", \"todo-planning\"]",
+        "ok": true
+      }
+    },
+    {
+      "tool_name": "skill_view",
+      "arguments": {"skill_name": "web-research"},
+      "result": {
+        "content": "{\"name\": \"web-research\", \"status\": \"active\", \"description\": \"Search and fetch public web evidence.\"}",
+        "ok": true
+      }
+    },
+    {
+      "tool_name": "web_search",
+      "arguments": {"query": "Klara frozen tool backend"},
+      "result": {
+        "content": "{\"results\": [{\"title\": \"Frozen Tool Backend\", \"url\": \"https://example.com/frozen-tool-backend\", \"snippet\": \"A deterministic eval-time tool backend for Klara.\"}]}",
+        "ok": true
+      }
+    },
+    {
+      "tool_name": "memory_search",
+      "arguments": {"query": "project deadline"},
+      "result": {
+        "content": "{\"results\": [{\"fact\": \"project deadline\", \"value\": \"2026-08-20\"}]}",
+        "ok": true
+      }
+    }
+  ]
+}

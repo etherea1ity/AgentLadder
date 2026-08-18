@@ -1,0 +1,18 @@
+model = "Qwen/Qwen2.5-1.5B-Instruct"
+benchmark_fixture = "data/eval/fixtures/hidden_fixture.json"
+results_dir = "results"
+
+[harness]
+max_steps = 8
+max_tokens = 512
+temperature = 0.0
+timeout_seconds = 120
+retry_attempts = 1
+retry_base_delay_seconds = 0.0
+retry_max_delay_seconds = 0.0
+ordered_tool_calls = false
+
+[pricing]
+currency = "USD"
+input_usd_per_million = 0.0
+output_usd_per_million = 0.0
